@@ -1,0 +1,472 @@
+# Continue.dev
+
+Configure Continue.dev, the open-source AI code assistant, to use Eden AI for access to 200+ models.
+
+## Overview
+
+[Continue.dev](https://continue.dev) is an open-source autopilot for VS Code and JetBrains IDEs. By connecting it to Eden AI, you get:
+
+- **200+ models**: Access OpenAI, Anthropic, Google, Cohere, and more
+- **Cost savings**: Leverage Eden AI's competitive pricing
+- **Provider flexibility**: Switch models instantly without changing configuration
+
+## Installation
+
+Install Continue.dev from your IDE marketplace:
+
+### VS Code
+
+1. Open VS Code
+2. Go to Extensions (Ctrl+Shift+X / Cmd+Shift+X)
+3. Search for "Continue"
+4. Click Install
+
+### JetBrains IDEs
+
+1. Open your JetBrains IDE (IntelliJ, PyCharm, etc.)
+2. Go to Plugins (Ctrl+Alt+S / Cmd+,)
+3. Search for "Continue"
+4. Click Install
+
+## Configuration
+
+Configure Continue to use Eden AI's OpenAI-compatible endpoint.
+
+### Step 1: Open Configuration
+
+In VS Code or JetBrains:
+1. Click the Continue icon in the sidebar
+2. Click the gear icon (⚙️) to open settings
+3. This opens `~/.continue/config.json`
+
+### Step 2: Configure Eden AI
+
+Replace the configuration with:
+
+<CodeBlocks>
+  <CodeBlock title="~/.continue/config.json">
+    ```json
+    {
+      "models": [
+        {
+          "title": "Claude 3.5 Sonnet",
+          "provider": "openai",
+          "model": "anthropic/claude-3-5-sonnet-20241022",
+          "apiKey": "YOUR_EDEN_AI_API_KEY",
+          "apiBase": "https://api.edenai.run/v3/llm"
+        },
+        {
+          "title": "GPT-4",
+          "provider": "openai",
+          "model": "openai/gpt-4",
+          "apiKey": "YOUR_EDEN_AI_API_KEY",
+          "apiBase": "https://api.edenai.run/v3/llm"
+        },
+        {
+          "title": "Gemini Pro",
+          "provider": "openai",
+          "model": "google/gemini-pro",
+          "apiKey": "YOUR_EDEN_AI_API_KEY",
+          "apiBase": "https://api.edenai.run/v3/llm"
+        }
+      ],
+      "tabAutocompleteModel": {
+        "title": "GPT-3.5 Turbo",
+        "provider": "openai",
+        "model": "openai/gpt-3.5-turbo",
+        "apiKey": "YOUR_EDEN_AI_API_KEY",
+        "apiBase": "https://api.edenai.run/v3/llm"
+      },
+      "embeddingsProvider": {
+        "provider": "openai",
+        "model": "openai/text-embedding-3-small",
+        "apiKey": "YOUR_EDEN_AI_API_KEY",
+        "apiBase": "https://api.edenai.run/v3/llm"
+      }
+    }
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+### Step 3: Save and Reload
+
+1. Save the configuration file
+2. Reload your IDE or click "Reload" in Continue
+
+## Available Models
+
+You can add any model from Eden AI's catalog:
+
+### Chat Models
+
+<CodeBlocks>
+  <CodeBlock title="config.json">
+    ```json
+    {
+      "models": [
+        {
+          "title": "Claude 3.5 Sonnet",
+          "provider": "openai",
+          "model": "anthropic/claude-3-5-sonnet-20241022",
+          "apiKey": "YOUR_EDEN_AI_API_KEY",
+          "apiBase": "https://api.edenai.run/v3/llm"
+        },
+        {
+          "title": "Claude 3 Opus",
+          "provider": "openai",
+          "model": "anthropic/claude-3-opus-20240229",
+          "apiKey": "YOUR_EDEN_AI_API_KEY",
+          "apiBase": "https://api.edenai.run/v3/llm"
+        },
+        {
+          "title": "GPT-4 Turbo",
+          "provider": "openai",
+          "model": "openai/gpt-4-turbo",
+          "apiKey": "YOUR_EDEN_AI_API_KEY",
+          "apiBase": "https://api.edenai.run/v3/llm"
+        },
+        {
+          "title": "Gemini 1.5 Pro",
+          "provider": "openai",
+          "model": "google/gemini-1.5-pro",
+          "apiKey": "YOUR_EDEN_AI_API_KEY",
+          "apiBase": "https://api.edenai.run/v3/llm"
+        },
+        {
+          "title": "Command R+",
+          "provider": "openai",
+          "model": "cohere/command-r-plus",
+          "apiKey": "YOUR_EDEN_AI_API_KEY",
+          "apiBase": "https://api.edenai.run/v3/llm"
+        }
+      ]
+    }
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Features
+
+### Chat
+
+Open the Continue sidebar and start chatting with AI:
+
+1. Select your model from the dropdown
+2. Type your question or request
+3. Get instant responses
+
+**Example prompts:**
+- "Explain this code"
+- "Add error handling to this function"
+- "Write tests for this component"
+
+### Inline Editing
+
+Select code and use Continue to edit it:
+
+1. Highlight code
+2. Press Cmd+I (Mac) / Ctrl+I (Windows/Linux)
+3. Describe your changes
+4. Review and accept
+
+**Example edits:**
+- "Add type hints"
+- "Refactor this to use async/await"
+- "Simplify this logic"
+
+### Tab Autocomplete
+
+Continue provides intelligent code completion:
+
+1. Start typing
+2. Continue suggests completions
+3. Press Tab to accept
+
+Configure fast models for autocomplete:
+
+<CodeBlocks>
+  <CodeBlock title="config.json">
+    ```json
+    {
+      "tabAutocompleteModel": {
+        "title": "Fast Autocomplete",
+        "provider": "openai",
+        "model": "openai/gpt-3.5-turbo",
+        "apiKey": "YOUR_EDEN_AI_API_KEY",
+        "apiBase": "https://api.edenai.run/v3/llm"
+      }
+    }
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+### Slash Commands
+
+Use slash commands for common tasks:
+
+- `/edit` - Edit selected code
+- `/comment` - Add comments
+- `/test` - Generate tests
+- `/fix` - Fix errors
+- `/explain` - Explain code
+
+## Advanced Configuration
+
+### Custom Context Providers
+
+Add codebase context for better responses:
+
+<CodeBlocks>
+  <CodeBlock title="config.json">
+    ```json
+    {
+      "models": [...],
+      "contextProviders": [
+        {
+          "name": "code",
+          "params": {}
+        },
+        {
+          "name": "docs",
+          "params": {
+            "startUrl": "https://docs.edenai.co"
+          }
+        },
+        {
+          "name": "folder",
+          "params": {
+            "folder": "src"
+          }
+        }
+      ]
+    }
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+### Model-Specific Settings
+
+Configure temperature and other parameters per model:
+
+<CodeBlocks>
+  <CodeBlock title="config.json">
+    ```json
+    {
+      "models": [
+        {
+          "title": "Claude 3.5 Sonnet (Creative)",
+          "provider": "openai",
+          "model": "anthropic/claude-3-5-sonnet-20241022",
+          "apiKey": "YOUR_EDEN_AI_API_KEY",
+          "apiBase": "https://api.edenai.run/v3/llm",
+          "completionOptions": {
+            "temperature": 0.9,
+            "maxTokens": 2000
+          }
+        },
+        {
+          "title": "Claude 3.5 Sonnet (Precise)",
+          "provider": "openai",
+          "model": "anthropic/claude-3-5-sonnet-20241022",
+          "apiKey": "YOUR_EDEN_AI_API_KEY",
+          "apiBase": "https://api.edenai.run/v3/llm",
+          "completionOptions": {
+            "temperature": 0.1,
+            "maxTokens": 1000
+          }
+        }
+      ]
+    }
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+### Environment Variables
+
+Use environment variables for API keys:
+
+<CodeBlocks>
+  <CodeBlock title="config.json">
+    ```json
+    {
+      "models": [
+        {
+          "title": "Claude 3.5 Sonnet",
+          "provider": "openai",
+          "model": "anthropic/claude-3-5-sonnet-20241022",
+          "apiKey": "${EDEN_AI_API_KEY}",
+          "apiBase": "https://api.edenai.run/v3/llm"
+        }
+      ]
+    }
+    ```
+  </CodeBlock>
+
+  <CodeBlock title="~/.bashrc or ~/.zshrc">
+    ```bash
+    export EDEN_AI_API_KEY="your_api_key_here"
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Use Cases
+
+### Code Generation
+
+Generate entire functions or classes:
+
+1. Open Continue chat
+2. Describe what you need: "Create a Python class for user authentication with login, logout, and token refresh methods"
+3. Review and insert the generated code
+
+### Code Review
+
+Get AI-powered code reviews:
+
+1. Select code
+2. Open Continue chat
+3. Ask: "Review this code for security issues and performance improvements"
+
+### Documentation
+
+Generate documentation automatically:
+
+1. Select a function
+2. Use `/comment` command
+3. Continue adds comprehensive docstrings
+
+### Debugging
+
+Get help with errors:
+
+1. Copy error message
+2. Open Continue chat
+3. Ask: "How do I fix this error?" and paste the error
+
+### Refactoring
+
+Modernize legacy code:
+
+1. Select old code
+2. Use `/edit` command
+3. Ask: "Refactor this to use modern Python features"
+
+## Troubleshooting
+
+### Models Not Appearing
+
+If models don't appear in the dropdown:
+
+1. Check `config.json` syntax is valid (use a JSON validator)
+2. Ensure `apiBase` is exactly: `https://api.edenai.run/v3/llm`
+3. Reload the IDE
+
+### Authentication Errors
+
+If you see 401 errors:
+
+1. Verify your Eden AI API key in `config.json`
+2. Check there are no extra spaces in the API key
+3. Test the API key manually:
+
+```bash
+curl -X POST https://api.edenai.run/v3/llm/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-3-5-sonnet-20241022",
+    "messages": [{"role": "user", "content": "test"}],
+    "stream": true
+  }'
+```
+
+### Slow Responses
+
+If responses are slow:
+
+1. Use faster models for autocomplete (`gpt-3.5-turbo`)
+2. Reduce `maxTokens` in completion options
+3. Check your internet connection
+
+### Context Issues
+
+If Continue doesn't understand your codebase:
+
+1. Add relevant context providers
+2. Include specific files using `@file` in chat
+3. Use folder context for project-wide understanding
+
+## Keyboard Shortcuts
+
+### VS Code
+
+- `Cmd/Ctrl + I` - Inline edit
+- `Cmd/Ctrl + Shift + L` - Open Continue sidebar
+- `Cmd/Ctrl + Shift + R` - Re-run last command
+
+### JetBrains
+
+- `Alt + Enter` - Show Continue actions
+- `Cmd/Ctrl + Shift + C` - Open Continue chat
+
+## Best Practices
+
+### 1. Choose the Right Model
+
+- **Quick edits**: Use `openai/gpt-3.5-turbo` for speed
+- **Complex reasoning**: Use `anthropic/claude-3-5-sonnet-20241022`
+- **Autocomplete**: Use `openai/gpt-3.5-turbo` for low latency
+
+### 2. Provide Context
+
+Add context to get better responses:
+- Tag files with `@filename`
+- Include error messages
+- Describe the broader goal
+
+### 3. Iterate
+
+Don't expect perfect results immediately:
+- Review generated code
+- Ask for adjustments
+- Combine AI suggestions with your expertise
+
+### 4. Use Slash Commands
+
+Leverage built-in commands for common tasks:
+- `/edit` for modifications
+- `/test` for test generation
+- `/fix` for error resolution
+
+## Example Workflows
+
+### Building a New Feature
+
+1. Chat: "Help me design a REST API endpoint for user registration"
+2. Review the suggested structure
+3. Use `/edit` to implement the endpoint
+4. Use `/test` to generate unit tests
+5. Use `/comment` to add documentation
+
+### Debugging
+
+1. Copy the error traceback
+2. Chat: "Explain this error and suggest a fix: [paste error]"
+3. Review the explanation
+4. Use `/fix` on the problematic code
+5. Test the solution
+
+### Code Review
+
+1. Select a function
+2. Chat: "Review this for security, performance, and maintainability"
+3. Review suggestions
+4. Use `/edit` to apply improvements
+5. Use `/test` to ensure nothing broke
+
+## Next Steps
+
+- [VS Code Integration](../ides/vscode) - More VS Code AI tools
+- [Claude Code](./claude-code) - Official Claude CLI
+- [Cline](./cline) - Another powerful VS Code extension
+- [API Reference](/v3-api/reference) - Eden AI API documentation

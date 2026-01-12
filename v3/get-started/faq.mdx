@@ -1,0 +1,497 @@
+---
+icon: "question"
+---
+# Frequently Asked Questions
+
+Common questions about Eden AI V3 API.
+
+## General
+
+### What is Eden AI V3?
+
+Eden AI V3 is a unified AI API platform that provides:
+- **Universal AI Endpoint** - Single endpoint for all non-LLM features (text, OCR, image, translation)
+- **OpenAI-Compatible LLM** - Drop-in replacement for OpenAI's chat completions API
+- **Multi-Provider Support** - Access 50+ AI providers through one interface
+- **Persistent File Storage** - Upload files once, use in multiple requests
+
+### Which endpoint should I use?
+
+Choose based on your use case:
+
+**Use `/v3/llm/chat/completions` for:**
+- Conversational AI and chatbots
+- Text generation and completion
+- Vision/multimodal AI (analyzing images with LLMs)
+- Tool/function calling
+- Any use case requiring OpenAI-compatible format
+
+**Use `/v3/universal-ai` for:**
+- Text analysis (sentiment, moderation, AI detection)
+- OCR and document parsing
+- Image generation and analysis
+- Text embeddings
+- Translation
+
+See [Getting Started](introduction.mdx) for detailed endpoint comparison.
+
+### How does the model string format work?
+
+V3 uses a **model string** to specify what feature and provider to use:
+
+**Universal AI format:**
+```
+feature/subfeature/provider[/model]
+```
+
+Examples:
+- `text/moderation/openai`
+- `ocr/financial_parser/google`
+- `image/generation/openai/dall-e-3`
+
+**LLM format (simplified):**
+```
+provider/model
+```
+
+Examples:
+- `openai/gpt-4`
+- `anthropic/claude-3-5-sonnet-20241022`
+- `google/gemini-pro`
+
+See [Universal AI Getting Started](../how-to/universal-ai/getting-started.mdx) and [Chat Completions](../how-to/llm/chat-completions.mdx) for details.
+
+## Authentication & Access
+
+### How do I get an API key?
+
+1. Sign up at [app.edenai.run](https://app.edenai.run/)
+2. Navigate to your dashboard
+3. Generate an API token under "API Keys"
+4. Use it in the `Authorization` header: `Bearer YOUR_API_KEY`
+
+See [Authentication Guide](../how-to/authentication/bearer-token-auth.mdx) for details.
+
+### Can I use my own provider API keys?
+
+Yes! You can bypass Eden AI billing by providing your own provider API keys. This is useful for:
+- Using existing provider credits
+- Testing specific provider features
+- Cost optimization
+
+Contact support or check your dashboard for instructions on adding custom provider keys.
+
+### What are the rate limits?
+
+Rate limits vary by:
+- Your account tier
+- Provider being used
+- Specific feature
+
+Default limits are displayed in your dashboard. Rate limit headers are included in API responses:
+- `X-RateLimit-Limit` - Total requests allowed
+- `X-RateLimit-Remaining` - Requests remaining
+- `X-RateLimit-Reset` - Time when limit resets
+
+When rate limited, you'll receive a `429 Too Many Requests` response.
+
+### How much does it cost?
+
+Pricing is **pay-as-you-go** based on:
+- Provider used
+- Feature/model called
+- Volume of data processed
+
+Every API response includes a `cost` field showing the charge in USD for that request:
+
+```json
+{
+  "status": "success",
+  "cost": 0.0015,
+  "output": { ... }
+}
+```
+
+See [Monitor Usage and Costs](../how-to/cost-management/monitor-usage.mdx) for tracking and optimization.
+
+## File Handling
+
+### What file input methods are supported?
+
+V3 supports three methods:
+
+**1. File Upload (recommended for reuse):**
+```python
+# Upload once
+response = requests.post(
+    "https://api.edenai.run/v3/upload",
+    headers={"Authorization": "Bearer YOUR_API_KEY"},
+    files={"file": open("document.pdf", "rb")}
+)
+file_id = response.json()["file_id"]
+
+# Use multiple times
+payload = {"model": "ocr/financial_parser/google", "input": {"file": file_id}}
+```
+
+**2. File URL:**
+```python
+payload = {
+    "model": "ocr/financial_parser/google",
+    "input": {"file": "https://example.com/document.pdf"}
+}
+```
+
+**3. Base64 (inline):**
+```python
+payload = {
+    "model": "text/moderation/openai",
+    "input": {"text": "Sample text"}
+}
+```
+
+See [Upload Files](../how-to/upload/upload-files.mdx) for detailed guide.
+
+### How long are uploaded files stored?
+
+Files uploaded to `/v3/upload` are stored for **7 days** by default. After expiration:
+- Files are automatically deleted
+- File IDs become invalid
+- You'll need to re-upload
+
+The `expires_at` timestamp is included in upload responses:
+
+```json
+{
+  "file_id": "550e8400-e29b-41d4-a716-446655440000",
+  "filename": "document.pdf",
+  "bytes": 123456,
+  "created_at": "2025-12-26T10:00:00Z",
+  "expires_at": "2026-01-02T10:00:00Z"
+}
+```
+
+### What are the file size limits?
+
+Limits vary by feature and provider:
+
+| Feature Type | Typical Limit | Notes |
+|--------------|---------------|-------|
+| OCR | 100 MB | Some providers support larger files |
+| Image Analysis | 20 MB | JPEG, PNG, WebP, GIF |
+| LLM Vision | 20 MB | Provider-dependent |
+| Document Translation | 50 MB | PDF, DOCX, TXT |
+
+Exceeding limits returns a `413 Payload Too Large` error with specific limit information.
+
+### Which file formats are supported?
+
+**Images:**
+- JPEG, PNG, WebP, GIF
+- TIFF (OCR only)
+
+**Documents:**
+- PDF
+- DOCX, DOC
+- TXT, RTF
+
+**Audio:**
+- MP3, WAV (provider-dependent)
+
+Format support varies by provider. Check provider-specific documentation or use the [API Discovery](../how-to/discovery/explore-api.mdx) endpoint for details.
+
+## LLM Features
+
+### Why is streaming mandatory in V3?
+
+All LLM responses in V3 use **Server-Sent Events (SSE)** streaming to:
+- Reduce perceived latency
+- Provide real-time token generation
+- Match OpenAI's API behavior
+- Enable better UX for chat applications
+
+Even when `stream: false` is sent, responses are streamed. See [Streaming Responses](../how-to/llm/streaming.mdx) for implementation guide.
+
+### How do I send images to LLMs?
+
+V3 LLM supports multimodal inputs via message content arrays:
+
+```python
+payload = {
+    "model": "openai/gpt-4o",
+    "messages": [
+        {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": "What's in this image?"},
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": "https://example.com/image.jpg"
+                    }
+                }
+            ]
+        }
+    ]
+}
+```
+
+Supports:
+- Image URLs
+- Base64 data URLs (`data:image/jpeg;base64,...`)
+- Uploaded file UUIDs
+
+See [Working with Media Files](../how-to/llm/working-with-media.mdx) for complete guide.
+
+### Which providers support vision/multimodal?
+
+| Provider | Models | Image Support | File Support |
+|----------|--------|---------------|--------------|
+| OpenAI | gpt-4o, gpt-4-turbo | ✓ | ✓ |
+| Anthropic | claude-3-opus, claude-3-5-sonnet | ✓ | ✓ |
+| Google | gemini-1.5-pro, gemini-1.5-flash | ✓ | ✓ |
+| Mistral | pixtral-12b | ✓ | - |
+
+See [Vision Capabilities](../how-to/llm/vision-capabilities.mdx) for provider comparison.
+
+### Does V3 support tool/function calling?
+
+Yes! V3 supports OpenAI-compatible tool calling:
+
+```python
+payload = {
+    "model": "openai/gpt-4",
+    "messages": [...],
+    "tools": [
+        {
+            "type": "function",
+            "function": {
+                "name": "get_weather",
+                "description": "Get current weather",
+                "parameters": { ... }
+            }
+        }
+    ]
+}
+```
+
+Tool calling support varies by provider:
+- ✓ OpenAI (all GPT-4+ models)
+- ✓ Anthropic (Claude 3+)
+- ✓ Google (Gemini 1.5+)
+- ✓ Mistral (Large models)
+
+## Universal AI
+
+### How do I discover available features?
+
+Use the built-in API discovery endpoints:
+
+```python
+# List all features
+response = requests.get(
+    "https://api.edenai.run/v3/info",
+    headers={"Authorization": "Bearer YOUR_API_KEY"}
+)
+
+# Get feature details
+response = requests.get(
+    "https://api.edenai.run/v3/info/text/moderation",
+    headers={"Authorization": "Bearer YOUR_API_KEY"}
+)
+# Returns: providers, input schema, output schema
+```
+
+See [Explore the API](../how-to/discovery/explore-api.mdx) for details.
+
+### Can I use fallback providers?
+
+Not directly in V3's simplified model string format. However, you can implement fallback logic in your application:
+
+```python
+def call_with_fallback(primary_model, fallback_model, input_data):
+    try:
+        return call_universal_ai(primary_model, input_data)
+    except Exception as e:
+        print(f"Primary failed: {e}, trying fallback...")
+        return call_universal_ai(fallback_model, input_data)
+
+result = call_with_fallback(
+    "text/moderation/openai",
+    "text/moderation/google",
+    {"text": "Sample text"}
+)
+```
+
+### How do I optimize costs?
+
+**Best practices:**
+
+1. **Choose cost-effective providers:**
+   - Compare pricing in dashboard
+   - Check `cost` field in responses
+
+2. **Cache results when possible:**
+   - Many features (embeddings, moderation) have deterministic outputs
+   - Store results for identical inputs
+
+3. **Use appropriate models:**
+   - Don't use premium models for simple tasks
+   - Match model capability to task complexity
+
+4. **Batch processing:**
+   - Process multiple items in fewer API calls when supported
+
+5. **Monitor usage:**
+   - Track costs via [Monitor Usage](../how-to/cost-management/monitor-usage.mdx)
+   - Set up alerts in dashboard
+
+### I've been an Eden AI user for some time. Is the previous version going to disappear?
+
+Not yet. We'll continue supporting the previous version until the end of 2026. You can 
+find everything here [https://old-app.edenai.run](https://old-app.edenai.run)
+
+Also, you can find the documentation [here](https://old-docs.edenai.co)
+
+## Troubleshooting
+
+### 401 Unauthorized
+
+**Cause:** Invalid or missing API token
+
+**Solutions:**
+- Verify token is correct
+- Check `Authorization` header format: `Bearer YOUR_API_KEY`
+- Ensure token hasn't been revoked
+- Generate new token in dashboard
+
+```python
+# Correct format
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+```
+
+### 402 Payment Required - Insufficient Credits
+
+**Cause:** Account has insufficient credits
+
+**Solutions:**
+- Add credits in dashboard
+- Check current balance
+- Review cost per request in responses
+
+### 404 Not Found
+
+**Cause:** Invalid endpoint or model string
+
+**Solutions:**
+- Verify endpoint URL is correct
+- Check model string format matches pattern
+- Use `/v3/info` to discover available features
+- Ensure provider supports requested feature
+
+```python
+# Wrong
+"model": "openai/text-moderation"  # ❌ Invalid format
+
+# Correct
+"model": "text/moderation/openai"  # ✓
+```
+
+### 422 Validation Error
+
+**Cause:** Invalid request body or parameters
+
+**Common issues:**
+- Missing required fields
+- Invalid parameter types
+- File format not supported
+- Model string malformed
+
+**Solution:** Check error response for specific field errors:
+
+```json
+{
+  "detail": [
+    {
+      "loc": ["body", "input", "text"],
+      "msg": "field required",
+      "type": "value_error.missing"
+    }
+  ]
+}
+```
+
+### 429 Too Many Requests
+
+**Cause:** Rate limit exceeded
+
+**Solutions:**
+- Implement exponential backoff
+- Check `X-RateLimit-Reset` header
+- Upgrade account tier for higher limits
+- Distribute requests over time
+
+```python
+import time
+
+def call_with_retry(url, payload, max_retries=3):
+    for attempt in range(max_retries):
+        response = requests.post(url, json=payload, headers=headers)
+
+        if response.status_code == 429:
+            retry_after = int(response.headers.get('Retry-After', 60))
+            time.sleep(retry_after)
+            continue
+
+        return response.json()
+
+    raise Exception("Max retries exceeded")
+```
+
+### Invalid model string format
+
+**Cause:** Model string doesn't match expected pattern
+
+**For Universal AI:** Must be `feature/subfeature/provider[/model]`
+
+```python
+# Wrong
+"text-moderation-openai"  # ❌
+"openai/text/moderation"  # ❌
+
+# Correct
+"text/moderation/openai"  # ✓
+"text/moderation/openai/gpt-4"  # ✓
+```
+
+**For LLM:** Must be `provider/model`
+
+```python
+# Wrong
+"gpt-4"  # ❌
+"openai"  # ❌
+
+# Correct
+"openai/gpt-4"  # ✓
+```
+
+### Provider temporarily unavailable
+
+**Cause:** Upstream provider experiencing issues
+
+**Solutions:**
+- Check [Eden AI Status Page](https://app-edenai.instatus.com/)
+- Try alternative provider for same feature
+- Implement retry logic with exponential backoff
+- Use error response for specific provider error details
+
+## Next Steps
+
+- [Getting Started Guide](introduction.mdx)
+- [Authentication Setup](../how-to/authentication/bearer-token-auth.mdx)
+- [Universal AI Overview](../how-to/universal-ai/getting-started.mdx)
+- [LLM Chat Completions](../how-to/llm/chat-completions.mdx)
+- [Monitor Costs](../how-to/cost-management/monitor-usage.mdx)

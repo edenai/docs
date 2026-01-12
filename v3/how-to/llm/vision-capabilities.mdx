@@ -1,0 +1,804 @@
+# Vision Capabilities
+
+Enable LLMs to see and understand images with vision-capable models.
+
+## Overview
+
+Vision-capable LLMs can analyze images and answer questions about visual content. This enables:
+- **Image description** - Generate detailed descriptions of images
+- **Visual Q&A** - Answer questions about image content
+- **OCR/Text extraction** - Read text from images
+- **Object detection** - Identify objects and entities
+- **Scene understanding** - Understand context and relationships
+- **Chart analysis** - Interpret graphs and visualizations
+
+Eden AI V3 provides vision capabilities through multiple providers, each with unique strengths.
+
+## Vision-Capable Models
+
+| Provider | Model | Strengths | Max Image Size | Languages |
+|----------|-------|-----------|----------------|-----------|
+| **OpenAI** | gpt-4o | Fast, accurate, multi-image | 20 MB | 50+ |
+| **OpenAI** | gpt-4-turbo | High quality analysis | 20 MB | 50+ |
+| **Anthropic** | claude-3-5-sonnet-20241022 | Excellent reasoning, documents | 5 MB | 100+ |
+| **Anthropic** | claude-3-opus-20240229 | Superior accuracy | 5 MB | 100+ |
+| **Google** | gemini-1.5-pro | Long context, large files | 20 MB | 100+ |
+| **Google** | gemini-1.5-flash | Fast, cost-effective | 20 MB | 100+ |
+| **Mistral** | pixtral-12b | Efficient, European | 10 MB | 50+ |
+
+## Basic Image Analysis
+
+### Simple Image Description
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import requests
+
+    url = "https://api.edenai.run/v3/llm/chat/completions"
+    headers = {
+        "Authorization": "Bearer YOUR_API_KEY",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "model": "openai/gpt-4o",
+        "messages": [
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": "Describe this image in detail."
+                    },
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": "https://example.com/landscape.jpg"
+                        }
+                    }
+                ]
+            }
+        ],
+        "stream": True
+    }
+
+    response = requests.post(url, headers=headers, json=payload, stream=True)
+
+    for line in response.iter_lines():
+        if line:
+            line_str = line.decode('utf-8')
+            if line_str.startswith('data: '):
+                data = line_str[6:]
+                if data != '[DONE]':
+                    print(data)
+    ```
+  </CodeBlock>
+
+  <CodeBlock title="JavaScript">
+    ```javascript
+    const url = 'https://api.edenai.run/v3/llm/chat/completions';
+    const headers = {
+      'Authorization': 'Bearer YOUR_API_KEY',
+      'Content-Type': 'application/json'
+    };
+
+    const payload = {
+      model: 'openai/gpt-4o',
+      messages: [
+        {
+          role: 'user',
+          content: [
+            {type: 'text', text: 'Describe this image in detail.'},
+            {
+              type: 'image_url',
+              image_url: {url: 'https://example.com/landscape.jpg'}
+            }
+          ]
+        }
+      ],
+      stream: true
+    };
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify(payload)
+    });
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+
+    while (true) {
+      const {done, value} = await reader.read();
+      if (done) break;
+      console.log(decoder.decode(value));
+    }
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+### Visual Question Answering
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import requests
+    payload = {
+        "model": "anthropic/claude-3-5-sonnet-20241022",
+        "messages": [
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": "How many people are in this photo? What are they doing?"
+                    },
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": "https://example.com/group-photo.jpg"
+                        }
+                    }
+                ]
+            }
+        ],
+        "stream": True,
+        "temperature": 0.3  # Lower for factual answers
+    }
+
+    response = requests.post(url, headers=headers, json=payload, stream=True)
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Advanced Vision Use Cases
+
+### OCR and Text Extraction
+
+Extract text from images with high accuracy:
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import requests
+
+    url = "https://api.edenai.run/v3/llm/chat/completions"
+    headers = {
+        "Authorization": "Bearer YOUR_API_KEY",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "model": "google/gemini-1.5-flash",
+        "messages": [
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": "Extract all text from this image exactly as it appears. Preserve formatting and layout."
+                    },
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": "https://example.com/document-scan.jpg"
+                        }
+                    }
+                ]
+            }
+        ],
+        "stream": True,
+        "temperature": 0.1  # Very low for accurate OCR
+    }
+
+    response = requests.post(url, headers=headers, json=payload, stream=True)
+
+    extracted_text = ""
+    for line in response.iter_lines():
+        if line:
+            line_str = line.decode('utf-8')
+            if line_str.startswith('data: '):
+                data = line_str[6:]
+                if data != '[DONE]':
+                    import json
+                    chunk = json.loads(data)
+                    content = chunk.get('choices', [{}])[0].get('delta', {}).get('content', '')
+                    extracted_text += content
+
+    print("Extracted text:", extracted_text)
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+### Object and Entity Detection
+
+Identify objects, brands, and entities:
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import requests
+    payload = {
+        "model": "openai/gpt-4o",
+        "messages": [
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": "List all objects visible in this image. For each object, provide: name, position (left/right/center), approximate size, and color."
+                    },
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": "https://example.com/room.jpg"
+                        }
+                    }
+                ]
+            }
+        ],
+        "stream": True
+    }
+
+    response = requests.post(url, headers=headers, json=payload, stream=True)
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+### Chart and Graph Analysis
+
+Interpret data visualizations:
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import requests
+
+    url = "https://api.edenai.run/v3/llm/chat/completions"
+    headers = {
+        "Authorization": "Bearer YOUR_API_KEY",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "model": "anthropic/claude-3-opus-20240229",
+        "messages": [
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": """Analyze this chart and provide:
+                        1. Chart type and what it represents
+                        2. Key data points and trends
+                        3. Notable patterns or anomalies
+                        4. Three actionable insights
+                        5. Recommendations based on the data"""
+                    },
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": "https://example.com/sales-graph.png"
+                        }
+                    }
+                ]
+            }
+        ],
+        "stream": True,
+        "temperature": 0.4,
+        "max_tokens": 800
+    }
+
+    response = requests.post(url, headers=headers, json=payload, stream=True)
+
+    for line in response.iter_lines():
+        if line:
+            print(line.decode('utf-8'))
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+### Screenshot Analysis
+
+Debug UI issues or analyze interfaces:
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import requests
+    payload = {
+        "model": "openai/gpt-4o",
+        "messages": [
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": """This is a screenshot of a web application. Analyze:
+                        1. All UI components (buttons, forms, navigation)
+                        2. Layout structure and hierarchy
+                        3. Accessibility issues (contrast, sizing)
+                        4. UX improvements
+                        5. Any visible errors or bugs"""
+                    },
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": "https://example.com/app-screenshot.png"
+                        }
+                    }
+                ]
+            }
+        ],
+        "stream": True,
+        "max_tokens": 1000
+    }
+
+    response = requests.post(url, headers=headers, json=payload, stream=True)
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+### Logo and Brand Detection
+
+Identify brands and logos:
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import requests
+    payload = {
+        "model": "google/gemini-1.5-pro",
+        "messages": [
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": "Identify all brands and logos visible in this image. For each, provide the brand name and position in the image."
+                    },
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": "https://example.com/storefront.jpg"
+                        }
+                    }
+                ]
+            }
+        ],
+        "stream": True
+    }
+
+    response = requests.post(url, headers=headers, json=payload, stream=True)
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Multi-Image Analysis
+
+Compare and analyze multiple images:
+
+### Before/After Comparison
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import requests
+
+    url = "https://api.edenai.run/v3/llm/chat/completions"
+    headers = {
+        "Authorization": "Bearer YOUR_API_KEY",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "model": "openai/gpt-4o",
+        "messages": [
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": "Compare these before and after images. List all differences in detail."
+                    },
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": "https://example.com/before.jpg"
+                        }
+                    },
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": "https://example.com/after.jpg"
+                        }
+                    }
+                ]
+            }
+        ],
+        "stream": True
+    }
+
+    response = requests.post(url, headers=headers, json=payload, stream=True)
+
+    for line in response.iter_lines():
+        if line:
+            print(line.decode('utf-8'))
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+### Multi-Image Context
+
+Analyze related images together:
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import requests
+    payload = {
+        "model": "anthropic/claude-3-5-sonnet-20241022",
+        "messages": [
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": "These are sequential steps of a process. Describe each step and create a numbered guide."
+                    },
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": "https://example.com/step1.jpg"}
+                    },
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": "https://example.com/step2.jpg"}
+                    },
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": "https://example.com/step3.jpg"}
+                    }
+                ]
+            }
+        ],
+        "stream": True,
+        "max_tokens": 1200
+    }
+
+    response = requests.post(url, headers=headers, json=payload, stream=True)
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Provider Comparison
+
+### OpenAI (GPT-4o, GPT-4-turbo)
+
+**Strengths:**
+- Fast processing
+- Excellent general-purpose vision
+- Strong multi-image capabilities
+- Reliable OCR
+- Good detail detection
+
+**Best for:**
+- Real-time applications
+- Multi-image analysis
+- General image understanding
+- Screenshot analysis
+
+**Example:**
+```python
+"model": "openai/gpt-4o"
+```
+
+### Anthropic (Claude 3 Family)
+
+**Strengths:**
+- Superior reasoning about images
+- Excellent document analysis
+- Strong at complex visual tasks
+- Detailed, thoughtful responses
+- Multi-language support
+
+**Best for:**
+- Document processing
+- Complex reasoning tasks
+- Detailed analysis
+- Academic/research content
+
+**Example:**
+```python
+"model": "anthropic/claude-3-5-sonnet-20241022"
+```
+
+### Google (Gemini 1.5)
+
+**Strengths:**
+- Extremely long context (up to 2GB)
+- Fast processing (Flash variant)
+- Strong multilingual capabilities
+- Excellent for large documents
+- Cost-effective (Flash)
+
+**Best for:**
+- Large document processing
+- Multi-page PDFs
+- Video frame analysis
+- High-volume applications
+
+**Example:**
+```python
+"model": "google/gemini-1.5-flash"
+```
+
+### Mistral (Pixtral)
+
+**Strengths:**
+- European data residency
+- Efficient processing
+- Good price/performance
+- Privacy-focused
+
+**Best for:**
+- European compliance needs
+- Cost-sensitive applications
+- Privacy requirements
+
+**Example:**
+```python
+"model": "mistral/pixtral-12b"
+```
+
+## Image Input Formats
+
+### HTTP(S) URLs
+
+Simplest method for accessible images:
+
+```python
+{
+    "type": "image_url",
+    "image_url": {
+        "url": "https://example.com/image.jpg"
+    }
+}
+```
+
+### Base64 Data URLs
+
+For inline or private images:
+
+```python
+import base64
+
+with open("image.jpg", "rb") as f:
+    image_data = base64.b64encode(f.read()).decode('utf-8')
+
+{
+    "type": "image_url",
+    "image_url": {
+        "url": f"data:image/jpeg;base64,{image_data}"
+    }
+}
+```
+
+### Uploaded File UUIDs
+
+For reusable images:
+
+```python
+# Upload first
+upload_response = requests.post(
+    "https://api.edenai.run/v3/upload",
+    headers={"Authorization": "Bearer YOUR_API_KEY"},
+    files={"file": open("image.jpg", "rb")}
+)
+file_id = upload_response.json()["file_id"]
+
+# Use in vision request
+{
+    "type": "file",
+    "file": {"file_id": file_id}
+}
+```
+
+## Best Practices
+
+### Prompting for Vision
+
+**Be specific about what you want:**
+
+```python
+# Vague
+"What's in this image?"
+
+# Specific
+"List all furniture items visible in this room photo, including their approximate positions and colors."
+```
+
+**Request structured output:**
+
+```python
+"Extract the following from this business card and format as JSON:
+- name
+- title
+- company
+- email
+- phone"
+```
+
+**Provide context:**
+
+```python
+"This is a medical X-ray of a chest. Identify any abnormalities or concerning features."
+```
+
+### Image Quality Tips
+
+**Optimize resolution:**
+- Use high-quality images (min 1024px on longest side)
+- Avoid excessive compression
+- Ensure text is legible
+
+**Proper lighting:**
+- Well-lit images work best
+- Avoid glare and shadows
+- Ensure good contrast
+
+**Clear framing:**
+- Center subjects of interest
+- Avoid clutter when possible
+- Crop to relevant content
+
+### Temperature Settings
+
+Adjust temperature based on task:
+
+```python
+# Factual tasks (OCR, counting, detection)
+"temperature": 0.1
+
+# General description
+"temperature": 0.5
+
+# Creative interpretation
+"temperature": 0.8
+```
+
+### Cost Optimization
+
+**Choose appropriate models:**
+- Use `gemini-1.5-flash` for high-volume tasks
+- Reserve `claude-3-opus` for complex analysis
+- Use `gpt-4o` for balanced performance
+
+**Image size optimization:**
+- Resize images to minimum needed resolution
+- Compress without losing critical details
+- Use URLs instead of base64 when possible
+
+## Error Handling
+
+### Common Vision Errors
+
+**Unsupported image format:**
+```json
+{
+  "error": {
+    "code": "unsupported_format",
+    "message": "Image format .bmp is not supported"
+  }
+}
+```
+
+**Image too large:**
+```json
+{
+  "error": {
+    "code": "image_too_large",
+    "message": "Image size exceeds 20 MB limit for this provider"
+  }
+}
+```
+
+**Invalid image data:**
+```json
+{
+  "error": {
+    "code": "invalid_image",
+    "message": "Unable to process image data"
+  }
+}
+```
+
+### Handling Vision Errors
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import requests
+    from PIL import Image
+    import io
+
+    def resize_if_needed(image_path, max_size_mb=10):
+        """Resize image if it exceeds size limit."""
+        with open(image_path, 'rb') as f:
+            size_mb = len(f.read()) / (1024 * 1024)
+
+        if size_mb > max_size_mb:
+            img = Image.open(image_path)
+            # Reduce quality
+            output = io.BytesIO()
+            img.save(output, format='JPEG', quality=85, optimize=True)
+            return output.getvalue()
+
+        with open(image_path, 'rb') as f:
+            return f.read()
+
+    def analyze_image_with_retry(image_path, prompt):
+        """Analyze image with automatic retry and resizing."""
+        url = "https://api.edenai.run/v3/llm/chat/completions"
+        headers = {
+            "Authorization": "Bearer YOUR_API_KEY",
+            "Content-Type": "application/json"
+        }
+
+        try:
+            # Try with original image
+            payload = {
+                "model": "openai/gpt-4o",
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": prompt},
+                            {
+                                "type": "image_url",
+                                "image_url": {"url": f"file://{image_path}"}
+                            }
+                        ]
+                    }
+                ],
+                "stream": True
+            }
+
+            response = requests.post(url, headers=headers, json=payload, stream=True)
+            response.raise_for_status()
+            return response
+
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code == 413:  # Image too large
+                print("Image too large, resizing...")
+                resized = resize_if_needed(image_path)
+                # Retry with resized image
+                # ... implement retry logic
+            else:
+                raise
+
+    # Usage
+    response = analyze_image_with_retry(
+        "large-image.jpg",
+        "Describe this image in detail"
+    )
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Supported Image Formats
+
+| Format | Extension | OpenAI | Anthropic | Google | Mistral |
+|--------|-----------|--------|-----------|--------|---------|
+| JPEG | .jpg, .jpeg | ✓ | ✓ | ✓ | ✓ |
+| PNG | .png | ✓ | ✓ | ✓ | ✓ |
+| WebP | .webp | ✓ | ✓ | ✓ | ✓ |
+| GIF | .gif | ✓ | ✓ | ✓ | - |
+
+## Next Steps
+
+- [Working with Media Files](working-with-media.mdx) - Complete media guide
+- [File Attachments](file-attachments.mdx) - Handle documents and PDFs
+- [Chat Completions](chat-completions.mdx) - Core LLM features
+- [Streaming Responses](streaming.mdx) - Handle SSE streams
+- [Upload Files](../../how-to/upload/upload-files.mdx) - File management

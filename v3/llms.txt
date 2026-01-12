@@ -1,0 +1,2072 @@
+# Eden AI V3 API - LLM-Optimized Documentation
+
+> This documentation is optimized for LLM consumption and provides comprehensive information about the Eden AI V3 API - a unified, simplified interface for accessing AI capabilities.
+
+## Base URL
+```
+https://api.edenai.run/v3
+```
+
+## Authentication
+All V3 API requests require JWT Bearer token authentication:
+
+```
+Authorization: Bearer <your_jwt_token>
+```
+
+Get your API token at: https://app.edenai.run/
+
+## Rate Limiting
+- Default: 7 requests per second
+- Configurable per user/feature
+- Returns HTTP 429 when exceeded
+
+## V3 API Overview
+
+The V3 API provides a **unified, simplified interface** with just 4 main endpoint groups:
+
+1. **LLM** (`/v3/llm/`) - Chat completions with streaming
+2. **Universal AI** (`/v3/universal-ai`) - Single endpoint for all non-LLM features
+3. **Upload** (`/v3/upload`) - Persistent file storage
+4. **Info** (`/v3/info/`) - Feature and provider discovery
+
+### Key V3 Advantages
+- **Unified endpoints** - 4 main endpoints vs 26+ in V2
+- **Consistent responses** - Standardized response format across all features
+- **Better file management** - Persistent file storage with `/v3/upload`
+- **Discovery API** - Explore available features via `/v3/info/`
+- **Always streaming LLM** - Real-time responses for better UX
+
+---
+
+## 1. LLM Endpoint
+
+### POST /v3/llm/chat/completions
+
+OpenAI-compatible chat completions endpoint. **Always returns Server-Sent Events (SSE) streaming** for real-time responses.
+
+#### Request Format
+
+```json
+{
+  "model": "openai/gpt-4",
+  "messages": [
+    {"role": "system", "content": "You are a helpful assistant."},
+    {"role": "user", "content": "Hello!"}
+  ],
+
+  // Optional parameters
+  "temperature": 0.7,
+  "top_p": 1.0,
+  "max_tokens": 1000,
+  "frequency_penalty": 0.0,
+  "presence_penalty": 0.0,
+  "stop": ["END"],
+  "seed": 42,
+  "logprobs": false,
+  "tools": [],
+  "tool_choice": "auto",
+  "user_provided_api_key": null
+}
+```
+
+#### Model Format
+```
+provider/model_name
+```
+
+**Examples:**
+- `openai/gpt-4`
+- `openai/gpt-4-turbo`
+- `openai/gpt-4o`
+- `openai/gpt-4o-mini`
+- `anthropic/claude-3-opus`
+- `anthropic/claude-3-sonnet`
+- `anthropic/claude-3-5-sonnet`
+- `google/gemini-pro`
+- `google/gemini-1.5-pro`
+- `cohere/command-r-plus`
+- `mistral/mistral-large`
+
+#### Message Content Types
+
+**Simple text message:**
+```json
+{"role": "user", "content": "Hello"}
+```
+
+**Message with image URL:**
+```json
+{
+  "role": "user",
+  "content": [
+    {"type": "text", "text": "What's in this image?"},
+    {
+      "type": "image_url",
+      "image_url": {
+        "url": "https://example.com/image.jpg"
+      }
+    }
+  ]
+}
+```
+
+**Message with base64 image:**
+```json
+{
+  "role": "user",
+  "content": [
+    {"type": "text", "text": "Describe this image"},
+    {
+      "type": "image_url",
+      "image_url": {
+        "url": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAA..."
+      }
+    }
+  ]
+}
+```
+
+**Message with file (from /v3/upload):**
+```json
+{
+  "role": "user",
+  "content": [
+    {"type": "text", "text": "Analyze this PDF"},
+    {
+      "type": "file",
+      "file": {
+        "file_id": "550e8400-e29b-41d4-a716-446655440000"
+      }
+    }
+  ]
+}
+```
+
+**Message with HTTP file URL:**
+```json
+{
+  "role": "user",
+  "content": [
+    {"type": "text", "text": "Summarize this document"},
+    {
+      "type": "file",
+      "file": {
+        "url": "https://example.com/document.pdf"
+      }
+    }
+  ]
+}
+```
+
+#### Response Format (SSE Stream)
+
+The endpoint always streams responses using Server-Sent Events:
+
+```
+Content-Type: text/event-stream
+
+data: {"id":"chatcmpl-abc123","object":"chat.completion.chunk","created":1677652288,"model":"gpt-4","choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-abc123","object":"chat.completion.chunk","created":1677652288,"model":"gpt-4","choices":[{"index":0,"delta":{"content":"Hello"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-abc123","object":"chat.completion.chunk","created":1677652288,"model":"gpt-4","choices":[{"index":0,"delta":{"content":"!"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-abc123","object":"chat.completion.chunk","created":1677652288,"model":"gpt-4","choices":[{"index":0,"delta":{"content":" How"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-abc123","object":"chat.completion.chunk","created":1677652288,"model":"gpt-4","choices":[{"index":0,"delta":{"content":" can"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-abc123","object":"chat.completion.chunk","created":1677652288,"model":"gpt-4","choices":[{"index":0,"delta":{"content":" I"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-abc123","object":"chat.completion.chunk","created":1677652288,"model":"gpt-4","choices":[{"index":0,"delta":{"content":" help"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-abc123","object":"chat.completion.chunk","created":1677652288,"model":"gpt-4","choices":[{"index":0,"delta":{"content":" you"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-abc123","object":"chat.completion.chunk","created":1677652288,"model":"gpt-4","choices":[{"index":0,"delta":{"content":"?"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-abc123","object":"chat.completion.chunk","created":1677652288,"model":"gpt-4","choices":[{"index":0,"delta":{},"finish_reason":"stop"}],"usage":{"prompt_tokens":15,"completion_tokens":9,"total_tokens":24}}
+
+data: [DONE]
+```
+
+#### Example Requests
+
+**Basic chat:**
+```bash
+curl -X POST https://api.edenai.run/v3/llm/chat/completions \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-4",
+    "messages": [
+      {"role": "user", "content": "Explain quantum computing in simple terms"}
+    ],
+    "temperature": 0.7,
+    "max_tokens": 500
+  }'
+```
+
+**With system message:**
+```json
+{
+  "model": "anthropic/claude-3-sonnet",
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a helpful AI assistant specialized in explaining complex topics simply."
+    },
+    {
+      "role": "user",
+      "content": "What is machine learning?"
+    }
+  ],
+  "temperature": 0.8,
+  "max_tokens": 1000
+}
+```
+
+**Multi-turn conversation:**
+```json
+{
+  "model": "openai/gpt-4",
+  "messages": [
+    {"role": "system", "content": "You are a coding assistant."},
+    {"role": "user", "content": "How do I reverse a string in Python?"},
+    {"role": "assistant", "content": "You can reverse a string using slicing: `text[::-1]`"},
+    {"role": "user", "content": "Can you show me a function?"}
+  ]
+}
+```
+
+**Vision with image:**
+```json
+{
+  "model": "openai/gpt-4o",
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {"type": "text", "text": "What objects are in this image?"},
+        {
+          "type": "image_url",
+          "image_url": {
+            "url": "https://example.com/photo.jpg"
+          }
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Document analysis with uploaded file:**
+```json
+{
+  "model": "anthropic/claude-3-opus",
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {"type": "text", "text": "Summarize this PDF in 3 bullet points"},
+        {
+          "type": "file",
+          "file": {
+            "file_id": "550e8400-e29b-41d4-a716-446655440000"
+          }
+        }
+      ]
+    }
+  ],
+  "max_tokens": 500
+}
+```
+
+**Using your own API key:**
+```json
+{
+  "model": "openai/gpt-4",
+  "messages": [{"role": "user", "content": "Hello"}],
+  "user_provided_api_key": "sk-..."
+}
+```
+
+### GET /v3/llm/models
+
+List all available LLM models.
+
+**Response:**
+```json
+{
+  "models": [
+    {
+      "provider": "openai",
+      "models": [
+        "gpt-4",
+        "gpt-4-turbo",
+        "gpt-4o",
+        "gpt-4o-mini",
+        "gpt-3.5-turbo"
+      ]
+    },
+    {
+      "provider": "anthropic",
+      "models": [
+        "claude-3-opus",
+        "claude-3-sonnet",
+        "claude-3-haiku",
+        "claude-3-5-sonnet"
+      ]
+    },
+    {
+      "provider": "google",
+      "models": [
+        "gemini-pro",
+        "gemini-ultra",
+        "gemini-1.5-pro",
+        "gemini-1.5-flash"
+      ]
+    }
+  ]
+}
+```
+
+---
+
+## 2. Universal AI Endpoint
+
+### POST /v3/universal-ai
+
+**Single endpoint for ALL non-LLM AI features.** Provides unified interface for text processing, OCR, image processing, translation, and audio.
+
+#### Model String Format
+
+The model string encodes feature, subfeature, provider, and optionally a specific model:
+
+```
+{feature}/{subfeature}/{provider}[/{model}]
+```
+
+**Examples:**
+- `text/ai_detection/openai`
+- `text/embeddings/openai/text-embedding-3-large`
+- `ocr/ocr/google`
+- `image/generation/openai/dall-e-3`
+- `image/embeddings/openai/clip-vit-large`
+- `translation/document_translation/google`
+- `audio/text_to_speech/google`
+
+#### Request Structure
+
+```json
+{
+  "model": "{feature}/{subfeature}/{provider}[/{model}]",
+  "input": {
+    // Feature-specific input parameters
+  },
+  "provider_params": {
+    // Optional provider-specific parameters
+  }
+}
+```
+
+#### Unified Response Format
+
+**Success:**
+```json
+{
+  "status": "success",
+  "cost": "0.001",
+  "provider": "openai",
+  "feature": "text",
+  "subfeature": "ai_detection",
+  "output": {
+    // Feature-specific output
+  },
+  "error": null,
+  "original_response": null
+}
+```
+
+**Failure:**
+```json
+{
+  "status": "fail",
+  "cost": "0.001",
+  "provider": "openai",
+  "feature": "text",
+  "subfeature": "ai_detection",
+  "output": null,
+  "error": {
+    "message": "Provider error details",
+    "error_code": "PROVIDER_ERROR"
+  }
+}
+```
+
+---
+
+### Text Features
+
+#### AI Detection
+Detect if text is AI-generated.
+
+**Request:**
+```json
+{
+  "model": "text/ai_detection/openai",
+  "input": {
+    "text": "This is the text to analyze for AI generation."
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "cost": "0.001",
+  "provider": "openai",
+  "feature": "text",
+  "subfeature": "ai_detection",
+  "output": {
+    "ai_score": 0.85,
+    "is_ai_generated": true,
+    "confidence": "high"
+  }
+}
+```
+
+#### Content Moderation
+Moderate content for harmful material.
+
+**Request:**
+```json
+{
+  "model": "text/moderation/openai",
+  "input": {
+    "text": "Content to moderate"
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "cost": "0.0005",
+  "provider": "openai",
+  "feature": "text",
+  "subfeature": "moderation",
+  "output": {
+    "flagged": false,
+    "categories": {
+      "sexual": false,
+      "hate": false,
+      "violence": false,
+      "self-harm": false,
+      "harassment": false
+    },
+    "category_scores": {
+      "sexual": 0.001,
+      "hate": 0.002,
+      "violence": 0.001,
+      "self-harm": 0.0,
+      "harassment": 0.003
+    }
+  }
+}
+```
+
+#### Text Embeddings
+Generate text embeddings for semantic search.
+
+**Request (single text):**
+```json
+{
+  "model": "text/embeddings/openai/text-embedding-3-large",
+  "input": {
+    "texts": ["First text to embed"],
+    "dimensions": 1536
+  }
+}
+```
+
+**Request (multiple texts):**
+```json
+{
+  "model": "text/embeddings/openai/text-embedding-3-large",
+  "input": {
+    "texts": [
+      "First text to embed",
+      "Second text to embed",
+      "Third text to embed"
+    ],
+    "dimensions": 1536
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "cost": "0.002",
+  "provider": "openai",
+  "feature": "text",
+  "subfeature": "embeddings",
+  "output": {
+    "embeddings": [
+      [0.023, -0.015, 0.102, ...],  // 1536-dimensional vector
+      [0.019, -0.012, 0.098, ...],
+      [0.021, -0.013, 0.100, ...]
+    ],
+    "model": "text-embedding-3-large"
+  }
+}
+```
+
+#### Spell Check
+Check spelling and grammar.
+
+**Request:**
+```json
+{
+  "model": "text/spell_check/microsoft",
+  "input": {
+    "text": "Ths is a tset with speling errors",
+    "language": "en"
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "cost": "0.001",
+  "provider": "microsoft",
+  "feature": "text",
+  "subfeature": "spell_check",
+  "output": {
+    "corrections": [
+      {
+        "original": "Ths",
+        "suggestion": "This",
+        "type": "spelling",
+        "offset": 0,
+        "length": 3
+      },
+      {
+        "original": "tset",
+        "suggestion": "test",
+        "type": "spelling",
+        "offset": 8,
+        "length": 4
+      },
+      {
+        "original": "speling",
+        "suggestion": "spelling",
+        "type": "spelling",
+        "offset": 18,
+        "length": 7
+      }
+    ]
+  }
+}
+```
+
+#### Topic Extraction
+Extract topics from text.
+
+**Request:**
+```json
+{
+  "model": "text/topic_extraction/google",
+  "input": {
+    "text": "Climate change is accelerating. Renewable energy sources like solar and wind power are becoming more affordable. Governments worldwide are implementing new environmental policies."
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "cost": "0.002",
+  "provider": "google",
+  "feature": "text",
+  "subfeature": "topic_extraction",
+  "output": {
+    "topics": [
+      {"name": "Climate Change", "score": 0.95},
+      {"name": "Renewable Energy", "score": 0.88},
+      {"name": "Environmental Policy", "score": 0.72}
+    ]
+  }
+}
+```
+
+#### Named Entity Recognition
+Extract named entities (people, places, organizations).
+
+**Request:**
+```json
+{
+  "model": "text/named_entity_recognition/google",
+  "input": {
+    "text": "Apple Inc. CEO Tim Cook announced new products in Cupertino on December 15, 2023."
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "cost": "0.001",
+  "provider": "google",
+  "feature": "text",
+  "subfeature": "named_entity_recognition",
+  "output": {
+    "entities": [
+      {
+        "text": "Apple Inc.",
+        "type": "ORGANIZATION",
+        "score": 0.99,
+        "offset": 0
+      },
+      {
+        "text": "Tim Cook",
+        "type": "PERSON",
+        "score": 0.98,
+        "offset": 15
+      },
+      {
+        "text": "Cupertino",
+        "type": "LOCATION",
+        "score": 0.95,
+        "offset": 48
+      },
+      {
+        "text": "December 15, 2023",
+        "type": "DATE",
+        "score": 0.99,
+        "offset": 61
+      }
+    ]
+  }
+}
+```
+
+#### Plagiarism Detection
+Detect plagiarism in text.
+
+**Request:**
+```json
+{
+  "model": "text/plagia_detection/copyscape",
+  "input": {
+    "text": "Long text to check for plagiarism..."
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "cost": "0.005",
+  "provider": "copyscape",
+  "feature": "text",
+  "subfeature": "plagia_detection",
+  "output": {
+    "plagiarism_detected": true,
+    "matches": [
+      {
+        "url": "https://example.com/original-article",
+        "similarity": 0.92,
+        "matched_words": 150,
+        "total_words": 200
+      }
+    ]
+  }
+}
+```
+
+---
+
+### OCR Features
+
+#### Basic OCR
+Extract text from images and PDFs.
+
+**Request (with file_id from /v3/upload):**
+```json
+{
+  "model": "ocr/ocr/google",
+  "input": {
+    "file": "550e8400-e29b-41d4-a716-446655440000",
+    "language": "en"
+  }
+}
+```
+
+**Request (with URL):**
+```json
+{
+  "model": "ocr/ocr/amazon",
+  "input": {
+    "file": "https://example.com/document.pdf",
+    "language": "en"
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "cost": "0.003",
+  "provider": "google",
+  "feature": "ocr",
+  "subfeature": "ocr",
+  "output": {
+    "text": "Extracted text from the document...",
+    "confidence": 0.95,
+    "pages": [
+      {
+        "page_number": 1,
+        "text": "Page 1 content...",
+        "confidence": 0.96,
+        "bounding_boxes": [
+          {
+            "text": "First line",
+            "box": {"x": 100, "y": 50, "width": 200, "height": 30}
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+#### Identity Parser
+Extract information from ID documents.
+
+**Request:**
+```json
+{
+  "model": "ocr/identity_parser/mindee",
+  "input": {
+    "file": "550e8400-e29b-41d4-a716-446655440000"
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "cost": "0.008",
+  "provider": "mindee",
+  "feature": "ocr",
+  "subfeature": "identity_parser",
+  "output": {
+    "document_type": "passport",
+    "first_name": "John",
+    "last_name": "Doe",
+    "document_number": "X12345678",
+    "birth_date": "1990-01-15",
+    "expiry_date": "2030-01-15",
+    "nationality": "USA",
+    "gender": "M",
+    "mrz": "P<USADOE<<JOHN<<<<<<<<<<<<<<<<<<<<<<<<<<<...",
+    "confidence": 0.98
+  }
+}
+```
+
+#### Financial Parser
+Parse invoices and receipts.
+
+**Request:**
+```json
+{
+  "model": "ocr/financial_parser/mindee",
+  "input": {
+    "file": "550e8400-e29b-41d4-a716-446655440000"
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "cost": "0.010",
+  "provider": "mindee",
+  "feature": "ocr",
+  "subfeature": "financial_parser",
+  "output": {
+    "invoice_number": "INV-2023-001",
+    "invoice_date": "2023-12-15",
+    "due_date": "2024-01-15",
+    "total_amount": 1250.00,
+    "tax_amount": 125.00,
+    "currency": "USD",
+    "vendor": {
+      "name": "Acme Corporation",
+      "address": "123 Main Street, City, State 12345",
+      "tax_id": "12-3456789",
+      "phone": "+1-555-1234"
+    },
+    "customer": {
+      "name": "John Doe",
+      "address": "456 Oak Ave, Town, State 67890"
+    },
+    "line_items": [
+      {
+        "description": "Consulting Services",
+        "quantity": 10,
+        "unit_price": 100.00,
+        "total": 1000.00
+      },
+      {
+        "description": "Software License",
+        "quantity": 1,
+        "unit_price": 125.00,
+        "total": 125.00
+      }
+    ]
+  }
+}
+```
+
+#### Resume Parser
+Extract information from resumes/CVs.
+
+**Request:**
+```json
+{
+  "model": "ocr/resume_parser/affinda",
+  "input": {
+    "file": "550e8400-e29b-41d4-a716-446655440000"
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "cost": "0.007",
+  "provider": "affinda",
+  "feature": "ocr",
+  "subfeature": "resume_parser",
+  "output": {
+    "name": "Jane Smith",
+    "email": "jane.smith@example.com",
+    "phone": "+1-555-5678",
+    "location": "San Francisco, CA",
+    "education": [
+      {
+        "degree": "Bachelor of Science in Computer Science",
+        "institution": "Massachusetts Institute of Technology",
+        "graduation_date": "2015-05",
+        "gpa": "3.9"
+      }
+    ],
+    "work_experience": [
+      {
+        "title": "Senior Software Engineer",
+        "company": "Google",
+        "location": "Mountain View, CA",
+        "start_date": "2018-06",
+        "end_date": "2023-12",
+        "description": "Led development of distributed systems..."
+      },
+      {
+        "title": "Software Engineer",
+        "company": "Facebook",
+        "location": "Menlo Park, CA",
+        "start_date": "2015-06",
+        "end_date": "2018-05",
+        "description": "Developed features for News Feed..."
+      }
+    ],
+    "skills": [
+      "Python", "JavaScript", "Go", "React", "AWS",
+      "Docker", "Kubernetes", "Machine Learning"
+    ],
+    "certifications": [
+      {
+        "name": "AWS Certified Solutions Architect",
+        "date": "2020-08"
+      }
+    ]
+  }
+}
+```
+
+---
+
+### Image Features
+
+#### Image Generation
+Generate images from text prompts.
+
+**Request:**
+```json
+{
+  "model": "image/generation/openai/dall-e-3",
+  "input": {
+    "text": "A futuristic city at sunset with flying cars",
+    "resolution": "1024x1024",
+    "num_images": 1
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "cost": "0.040",
+  "provider": "openai",
+  "feature": "image",
+  "subfeature": "generation",
+  "output": {
+    "images": [
+      {
+        "url": "https://cdn.openai.com/generated-image.png",
+        "revised_prompt": "A sprawling futuristic metropolis during golden hour...",
+        "size": "1024x1024"
+      }
+    ],
+    "model": "dall-e-3"
+  }
+}
+```
+
+#### Image Embeddings
+Generate image embeddings for similarity search.
+
+**Request:**
+```json
+{
+  "model": "image/embeddings/openai/clip-vit-large",
+  "input": {
+    "file": "550e8400-e29b-41d4-a716-446655440000"
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "cost": "0.002",
+  "provider": "openai",
+  "feature": "image",
+  "subfeature": "embeddings",
+  "output": {
+    "embedding": [0.012, -0.034, 0.156, ...],  // 512 or 1024 dimensional
+    "model": "clip-vit-large",
+    "dimensions": 768
+  }
+}
+```
+
+#### Background Removal
+Remove background from images.
+
+**Request:**
+```json
+{
+  "model": "image/background_removal/removebg",
+  "input": {
+    "file": "550e8400-e29b-41d4-a716-446655440000"
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "cost": "0.005",
+  "provider": "removebg",
+  "feature": "image",
+  "subfeature": "background_removal",
+  "output": {
+    "image_url": "https://result.removebg.com/output.png",
+    "detected_type": "person",
+    "confidence": 0.98
+  }
+}
+```
+
+#### AI Detection (Image)
+Detect if image is AI-generated.
+
+**Request:**
+```json
+{
+  "model": "image/ai_detection/hive",
+  "input": {
+    "file": "550e8400-e29b-41d4-a716-446655440000"
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "cost": "0.003",
+  "provider": "hive",
+  "feature": "image",
+  "subfeature": "ai_detection",
+  "output": {
+    "is_ai_generated": true,
+    "confidence": 0.92,
+    "ai_score": 0.89
+  }
+}
+```
+
+#### Object Detection
+Detect objects in images.
+
+**Request:**
+```json
+{
+  "model": "image/object_detection/google",
+  "input": {
+    "file": "550e8400-e29b-41d4-a716-446655440000"
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "cost": "0.004",
+  "provider": "google",
+  "feature": "image",
+  "subfeature": "object_detection",
+  "output": {
+    "objects": [
+      {
+        "label": "car",
+        "confidence": 0.98,
+        "bounding_box": {
+          "x": 100,
+          "y": 200,
+          "width": 300,
+          "height": 200
+        }
+      },
+      {
+        "label": "person",
+        "confidence": 0.95,
+        "bounding_box": {
+          "x": 450,
+          "y": 150,
+          "width": 100,
+          "height": 250
+        }
+      },
+      {
+        "label": "tree",
+        "confidence": 0.88,
+        "bounding_box": {
+          "x": 50,
+          "y": 50,
+          "width": 150,
+          "height": 400
+        }
+      }
+    ]
+  }
+}
+```
+
+#### Face Detection
+Detect and analyze faces in images.
+
+**Request:**
+```json
+{
+  "model": "image/face_detection/amazon",
+  "input": {
+    "file": "550e8400-e29b-41d4-a716-446655440000"
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "cost": "0.003",
+  "provider": "amazon",
+  "feature": "image",
+  "subfeature": "face_detection",
+  "output": {
+    "faces": [
+      {
+        "confidence": 0.99,
+        "bounding_box": {
+          "x": 100,
+          "y": 50,
+          "width": 80,
+          "height": 100
+        },
+        "age_range": {"low": 25, "high": 35},
+        "gender": "Male",
+        "emotions": {
+          "HAPPY": 0.95,
+          "CALM": 0.04,
+          "SURPRISED": 0.01
+        },
+        "landmarks": {
+          "left_eye": {"x": 120, "y": 70},
+          "right_eye": {"x": 160, "y": 70},
+          "nose": {"x": 140, "y": 90},
+          "mouth_left": {"x": 125, "y": 120},
+          "mouth_right": {"x": 155, "y": 120}
+        }
+      }
+    ]
+  }
+}
+```
+
+#### Explicit Content Detection
+Detect NSFW/explicit content in images.
+
+**Request:**
+```json
+{
+  "model": "image/explicit_content/google",
+  "input": {
+    "file": "550e8400-e29b-41d4-a716-446655440000"
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "cost": "0.002",
+  "provider": "google",
+  "feature": "image",
+  "subfeature": "explicit_content",
+  "output": {
+    "is_explicit": false,
+    "categories": {
+      "adult": "VERY_UNLIKELY",
+      "violence": "UNLIKELY",
+      "racy": "UNLIKELY",
+      "medical": "VERY_UNLIKELY"
+    },
+    "confidence": 0.98
+  }
+}
+```
+
+#### Face Anonymization
+Blur or mask faces in images.
+
+**Request:**
+```json
+{
+  "model": "image/anonymization/amazon",
+  "input": {
+    "file": "550e8400-e29b-41d4-a716-446655440000",
+    "anonymization_type": "blur"
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "cost": "0.005",
+  "provider": "amazon",
+  "feature": "image",
+  "subfeature": "anonymization",
+  "output": {
+    "anonymized_image_url": "https://result.s3.amazonaws.com/anon.jpg",
+    "faces_anonymized": 3
+  }
+}
+```
+
+#### Deepfake Detection
+Detect deepfake manipulated media.
+
+**Request:**
+```json
+{
+  "model": "image/deepfake_detection/sensity",
+  "input": {
+    "file": "550e8400-e29b-41d4-a716-446655440000"
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "cost": "0.015",
+  "provider": "sensity",
+  "feature": "image",
+  "subfeature": "deepfake_detection",
+  "output": {
+    "is_deepfake": true,
+    "confidence": 0.87,
+    "manipulation_type": "face_swap",
+    "authenticity_score": 0.13
+  }
+}
+```
+
+#### Face Comparison
+Compare two faces for similarity.
+
+**Request:**
+```json
+{
+  "model": "image/face_compare/amazon",
+  "input": {
+    "file": "550e8400-e29b-41d4-a716-446655440000",
+    "file_2": "550e8400-e29b-41d4-a716-446655440001"
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "cost": "0.004",
+  "provider": "amazon",
+  "feature": "image",
+  "subfeature": "face_compare",
+  "output": {
+    "similarity": 0.95,
+    "is_match": true,
+    "threshold": 0.90,
+    "confidence": 0.98
+  }
+}
+```
+
+---
+
+### Translation Features
+
+#### Document Translation
+Translate entire documents (PDF, DOCX, PPTX).
+
+**Request:**
+```json
+{
+  "model": "translation/document_translation/google",
+  "input": {
+    "file": "550e8400-e29b-41d4-a716-446655440000",
+    "source_language": "en",
+    "target_language": "fr"
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "cost": "0.020",
+  "provider": "google",
+  "feature": "translation",
+  "subfeature": "document_translation",
+  "output": {
+    "translated_file_url": "https://storage.googleapis.com/translated-doc.pdf",
+    "source_language": "en",
+    "target_language": "fr",
+    "page_count": 5,
+    "word_count": 1250
+  }
+}
+```
+
+---
+
+### Audio Features
+
+#### Text-to-Speech
+Convert text to speech audio.
+
+**Request:**
+```json
+{
+  "model": "audio/text_to_speech/google",
+  "input": {
+    "text": "Hello, this is a text to speech example.",
+    "language": "en-US",
+    "voice": "en-US-Neural2-A",
+    "audio_format": "mp3",
+    "speaking_rate": 1.0,
+    "pitch": 0.0
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "cost": "0.004",
+  "provider": "google",
+  "feature": "audio",
+  "subfeature": "text_to_speech",
+  "output": {
+    "audio_url": "https://storage.googleapis.com/audio.mp3",
+    "duration_seconds": 3.5,
+    "format": "mp3"
+  }
+}
+```
+
+---
+
+## 3. Upload Endpoint
+
+Persistent file storage for use with Universal AI and LLM endpoints.
+
+### POST /v3/upload
+
+Upload files for later use in API requests.
+
+**Request:**
+```
+POST /v3/upload
+Content-Type: multipart/form-data
+
+file: <binary file content>
+expires_in_days: 30
+purpose: general
+```
+
+**cURL Example:**
+```bash
+curl -X POST https://api.edenai.run/v3/upload \
+  -H "Authorization: Bearer $API_KEY" \
+  -F "file=@document.pdf" \
+  -F "expires_in_days=30" \
+  -F "purpose=general"
+```
+
+**Response:**
+```json
+{
+  "file_id": "550e8400-e29b-41d4-a716-446655440000",
+  "file_name": "document.pdf",
+  "file_size": 1048576,
+  "file_mimetype": "application/pdf",
+  "purpose": "general",
+  "metadata": {
+    "page_count": 5,
+    "dimensions": null
+  },
+  "created_at": "2025-12-26T10:30:00Z",
+  "expires_at": "2026-01-25T10:30:00Z"
+}
+```
+
+### GET /v3/upload
+
+List uploaded files.
+
+**Request:**
+```
+GET /v3/upload?purpose=general&limit=100&page=1
+```
+
+**Response:**
+```json
+{
+  "items": [
+    {
+      "file_id": "550e8400-e29b-41d4-a716-446655440000",
+      "file_name": "document.pdf",
+      "file_size": 1048576,
+      "file_mimetype": "application/pdf",
+      "purpose": "general",
+      "metadata": {"page_count": 5},
+      "created_at": "2025-12-26T10:30:00Z",
+      "expires_at": "2026-01-25T10:30:00Z"
+    },
+    {
+      "file_id": "550e8400-e29b-41d4-a716-446655440001",
+      "file_name": "image.jpg",
+      "file_size": 524288,
+      "file_mimetype": "image/jpeg",
+      "purpose": "general",
+      "metadata": {"dimensions": "1920x1080"},
+      "created_at": "2025-12-26T11:00:00Z",
+      "expires_at": "2026-01-25T11:00:00Z"
+    }
+  ],
+  "total": 25,
+  "page": 1,
+  "limit": 100,
+  "total_pages": 1
+}
+```
+
+### POST /v3/upload/delete
+
+Delete multiple files by ID.
+
+**Request:**
+```json
+{
+  "file_ids": [
+    "550e8400-e29b-41d4-a716-446655440000",
+    "550e8400-e29b-41d4-a716-446655440001"
+  ]
+}
+```
+
+**Response:**
+```json
+{
+  "deleted_count": 2
+}
+```
+
+### DELETE /v3/upload
+
+Delete all uploaded files (use with caution).
+
+**Request:**
+```
+DELETE /v3/upload
+```
+
+**Response:**
+```json
+{
+  "deleted_count": 25
+}
+```
+
+---
+
+## 4. Info Endpoints
+
+Feature and provider discovery API.
+
+### GET /v3/info/
+
+List all available features.
+
+**Response:**
+```json
+{
+  "text": [
+    "ai_detection",
+    "moderation",
+    "embeddings",
+    "spell_check",
+    "topic_extraction",
+    "named_entity_recognition",
+    "plagia_detection"
+  ],
+  "ocr": [
+    "ocr",
+    "identity_parser",
+    "financial_parser",
+    "resume_parser"
+  ],
+  "image": [
+    "background_removal",
+    "generation",
+    "embeddings",
+    "ai_detection",
+    "object_detection",
+    "face_detection",
+    "explicit_content",
+    "anonymization",
+    "deepfake_detection",
+    "face_compare"
+  ],
+  "translation": [
+    "document_translation"
+  ],
+  "audio": [
+    "text_to_speech"
+  ]
+}
+```
+
+### GET /v3/info/{feature}
+
+Get subfeatures for a specific feature.
+
+**Request:**
+```
+GET /v3/info/text
+```
+
+**Response:**
+```json
+{
+  "feature": "text",
+  "subfeatures": [
+    "ai_detection",
+    "moderation",
+    "embeddings",
+    "spell_check",
+    "topic_extraction",
+    "named_entity_recognition",
+    "plagia_detection"
+  ]
+}
+```
+
+### GET /v3/info/{feature}/{subfeature}
+
+Get schema and models for a specific subfeature.
+
+**Request:**
+```
+GET /v3/info/ocr/ocr?format=simplified
+```
+
+**Response (simplified format):**
+```json
+{
+  "feature": "ocr",
+  "subfeature": "ocr",
+  "input_schema": {
+    "fields": [
+      {
+        "name": "file",
+        "required": true,
+        "type": "file_input",
+        "description": "Image or PDF file to extract text from",
+        "allowed_mime_types": [
+          "image/png",
+          "image/jpeg",
+          "image/jpg",
+          "application/pdf"
+        ]
+      },
+      {
+        "name": "language",
+        "required": true,
+        "type": "string",
+        "description": "Language code (e.g., 'en', 'fr', 'es')"
+      }
+    ]
+  },
+  "output_schema": {
+    "fields": [
+      {
+        "name": "text",
+        "type": "string",
+        "description": "Extracted text from document"
+      },
+      {
+        "name": "confidence",
+        "type": "number",
+        "description": "OCR confidence score (0-1)"
+      },
+      {
+        "name": "pages",
+        "type": "array",
+        "description": "Per-page extraction results"
+      }
+    ]
+  },
+  "models": [
+    "ocr/ocr/google",
+    "ocr/ocr/amazon",
+    "ocr/ocr/microsoft"
+  ]
+}
+```
+
+**Request (JSON schema format):**
+```
+GET /v3/info/text/embeddings?format=json_schema
+```
+
+**Response (JSON schema format):**
+```json
+{
+  "feature": "text",
+  "subfeature": "embeddings",
+  "input_schema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+      "texts": {
+        "type": "array",
+        "items": {"type": "string"},
+        "description": "List of texts to embed"
+      },
+      "dimensions": {
+        "type": "integer",
+        "description": "Output embedding dimensions (model-specific)"
+      }
+    },
+    "required": ["texts"]
+  },
+  "output_schema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+      "embeddings": {
+        "type": "array",
+        "items": {
+          "type": "array",
+          "items": {"type": "number"}
+        }
+      },
+      "model": {"type": "string"}
+    }
+  },
+  "models": [
+    "text/embeddings/openai/text-embedding-3-small",
+    "text/embeddings/openai/text-embedding-3-large",
+    "text/embeddings/cohere/embed-english-v3.0"
+  ]
+}
+```
+
+---
+
+## Error Handling
+
+### Common Error Responses
+
+**401 Unauthorized:**
+```json
+{
+  "detail": "Invalid or missing authentication token",
+  "error_code": "UNAUTHORIZED"
+}
+```
+
+**402 Insufficient Credit:**
+```json
+{
+  "detail": "User does not have sufficient credits",
+  "error_code": "INSUFFICIENT_CREDIT",
+  "required_credits": 500,
+  "available_credits": 200
+}
+```
+
+**429 Rate Limited:**
+```json
+{
+  "detail": "Rate limit exceeded",
+  "error_code": "RATE_LIMITED",
+  "retry_after": 1.5
+}
+```
+
+**400 Invalid Model:**
+```json
+{
+  "detail": "Invalid model string format. Expected: feature/subfeature/provider[/model]",
+  "error_code": "INVALID_MODEL"
+}
+```
+
+### HTTP Status Codes
+- `200` - Success
+- `400` - Bad Request (invalid parameters)
+- `401` - Unauthorized (invalid token)
+- `402` - Payment Required (insufficient credits)
+- `404` - Not Found (invalid endpoint)
+- `413` - Payload Too Large (file too large)
+- `429` - Too Many Requests (rate limited)
+- `500` - Internal Server Error
+- `502` - Bad Gateway (provider error)
+
+---
+
+## Best Practices
+
+### 1. File Management
+Always use `/v3/upload` for files used multiple times:
+
+```python
+# Step 1: Upload file once
+upload_response = requests.post(
+    "https://api.edenai.run/v3/upload",
+    headers={"Authorization": f"Bearer {API_KEY}"},
+    files={"file": open("document.pdf", "rb")},
+    data={"expires_in_days": 30}
+)
+file_id = upload_response.json()["file_id"]
+
+# Step 2: Use file_id in multiple requests
+# OCR
+ocr_result = requests.post(
+    "https://api.edenai.run/v3/universal-ai",
+    headers={"Authorization": f"Bearer {API_KEY}"},
+    json={
+        "model": "ocr/ocr/google",
+        "input": {"file": file_id, "language": "en"}
+    }
+)
+
+# LLM analysis
+llm_result = requests.post(
+    "https://api.edenai.run/v3/llm/chat/completions",
+    headers={"Authorization": f"Bearer {API_KEY}"},
+    json={
+        "model": "openai/gpt-4",
+        "messages": [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": "Summarize this document"},
+                    {"type": "file", "file": {"file_id": file_id}}
+                ]
+            }
+        ]
+    }
+)
+```
+
+### 2. Handle SSE Streaming
+For LLM endpoints, properly handle Server-Sent Events:
+
+```python
+import requests
+
+response = requests.post(
+    "https://api.edenai.run/v3/llm/chat/completions",
+    headers={"Authorization": f"Bearer {API_KEY}"},
+    json={
+        "model": "openai/gpt-4",
+        "messages": [{"role": "user", "content": "Write a story"}]
+    },
+    stream=True
+)
+
+for line in response.iter_lines():
+    if line:
+        line_str = line.decode('utf-8')
+        if line_str.startswith('data: '):
+            data = line_str[6:]  # Remove 'data: ' prefix
+            if data == '[DONE]':
+                break
+            chunk = json.loads(data)
+            content = chunk['choices'][0]['delta'].get('content', '')
+            print(content, end='', flush=True)
+```
+
+### 3. Discover Available Models
+Use `/v3/info` to discover available features and models:
+
+```python
+# List all features
+info = requests.get(
+    "https://api.edenai.run/v3/info/",
+    headers={"Authorization": f"Bearer {API_KEY}"}
+).json()
+
+# Get schema for specific feature
+schema = requests.get(
+    "https://api.edenai.run/v3/info/text/embeddings?format=simplified",
+    headers={"Authorization": f"Bearer {API_KEY}"}
+).json()
+
+# Extract available models
+models = schema["models"]
+# ['text/embeddings/openai/text-embedding-3-large', ...]
+```
+
+### 4. Error Handling with Retry
+Implement robust error handling:
+
+```python
+import time
+
+def call_universal_ai(model, input_data, max_retries=3):
+    for attempt in range(max_retries):
+        try:
+            response = requests.post(
+                "https://api.edenai.run/v3/universal-ai",
+                headers={"Authorization": f"Bearer {API_KEY}"},
+                json={"model": model, "input": input_data}
+            )
+            response.raise_for_status()
+
+            result = response.json()
+            if result["status"] == "success":
+                return result["output"]
+            else:
+                print(f"Provider error: {result['error']}")
+                return None
+
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code == 429:
+                wait = 2 ** attempt
+                print(f"Rate limited, waiting {wait}s...")
+                time.sleep(wait)
+            else:
+                raise
+
+    raise Exception("Max retries exceeded")
+```
+
+### 5. Monitor Costs
+Track costs from responses:
+
+```python
+total_cost = 0
+
+response = requests.post(
+    "https://api.edenai.run/v3/universal-ai",
+    headers={"Authorization": f"Bearer {API_KEY}"},
+    json={
+        "model": "text/embeddings/openai/text-embedding-3-large",
+        "input": {"texts": ["Hello", "World"]}
+    }
+).json()
+
+cost = float(response["cost"])
+total_cost += cost
+
+print(f"Request cost: ${cost:.4f}")
+print(f"Total session cost: ${total_cost:.4f}")
+```
+
+---
+
+## Complete Code Examples
+
+### Python - Text Embeddings
+```python
+import requests
+
+API_KEY = "your_api_key"
+BASE_URL = "https://api.edenai.run/v3"
+
+headers = {
+    "Authorization": f"Bearer {API_KEY}",
+    "Content-Type": "application/json"
+}
+
+# Generate embeddings
+response = requests.post(
+    f"{BASE_URL}/universal-ai",
+    headers=headers,
+    json={
+        "model": "text/embeddings/openai/text-embedding-3-large",
+        "input": {
+            "texts": [
+                "Machine learning is fascinating",
+                "AI is transforming industries",
+                "Deep learning powers modern AI"
+            ],
+            "dimensions": 1536
+        }
+    }
+)
+
+result = response.json()
+
+if result["status"] == "success":
+    embeddings = result["output"]["embeddings"]
+    print(f"Generated {len(embeddings)} embeddings")
+    print(f"Cost: ${result['cost']}")
+else:
+    print(f"Error: {result['error']}")
+```
+
+### Python - Document OCR with Upload
+```python
+import requests
+
+API_KEY = "your_api_key"
+BASE_URL = "https://api.edenai.run/v3"
+
+headers = {"Authorization": f"Bearer {API_KEY}"}
+
+# Step 1: Upload document
+with open("invoice.pdf", "rb") as f:
+    upload_response = requests.post(
+        f"{BASE_URL}/upload",
+        headers=headers,
+        files={"file": f},
+        data={"expires_in_days": 7, "purpose": "ocr"}
+    )
+
+file_id = upload_response.json()["file_id"]
+print(f"Uploaded file: {file_id}")
+
+# Step 2: Run OCR
+ocr_response = requests.post(
+    f"{BASE_URL}/universal-ai",
+    headers={**headers, "Content-Type": "application/json"},
+    json={
+        "model": "ocr/financial_parser/mindee",
+        "input": {"file": file_id}
+    }
+)
+
+result = ocr_response.json()
+
+if result["status"] == "success":
+    output = result["output"]
+    print(f"Invoice #: {output['invoice_number']}")
+    print(f"Total: ${output['total_amount']}")
+    print(f"Vendor: {output['vendor']['name']}")
+else:
+    print(f"Error: {result['error']}")
+```
+
+### JavaScript - Image Generation
+```javascript
+const API_KEY = "your_api_key";
+const BASE_URL = "https://api.edenai.run/v3";
+
+async function generateImage(prompt) {
+  const response = await fetch(`${BASE_URL}/universal-ai`, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${API_KEY}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      model: "image/generation/openai/dall-e-3",
+      input: {
+        text: prompt,
+        resolution: "1024x1024",
+        num_images: 1
+      }
+    })
+  });
+
+  const result = await response.json();
+
+  if (result.status === "success") {
+    console.log("Generated image:", result.output.images[0].url);
+    console.log("Cost:", result.cost);
+    return result.output.images[0].url;
+  } else {
+    console.error("Error:", result.error);
+    return null;
+  }
+}
+
+generateImage("A serene mountain landscape at dawn");
+```
+
+### Python - LLM Streaming
+```python
+import requests
+import json
+
+API_KEY = "your_api_key"
+BASE_URL = "https://api.edenai.run/v3"
+
+response = requests.post(
+    f"{BASE_URL}/llm/chat/completions",
+    headers={"Authorization": f"Bearer {API_KEY}"},
+    json={
+        "model": "anthropic/claude-3-sonnet",
+        "messages": [
+            {
+                "role": "user",
+                "content": "Write a short poem about AI"
+            }
+        ],
+        "max_tokens": 500
+    },
+    stream=True
+)
+
+print("Streaming response:")
+for line in response.iter_lines():
+    if line:
+        line_str = line.decode('utf-8')
+        if line_str.startswith('data: '):
+            data = line_str[6:]
+            if data == '[DONE]':
+                print("\n\nStream complete!")
+                break
+
+            chunk = json.loads(data)
+            content = chunk['choices'][0]['delta'].get('content', '')
+            if content:
+                print(content, end='', flush=True)
+```
+
+### cURL - Face Detection
+```bash
+# Step 1: Upload image
+UPLOAD_RESPONSE=$(curl -s -X POST https://api.edenai.run/v3/upload \
+  -H "Authorization: Bearer $API_KEY" \
+  -F "file=@photo.jpg" \
+  -F "expires_in_days=1")
+
+FILE_ID=$(echo $UPLOAD_RESPONSE | jq -r '.file_id')
+
+# Step 2: Detect faces
+curl -X POST https://api.edenai.run/v3/universal-ai \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"model\": \"image/face_detection/amazon\",
+    \"input\": {
+      \"file\": \"$FILE_ID\"
+    }
+  }" | jq .
+```
+
+---
+
+## V3 vs V2 Comparison
+
+| Aspect | V2 | V3 |
+|--------|----|----|
+| **Endpoints** | ~26 feature-specific | 4 unified endpoints |
+| **Model Format** | `"provider"` or `"provider/model"` | `"feature/subfeature/provider[/model]"` |
+| **Response** | Provider-specific | Unified `{status, cost, provider, output}` |
+| **File Handling** | Direct upload/URL per request | Persistent storage via `/v3/upload` |
+| **LLM Streaming** | Optional (`stream: true/false`) | Always streams (SSE) |
+| **Discovery** | Not available | `/v3/info/*` endpoints |
+| **File Reuse** | Not supported | Upload once, use many times |
+| **Error Format** | `{detail, error}` | `{status: "fail", error: {...}}` |
+
+---
+
+## Support & Resources
+
+- **Documentation**: https://eden-ai.docs.buildwithfern.com
+- **Dashboard**: https://app.edenai.run/
+- **GitHub**: https://github.com/edenai
+- **Website**: https://edenai.co/
+- **Status**: https://app-edenai.instatus.com/
+
+---
+
+**Last Updated**: 2025-12-26
+**API Version**: v3
+**Base URL**: https://api.edenai.run/v3

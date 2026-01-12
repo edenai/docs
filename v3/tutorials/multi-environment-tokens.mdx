@@ -1,0 +1,1013 @@
+# Multi-Environment Token Management
+
+Build a complete token management system to organize API keys across development, staging, and production environments with automated rotation and usage tracking.
+
+## What You'll Build
+
+By the end of this tutorial, you'll have:
+
+- **Environment-Specific Tokens** - Separate tokens for dev, staging, and production
+- **Automated Token Rotation** - Scripts to rotate tokens on a schedule
+- **Usage Monitoring** - Track spending per environment
+- **Budget Controls** - Different credit limits per environment
+- **Expiration Alerts** - Notifications before tokens expire
+
+## Prerequisites
+
+- Python 3.8 or higher
+- Eden AI API key
+- Basic understanding of REST APIs and environment management
+
+## Problem Statement
+
+As your Eden AI integration grows across environments, you need to:
+
+1. **Separate concerns** - Different tokens for different environments
+2. **Control costs** - Budget limits per environment
+3. **Enhance security** - Rotate tokens without downtime
+4. **Track usage** - Monitor which environment is spending what
+5. **Prevent outages** - Alert before tokens expire or run out of credits
+
+This tutorial shows you how to build a Python-based token management system.
+
+## Architecture Overview
+
+```
+┌──────────────────────────────────────────────────────────┐
+│               Token Management System                     │
+│                                                           │
+│  ┌─────────────┐   ┌──────────────┐   ┌──────────────┐ │
+│  │  Token      │──▶│   Rotation   │──▶│   Monitor    │ │
+│  │  Registry   │   │   Manager    │   │   & Alerts   │ │
+│  └─────────────┘   └──────────────┘   └──────────────┘ │
+│        │                   │                   │         │
+└────────┼───────────────────┼───────────────────┼─────────┘
+         │                   │                   │
+         ▼                   ▼                   ▼
+    ┌────────────────────────────────────────────────┐
+    │           Eden AI Token API                    │
+    └────────────────────────────────────────────────┘
+```
+
+## Step 1: Create Environment-Specific Tokens
+
+Create a token manager that organizes tokens by environment:
+
+<CodeBlocks>
+  <CodeBlock title="token_manager.py">
+    ```python
+    import requests
+    from datetime import datetime, timedelta
+    from typing import Dict, List, Optional
+    import json
+
+    class TokenManager:
+        """Manage Eden AI custom tokens across environments"""
+
+        BASE_URL = "https://api.edenai.run/v2/user/custom_token"
+
+        def __init__(self, api_key: str):
+            """
+            Initialize token manager.
+
+            Args:
+                api_key: Your main Eden AI API key
+            """
+            self.api_key = api_key
+            self.headers = {"Authorization": f"Bearer {api_key}"}
+
+        def create_environment_token(
+            self,
+            environment: str,
+            app_name: str,
+            token_type: str = "api_token",
+            balance: Optional[float] = None,
+            expire_days: Optional[int] = None
+        ) -> Dict:
+            """
+            Create a new environment-specific token.
+
+            Args:
+                environment: Environment name (dev, staging, prod)
+                app_name: Application identifier
+                token_type: 'api_token' or 'sandbox_api_token'
+                balance: Optional credit limit
+                expire_days: Optional expiration in days
+
+            Returns:
+                Created token data
+            """
+            token_name = f"{environment}-{app_name}"
+
+            data = {
+                "name": token_name,
+                "token_type": token_type
+            }
+
+            if balance is not None:
+                data["balance"] = str(balance)
+                data["active_balance"] = True
+
+            if expire_days:
+                expiry = datetime.now() + timedelta(days=expire_days)
+                data["expire_time"] = expiry.isoformat()
+
+            response = requests.post(
+                f"{self.BASE_URL}/",
+                headers={**self.headers, "Content-Type": "application/json"},
+                json=data
+            )
+            response.raise_for_status()
+
+            return response.json()
+
+        def list_tokens(self) -> List[Dict]:
+            """List all custom tokens"""
+            response = requests.get(f"{self.BASE_URL}/", headers=self.headers)
+            response.raise_for_status()
+            return response.json()
+
+        def get_token(self, name: str) -> Dict:
+            """Get specific token by name"""
+            response = requests.get(
+                f"{self.BASE_URL}/{name}/",
+                headers=self.headers
+            )
+            response.raise_for_status()
+            return response.json()
+
+        def update_token(
+            self,
+            name: str,
+            balance: Optional[float] = None,
+            expire_time: Optional[str] = None,
+            active_balance: Optional[bool] = None
+        ) -> Dict:
+            """Update token settings"""
+            data = {}
+
+            if balance is not None:
+                data["balance"] = balance
+            if expire_time is not None:
+                data["expire_time"] = expire_time
+            if active_balance is not None:
+                data["active_balance"] = active_balance
+
+            response = requests.patch(
+                f"{self.BASE_URL}/{name}/",
+                headers={**self.headers, "Content-Type": "application/json"},
+                json=data
+            )
+            response.raise_for_status()
+            return response.json()
+
+        def delete_token(self, name: str):
+            """Delete a token"""
+            response = requests.delete(
+                f"{self.BASE_URL}/{name}/",
+                headers=self.headers
+            )
+            response.raise_for_status()
+
+        def get_tokens_by_environment(self) -> Dict[str, List[Dict]]:
+            """
+            Group tokens by environment.
+
+            Returns:
+                Dictionary mapping environment to list of tokens
+            """
+            tokens = self.list_tokens()
+            grouped = {}
+
+            for token in tokens:
+                # Extract environment from name (assumes format: env-app)
+                parts = token['name'].split('-', 1)
+                if len(parts) >= 2:
+                    env = parts[0]
+                    if env not in grouped:
+                        grouped[env] = []
+                    grouped[env].append(token)
+                else:
+                    # Ungrouped tokens
+                    if 'other' not in grouped:
+                        grouped['other'] = []
+                    grouped['other'].append(token)
+
+            return grouped
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Step 2: Implement Token Rotation Script
+
+Create a rotation system to periodically update tokens:
+
+<CodeBlocks>
+  <CodeBlock title="token_rotation.py">
+    ```python
+    from token_manager import TokenManager
+    from datetime import datetime, timedelta
+    from typing import Dict
+    import time
+
+    class TokenRotationManager:
+        """Handle automated token rotation"""
+
+        def __init__(self, manager: TokenManager):
+            self.manager = manager
+
+        def rotate_token(
+            self,
+            old_token_name: str,
+            rotation_suffix: Optional[str] = None
+        ) -> Dict:
+            """
+            Rotate a token by creating a new one with same settings.
+
+            Args:
+                old_token_name: Name of token to rotate
+                rotation_suffix: Optional suffix for new token name
+                                (defaults to timestamp)
+
+            Returns:
+                New token data with migration info
+            """
+            # Get old token details
+            old_token = self.manager.get_token(old_token_name)
+
+            # Generate new token name
+            if rotation_suffix is None:
+                rotation_suffix = datetime.now().strftime("%Y%m%d")
+
+            new_name = f"{old_token_name}-{rotation_suffix}"
+
+            # Create new token with same settings
+            new_data = {
+                "name": new_name,
+                "token_type": old_token['token_type'],
+                "active_balance": old_token.get('active_balance', False)
+            }
+
+            if old_token.get('balance'):
+                new_data["balance"] = str(old_token['balance'])
+
+            response = self.manager.create_environment_token(
+                environment=old_token_name.split('-')[0],
+                app_name='-'.join(old_token_name.split('-')[1:] + [rotation_suffix]),
+                token_type=old_token['token_type'],
+                balance=old_token.get('balance') if old_token.get('active_balance') else None
+            )
+
+            return {
+                'old_token': old_token,
+                'new_token': response,
+                'migration_steps': [
+                    f"1. Update your {old_token_name.split('-')[0]} environment",
+                    f"2. Change API key from {old_token['token'][:15]}... to {response['token'][:15]}...",
+                    "3. Test the new token",
+                    f"4. Delete old token: '{old_token_name}'"
+                ]
+            }
+
+        def schedule_rotation(
+            self,
+            token_name: str,
+            days_before_expiry: int = 7
+        ):
+            """
+            Check if token needs rotation based on expiry.
+
+            Args:
+                token_name: Token to check
+                days_before_expiry: Days before expiry to trigger rotation
+
+            Returns:
+                True if rotation needed
+            """
+            token = self.manager.get_token(token_name)
+
+            if not token.get('expire_time'):
+                return False  # No expiry set
+
+            expiry = datetime.fromisoformat(
+                token['expire_time'].replace('Z', '+00:00')
+            )
+            days_left = (expiry - datetime.now()).days
+
+            return days_left <= days_before_expiry
+
+        def rotate_all_expiring(self, days_threshold: int = 7) -> List[Dict]:
+            """
+            Rotate all tokens expiring within threshold.
+
+            Args:
+                days_threshold: Days before expiry to rotate
+
+            Returns:
+                List of rotation results
+            """
+            tokens = self.manager.list_tokens()
+            rotations = []
+
+            for token in tokens:
+                if not token.get('expire_time'):
+                    continue
+
+                expiry = datetime.fromisoformat(
+                    token['expire_time'].replace('Z', '+00:00')
+                )
+                days_left = (expiry - datetime.now()).days
+
+                if days_left <= days_threshold:
+                    print(f"Rotating {token['name']} (expires in {days_left} days)")
+                    result = self.rotate_token(token['name'])
+                    rotations.append(result)
+
+            return rotations
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Step 3: Build Token Lifecycle Manager
+
+Manage the complete lifecycle of environment tokens:
+
+<CodeBlocks>
+  <CodeBlock title="token_lifecycle.py">
+    ```python
+    from token_manager import TokenManager
+    from typing import Dict, List
+
+    class TokenLifecycleManager:
+        """Manage complete token lifecycle"""
+
+        def __init__(self, manager: TokenManager):
+            self.manager = manager
+
+        def setup_environment(
+            self,
+            environment: str,
+            config: Dict
+        ) -> List[Dict]:
+            """
+            Set up all tokens for an environment.
+
+            Args:
+                environment: Environment name
+                config: Configuration dict with token specs
+
+            Returns:
+                List of created tokens
+            """
+            tokens = []
+
+            for app_name, spec in config.items():
+                token = self.manager.create_environment_token(
+                    environment=environment,
+                    app_name=app_name,
+                    token_type=spec.get('type', 'api_token'),
+                    balance=spec.get('balance'),
+                    expire_days=spec.get('expire_days')
+                )
+                tokens.append(token)
+                print(f"✓ Created {environment}-{app_name}")
+
+            return tokens
+
+        def teardown_environment(self, environment: str):
+            """Delete all tokens for an environment"""
+            grouped = self.manager.get_tokens_by_environment()
+
+            if environment not in grouped:
+                print(f"No tokens found for environment: {environment}")
+                return
+
+            for token in grouped[environment]:
+                self.manager.delete_token(token['name'])
+                print(f"✓ Deleted {token['name']}")
+
+        def refresh_environment_budgets(
+            self,
+            environment: str,
+            new_balance: float
+        ):
+            """Reset all token balances for an environment"""
+            grouped = self.manager.get_tokens_by_environment()
+
+            if environment not in grouped:
+                print(f"No tokens found for environment: {environment}")
+                return
+
+            for token in grouped[environment]:
+                if token.get('active_balance'):
+                    self.manager.update_token(
+                        token['name'],
+                        balance=new_balance,
+                        active_balance=True
+                    )
+                    print(f"✓ Updated {token['name']} balance to ${new_balance}")
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Step 4: Add Usage Monitoring Per Token
+
+Integrate with cost monitoring to track per-token usage:
+
+<CodeBlocks>
+  <CodeBlock title="token_monitor.py">
+    ```python
+    import requests
+    from token_manager import TokenManager
+    from typing import Dict, List
+
+    class TokenUsageMonitor:
+        """Monitor usage and costs per token"""
+
+        def __init__(self, manager: TokenManager):
+            self.manager = manager
+            self.cost_api_url = "https://api.edenai.run/v2/cost_management/"
+
+        def get_token_usage(
+            self,
+            token_name: str,
+            begin: str,
+            end: str
+        ) -> Dict:
+            """
+            Get usage data for a specific token.
+
+            Args:
+                token_name: Token name to query
+                begin: Start date (YYYY-MM-DD)
+                end: End date (YYYY-MM-DD)
+
+            Returns:
+                Usage statistics
+            """
+            params = {
+                "begin": begin,
+                "end": end,
+                "step": 1,
+                "token": token_name
+            }
+
+            response = requests.get(
+                self.cost_api_url,
+                headers=self.manager.headers,
+                params=params
+            )
+            response.raise_for_status()
+
+            data = response.json()
+
+            # Calculate totals
+            total_cost = 0.0
+            total_calls = 0
+
+            for token_data in data['response']:
+                for date, features in token_data['data'].items():
+                    for feature, details in features.items():
+                        total_cost += details['total_cost']
+                        total_calls += details['details']
+
+            return {
+                'token_name': token_name,
+                'period': f"{begin} to {end}",
+                'total_cost': total_cost,
+                'total_calls': total_calls,
+                'avg_cost_per_call': total_cost / total_calls if total_calls > 0 else 0
+            }
+
+        def compare_environments(
+            self,
+            begin: str,
+            end: str
+        ) -> Dict[str, Dict]:
+            """
+            Compare usage across all environments.
+
+            Returns:
+                Dict mapping environment to usage stats
+            """
+            grouped = self.manager.get_tokens_by_environment()
+            env_stats = {}
+
+            for env, tokens in grouped.items():
+                env_cost = 0.0
+                env_calls = 0
+
+                for token in tokens:
+                    usage = self.get_token_usage(token['name'], begin, end)
+                    env_cost += usage['total_cost']
+                    env_calls += usage['total_calls']
+
+                env_stats[env] = {
+                    'total_cost': env_cost,
+                    'total_calls': env_calls,
+                    'num_tokens': len(tokens)
+                }
+
+            return env_stats
+
+        def print_usage_report(self, begin: str, end: str):
+            """Print formatted usage report"""
+            stats = self.compare_environments(begin, end)
+
+            print("=" * 60)
+            print(f"Token Usage Report: {begin} to {end}")
+            print("=" * 60)
+            print()
+
+            for env, data in sorted(stats.items()):
+                print(f"Environment: {env.upper()}")
+                print(f"  Tokens: {data['num_tokens']}")
+                print(f"  Total Cost: ${data['total_cost']:.2f}")
+                print(f"  Total Calls: {data['total_calls']:,}")
+                if data['total_calls'] > 0:
+                    avg = data['total_cost'] / data['total_calls']
+                    print(f"  Avg Cost/Call: ${avg:.4f}")
+                print()
+
+            total_cost = sum(d['total_cost'] for d in stats.values())
+            print(f"TOTAL COST (ALL ENVIRONMENTS): ${total_cost:.2f}")
+            print("=" * 60)
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Step 5: Implement Automated Alerts for Token Expiry
+
+Create an alert system for token health:
+
+<CodeBlocks>
+  <CodeBlock title="token_alerts.py">
+    ```python
+    from token_manager import TokenManager
+    from datetime import datetime
+    from typing import List, Dict
+
+    class TokenAlertSystem:
+        """Monitor tokens and send alerts"""
+
+        def __init__(self, manager: TokenManager):
+            self.manager = manager
+
+        def check_expiring_tokens(
+            self,
+            days_threshold: int = 7
+        ) -> List[Dict]:
+            """
+            Find tokens expiring soon.
+
+            Args:
+                days_threshold: Alert if expiring within this many days
+
+            Returns:
+                List of expiring tokens with details
+            """
+            tokens = self.manager.list_tokens()
+            expiring = []
+
+            for token in tokens:
+                if not token.get('expire_time'):
+                    continue
+
+                expiry = datetime.fromisoformat(
+                    token['expire_time'].replace('Z', '+00:00')
+                )
+                days_left = (expiry - datetime.now()).days
+
+                if 0 <= days_left <= days_threshold:
+                    expiring.append({
+                        'name': token['name'],
+                        'expires': token['expire_time'],
+                        'days_left': days_left,
+                        'severity': 'critical' if days_left < 2 else 'warning'
+                    })
+
+            return expiring
+
+        def check_low_balance_tokens(
+            self,
+            threshold_percentage: float = 0.2
+        ) -> List[Dict]:
+            """
+            Find tokens with low credit balance.
+
+            Args:
+                threshold_percentage: Alert if below this % of original balance
+
+            Returns:
+                List of low-balance tokens
+            """
+            tokens = self.manager.list_tokens()
+            low_balance = []
+
+            for token in tokens:
+                if not token.get('active_balance'):
+                    continue
+
+                balance = token.get('balance', 0)
+
+                # Alert if balance is low (assuming original was higher)
+                if balance < 10:  # Less than $10
+                    low_balance.append({
+                        'name': token['name'],
+                        'balance': balance,
+                        'severity': 'critical' if balance < 1 else 'warning'
+                    })
+
+            return low_balance
+
+        def print_health_report(self):
+            """Print comprehensive token health report"""
+            print("=" * 60)
+            print("Token Health Report")
+            print("=" * 60)
+            print()
+
+            # Check expiring tokens
+            expiring = self.check_expiring_tokens(days_threshold=14)
+
+            if expiring:
+                print("⚠️  EXPIRING TOKENS:")
+                print("-" * 60)
+                for token in expiring:
+                    icon = "🔴" if token['severity'] == 'critical' else "🟡"
+                    print(f"{icon} {token['name']}")
+                    print(f"   Expires in {token['days_left']} days")
+                print()
+            else:
+                print("✓ No tokens expiring soon")
+                print()
+
+            # Check low balance
+            low_balance = self.check_low_balance_tokens()
+
+            if low_balance:
+                print("⚠️  LOW BALANCE TOKENS:")
+                print("-" * 60)
+                for token in low_balance:
+                    icon = "🔴" if token['severity'] == 'critical' else "🟡"
+                    print(f"{icon} {token['name']}")
+                    print(f"   Balance: ${token['balance']:.2f}")
+                print()
+            else:
+                print("✓ All token balances adequate")
+                print()
+
+            print("=" * 60)
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Step 6: Put It All Together
+
+Create a complete management system:
+
+<CodeBlocks>
+  <CodeBlock title="main.py">
+    ```python
+    #!/usr/bin/env python3
+    """
+    Multi-Environment Token Management System
+    """
+
+    import os
+    from datetime import datetime, timedelta
+    from token_manager import TokenManager
+    from token_lifecycle import TokenLifecycleManager
+    from token_rotation import TokenRotationManager
+    from token_monitor import TokenUsageMonitor
+    from token_alerts import TokenAlertSystem
+
+    def main():
+        # Configuration
+        API_KEY = os.getenv("EDENAI_API_KEY")
+
+        if not API_KEY:
+            print("Error: EDENAI_API_KEY environment variable not set")
+            return
+
+        # Initialize managers
+        manager = TokenManager(API_KEY)
+        lifecycle = TokenLifecycleManager(manager)
+        rotation = TokenRotationManager(manager)
+        monitor = TokenUsageMonitor(manager)
+        alerts = TokenAlertSystem(manager)
+
+        print("\n🔐 Multi-Environment Token Management System\n")
+
+        # 1. Check token health
+        print("📊 Token Health Check")
+        alerts.print_health_report()
+        print()
+
+        # 2. Show tokens by environment
+        print("🗂️  Tokens by Environment")
+        grouped = manager.get_tokens_by_environment()
+        for env, tokens in grouped.items():
+            print(f"\n{env.upper()}:")
+            for token in tokens:
+                status = "✓"
+                if token.get('active_balance') and token.get('balance', 0) < 10:
+                    status = "⚠️"
+
+                print(f"  {status} {token['name']}")
+                if token.get('active_balance'):
+                    print(f"     Balance: ${token.get('balance', 0):.2f}")
+                if token.get('expire_time'):
+                    expiry = datetime.fromisoformat(
+                        token['expire_time'].replace('Z', '+00:00')
+                    )
+                    days_left = (expiry - datetime.now()).days
+                    print(f"     Expires in: {days_left} days")
+
+        print()
+
+        # 3. Usage report
+        print("💰 Usage Report (Last 30 Days)")
+        end = datetime.now().strftime("%Y-%m-%d")
+        begin = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
+        monitor.print_usage_report(begin, end)
+        print()
+
+        # 4. Check for needed rotations
+        print("🔄 Rotation Status")
+        expiring_count = len(alerts.check_expiring_tokens(days_threshold=7))
+        if expiring_count > 0:
+            print(f"⚠️  {expiring_count} token(s) need rotation")
+        else:
+            print("✓ No rotations needed")
+        print()
+
+    if __name__ == "__main__":
+        main()
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Example: Setting Up Multi-Environment System
+
+Complete example setting up dev, staging, and production:
+
+<CodeBlocks>
+  <CodeBlock title="setup_environments.py">
+    ```python
+    #!/usr/bin/env python3
+    import os
+    from token_manager import TokenManager
+    from token_lifecycle import TokenLifecycleManager
+
+    def setup_complete_system():
+        """Set up tokens for all environments"""
+        API_KEY = os.getenv("EDENAI_API_KEY")
+        manager = TokenManager(API_KEY)
+        lifecycle = TokenLifecycleManager(manager)
+
+        # Development environment - sandbox tokens, no limits
+        dev_config = {
+            "web-app": {
+                "type": "sandbox_api_token"
+            },
+            "mobile-app": {
+                "type": "sandbox_api_token"
+            },
+            "testing": {
+                "type": "sandbox_api_token"
+            }
+        }
+
+        # Staging environment - real tokens, moderate limits
+        staging_config = {
+            "web-app": {
+                "type": "api_token",
+                "balance": 50.0,
+                "expire_days": 90
+            },
+            "mobile-app": {
+                "type": "api_token",
+                "balance": 50.0,
+                "expire_days": 90
+            }
+        }
+
+        # Production environment - real tokens, high limits
+        prod_config = {
+            "web-app": {
+                "type": "api_token",
+                "balance": 500.0,
+                "expire_days": 90
+            },
+            "mobile-app": {
+                "type": "api_token",
+                "balance": 500.0,
+                "expire_days": 90
+            },
+            "api-gateway": {
+                "type": "api_token",
+                "balance": 1000.0,
+                "expire_days": 90
+            }
+        }
+
+        # Set up all environments
+        print("Setting up Development environment...")
+        lifecycle.setup_environment("dev", dev_config)
+
+        print("\nSetting up Staging environment...")
+        lifecycle.setup_environment("staging", staging_config)
+
+        print("\nSetting up Production environment...")
+        lifecycle.setup_environment("prod", prod_config)
+
+        print("\n✅ All environments set up successfully!")
+
+    if __name__ == "__main__":
+        setup_complete_system()
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Testing
+
+Test your token management system:
+
+```bash
+# Set up environments
+export EDENAI_API_KEY="your_main_api_key"
+python setup_environments.py
+
+# Run health check
+python main.py
+
+# Rotate a specific token
+python -c "
+from token_manager import TokenManager
+from token_rotation import TokenRotationManager
+import os
+
+manager = TokenManager(os.getenv('EDENAI_API_KEY'))
+rotation = TokenRotationManager(manager)
+
+result = rotation.rotate_token('prod-web-app')
+print(result['migration_steps'])
+"
+```
+
+## Production Considerations
+
+### Automated Rotation Schedule
+
+Use cron for automated token rotation:
+
+```bash
+# Rotate tokens expiring in 7 days, every day at 2 AM
+0 2 * * * /usr/bin/python3 /path/to/rotate_expiring.py >> /var/log/token_rotation.log 2>&1
+```
+
+### Secure Token Storage
+
+Store generated tokens securely:
+
+```python
+import boto3
+import json
+
+def store_token_in_secrets_manager(token_name: str, token_value: str):
+    """Store token in AWS Secrets Manager"""
+    client = boto3.client('secretsmanager')
+
+    secret_name = f"edenai/{token_name}"
+
+    try:
+        client.create_secret(
+            Name=secret_name,
+            SecretString=json.dumps({
+                'token': token_value,
+                'created_at': datetime.now().isoformat()
+            })
+        )
+    except client.exceptions.ResourceExistsException:
+        client.update_secret(
+            SecretId=secret_name,
+            SecretString=json.dumps({
+                'token': token_value,
+                'updated_at': datetime.now().isoformat()
+            })
+        )
+```
+
+### Monitoring Integration
+
+Integrate with monitoring systems:
+
+```python
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+def monitor_token_health():
+    """Log token health to monitoring system"""
+    alerts = TokenAlertSystem(manager)
+
+    expiring = alerts.check_expiring_tokens()
+    low_balance = alerts.check_low_balance_tokens()
+
+    if expiring:
+        logger.warning(f"{len(expiring)} tokens expiring soon")
+        # Send to monitoring system (Datadog, New Relic, etc.)
+
+    if low_balance:
+        logger.warning(f"{len(low_balance)} tokens with low balance")
+        # Send alert
+```
+
+## Next Steps
+
+Now that you have a complete multi-environment token management system:
+
+- [Manage Custom Tokens Guide](../how-to/user-management/manage-tokens.mdx) - API reference
+- [Monitor Usage and Costs](../how-to/cost-management/monitor-usage.mdx) - Track per-token spending
+- [Track and Optimize Spending](track-optimize-spending.mdx) - Cost optimization
+
+## Complete Example Output
+
+When you run `main.py`:
+
+```
+🔐 Multi-Environment Token Management System
+
+📊 Token Health Check
+============================================================
+Token Health Report
+============================================================
+
+⚠️  EXPIRING TOKENS:
+------------------------------------------------------------
+🟡 staging-web-app
+   Expires in 12 days
+🟡 staging-mobile-app
+   Expires in 12 days
+
+✓ All token balances adequate
+
+============================================================
+
+🗂️  Tokens by Environment
+
+DEV:
+  ✓ dev-web-app
+  ✓ dev-mobile-app
+  ✓ dev-testing
+
+STAGING:
+  ⚠️ staging-web-app
+     Balance: $8.45
+     Expires in: 12 days
+  ✓ staging-mobile-app
+     Balance: $42.10
+     Expires in: 12 days
+
+PROD:
+  ✓ prod-web-app
+     Balance: $478.90
+     Expires in: 85 days
+  ✓ prod-mobile-app
+     Balance: $456.23
+     Expires in: 85 days
+  ✓ prod-api-gateway
+     Balance: $892.34
+     Expires in: 85 days
+
+💰 Usage Report (Last 30 Days)
+============================================================
+Token Usage Report: 2024-01-01 to 2024-01-31
+============================================================
+
+Environment: DEV
+  Tokens: 3
+  Total Cost: $0.00
+  Total Calls: 1,234
+  Avg Cost/Call: $0.0000
+
+Environment: STAGING
+  Tokens: 2
+  Total Cost: $3.89
+  Total Calls: 456
+  Avg Cost/Call: $0.0085
+
+Environment: PROD
+  Tokens: 3
+  Total Cost: $127.11
+  Total Calls: 8,921
+  Avg Cost/Call: $0.0142
+
+TOTAL COST (ALL ENVIRONMENTS): $131.00
+============================================================
+
+🔄 Rotation Status
+⚠️  2 token(s) need rotation
+```

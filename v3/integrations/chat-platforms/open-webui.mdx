@@ -1,0 +1,657 @@
+# Open WebUI
+
+Configure Open WebUI (formerly Ollama WebUI) to use Eden AI for accessing 200+ AI models through a sleek interface.
+
+## Overview
+
+[Open WebUI](https://github.com/open-webui/open-webui) is a self-hosted, feature-rich web interface for AI models. By connecting it to Eden AI, you get:
+
+- **200+ models**: Access OpenAI, Anthropic, Google, Cohere, and more
+- **Modern UI**: Beautiful, responsive interface similar to ChatGPT
+- **RAG support**: Document upload and retrieval-augmented generation
+- **Multi-user**: User management with authentication
+- **Self-hosted**: Complete data privacy and control
+
+## Prerequisites
+
+- Docker installed
+- Eden AI API key from [https://app.edenai.run](https://app.edenai.run)
+- 2GB+ RAM recommended
+
+## Quick Start
+
+### Option 1: Docker (Recommended)
+
+Run Open WebUI with a single command:
+
+<CodeBlocks>
+  <CodeBlock title="bash">
+    ```bash
+    docker run -d \
+      --name open-webui \
+      -p 3000:8080 \
+      -v open-webui:/app/backend/data \
+      -e OPENAI_API_BASE_URL=https://api.edenai.run/v3/llm \
+      -e OPENAI_API_KEY=YOUR_EDEN_AI_API_KEY \
+      ghcr.io/open-webui/open-webui:main
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+Access Open WebUI at `http://localhost:3000`
+
+### Option 2: Docker Compose
+
+Create a `docker-compose.yml` file:
+
+<CodeBlocks>
+  <CodeBlock title="docker-compose.yml">
+    ```yaml
+    version: '3.8'
+
+    services:
+      open-webui:
+        image: ghcr.io/open-webui/open-webui:main
+        container_name: open-webui
+        ports:
+          - "3000:8080"
+        environment:
+          - OPENAI_API_BASE_URL=https://api.edenai.run/v3/llm
+          - OPENAI_API_KEY=${EDEN_AI_API_KEY}
+          - WEBUI_SECRET_KEY=${WEBUI_SECRET_KEY}
+        volumes:
+          - open-webui:/app/backend/data
+        restart: unless-stopped
+
+    volumes:
+      open-webui:
+    ```
+  </CodeBlock>
+
+  <CodeBlock title=".env">
+    ```bash
+    EDEN_AI_API_KEY=your_eden_ai_api_key_here
+    WEBUI_SECRET_KEY=your_random_secret_key_here
+    ```
+  </CodeBlock>
+
+  <CodeBlock title="bash">
+    ```bash
+    # Start Open WebUI
+    docker compose up -d
+
+    # View logs
+    docker compose logs -f
+
+    # Stop
+    docker compose down
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Configuration
+
+### Initial Setup
+
+1. **Open browser**: Navigate to `http://localhost:3000`
+2. **Create admin account**: Register the first user (becomes admin)
+3. **Configure models**: Go to Settings → Models
+
+### Add Eden AI Models
+
+In the Open WebUI interface:
+
+1. Click **Settings** (gear icon)
+2. Go to **Models** tab
+3. Add models in the format `provider/model`:
+
+<CodeBlocks>
+  <CodeBlock title="Models to Add">
+    ```
+    anthropic/claude-3-5-sonnet-20241022
+    anthropic/claude-3-opus-20240229
+    anthropic/claude-3-haiku-20240307
+    openai/gpt-4
+    openai/gpt-4-turbo
+    openai/gpt-4o
+    openai/gpt-3.5-turbo
+    google/gemini-pro
+    google/gemini-1.5-pro
+    cohere/command-r-plus
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+### Environment Variables
+
+Configure Open WebUI with environment variables:
+
+<CodeBlocks>
+  <CodeBlock title=".env">
+    ```bash
+    # Eden AI Configuration
+    OPENAI_API_BASE_URL=https://api.edenai.run/v3/llm
+    OPENAI_API_KEY=your_eden_ai_api_key
+
+    # Application Settings
+    WEBUI_SECRET_KEY=your_secret_key_here
+    WEBUI_NAME=Eden AI Chat
+    DATA_DIR=/app/backend/data
+
+    # Authentication
+    ENABLE_SIGNUP=true
+    DEFAULT_USER_ROLE=user
+
+    # Optional: RAG Settings
+    ENABLE_RAG_WEB_SEARCH=true
+    RAG_EMBEDDING_MODEL=text-embedding-3-small
+    RAG_TOP_K=5
+    CHUNK_SIZE=1500
+    CHUNK_OVERLAP=100
+
+    # Optional: Image Generation
+    ENABLE_IMAGE_GENERATION=true
+    IMAGE_GENERATION_MODEL=dall-e-3
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Features
+
+### Chat with Multiple Models
+
+1. **Select model**: Click the model dropdown at the top
+2. **Start chatting**: Type your message
+3. **Switch models**: Change models mid-conversation
+4. **Compare responses**: Use split-screen to compare model outputs
+
+### Document Upload (RAG)
+
+Upload documents for context-aware conversations:
+
+<CodeBlocks>
+  <CodeBlock title="docker-compose.yml">
+    ```yaml
+    services:
+      open-webui:
+        image: ghcr.io/open-webui/open-webui:main
+        environment:
+          - OPENAI_API_BASE_URL=https://api.edenai.run/v3/llm
+          - OPENAI_API_KEY=${EDEN_AI_API_KEY}
+          # Enable RAG
+          - ENABLE_RAG_WEB_SEARCH=true
+          - RAG_EMBEDDING_MODEL=openai/text-embedding-3-small
+          - RAG_EMBEDDING_ENGINE=openai
+          - RAG_EMBEDDING_OPENAI_BATCH_SIZE=1
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+**Usage:**
+1. Click the **+** icon in chat
+2. Upload PDF, DOCX, TXT, or other documents
+3. Ask questions about the uploaded content
+4. The AI retrieves relevant sections automatically
+
+### Image Generation
+
+Generate images using DALL-E or other providers:
+
+<CodeBlocks>
+  <CodeBlock title=".env">
+    ```bash
+    # Enable image generation
+    ENABLE_IMAGE_GENERATION=true
+    IMAGE_GENERATION_MODEL=openai/dall-e-3
+    IMAGE_GENERATION_ENGINE=openai
+
+    # Use Eden AI endpoint
+    AUTOMATIC1111_BASE_URL=https://api.edenai.run/v3
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+**Usage:**
+Type `/imagine` followed by your prompt in the chat.
+
+### Web Search
+
+Enable web search for up-to-date information:
+
+<CodeBlocks>
+  <CodeBlock title=".env">
+    ```bash
+    ENABLE_RAG_WEB_SEARCH=true
+    RAG_WEB_SEARCH_ENGINE=searxng
+    SEARXNG_QUERY_URL=https://searx.be/search?q=<query>
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+### Voice Input
+
+Enable voice-to-text:
+
+<CodeBlocks>
+  <CodeBlock title=".env">
+    ```bash
+    ENABLE_AUDIO=true
+    AUDIO_STT_ENGINE=openai
+    AUDIO_STT_MODEL=whisper-1
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Advanced Configuration
+
+### Multiple API Endpoints
+
+Configure multiple providers:
+
+<CodeBlocks>
+  <CodeBlock title="docker-compose.yml">
+    ```yaml
+    services:
+      open-webui:
+        image: ghcr.io/open-webui/open-webui:main
+        environment:
+          # Eden AI as primary
+          - OPENAI_API_BASE_URL=https://api.edenai.run/v3/llm
+          - OPENAI_API_KEY=${EDEN_AI_API_KEY}
+
+          # Additional endpoints (optional)
+          - OPENAI_API_BASE_URLS=https://api.edenai.run/v3/llm,https://api.openai.com/v1
+          - OPENAI_API_KEYS=${EDEN_AI_API_KEY},${OPENAI_API_KEY}
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+### Custom Model Metadata
+
+Define model capabilities and pricing:
+
+<CodeBlocks>
+  <CodeBlock title="models.json">
+    ```json
+    {
+      "models": [
+        {
+          "id": "anthropic/claude-3-5-sonnet-20241022",
+          "name": "Claude 3.5 Sonnet",
+          "owned_by": "anthropic",
+          "created": 1729900800,
+          "object": "model",
+          "info": {
+            "description": "Most intelligent Claude model",
+            "capabilities": {
+              "vision": true,
+              "function_calling": true
+            }
+          }
+        },
+        {
+          "id": "openai/gpt-4o",
+          "name": "GPT-4o",
+          "owned_by": "openai",
+          "created": 1715300000,
+          "object": "model",
+          "info": {
+            "description": "GPT-4 with vision",
+            "capabilities": {
+              "vision": true,
+              "function_calling": true
+            }
+          }
+        }
+      ]
+    }
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+### User Permissions
+
+Configure role-based access:
+
+<CodeBlocks>
+  <CodeBlock title=".env">
+    ```bash
+    # User registration
+    ENABLE_SIGNUP=true
+    DEFAULT_USER_ROLE=user
+
+    # Admin settings
+    ADMIN_EMAIL=admin@example.com
+
+    # Model access control
+    ENABLE_MODEL_FILTER=true
+    MODEL_FILTER_LIST=anthropic/claude-3-5-sonnet-20241022,openai/gpt-4
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+### Persistent Storage
+
+Configure data persistence:
+
+<CodeBlocks>
+  <CodeBlock title="docker-compose.yml">
+    ```yaml
+    services:
+      open-webui:
+        image: ghcr.io/open-webui/open-webui:main
+        volumes:
+          # Data persistence
+          - ./data:/app/backend/data
+          # Custom models
+          - ./models.json:/app/backend/models.json:ro
+          # User uploads
+          - ./uploads:/app/backend/uploads
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Security
+
+### Authentication
+
+Enable and configure authentication:
+
+<CodeBlocks>
+  <CodeBlock title=".env">
+    ```bash
+    # Require login
+    WEBUI_AUTH=true
+
+    # Session settings
+    WEBUI_SECRET_KEY=generate_strong_random_key_here
+    SESSION_TIMEOUT=3600
+
+    # OAuth (optional)
+    ENABLE_OAUTH_SIGNUP=true
+    OAUTH_CLIENT_ID=your_client_id
+    OAUTH_CLIENT_SECRET=your_client_secret
+    OAUTH_PROVIDER_NAME=Google
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+### HTTPS Setup
+
+Use a reverse proxy for HTTPS:
+
+<CodeBlocks>
+  <CodeBlock title="nginx.conf">
+    ```nginx
+    server {
+      listen 443 ssl http2;
+      server_name chat.yourdomain.com;
+
+      ssl_certificate /etc/ssl/certs/cert.pem;
+      ssl_certificate_key /etc/ssl/private/key.pem;
+
+      location / {
+        proxy_pass http://localhost:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # WebSocket support
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+      }
+    }
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+### Rate Limiting
+
+Protect your API key:
+
+<CodeBlocks>
+  <CodeBlock title=".env">
+    ```bash
+    # Rate limiting
+    ENABLE_RATE_LIMIT=true
+    RATE_LIMIT_REQUESTS=60
+    RATE_LIMIT_WINDOW=60
+
+    # Per-user limits
+    USER_PERMISSIONS_CHAT_DAILY_LIMIT=100
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Production Deployment
+
+### Full Production Stack
+
+<CodeBlocks>
+  <CodeBlock title="docker-compose.prod.yml">
+    ```yaml
+    version: '3.8'
+
+    services:
+      open-webui:
+        image: ghcr.io/open-webui/open-webui:main
+        container_name: open-webui
+        restart: always
+        ports:
+          - "127.0.0.1:3000:8080"
+        environment:
+          - OPENAI_API_BASE_URL=https://api.edenai.run/v3/llm
+          - OPENAI_API_KEY=${EDEN_AI_API_KEY}
+          - WEBUI_SECRET_KEY=${WEBUI_SECRET_KEY}
+          - ENABLE_SIGNUP=false
+          - DEFAULT_USER_ROLE=user
+          - WEBUI_AUTH=true
+        volumes:
+          - ./data:/app/backend/data
+          - ./uploads:/app/backend/uploads
+        healthcheck:
+          test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+          interval: 30s
+          timeout: 10s
+          retries: 3
+
+      nginx:
+        image: nginx:alpine
+        container_name: nginx-proxy
+        restart: always
+        ports:
+          - "80:80"
+          - "443:443"
+        volumes:
+          - ./nginx.conf:/etc/nginx/nginx.conf:ro
+          - ./ssl:/etc/ssl:ro
+        depends_on:
+          - open-webui
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+### Backup Strategy
+
+Backup your data regularly:
+
+<CodeBlocks>
+  <CodeBlock title="backup.sh">
+    ```bash
+    #!/bin/bash
+
+    # Backup directory
+    BACKUP_DIR="./backups/$(date +%Y%m%d_%H%M%S)"
+    mkdir -p "$BACKUP_DIR"
+
+    # Backup data
+    docker compose exec open-webui tar czf /tmp/backup.tar.gz /app/backend/data
+    docker cp open-webui:/tmp/backup.tar.gz "$BACKUP_DIR/"
+
+    # Backup database (if using external DB)
+    # docker compose exec postgres pg_dump -U user dbname > "$BACKUP_DIR/db.sql"
+
+    echo "Backup completed: $BACKUP_DIR"
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Troubleshooting
+
+### Models Not Appearing
+
+If models don't show up:
+
+1. **Check API key**:
+   ```bash
+   docker compose logs open-webui | grep -i "api"
+   ```
+
+2. **Verify base URL**:
+   ```bash
+   docker compose exec open-webui env | grep OPENAI_API_BASE_URL
+   ```
+
+3. **Test endpoint manually**:
+   ```bash
+   curl -X POST https://api.edenai.run/v3/llm/chat/completions \
+     -H "Authorization: Bearer YOUR_API_KEY" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "model": "anthropic/claude-3-5-sonnet-20241022",
+       "messages": [{"role": "user", "content": "test"}],
+       "stream": true
+     }'
+   ```
+
+4. **Restart container**:
+   ```bash
+   docker compose restart open-webui
+   ```
+
+### Authentication Issues
+
+If you can't log in:
+
+1. **Reset admin password**:
+   ```bash
+   docker compose exec open-webui python manage.py reset-admin-password
+   ```
+
+2. **Check secret key**:
+   ```bash
+   docker compose exec open-webui env | grep WEBUI_SECRET_KEY
+   ```
+
+### Performance Issues
+
+If the UI is slow:
+
+1. **Check resource usage**:
+   ```bash
+   docker stats open-webui
+   ```
+
+2. **Increase memory**:
+   ```yaml
+   services:
+     open-webui:
+       deploy:
+         resources:
+           limits:
+             memory: 4G
+   ```
+
+3. **Optimize database**:
+   ```bash
+   docker compose exec open-webui python manage.py optimize-db
+   ```
+
+### RAG Not Working
+
+If document upload fails:
+
+1. **Check volume mounts**:
+   ```bash
+   docker compose exec open-webui ls -la /app/backend/uploads
+   ```
+
+2. **Verify embedding model**:
+   ```bash
+   docker compose exec open-webui env | grep RAG_EMBEDDING
+   ```
+
+3. **Check logs**:
+   ```bash
+   docker compose logs open-webui | grep -i "rag"
+   ```
+
+## Cost Optimization
+
+### 1. Use Appropriate Models
+
+Configure cheaper models for embeddings:
+
+<CodeBlocks>
+  <CodeBlock title=".env">
+    ```bash
+    # Use smaller embedding model
+    RAG_EMBEDDING_MODEL=text-embedding-3-small
+
+    # Use GPT-3.5 for simple tasks
+    DEFAULT_MODEL=openai/gpt-3.5-turbo
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+### 2. Limit Token Usage
+
+Set maximum tokens:
+
+<CodeBlocks>
+  <CodeBlock title=".env">
+    ```bash
+    # Limit response length
+    MAX_TOKENS=1000
+
+    # Limit context
+    MAX_CONTEXT_LENGTH=4000
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+### 3. Monitor Usage
+
+Track costs in Eden AI dashboard:
+- Visit [https://app.edenai.run](https://app.edenai.run)
+- View usage reports
+- Set billing alerts
+
+## Example Workflows
+
+### 1. Customer Support Bot
+
+- **Upload support docs** using RAG
+- **Create templates** for common queries
+- **Use Claude Haiku** for cost-effective responses
+
+### 2. Code Assistant
+
+- **Use GPT-4 or Claude** for complex code
+- **Enable file upload** for code review
+- **Configure presets** for different languages
+
+### 3. Research Assistant
+
+- **Enable web search** for current information
+- **Use Gemini Pro** for long context
+- **RAG for internal** documents
+
+## Next Steps
+
+- [LibreChat](./librechat) - Alternative chat platform
+- [Continue.dev](../ai-assistants/continue-dev) - IDE integration
+- [API Reference](/v3-api/reference) - Complete API documentation
+- [Cost Management](../../how-to/cost-management/monitor-usage) - Monitor spending

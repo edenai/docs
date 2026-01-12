@@ -1,0 +1,357 @@
+---
+icon: "route"
+---
+# Smart Routing: Let AI Choose the Best Model
+
+Get optimal model selection automatically with Eden AI's smart routing feature. Instead of manually selecting models, let the system intelligently route your requests based on context.
+
+## Overview
+
+Smart routing uses the special model identifier `@edenai` to dynamically select the best LLM model for your request. The system analyzes your messages, tools, and other context to route to the optimal provider/model combination.
+
+**Key Benefits:**
+
+- **Automatic optimization** - No need to research and compare models
+- **Cost efficiency** - Routes to models with the best price/performance ratio
+- **Context-aware** - Selection adapts to your specific request
+- **Fallback resilience** - Automatic fallback if routing fails
+- **Works with all features** - Streaming, function calling, vision, etc.
+
+**Powered by:** [NotDiamond](https://notdiamond.ai/) routing engine
+
+## Quick Start: Your First Routed Request
+
+The simplest way to use smart routing is to set `model: "@edenai"`:
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import requests
+
+    url = "https://api.edenai.run/v3/llm/chat/completions"
+    headers = {
+        "Authorization": "Bearer YOUR_API_KEY",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "model": "@edenai",  # Let Eden AI choose the best model
+        "messages": [
+            {"role": "user", "content": "Explain quantum computing in simple terms"}
+        ],
+        "stream": True
+    }
+
+    # The system automatically selects the optimal model
+    response = requests.post(url, headers=headers, json=payload, stream=True)
+
+    for line in response.iter_lines():
+        if line:
+            print(line.decode('utf-8'))
+    ```
+  </CodeBlock>
+
+  <CodeBlock title="JavaScript">
+    ```javascript
+    const url = 'https://api.edenai.run/v3/llm/chat/completions';
+    const headers = {
+      'Authorization': 'Bearer YOUR_API_KEY',
+      'Content-Type': 'application/json'
+    };
+
+    const payload = {
+      model: '@edenai',  // Let Eden AI choose the best model
+      messages: [
+        {role: 'user', content: 'Explain quantum computing in simple terms'}
+      ],
+      stream: true
+    };
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify(payload)
+    });
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+
+    while (true) {
+      const {done, value} = await reader.read();
+      if (done) break;
+      console.log(decoder.decode(value));
+    }
+    ```
+  </CodeBlock>
+
+  <CodeBlock title="cURL">
+    ```bash
+    curl -X POST https://api.edenai.run/v3/llm/chat/completions \
+      -H "Authorization: Bearer YOUR_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "model": "@edenai",
+        "messages": [
+          {"role": "user", "content": "Explain quantum computing in simple terms"}
+        ],
+        "stream": true
+      }'
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+That's it! The system will automatically select the best model from all available options.
+
+## How It Works
+
+When you use `model: "@edenai"`, here's what happens:
+
+1. **Request Analysis** - The system analyzes your messages, tools, and parameters
+2. **Model Selection** - NotDiamond's routing engine selects the optimal model from available candidates
+3. **Transparent Routing** - Your request is routed to the selected model
+4. **Normal Response** - You receive the response as if you had specified the model directly
+
+**Typical latency:** 100-500ms additional processing time for model selection
+
+## Customizing Model Candidates
+
+By default, smart routing considers all available models. You can customize the candidate pool with `router_candidates`:
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import requests
+
+    url = "https://api.edenai.run/v3/llm/chat/completions"
+    headers = {
+        "Authorization": "Bearer YOUR_API_KEY",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "model": "@edenai",
+        "router_candidates": [
+            "openai/gpt-4o",
+            "anthropic/claude-sonnet-4-5",
+            "google/gemini-2.0-flash"
+        ],
+        "messages": [
+            {"role": "user", "content": "Write a Python function to sort a list"}
+        ],
+        "stream": True
+    }
+
+    # Router will choose from only these 3 models
+    response = requests.post(url, headers=headers, json=payload, stream=True)
+
+    for line in response.iter_lines():
+        if line:
+            print(line.decode('utf-8'))
+    ```
+  </CodeBlock>
+
+  <CodeBlock title="JavaScript">
+    ```javascript
+    const payload = {
+      model: '@edenai',
+      router_candidates: [
+        'openai/gpt-4o',
+        'anthropic/claude-sonnet-4-5',
+        'google/gemini-2.0-flash'
+      ],
+      messages: [
+        {role: 'user', content: 'Write a Python function to sort a list'}
+      ],
+      stream: true
+    };
+
+    const response = await fetch('https://api.edenai.run/v3/llm/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer YOUR_API_KEY',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+    ```
+  </CodeBlock>
+
+  <CodeBlock title="cURL">
+    ```bash
+    curl -X POST https://api.edenai.run/v3/llm/chat/completions \
+      -H "Authorization: Bearer YOUR_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "model": "@edenai",
+        "router_candidates": [
+          "openai/gpt-4o",
+          "anthropic/claude-sonnet-4-5",
+          "google/gemini-2.0-flash"
+        ],
+        "messages": [
+          {"role": "user", "content": "Write a Python function to sort a list"}
+        ],
+        "stream": true
+      }'
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## When to Use Smart Routing
+
+### ✅ Great Use Cases
+
+- **General-purpose chatbots** - Let the router optimize for diverse queries
+- **Cost-sensitive applications** - Router balances quality and cost
+- **Multi-task applications** - Different queries benefit from different models
+- **Experimentation** - Compare router performance vs. fixed models
+
+### ⚠️ Consider Fixed Models Instead
+
+- **Specific model requirements** - You need a particular model's unique features
+- **Latency-critical** - Every 100ms matters (smart routing adds overhead)
+- **Consistent behavior** - You need identical model behavior across requests
+- **High-volume production** - You've already optimized model selection
+
+## Model Selection Criteria
+
+The routing engine considers multiple factors:
+
+- **Task type** - Code generation, creative writing, analysis, etc.
+- **Conversation context** - Prior messages and conversation flow
+- **Tool/function calls** - Compatibility with function calling requirements
+- **Quality requirements** - Implicit in message complexity
+- **Cost efficiency** - Price/performance optimization
+
+## Default Model Pool
+
+When you don't specify `router_candidates`, the system uses all available LLM models, including:
+
+**Top-tier Models:**
+- OpenAI: GPT-4, GPT-4 Turbo, GPT-4o, GPT-5 (latest versions)
+- Anthropic: Claude Haiku, Sonnet, Opus (4.x series)
+- Google: Gemini 2.0/2.5/3.0 (Flash and Pro)
+- Mistral: Large, Medium, Small models
+
+**Specialized Models:**
+- X.AI: Grok 3, Grok 4
+- Together.ai: Llama 3/3.1 models
+- Cohere: Command R, Command R+
+- Perplexity: Sonar
+
+The exact pool is dynamically managed and may change as new models become available.
+
+## Fallback Behavior
+
+Smart routing includes intelligent fallbacks:
+
+1. **With custom candidates** - Falls back to first candidate on routing failure
+2. **Without candidates** - Falls back to `openai/gpt-4o` (reliable default)
+3. **Transparent errors** - You'll see clear error messages if routing fails completely
+
+<Callout type="info">
+**Reliability:** Fallback ensures your requests always succeed, even if the routing service is temporarily unavailable.
+</Callout>
+
+## Response Format
+
+Smart routing responses are identical to fixed-model responses. The streaming format follows OpenAI's SSE standard:
+
+```
+data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1234567890,"model":"openai/gpt-4o","choices":[{"index":0,"delta":{"role":"assistant","content":"Hello"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1234567890,"model":"openai/gpt-4o","choices":[{"index":0,"delta":{"content":"!"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1234567890,"model":"openai/gpt-4o","choices":[{"index":0,"delta":{},"finish_reason":"stop"}]}
+
+data: [DONE]
+```
+
+<Callout type="tip">
+**Tracking:** The `model` field in the response shows which model was selected by the router.
+</Callout>
+
+## OpenAI SDK Compatibility
+
+Smart routing works seamlessly with the OpenAI Python SDK:
+
+<CodeBlocks>
+  <CodeBlock title="Python (OpenAI SDK)">
+    ```python
+    from openai import OpenAI
+
+    client = OpenAI(
+        api_key="YOUR_API_KEY",
+        base_url="https://api.edenai.run/v3/llm"
+    )
+
+    # Use smart routing with OpenAI SDK
+    stream = client.chat.completions.create(
+        model="@edenai",
+        messages=[
+            {"role": "user", "content": "Tell me a joke"}
+        ],
+        stream=True,
+        extra_body={  # Custom parameters
+            "router_candidates": [
+                "openai/gpt-4o",
+                "anthropic/claude-sonnet-4-5"
+            ]
+        }
+    )
+
+    for chunk in stream:
+        if chunk.choices[0].delta.content:
+            print(chunk.choices[0].delta.content, end="")
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+<Callout type="info">
+**SDK Integration:** Use `extra_body` to pass the `router_candidates` parameter when using the OpenAI SDK.
+</Callout>
+
+## Pricing
+
+Smart routing costs are based on the **selected model's pricing**. The routing decision itself is free.
+
+**Example:**
+- If router selects `openai/gpt-4o` → You pay GPT-4o rates
+- If router selects `google/gemini-2.0-flash` → You pay Gemini Flash rates
+
+The router optimizes for cost-effectiveness, often selecting cheaper models when they meet quality requirements.
+
+## Next Steps
+
+Now that you understand smart routing basics:
+
+- **[Smart Routing How-To Guide](../how-to/llm/smart-routing.mdx)** - Advanced patterns and best practices
+- **[Optimize LLM Costs Tutorial](../tutorials/optimize-llm-costs.mdx)** - Complete cost optimization workflow
+- **[Streaming Guide](../how-to/llm/streaming.mdx)** - Handle SSE responses effectively
+- **[Function Calling](../how-to/llm/chat-completions.mdx#function-calling)** - Use tools with smart routing
+
+## Troubleshooting
+
+### Router returns error "no candidates provided"
+
+**Cause:** Empty `router_candidates` list or all candidates filtered out
+**Solution:** Omit `router_candidates` to use default pool, or provide valid model strings
+
+### Higher latency than expected
+
+**Cause:** Routing decision adds 100-500ms overhead
+**Solution:** Use fixed models for latency-critical applications
+
+### Unexpected model selection
+
+**Cause:** Router optimizes for multiple factors, not just quality
+**Solution:** Use `router_candidates` to limit selection pool, or switch to fixed models
+
+### "Router API unavailable" errors
+
+**Cause:** Temporary routing service outage
+**Solution:** System automatically falls back - check if fallback model meets your needs
+
+<Callout type="tip">
+**Getting Started:** Start with default routing (`model: "@edenai"`), then customize with `router_candidates` if needed.
+</Callout>

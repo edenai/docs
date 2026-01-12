@@ -1,0 +1,657 @@
+# TypeScript (OpenAI SDK)
+
+Use the official OpenAI TypeScript/JavaScript SDK with Eden AI for seamless multi-provider access.
+
+## Overview
+
+The OpenAI TypeScript SDK works perfectly with Eden AI's V3 API. Configure the base URL and start using 200+ models from multiple providers.
+
+## Installation
+
+Install the OpenAI SDK for Node.js:
+
+<CodeBlocks>
+  <CodeBlock title="npm">
+    ```bash
+    npm install openai
+    ```
+  </CodeBlock>
+
+  <CodeBlock title="yarn">
+    ```bash
+    yarn add openai
+    ```
+  </CodeBlock>
+
+  <CodeBlock title="pnpm">
+    ```bash
+    pnpm add openai
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Quick Start
+
+Configure the client to use Eden AI:
+
+<CodeBlocks>
+  <CodeBlock title="TypeScript">
+    ```typescript
+    import OpenAI from 'openai';
+
+    const client = new OpenAI({
+      apiKey: 'YOUR_EDEN_AI_API_KEY',
+      baseURL: 'https://api.edenai.run/v3/llm',
+    });
+
+    async function main() {
+      const stream = await client.chat.completions.create({
+        model: 'openai/gpt-4',
+        messages: [{ role: 'user', content: 'Hello! How are you?' }],
+        stream: true,
+      });
+
+      for await (const chunk of stream) {
+        const content = chunk.choices[0]?.delta?.content;
+        if (content) {
+          process.stdout.write(content);
+        }
+      }
+    }
+
+    main();
+    ```
+  </CodeBlock>
+
+  <CodeBlock title="JavaScript (ESM)">
+    ```javascript
+    import OpenAI from 'openai';
+
+    const client = new OpenAI({
+      apiKey: 'YOUR_EDEN_AI_API_KEY',
+      baseURL: 'https://api.edenai.run/v3/llm',
+    });
+
+    const stream = await client.chat.completions.create({
+      model: 'anthropic/claude-3-5-sonnet-20241022',
+      messages: [{ role: 'user', content: 'Hello!' }],
+      stream: true,
+    });
+
+    for await (const chunk of stream) {
+      const content = chunk.choices[0]?.delta?.content;
+      if (content) {
+        process.stdout.write(content);
+      }
+    }
+    ```
+  </CodeBlock>
+
+  <CodeBlock title="JavaScript (CommonJS)">
+    ```javascript
+    const OpenAI = require('openai');
+
+    const client = new OpenAI({
+      apiKey: 'YOUR_EDEN_AI_API_KEY',
+      baseURL: 'https://api.edenai.run/v3/llm',
+    });
+
+    async function main() {
+      const stream = await client.chat.completions.create({
+        model: 'openai/gpt-4',
+        messages: [{ role: 'user', content: 'Hello!' }],
+        stream: true,
+      });
+
+      for await (const chunk of stream) {
+        const content = chunk.choices[0]?.delta?.content;
+        if (content) {
+          process.stdout.write(content);
+        }
+      }
+    }
+
+    main();
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Available Models
+
+Access models from multiple providers:
+
+### OpenAI
+- `openai/gpt-4`
+- `openai/gpt-4-turbo`
+- `openai/gpt-4o`
+- `openai/gpt-3.5-turbo`
+
+### Anthropic
+- `anthropic/claude-3-5-sonnet-20241022`
+- `anthropic/claude-3-opus-20240229`
+- `anthropic/claude-3-sonnet-20240229`
+
+### Google
+- `google/gemini-pro`
+- `google/gemini-1.5-pro`
+- `google/gemini-1.5-flash`
+
+### Cohere & Meta
+- `cohere/command-r-plus`
+- `meta/llama-3-70b`
+
+## Multi-Turn Conversations
+
+Build stateful chat applications:
+
+<CodeBlocks>
+  <CodeBlock title="TypeScript">
+    ```typescript
+    import OpenAI from 'openai';
+    import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
+
+    const client = new OpenAI({
+      apiKey: process.env.EDEN_AI_API_KEY!,
+      baseURL: 'https://api.edenai.run/v3/llm',
+    });
+
+    async function chat() {
+      const messages: ChatCompletionMessageParam[] = [
+        { role: 'system', content: 'You are a helpful assistant.' },
+        { role: 'user', content: 'What is the capital of France?' },
+      ];
+
+      // First interaction
+      const stream1 = await client.chat.completions.create({
+        model: 'anthropic/claude-3-5-sonnet-20241022',
+        messages,
+        stream: true,
+      });
+
+      let assistantResponse = '';
+      for await (const chunk of stream1) {
+        const content = chunk.choices[0]?.delta?.content;
+        if (content) {
+          process.stdout.write(content);
+          assistantResponse += content;
+        }
+      }
+
+      // Add to conversation history
+      messages.push({ role: 'assistant', content: assistantResponse });
+      messages.push({ role: 'user', content: "What's the population?" });
+
+      // Continue conversation
+      const stream2 = await client.chat.completions.create({
+        model: 'anthropic/claude-3-5-sonnet-20241022',
+        messages,
+        stream: true,
+      });
+
+      for await (const chunk of stream2) {
+        const content = chunk.choices[0]?.delta?.content;
+        if (content) {
+          process.stdout.write(content);
+        }
+      }
+    }
+
+    chat();
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Advanced Parameters
+
+Control model behavior:
+
+<CodeBlocks>
+  <CodeBlock title="TypeScript">
+    ```typescript
+    import OpenAI from 'openai';
+
+    const client = new OpenAI({
+      apiKey: process.env.EDEN_AI_API_KEY!,
+      baseURL: 'https://api.edenai.run/v3/llm',
+    });
+
+    const stream = await client.chat.completions.create({
+      model: 'openai/gpt-4',
+      messages: [
+        { role: 'user', content: 'Write a creative story about AI.' },
+      ],
+      temperature: 0.9,        // Higher = more creative (0-2)
+      max_tokens: 500,         // Limit response length
+      top_p: 1.0,              // Nucleus sampling
+      frequency_penalty: 0.0,  // Penalize repetition
+      presence_penalty: 0.0,   // Penalize topic repetition
+      stream: true,
+    });
+
+    for await (const chunk of stream) {
+      const content = chunk.choices[0]?.delta?.content;
+      if (content) {
+        process.stdout.write(content);
+      }
+    }
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Vision Capabilities
+
+Send images to vision models:
+
+<CodeBlocks>
+  <CodeBlock title="TypeScript">
+    ```typescript
+    import OpenAI from 'openai';
+    import FormData from 'form-data';
+    import fs from 'fs';
+    import fetch from 'node-fetch';
+
+    const client = new OpenAI({
+      apiKey: process.env.EDEN_AI_API_KEY!,
+      baseURL: 'https://api.edenai.run/v3/llm',
+    });
+
+    async function analyzeImage() {
+      // First, upload the image
+      const formData = new FormData();
+      formData.append('file', fs.createReadStream('image.jpg'));
+
+      const uploadResponse = await fetch(
+        'https://api.edenai.run/v3/upload',
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${process.env.EDEN_AI_API_KEY}`,
+          },
+          body: formData,
+        }
+      );
+
+      const { file_id } = await uploadResponse.json();
+
+      // Use file_id in chat
+      const stream = await client.chat.completions.create({
+        model: 'openai/gpt-4o',
+        messages: [
+          {
+            role: 'user',
+            content: [
+              { type: 'text', text: "What's in this image?" },
+              { type: 'file', file: { file_id } },
+            ],
+          },
+        ],
+        stream: true,
+      });
+
+      for await (const chunk of stream) {
+        const content = chunk.choices[0]?.delta?.content;
+        if (content) {
+          process.stdout.write(content);
+        }
+      }
+    }
+
+    analyzeImage();
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Error Handling
+
+Handle API errors properly:
+
+<CodeBlocks>
+  <CodeBlock title="TypeScript">
+    ```typescript
+    import OpenAI from 'openai';
+
+    const client = new OpenAI({
+      apiKey: process.env.EDEN_AI_API_KEY!,
+      baseURL: 'https://api.edenai.run/v3/llm',
+    });
+
+    async function safeChat() {
+      try {
+        const stream = await client.chat.completions.create({
+          model: 'openai/gpt-4',
+          messages: [{ role: 'user', content: 'Hello!' }],
+          stream: true,
+        });
+
+        for await (const chunk of stream) {
+          const content = chunk.choices[0]?.delta?.content;
+          if (content) {
+            process.stdout.write(content);
+          }
+        }
+      } catch (error) {
+        if (error instanceof OpenAI.APIError) {
+          console.error(`API Error (${error.status}):`, error.message);
+
+          if (error.status === 401) {
+            console.error('Authentication failed. Check your API key.');
+          } else if (error.status === 429) {
+            console.error('Rate limit exceeded. Please wait and retry.');
+          } else if (error.status === 402) {
+            console.error('Insufficient credits. Please add credits to your account.');
+          }
+        } else {
+          console.error('Unexpected error:', error);
+        }
+      }
+    }
+
+    safeChat();
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Express.js Integration
+
+Build a chat API with Express:
+
+<CodeBlocks>
+  <CodeBlock title="TypeScript">
+    ```typescript
+    import express from 'express';
+    import OpenAI from 'openai';
+
+    const app = express();
+    app.use(express.json());
+
+    const client = new OpenAI({
+      apiKey: process.env.EDEN_AI_API_KEY!,
+      baseURL: 'https://api.edenai.run/v3/llm',
+    });
+
+    app.post('/api/chat', async (req, res) => {
+      try {
+        const { messages, model = 'openai/gpt-4' } = req.body;
+
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+
+        const stream = await client.chat.completions.create({
+          model,
+          messages,
+          stream: true,
+        });
+
+        for await (const chunk of stream) {
+          const content = chunk.choices[0]?.delta?.content;
+          if (content) {
+            res.write(`data: ${JSON.stringify({ content })}\n\n`);
+          }
+        }
+
+        res.write('data: [DONE]\n\n');
+        res.end();
+      } catch (error) {
+        console.error('Error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+      }
+    });
+
+    app.listen(3000, () => {
+      console.log('Server running on http://localhost:3000');
+    });
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## React Integration
+
+Stream responses in a React application:
+
+<CodeBlocks>
+  <CodeBlock title="TypeScript (React)">
+    ```typescript
+    import { useState } from 'react';
+
+    export function ChatComponent() {
+      const [messages, setMessages] = useState<Array<{role: string, content: string}>>([]);
+      const [input, setInput] = useState('');
+      const [streaming, setStreaming] = useState(false);
+
+      const sendMessage = async () => {
+        if (!input.trim()) return;
+
+        const userMessage = { role: 'user', content: input };
+        const updatedMessages = [...messages, userMessage];
+        setMessages(updatedMessages);
+        setInput('');
+        setStreaming(true);
+
+        try {
+          const response = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              messages: updatedMessages,
+              model: 'anthropic/claude-3-5-sonnet-20241022',
+            }),
+          });
+
+          const reader = response.body?.getReader();
+          const decoder = new TextDecoder();
+          let assistantMessage = '';
+
+          if (reader) {
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+
+              const chunk = decoder.decode(value);
+              const lines = chunk.split('\n');
+
+              for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                  const data = line.slice(6);
+                  if (data === '[DONE]') continue;
+
+                  try {
+                    const parsed = JSON.parse(data);
+                    assistantMessage += parsed.content;
+                    setMessages([
+                      ...updatedMessages,
+                      { role: 'assistant', content: assistantMessage },
+                    ]);
+                  } catch (e) {
+                    // Ignore parse errors
+                  }
+                }
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Error:', error);
+        } finally {
+          setStreaming(false);
+        }
+      };
+
+      return (
+        <div>
+          <div className="messages">
+            {messages.map((msg, i) => (
+              <div key={i} className={msg.role}>
+                <strong>{msg.role}:</strong> {msg.content}
+              </div>
+            ))}
+          </div>
+          <input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+            disabled={streaming}
+          />
+          <button onClick={sendMessage} disabled={streaming}>
+            {streaming ? 'Sending...' : 'Send'}
+          </button>
+        </div>
+      );
+    }
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Environment Variables
+
+Use `.env` files for configuration:
+
+<CodeBlocks>
+  <CodeBlock title=".env">
+    ```bash
+    EDEN_AI_API_KEY=your_api_key_here
+    ```
+  </CodeBlock>
+
+  <CodeBlock title="TypeScript">
+    ```typescript
+    import 'dotenv/config';
+    import OpenAI from 'openai';
+
+    const client = new OpenAI({
+      apiKey: process.env.EDEN_AI_API_KEY!,
+      baseURL: 'https://api.edenai.run/v3/llm',
+    });
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Complete Chat CLI Example
+
+Build a command-line chat interface:
+
+<CodeBlocks>
+  <CodeBlock title="TypeScript">
+    ```typescript
+    import OpenAI from 'openai';
+    import readline from 'readline';
+    import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
+
+    const client = new OpenAI({
+      apiKey: process.env.EDEN_AI_API_KEY!,
+      baseURL: 'https://api.edenai.run/v3/llm',
+    });
+
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout,
+    });
+
+    async function main() {
+      const messages: ChatCompletionMessageParam[] = [
+        { role: 'system', content: 'You are a helpful assistant.' },
+      ];
+
+      console.log('Chat with AI (type "quit" to exit)');
+      console.log('-'.repeat(50));
+
+      const askQuestion = () => {
+        rl.question('\nYou: ', async (input) => {
+          const userInput = input.trim();
+
+          if (userInput.toLowerCase() === 'quit') {
+            rl.close();
+            return;
+          }
+
+          if (!userInput) {
+            askQuestion();
+            return;
+          }
+
+          messages.push({ role: 'user', content: userInput });
+
+          process.stdout.write('\nAssistant: ');
+
+          try {
+            const stream = await client.chat.completions.create({
+              model: 'anthropic/claude-3-5-sonnet-20241022',
+              messages,
+              temperature: 0.7,
+              stream: true,
+            });
+
+            let assistantResponse = '';
+
+            for await (const chunk of stream) {
+              const content = chunk.choices[0]?.delta?.content;
+              if (content) {
+                process.stdout.write(content);
+                assistantResponse += content;
+              }
+            }
+
+            console.log(); // New line
+            messages.push({ role: 'assistant', content: assistantResponse });
+          } catch (error) {
+            console.error('\nError:', error);
+          }
+
+          askQuestion();
+        });
+      };
+
+      askQuestion();
+    }
+
+    main();
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## List Available Models
+
+Programmatically discover models:
+
+<CodeBlocks>
+  <CodeBlock title="TypeScript">
+    ```typescript
+    import fetch from 'node-fetch';
+
+    async function listModels() {
+      const response = await fetch('https://api.edenai.run/v3/llm/models', {
+        headers: {
+          Authorization: `Bearer ${process.env.EDEN_AI_API_KEY}`,
+        },
+      });
+
+      const data = await response.json();
+
+      // Group by provider
+      const providers: Record<string, string[]> = {};
+
+      for (const model of data.data) {
+        const provider = model.owned_by;
+        if (!providers[provider]) {
+          providers[provider] = [];
+        }
+        providers[provider].push(model.id);
+      }
+
+      console.log('Available Models:\n');
+      for (const [provider, models] of Object.entries(providers)) {
+        console.log(`${provider}:`);
+        models.forEach(m => console.log(`  - ${m}`));
+        console.log();
+      }
+    }
+
+    listModels();
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Next Steps
+
+- [Vision Capabilities](../../how-to/llm/vision-capabilities) - Working with images
+- [Streaming Responses](../../how-to/llm/streaming) - Handle Server-Sent Events
+- [API Reference](/v3-api/reference) - Complete API documentation

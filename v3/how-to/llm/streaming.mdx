@@ -1,0 +1,400 @@
+# Streaming Responses with Server-Sent Events
+
+Learn how to handle streaming responses from the V3 LLM endpoint using Server-Sent Events (SSE).
+
+## Overview
+
+V3 requires **mandatory streaming** for all LLM responses. All chat completions are delivered via Server-Sent Events (SSE), providing real-time token-by-token output.
+
+**Benefits:**
+- Immediate response feedback
+- Better user experience with progressive display
+- Lower perceived latency
+
+## Server-Sent Events Format
+
+SSE responses follow this pattern:
+
+```
+data: {JSON_CHUNK}
+
+data: {JSON_CHUNK}
+
+data: [DONE]
+```
+
+Each line starts with `data: ` followed by JSON or the `[DONE]` marker.
+
+## Parsing Streaming Responses
+
+### Python with requests
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import requests
+    import json
+
+    url = "https://api.edenai.run/v3/llm/chat/completions"
+    headers = {
+        "Authorization": "Bearer YOUR_API_KEY",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "model": "openai/gpt-4",
+        "messages": [{"role": "user", "content": "Tell me a short story"}],
+        "stream": True
+    }
+
+    response = requests.post(url, headers=headers, json=payload, stream=True)
+
+    full_content = ""
+
+    for line in response.iter_lines():
+        if line:
+            line_str = line.decode('utf-8')
+            
+            # Skip empty lines and non-data lines
+            if not line_str.startswith('data: '):
+                continue
+            
+            # Extract data after 'data: ' prefix
+            data = line_str[6:]
+            
+            # Check for end of stream
+            if data == '[DONE]':
+                break
+            
+            # Parse JSON chunk
+            try:
+                chunk = json.loads(data)
+                delta = chunk['choices'][0]['delta']
+                
+                if 'content' in delta:
+                    content = delta['content']
+                    full_content += content
+                    print(content, end='', flush=True)
+                    
+            except json.JSONDecodeError:
+                continue
+
+    print(f"\n\nFull response: {full_content}")
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+### JavaScript with Fetch API
+
+<CodeBlocks>
+  <CodeBlock title="JavaScript">
+    ```javascript
+    const url = 'https://api.edenai.run/v3/llm/chat/completions';
+    const headers = {
+      'Authorization': 'Bearer YOUR_API_KEY',
+      'Content-Type': 'application/json'
+    };
+
+    const payload = {
+      model: 'openai/gpt-4',
+      messages: [{role: 'user', content: 'Tell me a short story'}],
+      stream: true
+    };
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify(payload)
+    });
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const {done, value} = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, {stream: true});
+      const lines = buffer.split('\n');
+      buffer = lines.pop(); // Keep incomplete line in buffer
+
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          const data = line.slice(6);
+          
+          if (data === '[DONE]') {
+            console.log('\nStream finished');
+            break;
+          }
+
+          try {
+            const chunk = JSON.parse(data);
+            const content = chunk.choices[0]?.delta?.content;
+            if (content) {
+              process.stdout.write(content);
+            }
+          } catch (e) {
+            // Ignore parse errors
+          }
+        }
+      }
+    }
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+### Python with OpenAI SDK
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    from openai import OpenAI
+
+    client = OpenAI(
+        api_key="YOUR_EDEN_AI_API_KEY",
+        base_url="https://api.edenai.run/v3/llm"
+    )
+
+    stream = client.chat.completions.create(
+        model="anthropic/claude-3-5-sonnet-20241022",
+        messages=[{"role": "user", "content": "Tell me a short story"}],
+        stream=True
+    )
+
+    full_content = ""
+
+    for chunk in stream:
+        if chunk.choices[0].delta.content:
+            content = chunk.choices[0].delta.content
+            full_content += content
+            print(content, end='', flush=True)
+
+    print(f"\n\nComplete response: {full_content}")
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Chunk Structure
+
+Each JSON chunk follows OpenAI's format:
+
+```json
+{
+  "id": "chatcmpl-abc123",
+  "object": "chat.completion.chunk",
+  "created": 1677652288,
+  "model": "gpt-4",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "Hello"
+      },
+      "finish_reason": null
+    }
+  ]
+}
+```
+
+### Key Fields
+
+| Field | Description |
+|-------|-------------|
+| `id` | Unique completion ID |
+| `created` | Unix timestamp |
+| `model` | Model used |
+| `choices[].delta.role` | Role (only in first chunk) |
+| `choices[].delta.content` | Token content |
+| `choices[].finish_reason` | Stop reason in final chunk (`stop`, `length`, etc.) |
+
+## Handling Different Finish Reasons
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import json
+    import requests
+    for line in response.iter_lines():
+        if line:
+            line_str = line.decode('utf-8')
+            if line_str.startswith('data: '):
+                data = line_str[6:]
+                
+                if data == '[DONE]':
+                    break
+                
+                chunk = json.loads(data)
+                choice = chunk['choices'][0]
+                
+                # Check for content
+                if 'content' in choice['delta']:
+                    print(choice['delta']['content'], end='', flush=True)
+                
+                # Check finish reason
+                finish_reason = choice.get('finish_reason')
+                if finish_reason:
+                    if finish_reason == 'stop':
+                        print("\n[Completed normally]")
+                    elif finish_reason == 'length':
+                        print("\n[Stopped: max tokens reached]")
+                    elif finish_reason == 'content_filter':
+                        print("\n[Stopped: content filter]")
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Error Handling
+
+Handle connection errors and timeouts:
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import requests
+    from requests.exceptions import Timeout, ConnectionError
+
+    try:
+        response = requests.post(
+            url,
+            headers=headers,
+            json=payload,
+            stream=True,
+            timeout=60  # 60 second timeout
+        )
+        
+        response.raise_for_status()
+        
+        for line in response.iter_lines():
+            if line:
+                line_str = line.decode('utf-8')
+                # Process line...
+                
+    except Timeout:
+        print("Request timed out")
+    except ConnectionError:
+        print("Connection error")
+    except requests.exceptions.HTTPError as e:
+        print(f"HTTP error: {e}")
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Buffering for UI Display
+
+Buffer tokens for smoother UI updates:
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import json
+    import time
+    import requests
+
+    buffer = ""
+    last_update = time.time()
+    update_interval = 0.05  # Update UI every 50ms
+
+    for line in response.iter_lines():
+        if line:
+            line_str = line.decode('utf-8')
+            if line_str.startswith('data: '):
+                data = line_str[6:]
+                
+                if data == '[DONE]':
+                    # Flush remaining buffer
+                    if buffer:
+                        update_ui(buffer)
+                    break
+                
+                chunk = json.loads(data)
+                if 'content' in chunk['choices'][0]['delta']:
+                    content = chunk['choices'][0]['delta']['content']
+                    buffer += content
+                    
+                    # Update UI periodically
+                    now = time.time()
+                    if now - last_update >= update_interval:
+                        update_ui(buffer)
+                        buffer = ""
+                        last_update = now
+
+    def update_ui(text):
+        """Update your UI with the buffered text"""
+        print(text, end='', flush=True)
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## React/Frontend Integration
+
+Example React hook for streaming:
+
+<CodeBlocks>
+  <CodeBlock title="JavaScript">
+    ```javascript
+    import { useState, useCallback } from 'react';
+
+    function useStreamingChat() {
+      const [content, setContent] = useState('');
+      const [isStreaming, setIsStreaming] = useState(false);
+
+      const sendMessage = useCallback(async (message) => {
+        setIsStreaming(true);
+        setContent('');
+
+        const response = await fetch('https://api.edenai.run/v3/llm/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer YOUR_API_KEY',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: 'openai/gpt-4',
+            messages: [{role: 'user', content: message}],
+            stream: true
+          })
+        });
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        while (true) {
+          const {done, value} = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, {stream: true});
+          const lines = buffer.split('\n');
+          buffer = lines.pop();
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6);
+              if (data === '[DONE]') break;
+
+              try {
+                const chunk = JSON.parse(data);
+                const newContent = chunk.choices[0]?.delta?.content;
+                if (newContent) {
+                  setContent(prev => prev + newContent);
+                }
+              } catch (e) {}
+            }
+          }
+        }
+
+        setIsStreaming(false);
+      }, []);
+
+      return { content, isStreaming, sendMessage };
+    }
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Next Steps
+
+- [Chat Completions](chat-completions.mdx) - Basic chat setup
+- [File Attachments](file-attachments.mdx) - Send images to LLMs
+- [Getting Started](../../get-started/introduction.mdx) - V3 basics

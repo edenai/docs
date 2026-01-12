@@ -1,0 +1,530 @@
+# Provider Comparison for Media Support
+
+Compare multimodal capabilities across different LLM providers.
+
+## Overview
+
+This guide helps you choose the right provider for your multimodal use cases by comparing:
+- Image format support
+- File type compatibility
+- Size limits
+- Processing speed
+- Accuracy and quality
+- Cost effectiveness
+- Special features
+
+## Quick Comparison Matrix
+
+### Image Support
+
+| Provider | Models | JPEG | PNG | WebP | GIF | Max Size | Base64 | URLs | Upload |
+|----------|--------|------|-----|------|-----|----------|--------|------|--------|
+| **OpenAI** | gpt-4o, gpt-4-turbo | ✓ | ✓ | ✓ | ✓ | 20 MB | ✓ | ✓ | ✓ |
+| **Anthropic** | claude-3-opus, claude-3-5-sonnet | ✓ | ✓ | ✓ | ✓ | 5 MB | ✓ | ✓ | ✓ |
+| **Google** | gemini-1.5-pro, gemini-1.5-flash | ✓ | ✓ | ✓ | ✓ | 20 MB | ✓ | ✓ | ✓ |
+| **Mistral** | pixtral-12b | ✓ | ✓ | ✓ | - | 10 MB | ✓ | ✓ | ✓ |
+
+### Document Support
+
+| Provider | Models | PDF | DOCX | TXT | Max Size | Max Pages | Best For |
+|----------|--------|-----|------|-----|----------|-----------|----------|
+| **OpenAI** | gpt-4o, gpt-4-turbo | ✓ | ✓ | ✓ | 512 MB | ~1000 | Structured extraction |
+| **Anthropic** | claude-3-opus, claude-3-5-sonnet | ✓ | ✓ | ✓ | 10 MB | ~200 | Deep analysis |
+| **Google** | gemini-1.5-pro, gemini-1.5-flash | ✓ | ✓ | ✓ | 2 GB | ~10000 | Large documents |
+| **Mistral** | pixtral-12b | - | - | ✓ | - | - | Text only |
+
+## Detailed Provider Profiles
+
+### OpenAI
+
+**Models:**
+- `openai/gpt-4o` (Recommended for multimodal)
+- `openai/gpt-4-turbo`
+
+**Strengths:**
+- Fast processing (~1-3s per image)
+- Excellent general-purpose vision
+- Strong multi-image support (up to 10 images)
+- Reliable OCR and text extraction
+- Good object detection
+- Large file support (512 MB for documents)
+
+**Limitations:**
+- Image size limit: 20 MB
+- May lack depth on complex reasoning tasks
+- Higher cost for vision tasks
+
+**Best Use Cases:**
+- Real-time image analysis
+- Multi-image comparisons
+- Screenshot debugging
+- General image understanding
+- Large document processing
+
+**Pricing (Approximate):**
+- Images: ~$0.0065 per image (1024×1024)
+- Text: $0.01 per 1K tokens (input), $0.03 per 1K tokens (output)
+
+**Example:**
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    payload = {
+        "model": "openai/gpt-4o",
+        "messages": [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": "Analyze this image"},
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": "https://example.com/image.jpg"}
+                    }
+                ]
+            }
+        ],
+        "stream": True,
+        "max_tokens": 500
+    }
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+---
+
+### Anthropic (Claude 3)
+
+**Models:**
+- `anthropic/claude-3-5-sonnet-20241022` (Recommended)
+- `anthropic/claude-3-opus-20240229` (Highest quality)
+- `anthropic/claude-3-sonnet-20240229`
+
+**Strengths:**
+- Superior reasoning about visual content
+- Excellent for document analysis
+- Strong at complex visual tasks
+- Detailed, thoughtful responses
+- Great for academic/research content
+- Multi-language support (100+ languages)
+- Better at nuanced interpretation
+
+**Limitations:**
+- Image size limit: 5 MB (smaller than competitors)
+- Document size limit: 10 MB
+- Slightly slower processing
+- Higher cost for Opus model
+
+**Best Use Cases:**
+- Legal document review
+- Academic paper analysis
+- Complex reasoning tasks
+- Detailed image interpretation
+- Multi-language documents
+- Chart and diagram analysis
+
+**Pricing (Approximate):**
+- Sonnet: $0.003 per image + text tokens
+- Opus: $0.015 per image + text tokens
+
+**Example:**
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    payload = {
+        "model": "anthropic/claude-3-5-sonnet-20241022",
+        "messages": [
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": "Provide detailed analysis of this chart with insights"
+                    },
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": "https://example.com/chart.png"}
+                    }
+                ]
+            }
+        ],
+        "stream": True,
+        "temperature": 0.3
+    }
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+---
+
+### Google (Gemini 1.5)
+
+**Models:**
+- `google/gemini-1.5-pro` (Best quality)
+- `google/gemini-1.5-flash` (Best value)
+
+**Strengths:**
+- Massive context window (up to 2 million tokens)
+- Can handle very large documents (2GB+)
+- Fast processing (Flash variant)
+- Excellent multilingual support (100+ languages)
+- Strong video frame analysis
+- Best price/performance (Flash)
+- Can process multiple large PDFs simultaneously
+
+**Limitations:**
+- May be less detailed on complex reasoning
+- Beta features may have restrictions
+
+**Best Use Cases:**
+- Large document processing (100+ page PDFs)
+- Multi-document analysis
+- Video frame extraction and analysis
+- High-volume applications
+- Cost-sensitive projects
+- Research with large datasets
+
+**Pricing (Approximate):**
+- Flash: Very low cost, ~$0.001 per image
+- Pro: Medium cost, ~$0.004 per image
+
+**Example:**
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    # Process a 200-page PDF
+    payload = {
+        "model": "google/gemini-1.5-pro",
+        "messages": [
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": "Summarize this entire document and extract key findings"
+                    },
+                    {
+                        "type": "file",
+                        "file": {"file_id": "large_document_uuid"}
+                    }
+                ]
+            }
+        ],
+        "stream": True,
+        "max_tokens": 2000
+    }
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+---
+
+### Mistral
+
+**Models:**
+- `mistral/pixtral-12b`
+
+**Strengths:**
+- European data residency
+- Privacy-focused
+- Good price/performance
+- Fast processing
+- GDPR compliant
+- Lower latency in Europe
+
+**Limitations:**
+- No document (PDF/DOCX) support
+- Only text and image inputs
+- Smaller model (12B parameters)
+- Limited advanced features
+
+**Best Use Cases:**
+- European compliance requirements
+- Privacy-sensitive applications
+- Cost-effective image analysis
+- Basic vision tasks
+- Text and image combination
+
+**Pricing (Approximate):**
+- Low cost, competitive with Flash
+
+**Example:**
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    payload = {
+        "model": "mistral/pixtral-12b",
+        "messages": [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": "What objects are in this image?"},
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": "https://example.com/photo.jpg"}
+                    }
+                ]
+            }
+        ],
+        "stream": True
+    }
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Use Case Recommendations
+
+### Real-Time Image Analysis
+**Best Choice:** OpenAI GPT-4o
+- Fastest processing
+- Reliable results
+- Good balance of speed and quality
+
+### Legal Document Review
+**Best Choice:** Anthropic Claude 3 Opus
+- Superior reasoning
+- Detailed analysis
+- Excellent for complex documents
+
+### Large PDF Processing (100+ pages)
+**Best Choice:** Google Gemini 1.5 Pro
+- Massive context window
+- Can handle 2GB+ files
+- Cost-effective for large docs
+
+### Multi-Document Analysis
+**Best Choice:** Google Gemini 1.5 Pro
+- Best context window
+- Can process multiple files
+- Maintains context across documents
+
+### Screenshot Debugging
+**Best Choice:** OpenAI GPT-4o
+- Fast turnaround
+- Good at UI understanding
+- Strong text extraction
+
+### Chart and Graph Analysis
+**Best Choice:** Anthropic Claude 3.5 Sonnet
+- Best reasoning
+- Detailed insights
+- Accurate data interpretation
+
+### High-Volume Processing
+**Best Choice:** Google Gemini 1.5 Flash
+- Lowest cost
+- Fast processing
+- Good quality for price
+
+### Privacy-Sensitive Applications
+**Best Choice:** Mistral Pixtral
+- European data residency
+- GDPR compliant
+- Privacy-focused
+
+### Invoice/Receipt Extraction
+**Best Choice:** OpenAI GPT-4o
+- Fast and accurate
+- Good structured extraction
+- Reliable OCR
+
+### Academic Paper Analysis
+**Best Choice:** Anthropic Claude 3 Opus
+- Deep understanding
+- Detailed analysis
+- Good with technical content
+
+## Feature Comparison
+
+### Multi-Image Support
+
+| Provider | Max Images | Performance | Best For |
+|----------|-----------|-------------|----------|
+| **OpenAI** | 10+ | Excellent | Comparisons, sequences |
+| **Anthropic** | 20+ | Very Good | Analysis, documentation |
+| **Google** | 50+ | Excellent | Large collections |
+| **Mistral** | Multiple | Good | Basic comparisons |
+
+### Language Support
+
+| Provider | Languages | Multilingual Quality |
+|----------|-----------|---------------------|
+| **OpenAI** | 50+ | Very Good |
+| **Anthropic** | 100+ | Excellent |
+| **Google** | 100+ | Excellent |
+| **Mistral** | 50+ | Good |
+
+### OCR Accuracy
+
+| Provider | Handwriting | Printed Text | Complex Layouts |
+|----------|-------------|--------------|-----------------|
+| **OpenAI** | Good | Excellent | Very Good |
+| **Anthropic** | Very Good | Excellent | Excellent |
+| **Google** | Very Good | Excellent | Very Good |
+| **Mistral** | Good | Good | Good |
+
+## Cost Optimization Strategies
+
+### Choose Based on Task Complexity
+
+**Simple tasks (object detection, basic OCR):**
+```python
+# Use Gemini Flash or Mistral
+"model": "google/gemini-1.5-flash"  # Cheapest
+```
+
+**Medium complexity (chart analysis, multi-image):**
+```python
+# Use GPT-4o or Claude Sonnet
+"model": "openai/gpt-4o"  # Balanced
+```
+
+**Complex reasoning (legal docs, deep analysis):**
+```python
+# Use Claude Opus
+"model": "anthropic/claude-3-opus-20240229"  # Best quality
+```
+
+### Optimize Input Size
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    from PIL import Image
+    import io
+
+    def optimize_image(image_path, max_size_mb=5):
+        """Resize image to fit under size limit."""
+        img = Image.open(image_path)
+
+        # Calculate target size
+        current_size = os.path.getsize(image_path) / (1024 * 1024)
+        if current_size <= max_size_mb:
+            return image_path
+
+        # Reduce quality
+        output = io.BytesIO()
+        quality = int(85 * (max_size_mb / current_size))
+        img.save(output, format='JPEG', quality=quality, optimize=True)
+
+        return output.getvalue()
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+### Batch Processing
+
+Process multiple items in fewer requests:
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    # Instead of multiple requests
+    # Send all images in one request (if provider supports)
+
+    payload = {
+        "model": "google/gemini-1.5-pro",
+        "messages": [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": "Analyze all these images"},
+                ] + [
+                    {"type": "image_url", "image_url": {"url": url}}
+                    for url in image_urls
+                ]
+            }
+        ],
+        "stream": True
+    }
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Performance Benchmarks
+
+### Average Response Times (Image Analysis)
+
+| Provider | Model | Small Image (1MB) | Large Image (10MB) |
+|----------|-------|-------------------|-------------------|
+| OpenAI | gpt-4o | ~1.5s | ~2.5s |
+| Anthropic | claude-3-5-sonnet | ~2.0s | ~3.5s |
+| Google | gemini-1.5-flash | ~1.0s | ~2.0s |
+| Google | gemini-1.5-pro | ~2.0s | ~3.0s |
+| Mistral | pixtral-12b | ~1.5s | ~2.5s |
+
+### Document Processing (PDF)
+
+| Provider | Model | 10-page PDF | 100-page PDF |
+|----------|-------|-------------|--------------|
+| OpenAI | gpt-4o | ~5s | ~30s |
+| Anthropic | claude-3-opus | ~8s | Not recommended |
+| Google | gemini-1.5-pro | ~6s | ~45s |
+
+*Times are approximate and vary based on content complexity and network conditions.*
+
+## Choosing the Right Provider
+
+### Decision Tree
+
+```
+Does your use case involve:
+
+├─ Large documents (100+ pages)?
+│  └─ Use: Google Gemini 1.5 Pro
+│
+├─ Privacy/GDPR requirements?
+│  └─ Use: Mistral Pixtral
+│
+├─ Complex reasoning needed?
+│  ├─ Legal/academic?
+│  │  └─ Use: Anthropic Claude 3 Opus
+│  └─ General analysis?
+│     └─ Use: Anthropic Claude 3.5 Sonnet
+│
+├─ High-volume/cost-sensitive?
+│  └─ Use: Google Gemini 1.5 Flash
+│
+└─ General purpose, fast?
+   └─ Use: OpenAI GPT-4o
+```
+
+## Provider Availability
+
+Check current provider status:
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import requests
+
+    def check_provider_availability():
+        """Check which providers are currently available."""
+        url = "https://api.edenai.run/v3/llm/models"
+        headers = {"Authorization": "Bearer YOUR_API_KEY"}
+
+        response = requests.get(url, headers=headers)
+        models = response.json()
+
+        multimodal_models = [
+            model for model in models.get("data", [])
+            if any(cap in model.get("capabilities", [])
+                   for cap in ["vision", "image", "file"])
+        ]
+
+        return multimodal_models
+
+    # Usage
+    available = check_provider_availability()
+    for model in available:
+        print(f"{model['id']}: {model.get('capabilities', [])}")
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Next Steps
+
+- [Working with Media Files](working-with-media.mdx) - Implementation guide
+- [Vision Capabilities](vision-capabilities.mdx) - Vision features
+- [File Attachments](file-attachments.mdx) - Document processing
+- [Monitor Costs](../../how-to/cost-management/monitor-usage.mdx) - Track spending
+- [Chat Completions](chat-completions.mdx) - Core LLM features

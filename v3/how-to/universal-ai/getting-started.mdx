@@ -1,0 +1,198 @@
+# Getting Started with Universal AI
+
+The Universal AI endpoint is the core of Eden AI V3, providing a single unified endpoint for all non-LLM AI features.
+
+## Overview
+
+Instead of calling different endpoints for different features, V3's Universal AI endpoint handles everything through model strings:
+
+```
+POST /v3/universal-ai
+```
+
+**One endpoint for:**
+- Text analysis (moderation, AI detection, embeddings, sentiment)
+- OCR (text extraction, invoice/ID parsing)
+- Image processing (generation, detection, analysis)
+- Translation (document translation)
+
+## Model String Format
+
+The model string tells the endpoint what feature and provider to use:
+
+```
+feature/subfeature/provider[/model]
+```
+
+**Examples:**
+- `text/ai_detection/winstonai`
+- `ocr/financial_parser/google`
+- `image/generation/openai/dall-e-3`
+- `translation/document_translation/deepl`
+
+## Basic Request
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import requests
+
+    url = "https://api.edenai.run/v3/universal-ai"
+    headers = {
+        "Authorization": "Bearer YOUR_API_KEY",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "model": "text/moderation/openai",
+        "input": {
+            "text": "This is sample text to moderate"
+        }
+    }
+
+    response = requests.post(url, headers=headers, json=payload)
+    result = response.json()
+    print(result)
+    ```
+  </CodeBlock>
+
+  <CodeBlock title="cURL">
+    ```bash
+    curl -X POST https://api.edenai.run/v3/universal-ai \
+      -H "Authorization: Bearer YOUR_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "model": "text/moderation/openai",
+        "input": {"text": "Sample text"}
+      }'
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Response Format
+
+All Universal AI responses follow the same structure:
+
+```json
+{
+  "status": "success",
+  "cost": 0.0001,
+  "provider": "openai",
+  "feature": "text",
+  "subfeature": "moderation",
+  "output": {
+    // Feature-specific output
+  }
+}
+```
+
+## Input Formats
+
+The `input` field varies based on the feature:
+
+### Text-Based Features
+
+```json
+{
+  "model": "text/ai_detection/winstonai",
+  "input": {
+    "text": "Text to analyze"
+  }
+}
+```
+
+### File-Based Features (UUID)
+
+```json
+{
+  "model": "ocr/financial_parser/google",
+  "input": {
+    "file": "550e8400-e29b-41d4-a716-446655440000"
+  }
+}
+```
+
+### File-Based Features (URL)
+
+```json
+{
+  "model": "image/object_detection/google",
+  "input": {
+    "file": "https://example.com/image.jpg"
+  }
+}
+```
+
+## Common Use Cases
+
+### Text Moderation
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import requests
+    payload = {
+        "model": "text/moderation/openai",
+        "input": {"text": "Content to moderate"}
+    }
+    
+    response = requests.post(url, headers=headers, json=payload)
+    result = response.json()
+    
+    if result["output"]["nsfw_likelihood"] > 3:
+        print("Content flagged as inappropriate")
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+### AI Content Detection
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import requests
+    payload = {
+        "model": "text/ai_detection/winstonai",
+        "input": {"text": "Text to check"}
+    }
+    
+    response = requests.post(url, headers=headers, json=payload)
+    
+    if response.json()["output"]["is_ai_generated"]:
+        print("Text appears to be AI-generated")
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+### OCR Text Extraction
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import requests
+    # First upload the file
+    upload_response = requests.post(
+        "https://api.edenai.run/v3/upload",
+        headers={"Authorization": f"Bearer {API_KEY}"},
+        files={"file": open("document.pdf", "rb")}
+    )
+    file_id = upload_response.json()["file_id"]
+
+    # Then use it in Universal AI
+    payload = {
+        "model": "ocr/financial_parser/google",
+        "input": {"file": file_id}
+    }
+    
+    response = requests.post(url, headers=headers, json=payload)
+    extracted_text = response.json()["output"]["text"]
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Next Steps
+
+- [Text Features](text-features.mdx) - All text analysis capabilities
+- [OCR Features](ocr-features.mdx) - Document processing
+- [Image Features](image-features.mdx) - Image generation and analysis
+- [Multimodal Workflows](multimodal-features.mdx) - Complex processing pipelines

@@ -1,122 +1,227 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "Mint Starter Kit",
-  "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+  "name": "Eden AI Documentation",
+  "logo": {
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg",
+    "href": "https://edenai.co"
   },
-  "favicon": "/favicon.svg",
+  "favicon": "/images/favicon.png",
+  "colors": {
+    "primary": "#5386b2",
+    "light": "#7ba3ca",
+    "dark": "#3d6a91"
+  },
   "navigation": {
-    "tabs": [
+    "versions": [
       {
-        "tab": "Guides",
-        "groups": [
+        "version": "V3",
+        "tabs": [
           {
-            "group": "Getting started",
-            "pages": [
-              "index",
-              "quickstart",
-              "development"
+            "tab": "V3 Documentation",
+            "groups": [
+              {
+                "group": "V3 Documentation",
+                "pages": [
+                  {
+                    "group": "Get Started",
+                    "icon": "rocket",
+                    "pages": [
+                      "v3/get-started/introduction",
+                      "v3/get-started/smart-routing",
+                      "v3/get-started/faq",
+                      "v3/get-started/entreprise_offer"
+                    ]
+                  },
+                  {
+                    "group": "How-To Guides",
+                    "icon": "question-circle",
+                    "pages": [
+                      {
+                        "group": "Authentication",
+                        "icon": "shield-check",
+                        "pages": [
+                          "v3/how-to/authentication/bearer-token-auth"
+                        ]
+                      },
+                      {
+                        "group": "Cost Management",
+                        "icon": "dollar-sign",
+                        "pages": [
+                          "v3/how-to/cost-management/monitor-usage"
+                        ]
+                      },
+                      {
+                        "group": "User Management",
+                        "icon": "users",
+                        "pages": [
+                          "v3/how-to/user-management/manage-tokens"
+                        ]
+                      },
+                      {
+                        "group": "Smart Routing",
+                        "icon": "route",
+                        "pages": [
+                          "v3/how-to/router/getting-started",
+                          "v3/how-to/router/advanced-usage",
+                          "v3/how-to/router/monitoring"
+                        ]
+                      },
+                      {
+                        "group": "Universal AI",
+                        "icon": "robot",
+                        "pages": [
+                          "v3/how-to/universal-ai/getting-started",
+                          "v3/how-to/universal-ai/text-features",
+                          "v3/how-to/universal-ai/ocr-features",
+                          "v3/how-to/universal-ai/image-features",
+                          "v3/how-to/universal-ai/multimodal-features"
+                        ]
+                      },
+                      {
+                        "group": "LLM (OpenAI-Compatible)",
+                        "icon": "brain",
+                        "pages": [
+                          "v3/how-to/llm/chat-completions",
+                          "v3/how-to/llm/smart-routing",
+                          "v3/how-to/llm/streaming",
+                          "v3/how-to/llm/working-with-media",
+                          "v3/how-to/llm/vision-capabilities",
+                          "v3/how-to/llm/file-attachments",
+                          "v3/how-to/llm/provider-comparison"
+                        ]
+                      },
+                      {
+                        "group": "File Upload",
+                        "icon": "cloud-arrow-up",
+                        "pages": [
+                          "v3/how-to/upload/upload-files"
+                        ]
+                      },
+                      {
+                        "group": "API Discovery",
+                        "icon": "magnifying-glass",
+                        "pages": [
+                          "v3/how-to/discovery/explore-api"
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "group": "Tutorials",
+                    "icon": "graduation-cap",
+                    "pages": [
+                      "v3/tutorials/optimize-llm-costs",
+                      "v3/tutorials/track-optimize-spending",
+                      "v3/tutorials/multi-environment-tokens"
+                    ]
+                  },
+                  {
+                    "group": "Integrations",
+                    "icon": "plug",
+                    "pages": [
+                      "v3/integrations/index",
+                      {
+                        "group": "SDKs",
+                        "icon": "code",
+                        "pages": [
+                          "v3/integrations/sdks/python-openai",
+                          "v3/integrations/sdks/typescript-openai"
+                        ]
+                      },
+                      {
+                        "group": "AI Assistants",
+                        "icon": "robot",
+                        "pages": [
+                          "v3/integrations/ai-assistants/claude-code",
+                          "v3/integrations/ai-assistants/continue-dev"
+                        ]
+                      },
+                      {
+                        "group": "Frameworks",
+                        "icon": "cubes",
+                        "pages": [
+                          "v3/integrations/frameworks/langchain"
+                        ]
+                      },
+                      {
+                        "group": "Chat Platforms",
+                        "icon": "comments",
+                        "pages": [
+                          "v3/integrations/chat-platforms/librechat",
+                          "v3/integrations/chat-platforms/open-webui"
+                        ]
+                      }
+                    ]
+                  },
+                  "v3/changelog"
+                ]
+              }
             ]
           },
           {
-            "group": "Customization",
-            "pages": [
-              "essentials/settings",
-              "essentials/navigation"
-            ]
-          },
-          {
-            "group": "Writing content",
-            "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/reusable-snippets"
-            ]
-          },
-          {
-            "group": "AI tools",
-            "pages": [
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
+            "tab": "V3 API Reference",
+            "groups": [
+              {
+                "group": "AI Features",
+                "openapi": "openapi/v3-openapi.json"
+              },
+              {
+                "group": "Cost Management",
+                "openapi": "openapi/v3-cost-management.json"
+              },
+              {
+                "group": "User Management",
+                "openapi": "openapi/v3-user.json"
+              }
             ]
           }
         ]
       },
       {
-        "tab": "API reference",
-        "groups": [
-          {
-            "group": "API documentation",
-            "pages": [
-              "api-reference/introduction"
-            ]
-          },
-          {
-            "group": "Endpoint examples",
-            "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
-            ]
-          }
+        "version": "V2",
+        "pages": [
+          "v2/index"
         ]
       }
-    ],
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
-        },
-        {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
-        }
-      ]
-    }
+    ]
   },
-  "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
+  "contextual": {
+    "options": [
+      "copy",
+      "view",
+      "chatgpt",
+      "claude",
+      "perplexity",
+      "mcp",
+      "cursor",
+      "vscode"
+    ]
   },
   "navbar": {
     "links": [
       {
-        "label": "Support",
-        "href": "mailto:hi@mintlify.com"
+        "label": "Website",
+        "href": "https://edenai.co/"
+      },
+      {
+        "label": "Status",
+        "href": "https://app-edenai.instatus.com/"
       }
     ],
     "primary": {
-      "type": "button",
-      "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
+      "label": "Get Started",
+      "href": "https://app.edenai.run/",
+      "type": "button"
     }
-  },
-  "contextual": {
-    "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity",
-     "mcp",
-     "cursor",
-     "vscode"
-   ]
   },
   "footer": {
     "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
+      "github": "https://github.com/edenai",
+      "linkedin": "https://www.linkedin.com/company/edenai",
+      "discord": "https://discord.gg/VYwTbMQc8u",
+      "youtube": "https://www.youtube.com/@edenai2254"
     }
   }
 }

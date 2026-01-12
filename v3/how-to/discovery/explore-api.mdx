@@ -1,0 +1,330 @@
+# Explore the API
+
+Use V3's built-in API discovery endpoints to programmatically explore available features, providers, and schemas.
+
+## Overview
+
+V3 provides `/v3/info` endpoints that let you discover:
+- Available features and subfeatures
+- Supported providers for each feature
+- Input/output schemas
+- Model capabilities
+
+**Base Endpoint:**
+```
+GET /v3/info
+```
+
+## List All Features
+
+Get a complete list of available features:
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import requests
+
+    url = "https://api.edenai.run/v3/info"
+
+    response = requests.get(url, headers=headers)
+    features = response.json()
+
+    print(features)
+    # Output:
+    # {
+    #   "text": ["ai_detection", "moderation", "embeddings", ...],
+    #   "ocr": ["ocr", "identity_parser", "invoice_parser", ...],
+    #   "image": ["generation", "object_detection", ...],
+    #   "translation": ["document_translation"]
+    # }
+    ```
+  </CodeBlock>
+
+  <CodeBlock title="cURL">
+    ```bash
+    curl https://api.edenai.run/v3/info \
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Explore a Specific Feature
+
+Get details about a feature category:
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import requests
+    # Get all text features
+    url = "https://api.edenai.run/v3/info/text"
+    response = requests.get(url)
+    text_features = response.json()
+
+    print("Available text features:")
+    for subfeature in text_features["subfeatures"]:
+        print(f"  - {subfeature}")
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Get Feature Details
+
+Retrieve complete information about a specific feature:
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import requests
+    # Get details about AI detection
+    url = "https://api.edenai.run/v3/info/text/ai_detection"
+    response = requests.get(url, headers=headers)
+    feature_info = response.json()
+
+    print("Feature: text/ai_detection")
+    print(f"\nAvailable providers: {feature_info['providers']}")
+    print(f"\nInput schema:")
+    print(feature_info['input_schema'])
+    print(f"\nOutput schema:")
+    print(feature_info['output_schema'])
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+### Response Example
+
+```json
+{
+  "feature": "text",
+  "subfeature": "ai_detection",
+  "providers": [
+    {
+      "name": "openai",
+      "models": ["gpt-4", "gpt-3.5-turbo"]
+    },
+    {
+      "name": "anthropic",
+      "models": ["claude-3-5-sonnet-20241022"]
+    }
+  ],
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "text": {
+        "type": "string",
+        "description": "Text to analyze for AI generation"
+      }
+    },
+    "required": ["text"]
+  },
+  "output_schema": {
+    "type": "object",
+    "properties": {
+      "is_ai_generated": {"type": "boolean"},
+      "ai_score": {"type": "number"}
+    }
+  }
+}
+```
+
+## Check Provider Availability
+
+See which providers support a specific feature:
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import requests
+    def get_providers_for_feature(feature, subfeature):
+        """Get list of providers supporting a feature"""
+        
+        url = f"https://api.edenai.run/v3/info/{feature}/{subfeature}"
+        
+        response = requests.get(url)
+        info = response.json()
+        
+        providers = []
+        for provider in info["providers"]:
+            providers.append({
+                "name": provider["name"],
+                "models": provider.get("models", [])
+            })
+        
+        return providers
+
+    # Usage
+    providers = get_providers_for_feature("ocr", "ocr")
+    print("OCR providers:")
+    for p in providers:
+        print(f"  - {p['name']}: {', '.join(p['models']) if p['models'] else 'default'}")
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Validate Model Strings
+
+Check if a model string is valid before making a request:
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import requests
+    def validate_model_string(model_string):
+        """Validate model string format and availability"""
+        
+        # Parse model string
+        parts = model_string.split('/')
+        
+        if len(parts) < 3:
+            return {"valid": False, "error": "Invalid format"}
+        
+        feature = parts[0]
+        subfeature = parts[1]
+        provider = parts[2]
+        model = parts[3] if len(parts) > 3 else None
+        
+        # Check feature availability
+        url = f"https://api.edenai.run/v3/info/{feature}/{subfeature}"
+        
+        try:
+            response = requests.get(url)
+            response.raise_for_status()
+            info = response.json()
+            
+            # Check provider
+            provider_info = next(
+                (p for p in info["providers"] if p["name"] == provider),
+                None
+            )
+            
+            if not provider_info:
+                return {
+                    "valid": False,
+                    "error": f"Provider '{provider}' not available"
+                }
+            
+            # Check model if specified
+            if model and provider_info.get("models"):
+                if model not in provider_info["models"]:
+                    return {
+                        "valid": False,
+                        "error": f"Model '{model}' not available for {provider}"
+                    }
+            
+            return {"valid": True, "info": info}
+            
+        except Exception as e:
+            return {"valid": False, "error": str(e)}
+
+    # Usage
+    result = validate_model_string("text/ai_detection/openai/gpt-4")
+    if result["valid"]:
+        print("Model string is valid!")
+    else:
+        print(f"Invalid: {result['error']}")
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Build Dynamic UIs
+
+Use discovery to build dynamic feature selection:
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import requests
+    def build_feature_menu():
+        """Build interactive feature selection menu"""
+        
+        # Get all features
+        url = "https://api.edenai.run/v3/info"
+        response = requests.get(url)
+        all_features = response.json()
+        
+        menu = {}
+        
+        for feature, subfeatures in all_features.items():
+            menu[feature] = {}
+            
+            for subfeature in subfeatures:
+                # Get providers for each subfeature
+                detail_url = f"https://api.edenai.run/v3/info/{feature}/{subfeature}"
+                detail_response = requests.get(detail_url)
+                detail = detail_response.json()
+                
+                menu[feature][subfeature] = [
+                    p["name"] for p in detail["providers"]
+                ]
+        
+        return menu
+
+    # Build menu
+    menu = build_feature_menu()
+
+    # Display
+    for feature, subfeatures in menu.items():
+        print(f"\n{feature.upper()}:")
+        for subfeature, providers in subfeatures.items():
+            print(f"  {subfeature}: {', '.join(providers)}")
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Cache Discovery Results
+
+Cache API info to reduce requests:
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import json
+    import requests
+    from pathlib import Path
+    from datetime import datetime, timedelta
+
+    class APIDiscoveryCache:
+        def __init__(self, cache_dir="api_cache", ttl_hours=24):
+            self.cache_dir = Path(cache_dir)
+            self.cache_dir.mkdir(exist_ok=True)
+            self.ttl = timedelta(hours=ttl_hours)
+            self.headers = {"Authorization": "Bearer YOUR_API_KEY"}
+        
+        def get_feature_info(self, feature, subfeature):
+            """Get feature info with caching"""
+            
+            cache_key = f"{feature}_{subfeature}"
+            cache_file = self.cache_dir / f"{cache_key}.json"
+            
+            # Check cache
+            if cache_file.exists():
+                data = json.loads(cache_file.read_text())
+                cached_at = datetime.fromisoformat(data["cached_at"])
+                
+                if datetime.now() - cached_at < self.ttl:
+                    return data["info"]
+            
+            # Fetch from API
+            url = f"https://api.edenai.run/v3/info/{feature}/{subfeature}"
+            response = requests.get(url)
+            info = response.json()
+            
+            # Cache result
+            cache_data = {
+                "info": info,
+                "cached_at": datetime.now().isoformat()
+            }
+            cache_file.write_text(json.dumps(cache_data, indent=2))
+            
+            return info
+
+    # Usage
+    cache = APIDiscoveryCache()
+    info = cache.get_feature_info("text", "ai_detection")
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Next Steps
+
+- [Universal AI Getting Started](../universal-ai/getting-started.mdx) - Use discovered features
+- [Chat Completions Guide](../llm/chat-completions.mdx) - LLM endpoint

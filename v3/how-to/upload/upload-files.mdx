@@ -1,0 +1,318 @@
+# Upload Files
+
+Learn how to upload and manage files with V3's persistent file storage system.
+
+## Overview
+
+V3 introduces **persistent file storage** that allows you to:
+- Upload files once
+- Reference them in multiple requests
+- Reduce upload overhead
+- Manage file lifecycle
+
+**Endpoint:**
+```
+POST /v3/upload
+```
+
+## Upload a File
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import requests
+
+    url = "https://api.edenai.run/v3/upload"
+    headers = {
+        "Authorization": "Bearer YOUR_API_KEY"
+    }
+
+    # Upload file
+    files = {
+        "file": open("document.pdf", "rb")
+    }
+    
+    data = {
+        "purpose": "ocr-processing"  # Optional: describe intended use
+    }
+
+    response = requests.post(url, headers=headers, files=files, data=data)
+    result = response.json()
+
+    print(f"File ID: {result['file_id']}")
+    print(f"Filename: {result['filename']}")
+    print(f"Size: {result['bytes']} bytes")
+    print(f"Expires at: {result['expires_at']}")
+    ```
+  </CodeBlock>
+
+  <CodeBlock title="cURL">
+    ```bash
+    curl -X POST https://api.edenai.run/v3/upload \
+      -H "Authorization: Bearer YOUR_API_KEY" \
+      -F "file=@document.pdf" \
+      -F "purpose=ocr-processing"
+    ```
+  </CodeBlock>
+
+  <CodeBlock title="JavaScript">
+    ```javascript
+    const formData = new FormData();
+    formData.append('file', fileInput.files[0]);
+    formData.append('purpose', 'ocr-processing');
+
+    const response = await fetch('https://api.edenai.run/v3/upload', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer YOUR_API_KEY'
+      },
+      body: formData
+    });
+
+    const result = await response.json();
+    console.log('File ID:', result.file_id);
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+### Response
+
+```json
+{
+  "file_id": "550e8400-e29b-41d4-a716-446655440000",
+  "filename": "document.pdf",
+  "bytes": 152340,
+  "purpose": "ocr-processing",
+  "created_at": "2024-01-15T10:30:00Z",
+  "expires_at": "2024-01-22T10:30:00Z"
+}
+```
+
+## Use Uploaded File
+
+Once uploaded, reference the file by its `file_id` in any Universal AI request:
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import requests
+    # Use file in OCR request
+    url = "https://api.edenai.run/v3/universal-ai"
+    headers = {
+        "Authorization": "Bearer YOUR_API_KEY",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "model": "ocr/financial_parser/google",
+        "input": {
+            "file": "550e8400-e29b-41d4-a716-446655440000",
+            "language": "en"
+        }
+    }
+
+    response = requests.post(url, headers=headers, json=payload)
+    result = response.json()
+    print(result["output"]["text"])
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Supported File Types
+
+| Category | Formats |
+|----------|---------|
+| **Documents** | PDF, DOC, DOCX, TXT |
+| **Images** | JPG, JPEG, PNG, GIF, BMP, TIFF, WEBP |
+| **Data** | CSV, JSON, XML |
+
+## File Size Limits
+
+- **Default maximum**: 100 MB per file
+- Actual limits may vary by feature and provider
+- Check provider-specific documentation for exact limits
+
+## File Expiration
+
+Files are automatically deleted after a retention period:
+
+- **Default retention**: 7 days
+- Files expire at the timestamp shown in `expires_at`
+- Expired files cannot be recovered
+- Upload new files as needed
+
+## Upload Multiple Files
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import requests
+
+    url = "https://api.edenai.run/v3/upload"
+    headers = {"Authorization": "Bearer YOUR_API_KEY"}
+
+    files_to_upload = [
+        "invoice1.pdf",
+        "invoice2.pdf",
+        "invoice3.pdf"
+    ]
+
+    file_ids = []
+
+    for filepath in files_to_upload:
+        files = {"file": open(filepath, "rb")}
+        data = {"purpose": "invoice-processing"}
+        
+        response = requests.post(url, headers=headers, files=files, data=data)
+        result = response.json()
+        
+        file_ids.append({
+            "filename": filepath,
+            "file_id": result["file_id"]
+        })
+        
+        print(f"Uploaded {filepath}: {result['file_id']}")
+
+    # Use file IDs in subsequent requests
+    for item in file_ids:
+        print(f"{item['filename']}: {item['file_id']}")
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Error Handling
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import requests
+    from requests.exceptions import RequestException
+
+    def safe_upload(filepath):
+        """Upload file with error handling"""
+        
+        url = "https://api.edenai.run/v3/upload"
+        headers = {"Authorization": "Bearer YOUR_API_KEY"}
+        
+        try:
+            with open(filepath, "rb") as f:
+                files = {"file": f}
+                response = requests.post(url, headers=headers, files=files)
+                response.raise_for_status()
+                
+                result = response.json()
+                return {
+                    "success": True,
+                    "file_id": result["file_id"],
+                    "filename": result["filename"]
+                }
+                
+        except FileNotFoundError:
+            return {"success": False, "error": "File not found"}
+        except RequestException as e:
+            return {"success": False, "error": str(e)}
+        except Exception as e:
+            return {"success": False, "error": f"Unexpected error: {str(e)}"}
+
+    # Usage
+    result = safe_upload("document.pdf")
+    if result["success"]:
+        print(f"Uploaded: {result['file_id']}")
+    else:
+        print(f"Error: {result['error']}")
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Best Practices
+
+### 1. Reuse Files
+
+Upload once, use in multiple requests:
+
+```python
+# Upload file once
+upload_response = requests.post(upload_url, headers=headers, files=files)
+file_id = upload_response.json()["file_id"]
+
+# Use in multiple requests
+features = [
+    "ocr/financial_parser/google",
+    "ocr/financial_parser/amazon",
+    "ocr/identity_parser/microsoft"
+]
+
+for model in features:
+    response = requests.post(
+        universal_ai_url,
+        headers=headers,
+        json={"model": model, "input": {"file": file_id}}
+    )
+```
+
+### 2. Track File Metadata
+
+Keep track of uploaded files:
+
+```python
+uploaded_files = {}
+
+def upload_and_track(filepath, purpose=None):
+    files = {"file": open(filepath, "rb")}
+    data = {"purpose": purpose} if purpose else {}
+    
+    response = requests.post(upload_url, headers=headers, files=files, data=data)
+    result = response.json()
+    
+    # Store metadata
+    uploaded_files[result["file_id"]] = {
+        "filename": result["filename"],
+        "uploaded_at": result["created_at"],
+        "expires_at": result["expires_at"],
+        "purpose": purpose
+    }
+    
+    return result["file_id"]
+```
+
+### 3. Handle Large Files
+
+For large files, show upload progress:
+
+```python
+from tqdm import tqdm
+
+def upload_with_progress(filepath):
+    """Upload file with progress bar"""
+    
+    file_size = os.path.getsize(filepath)
+    
+    with open(filepath, 'rb') as f:
+        with tqdm(total=file_size, unit='B', unit_scale=True) as pbar:
+            files = {'file': f}
+            response = requests.post(
+                upload_url,
+                headers=headers,
+                files=files
+            )
+            pbar.update(file_size)
+    
+    return response.json()
+```
+
+## Common Errors
+
+### 413 Payload Too Large
+File exceeds size limit. Compress or split the file.
+
+### 415 Unsupported Media Type
+File format not supported. Check supported formats above.
+
+### 422 Validation Error
+Invalid request format. Ensure file field is properly set.
+
+## Next Steps
+
+- [OCR Features](../universal-ai/ocr-features.mdx) - Use uploaded files for OCR
+- [Image Features](../universal-ai/image-features.mdx) - Image processing
+- [Universal AI Getting Started](../universal-ai/getting-started.mdx) - Using files in Universal AI

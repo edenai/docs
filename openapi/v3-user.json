@@ -1,0 +1,368 @@
+{
+    "openapi": "3.0.3",
+    "info": {
+        "title": "User Management",
+        "version": "2.0",
+        "description": "Your project description"
+    },
+    "paths": {
+        "/user/custom_token/": {
+            "get": {
+                "operationId": "user_root_list",
+                "summary": "List Tokens",
+                "tags": [
+                    "User Management"
+                ],
+                "security": [
+                    {
+                        "FeatureApiAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/CustomTokensList"
+                                    }
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "post": {
+                "operationId": "user_root_create",
+                "summary": "Create new Token",
+                "tags": [
+                    "User Management"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CustomTokensCreateRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "FeatureApiAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CustomTokensCreate"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/user/custom_token/{name}/": {
+            "get": {
+                "operationId": "user_root_retrieve",
+                "summary": "Retrieve Token",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "name",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "User Management"
+                ],
+                "security": [
+                    {
+                        "FeatureApiAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CustomTokensList"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "patch": {
+                "operationId": "user_root_partial_update",
+                "summary": "Update Token",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "name",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "User Management"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedCustomTokenUpdateRequest"
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "FeatureApiAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CustomTokenUpdate"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "user_root_destroy",
+                "summary": "Delete Token",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "name",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "User Management"
+                ],
+                "security": [
+                    {
+                        "FeatureApiAuth": []
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No response body"
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "CustomTokenUpdate": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "readOnly": true,
+                        "description": "The token name"
+                    },
+                    "token_type": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/TokenTypeEnum"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "balance": {
+                        "type": "number",
+                        "format": "double",
+                        "maximum": 100000,
+                        "minimum": -100000,
+                        "exclusiveMaximum": true,
+                        "exclusiveMinimum": true,
+                        "description": "Optional remaining credits balance for this Token, if `active_balance` is set to True and the balance reaches 0, this token will become unusable"
+                    },
+                    "expire_time": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "active_balance": {
+                        "type": "boolean",
+                        "description": "Weither to use the balance field or not."
+                    }
+                },
+                "required": [
+                    "name",
+                    "token_type"
+                ]
+            },
+            "CustomTokensCreate": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "The token name",
+                        "maxLength": 200
+                    },
+                    "token_type": {
+                        "$ref": "#/components/schemas/TokenTypeEnum"
+                    },
+                    "balance": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,5}(?:\\.\\d{0,9})?$",
+                        "description": "Optional remaining credits balance for this Token, if `active_balance` is set to True and the balance reaches 0, this token will become unusable"
+                    },
+                    "expire_time": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "active_balance": {
+                        "type": "boolean",
+                        "description": "Weither to use the balance field or not."
+                    }
+                },
+                "required": [
+                    "name"
+                ]
+            },
+            "CustomTokensCreateRequest": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "The token name",
+                        "maxLength": 200
+                    },
+                    "token_type": {
+                        "$ref": "#/components/schemas/TokenTypeEnum"
+                    },
+                    "balance": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,5}(?:\\.\\d{0,9})?$",
+                        "description": "Optional remaining credits balance for this Token, if `active_balance` is set to True and the balance reaches 0, this token will become unusable"
+                    },
+                    "expire_time": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "active_balance": {
+                        "type": "boolean",
+                        "description": "Weither to use the balance field or not."
+                    }
+                },
+                "required": [
+                    "name"
+                ]
+            },
+            "CustomTokensList": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "The token name",
+                        "maxLength": 200
+                    },
+                    "token": {
+                        "type": "string",
+                        "nullable": true,
+                        "maxLength": 2000
+                    },
+                    "token_type": {
+                        "$ref": "#/components/schemas/TokenTypeEnum"
+                    },
+                    "balance": {
+                        "type": "number",
+                        "format": "double",
+                        "maximum": 100000,
+                        "minimum": -100000,
+                        "exclusiveMaximum": true,
+                        "exclusiveMinimum": true,
+                        "description": "Optional remaining credits balance for this Token, if `active_balance` is set to True and the balance reaches 0, this token will become unusable"
+                    },
+                    "active_balance": {
+                        "type": "boolean",
+                        "description": "Weither to use the balance field or not."
+                    },
+                    "expire_time": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "name"
+                ]
+            },
+            "PatchedCustomTokenUpdateRequest": {
+                "type": "object",
+                "properties": {
+                    "balance": {
+                        "type": "number",
+                        "format": "double",
+                        "maximum": 100000,
+                        "minimum": -100000,
+                        "exclusiveMaximum": true,
+                        "exclusiveMinimum": true,
+                        "description": "Optional remaining credits balance for this Token, if `active_balance` is set to True and the balance reaches 0, this token will become unusable"
+                    },
+                    "expire_time": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "active_balance": {
+                        "type": "boolean",
+                        "description": "Weither to use the balance field or not."
+                    }
+                }
+            },
+            "TokenTypeEnum": {
+                "enum": [
+                    "sandbox_api_token",
+                    "api_token"
+                ],
+                "type": "string",
+                "description": "* `sandbox_api_token` - Sandbox\n* `api_token` - Back"
+            }
+        },
+        "securitySchemes": {
+            "FeatureApiAuth": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "JWT"
+            }
+        }
+    },
+    "servers": [
+        {
+            "url": "https://api.edenai.run/v2"
+        }
+    ]
+}

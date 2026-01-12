@@ -1,0 +1,986 @@
+# File Attachments
+
+Send documents, PDFs, and files to LLMs for analysis and processing.
+
+## Overview
+
+Eden AI V3 LLM endpoints support file attachments, enabling you to:
+- Analyze PDF documents
+- Process text files
+- Extract data from structured documents
+- Summarize reports and papers
+- Answer questions about document content
+
+File support varies by provider, with some supporting advanced document understanding and others focused on text extraction.
+
+## Supported File Formats
+
+| Format | Extension | OpenAI | Anthropic | Google | Use Cases |
+|--------|-----------|--------|-----------|--------|-----------|
+| **PDF** | .pdf | ✓ | ✓ | ✓ | Reports, invoices, contracts |
+| **Text** | .txt | ✓ | ✓ | ✓ | Logs, code, plain text |
+| **Word** | .docx | ✓ | ✓ | ✓ | Documents, reports |
+| **Rich Text** | .rtf | - | ✓ | - | Formatted documents |
+
+## File Input Methods
+
+V3 provides three ways to send files to LLMs:
+
+### 1. File Upload (Recommended)
+
+Upload files once, reference multiple times:
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import requests
+
+    # Step 1: Upload the file
+    upload_url = "https://api.edenai.run/v3/upload"
+    upload_headers = {"Authorization": "Bearer YOUR_API_KEY"}
+
+    files = {"file": open("report.pdf", "rb")}
+    data = {"purpose": "llm-analysis"}
+
+    upload_response = requests.post(
+        upload_url,
+        headers=upload_headers,
+        files=files,
+        data=data
+    )
+
+    file_id = upload_response.json()["file_id"]
+    print(f"Uploaded file ID: {file_id}")
+
+    # Step 2: Use the file in LLM request
+    llm_url = "https://api.edenai.run/v3/llm/chat/completions"
+    llm_headers = {
+        "Authorization": "Bearer YOUR_API_KEY",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "model": "openai/gpt-4o",
+        "messages": [
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": "Summarize this document in 3 bullet points."
+                    },
+                    {
+                        "type": "file",
+                        "file": {"file_id": file_id}
+                    }
+                ]
+            }
+        ],
+        "stream": True
+    }
+
+    response = requests.post(llm_url, headers=llm_headers, json=payload, stream=True)
+
+    for line in response.iter_lines():
+        if line:
+            line_str = line.decode('utf-8')
+            if line_str.startswith('data: '):
+                data = line_str[6:]
+                if data != '[DONE]':
+                    print(data)
+    ```
+  </CodeBlock>
+
+  <CodeBlock title="JavaScript">
+    ```javascript
+    // Step 1: Upload the file
+    const uploadUrl = 'https://api.edenai.run/v3/upload';
+    const formData = new FormData();
+    formData.append('file', fileInput.files[0]);
+    formData.append('purpose', 'llm-analysis');
+
+    const uploadResponse = await fetch(uploadUrl, {
+      method: 'POST',
+      headers: {'Authorization': 'Bearer YOUR_API_KEY'},
+      body: formData
+    });
+
+    const {file_id} = await uploadResponse.json();
+    console.log('Uploaded file ID:', file_id);
+
+    // Step 2: Use the file in LLM request
+    const llmUrl = 'https://api.edenai.run/v3/llm/chat/completions';
+    const payload = {
+      model: 'openai/gpt-4o',
+      messages: [
+        {
+          role: 'user',
+          content: [
+            {type: 'text', text: 'Summarize this document in 3 bullet points.'},
+            {type: 'file', file: {file_id: file_id}}
+          ]
+        }
+      ],
+      stream: true
+    };
+
+    const response = await fetch(llmUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer YOUR_API_KEY',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+
+    while (true) {
+      const {done, value} = await reader.read();
+      if (done) break;
+      console.log(decoder.decode(value));
+    }
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+### 2. File URL
+
+Use publicly accessible file URLs:
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import requests
+
+    url = "https://api.edenai.run/v3/llm/chat/completions"
+    headers = {
+        "Authorization": "Bearer YOUR_API_KEY",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "model": "anthropic/claude-3-5-sonnet-20241022",
+        "messages": [
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": "Extract all key findings from this research paper."
+                    },
+                    {
+                        "type": "file",
+                        "file": {
+                            "file_id": "https://example.com/research-paper.pdf"
+                        }
+                    }
+                ]
+            }
+        ],
+        "stream": True
+    }
+
+    response = requests.post(url, headers=headers, json=payload, stream=True)
+
+    for line in response.iter_lines():
+        if line:
+            print(line.decode('utf-8'))
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+### 3. Base64 File Data
+
+Encode files directly in the request:
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import base64
+    import requests
+
+    # Read and encode file
+    with open("contract.pdf", "rb") as f:
+        file_data = base64.b64encode(f.read()).decode('utf-8')
+
+    # Create data URL
+    data_url = f"data:application/pdf;base64,{file_data}"
+
+    url = "https://api.edenai.run/v3/llm/chat/completions"
+    headers = {
+        "Authorization": "Bearer YOUR_API_KEY",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "model": "google/gemini-1.5-pro",
+        "messages": [
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": "Review this contract and highlight any concerning clauses."
+                    },
+                    {
+                        "type": "file",
+                        "file": {"file_data": data_url}
+                    }
+                ]
+            }
+        ],
+        "stream": True
+    }
+
+    response = requests.post(url, headers=headers, json=payload, stream=True)
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Common Use Cases
+
+### Document Summarization
+
+Extract key points from long documents:
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import requests
+
+    # Upload document
+    upload_response = requests.post(
+        "https://api.edenai.run/v3/upload",
+        headers={"Authorization": "Bearer YOUR_API_KEY"},
+        files={"file": open("quarterly-report.pdf", "rb")}
+    )
+    file_id = upload_response.json()["file_id"]
+
+    # Request summary
+    url = "https://api.edenai.run/v3/llm/chat/completions"
+    headers = {
+        "Authorization": "Bearer YOUR_API_KEY",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "model": "anthropic/claude-3-5-sonnet-20241022",
+        "messages": [
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": """Provide a comprehensive summary with:
+                        1. Executive summary (2-3 sentences)
+                        2. Key metrics and numbers
+                        3. Main highlights
+                        4. Concerns or risks mentioned
+                        5. Recommendations"""
+                    },
+                    {
+                        "type": "file",
+                        "file": {"file_id": file_id}
+                    }
+                ]
+            }
+        ],
+        "stream": True,
+        "max_tokens": 1500
+    }
+
+    response = requests.post(url, headers=headers, json=payload, stream=True)
+
+    for line in response.iter_lines():
+        if line:
+            line_str = line.decode('utf-8')
+            if line_str.startswith('data: '):
+                data = line_str[6:]
+                if data != '[DONE]':
+                    print(data)
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+### Question Answering on Documents
+
+Ask specific questions about document content:
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import requests
+
+    # Upload document once
+    upload_response = requests.post(
+        "https://api.edenai.run/v3/upload",
+        headers={"Authorization": "Bearer YOUR_API_KEY"},
+        files={"file": open("policy-document.pdf", "rb")}
+    )
+    file_id = upload_response.json()["file_id"]
+
+    url = "https://api.edenai.run/v3/llm/chat/completions"
+    headers = {
+        "Authorization": "Bearer YOUR_API_KEY",
+        "Content-Type": "application/json"
+    }
+
+    # Ask multiple questions about the same document
+    questions = [
+        "What is the refund policy?",
+        "Are there any age restrictions?",
+        "What payment methods are accepted?"
+    ]
+
+    for question in questions:
+        payload = {
+            "model": "openai/gpt-4o",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": question},
+                        {"type": "file", "file": {"file_id": file_id}}
+                    ]
+                }
+            ],
+            "stream": True,
+            "temperature": 0.2  # Low for factual answers
+        }
+
+        print(f"\nQuestion: {question}")
+        response = requests.post(url, headers=headers, json=payload, stream=True)
+
+        answer = ""
+        for line in response.iter_lines():
+            if line:
+                line_str = line.decode('utf-8')
+                if line_str.startswith('data: '):
+                    data = line_str[6:]
+                    if data != '[DONE]':
+                        import json
+                        chunk = json.loads(data)
+                        content = chunk.get('choices', [{}])[0].get('delta', {}).get('content', '')
+                        answer += content
+
+        print(f"Answer: {answer}\n")
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+### Data Extraction
+
+Extract structured data from documents:
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import requests
+    import json
+
+    # Upload invoice
+    upload_response = requests.post(
+        "https://api.edenai.run/v3/upload",
+        headers={"Authorization": "Bearer YOUR_API_KEY"},
+        files={"file": open("invoice.pdf", "rb")}
+    )
+    file_id = upload_response.json()["file_id"]
+
+    url = "https://api.edenai.run/v3/llm/chat/completions"
+    headers = {
+        "Authorization": "Bearer YOUR_API_KEY",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "model": "openai/gpt-4o",
+        "messages": [
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": """Extract the following from this invoice as JSON:
+                        {
+                          "invoice_number": "",
+                          "date": "",
+                          "vendor": "",
+                          "total_amount": 0.0,
+                          "currency": "",
+                          "line_items": [
+                            {"description": "", "quantity": 0, "unit_price": 0.0, "total": 0.0}
+                          ],
+                          "tax_amount": 0.0
+                        }"""
+                    },
+                    {
+                        "type": "file",
+                        "file": {"file_id": file_id}
+                    }
+                ]
+            }
+        ],
+        "stream": True,
+        "temperature": 0.1  # Very low for accurate extraction
+    }
+
+    response = requests.post(url, headers=headers, json=payload, stream=True)
+
+    extracted_data = ""
+    for line in response.iter_lines():
+        if line:
+            line_str = line.decode('utf-8')
+            if line_str.startswith('data: '):
+                data = line_str[6:]
+                if data != '[DONE]':
+                    chunk = json.loads(data)
+                    content = chunk.get('choices', [{}])[0].get('delta', {}).get('content', '')
+                    extracted_data += content
+
+    # Parse extracted JSON
+    invoice_data = json.loads(extracted_data)
+    print("Invoice Number:", invoice_data["invoice_number"])
+    print("Total Amount:", invoice_data["total_amount"])
+    print("Line Items:", len(invoice_data["line_items"]))
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+### Contract Analysis
+
+Review legal documents and contracts:
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import requests
+
+    upload_response = requests.post(
+        "https://api.edenai.run/v3/upload",
+        headers={"Authorization": "Bearer YOUR_API_KEY"},
+        files={"file": open("contract.pdf", "rb")}
+    )
+    file_id = upload_response.json()["file_id"]
+
+    url = "https://api.edenai.run/v3/llm/chat/completions"
+    headers = {
+        "Authorization": "Bearer YOUR_API_KEY",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "model": "anthropic/claude-3-opus-20240229",
+        "messages": [
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": """Analyze this contract and provide:
+                        1. Contract type and parties involved
+                        2. Key terms and obligations
+                        3. Payment terms and schedule
+                        4. Termination clauses
+                        5. Liability and indemnification
+                        6. Potential risks or concerning clauses
+                        7. Missing standard clauses
+                        8. Overall assessment"""
+                    },
+                    {
+                        "type": "file",
+                        "file": {"file_id": file_id}
+                    }
+                ]
+            }
+        ],
+        "stream": True,
+        "max_tokens": 2000,
+        "temperature": 0.3
+    }
+
+    response = requests.post(url, headers=headers, json=payload, stream=True)
+
+    for line in response.iter_lines():
+        if line:
+            print(line.decode('utf-8'))
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+### Code Review
+
+Analyze code files and provide feedback:
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import requests
+
+    # Upload code file
+    upload_response = requests.post(
+        "https://api.edenai.run/v3/upload",
+        headers={"Authorization": "Bearer YOUR_API_KEY"},
+        files={"file": open("app.py", "rb")}
+    )
+    file_id = upload_response.json()["file_id"]
+
+    url = "https://api.edenai.run/v3/llm/chat/completions"
+    headers = {
+        "Authorization": "Bearer YOUR_API_KEY",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "model": "openai/gpt-4o",
+        "messages": [
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": """Review this code and provide:
+                        1. Code quality assessment
+                        2. Potential bugs or issues
+                        3. Security vulnerabilities
+                        4. Performance improvements
+                        5. Best practice violations
+                        6. Suggested refactoring"""
+                    },
+                    {
+                        "type": "file",
+                        "file": {"file_id": file_id}
+                    }
+                ]
+            }
+        ],
+        "stream": True,
+        "max_tokens": 1500
+    }
+
+    response = requests.post(url, headers=headers, json=payload, stream=True)
+
+    for line in response.iter_lines():
+        if line:
+            print(line.decode('utf-8'))
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Provider Capabilities
+
+### OpenAI (GPT-4o, GPT-4-turbo)
+
+**Strengths:**
+- Fast document processing
+- Good for structured extraction
+- Reliable with common formats
+- Strong multi-page PDF handling
+
+**Limitations:**
+- Max file size: 512 MB
+- Best for text-heavy documents
+
+**Example:**
+```python
+"model": "openai/gpt-4o"
+```
+
+### Anthropic (Claude 3 Family)
+
+**Strengths:**
+- Excellent reasoning about documents
+- Superior for complex analysis
+- Great for legal/technical documents
+- Detailed, thoughtful responses
+
+**Limitations:**
+- Max file size: 10 MB (per file)
+- Slightly slower than OpenAI
+
+**Example:**
+```python
+"model": "anthropic/claude-3-5-sonnet-20241022"
+```
+
+### Google (Gemini 1.5)
+
+**Strengths:**
+- Massive context window (2GB+ files)
+- Best for very large documents
+- Fast processing (Flash variant)
+- Multi-document analysis
+
+**Limitations:**
+- May be less detailed on complex reasoning
+
+**Example:**
+```python
+"model": "google/gemini-1.5-pro"
+```
+
+## File Management Best Practices
+
+### Upload Once, Use Multiple Times
+
+Files uploaded to `/v3/upload` persist for 7 days:
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import requests
+    # Upload once
+    upload_response = requests.post(
+        "https://api.edenai.run/v3/upload",
+        headers={"Authorization": "Bearer YOUR_API_KEY"},
+        files={"file": open("large-report.pdf", "rb")}
+    )
+    file_id = upload_response.json()["file_id"]
+
+    # Use in multiple requests over the next 7 days
+    for question in questions:
+        payload = {
+            "model": "openai/gpt-4o",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": question},
+                        {"type": "file", "file": {"file_id": file_id}}
+                    ]
+                }
+            ],
+            "stream": True
+        }
+        response = requests.post(url, headers=headers, json=payload, stream=True)
+        # Process response
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+### File Size Optimization
+
+For large files, consider preprocessing:
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import requests
+    from PyPDF2 import PdfReader, PdfWriter
+
+    def extract_relevant_pages(input_pdf, pages_range):
+        """Extract specific pages to reduce file size."""
+        reader = PdfReader(input_pdf)
+        writer = PdfWriter()
+
+        for page_num in pages_range:
+            writer.add_page(reader.pages[page_num])
+
+        output_pdf = "extracted_pages.pdf"
+        with open(output_pdf, "wb") as f:
+            writer.write(f)
+
+        return output_pdf
+
+    # Extract only pages 1-5 from a 100-page document
+    small_pdf = extract_relevant_pages("large-report.pdf", range(0, 5))
+
+    # Upload the smaller file
+    upload_response = requests.post(
+        "https://api.edenai.run/v3/upload",
+        headers={"Authorization": "Bearer YOUR_API_KEY"},
+        files={"file": open(small_pdf, "rb")}
+    )
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+### Handling Expiration
+
+Track and refresh expired files:
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    from datetime import datetime, timedelta
+    import requests
+
+    class FileManager:
+        def __init__(self, api_key):
+            self.api_key = api_key
+            self.files = {}  # {local_path: {file_id, expires_at}}
+
+        def get_file_id(self, local_path):
+            """Get file ID, re-uploading if expired."""
+            if local_path in self.files:
+                file_info = self.files[local_path]
+                expires_at = datetime.fromisoformat(file_info["expires_at"])
+
+                if datetime.now() < expires_at:
+                    return file_info["file_id"]
+
+            # Upload new/expired file
+            response = requests.post(
+                "https://api.edenai.run/v3/upload",
+                headers={"Authorization": f"Bearer {self.api_key}"},
+                files={"file": open(local_path, "rb")}
+            )
+            result = response.json()
+
+            self.files[local_path] = {
+                "file_id": result["file_id"],
+                "expires_at": result["expires_at"]
+            }
+
+            return result["file_id"]
+
+    # Usage
+    manager = FileManager("YOUR_API_KEY")
+    file_id = manager.get_file_id("document.pdf")  # Handles re-upload if needed
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Advanced Patterns
+
+### Multi-Document Analysis
+
+Analyze multiple documents together:
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import requests
+
+    # Upload multiple documents
+    file_ids = []
+    for doc in ["doc1.pdf", "doc2.pdf", "doc3.pdf"]:
+        response = requests.post(
+            "https://api.edenai.run/v3/upload",
+            headers={"Authorization": "Bearer YOUR_API_KEY"},
+            files={"file": open(doc, "rb")}
+        )
+        file_ids.append(response.json()["file_id"])
+
+    # Analyze all together
+    url = "https://api.edenai.run/v3/llm/chat/completions"
+    headers = {
+        "Authorization": "Bearer YOUR_API_KEY",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "model": "google/gemini-1.5-pro",  # Large context window
+        "messages": [
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": "Compare these three documents and identify: 1) Common themes, 2) Discrepancies, 3) Unique points in each"
+                    }
+                ] + [
+                    {"type": "file", "file": {"file_id": fid}}
+                    for fid in file_ids
+                ]
+            }
+        ],
+        "stream": True,
+        "max_tokens": 2000
+    }
+
+    response = requests.post(url, headers=headers, json=payload, stream=True)
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+### Conversational Document Analysis
+
+Build multi-turn conversations about documents:
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import requests
+
+    # Upload document
+    upload_response = requests.post(
+        "https://api.edenai.run/v3/upload",
+        headers={"Authorization": "Bearer YOUR_API_KEY"},
+        files={"file": open("report.pdf", "rb")}
+    )
+    file_id = upload_response.json()["file_id"]
+
+    url = "https://api.edenai.run/v3/llm/chat/completions"
+    headers = {
+        "Authorization": "Bearer YOUR_API_KEY",
+        "Content-Type": "application/json"
+    }
+
+    # Conversation history
+    messages = [
+        {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": "What are the main conclusions of this report?"},
+                {"type": "file", "file": {"file_id": file_id}}
+            ]
+        }
+    ]
+
+    # First question
+    response = requests.post(
+        url,
+        headers=headers,
+        json={"model": "anthropic/claude-3-5-sonnet-20241022", "messages": messages, "stream": True}
+    )
+
+    # Collect assistant's response
+    assistant_response = ""
+    for line in response.iter_lines():
+        if line:
+            line_str = line.decode('utf-8')
+            if line_str.startswith('data: '):
+                data = line_str[6:]
+                if data != '[DONE]':
+                    import json
+                    chunk = json.loads(data)
+                    content = chunk.get('choices', [{}])[0].get('delta', {}).get('content', '')
+                    assistant_response += content
+
+    # Add to history
+    messages.append({"role": "assistant", "content": assistant_response})
+
+    # Follow-up question (no need to send file again)
+    messages.append({
+        "role": "user",
+        "content": "What data supports these conclusions?"
+    })
+
+    # Second request uses conversation context
+    response = requests.post(
+        url,
+        headers=headers,
+        json={"model": "anthropic/claude-3-5-sonnet-20241022", "messages": messages, "stream": True}
+    )
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Error Handling
+
+### Common File Errors
+
+**File too large:**
+```json
+{
+  "error": {
+    "code": "file_too_large",
+    "message": "File size exceeds maximum allowed (512 MB for this provider)"
+  }
+}
+```
+
+**Unsupported format:**
+```json
+{
+  "error": {
+    "code": "unsupported_file_type",
+    "message": "File type .xlsx is not supported for this provider"
+  }
+}
+```
+
+**File not found:**
+```json
+{
+  "error": {
+    "code": "file_not_found",
+    "message": "File with ID 550e8400-e29b-41d4-a716-446655440000 not found or expired"
+  }
+}
+```
+
+### Robust Error Handling
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import requests
+    import os
+
+    def process_document_safe(file_path, prompt):
+        """Process document with comprehensive error handling."""
+        # Check file exists
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"File not found: {file_path}")
+
+        # Check file size
+        file_size_mb = os.path.getsize(file_path) / (1024 * 1024)
+        if file_size_mb > 500:
+            raise ValueError(f"File too large: {file_size_mb:.1f} MB (max 500 MB)")
+
+        try:
+            # Upload
+            upload_response = requests.post(
+                "https://api.edenai.run/v3/upload",
+                headers={"Authorization": "Bearer YOUR_API_KEY"},
+                files={"file": open(file_path, "rb")},
+                timeout=60
+            )
+            upload_response.raise_for_status()
+            file_id = upload_response.json()["file_id"]
+
+            # Process
+            llm_response = requests.post(
+                "https://api.edenai.run/v3/llm/chat/completions",
+                headers={
+                    "Authorization": "Bearer YOUR_API_KEY",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "model": "openai/gpt-4o",
+                    "messages": [
+                        {
+                            "role": "user",
+                            "content": [
+                                {"type": "text", "text": prompt},
+                                {"type": "file", "file": {"file_id": file_id}}
+                            ]
+                        }
+                    ],
+                    "stream": True
+                },
+                timeout=120,
+                stream=True
+            )
+            llm_response.raise_for_status()
+
+            return llm_response
+
+        except requests.exceptions.Timeout:
+            print("Request timeout. Try with a smaller file or simpler prompt.")
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code == 413:
+                print("File too large for provider. Try splitting the document.")
+            elif e.response.status_code == 422:
+                print("Invalid file format:", e.response.json())
+            else:
+                print(f"HTTP error: {e}")
+        except Exception as e:
+            print(f"Unexpected error: {e}")
+
+    # Usage
+    response = process_document_safe("report.pdf", "Summarize this document")
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Next Steps
+
+- [Working with Media Files](working-with-media.mdx) - Complete media guide
+- [Vision Capabilities](vision-capabilities.mdx) - Image analysis
+- [Upload Files](../../how-to/upload/upload-files.mdx) - File management
+- [Chat Completions](chat-completions.mdx) - Core LLM features
+- [Streaming Responses](streaming.mdx) - Handle SSE streams

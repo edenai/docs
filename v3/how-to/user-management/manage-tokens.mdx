@@ -1,0 +1,861 @@
+# Manage Custom API Tokens
+
+Learn how to create, manage, and organize custom API tokens for your Eden AI account.
+
+> **Note**: These are admin/dashboard endpoints typically used by the Eden AI dashboard or custom admin interfaces. For standard API authentication, see the [Authentication Guide](../authentication/bearer-token-auth.mdx).
+
+## Overview
+
+Custom tokens allow you to create additional API keys beyond your main account token. Use cases include:
+
+- **Environment Separation** - Different tokens for development, staging, and production
+- **Team Access** - Separate tokens for different team members or projects
+- **Budget Control** - Set credit limits per token to control spending
+- **Security** - Rotate or revoke tokens without affecting other integrations
+- **Tracking** - Monitor usage and costs per token for better analytics
+
+## Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/v2/user/custom_token/` | GET | List all custom tokens |
+| `/v2/user/custom_token/` | POST | Create a new token |
+| `/v2/user/custom_token/{name}/` | GET | Retrieve a specific token |
+| `/v2/user/custom_token/{name}/` | PATCH | Update token settings |
+| `/v2/user/custom_token/{name}/` | DELETE | Delete a token |
+
+## Token Types
+
+Eden AI supports two types of custom tokens:
+
+| Type | Description | Use Case |
+|------|-------------|----------|
+| `api_token` | Production token with full access | Live applications, production environments |
+| `sandbox_api_token` | Test token without real provider calls | Development, testing, demos |
+
+## Creating Tokens
+
+### Create a Basic Token
+
+Create a new custom token with just a name:
+
+<CodeBlocks>
+  <CodeBlock title="cURL">
+    ```bash
+    curl -X POST https://api.edenai.run/v2/user/custom_token/ \
+      -H "Authorization: Bearer sk_xxxxxxxxxxxxxxxxxxxxxxxx" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "name": "production-api-token"
+      }'
+    ```
+  </CodeBlock>
+
+  <CodeBlock title="Python">
+    ```python
+    import requests
+
+    API_KEY = "eyJhbG...xxxxxxxxxxxxxxxxxxxxxxxx"
+
+    headers = {
+        "Authorization": f"Bearer {API_KEY}",
+        "Content-Type": "application/json"
+    }
+
+    data = {
+        "name": "production-api-token"
+    }
+
+    response = requests.post(
+        "https://api.edenai.run/v2/user/custom_token/",
+        headers=headers,
+        json=data
+    )
+
+    result = response.json()
+    print(f"Token created: {result['token']}")
+    print(f"Token name: {result['name']}")
+    ```
+  </CodeBlock>
+
+  <CodeBlock title="JavaScript">
+    ```javascript
+    const API_KEY = 'sk_xxxxxxxxxxxxxxxxxxxxxxxx';
+
+    const response = await fetch(
+      'https://api.edenai.run/v2/user/custom_token/',
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: 'production-api-token'
+        })
+      }
+    );
+
+    const result = await response.json();
+    console.log(`Token created: ${result.token}`);
+    console.log(`Token name: ${result.name}`);
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+**Response:**
+
+```json
+{
+  "name": "production-api-token",
+  "token": "eyJhbG...1234567890abcdefghijklmnop",
+  "token_type": "api_token",
+  "balance": null,
+  "active_balance": false,
+  "expire_time": null
+}
+```
+
+**Important:** Save the token value immediately - it's only shown once during creation!
+
+### Create a Token with Credit Limit
+
+Create a token with a spending limit:
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import requests
+
+    API_KEY = "eyJhbG...xxxxxxxxxxxxxxxxxxxxxxxx"
+
+    headers = {
+        "Authorization": f"Bearer {API_KEY}",
+        "Content-Type": "application/json"
+    }
+
+    data = {
+        "name": "limited-budget-token",
+        "token_type": "api_token",
+        "balance": "100.00",  # $100 limit
+        "active_balance": True  # Enable balance tracking
+    }
+
+    response = requests.post(
+        "https://api.edenai.run/v2/user/custom_token/",
+        headers=headers,
+        json=data
+    )
+
+    result = response.json()
+    print(f"Token created with ${result['balance']} limit")
+    ```
+  </CodeBlock>
+
+  <CodeBlock title="JavaScript">
+    ```javascript
+    const API_KEY = 'eyJhbG...xxxxxxxxxxxxxxxxxxxxxxxx';
+
+    const response = await fetch(
+      'https://api.edenai.run/v2/user/custom_token/',
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: 'limited-budget-token',
+          token_type: 'api_token',
+          balance: '100.00',  // $100 limit
+          active_balance: true  // Enable balance tracking
+        })
+      }
+    );
+
+    const result = await response.json();
+    console.log(`Token created with $${result.balance} limit`);
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+**How Balance Works:**
+- When `active_balance` is `true`, the token has a spending limit
+- Each API call deducts from the balance
+- When balance reaches $0, the token becomes unusable
+- Perfect for controlling costs per project or team
+
+### Create a Sandbox Token
+
+Create a token for testing without real API calls:
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import requests
+
+    API_KEY = "eyJhbG...xxxxxxxxxxxxxxxxxxxxxxxx"
+
+    headers = {
+        "Authorization": f"Bearer {API_KEY}",
+        "Content-Type": "application/json"
+    }
+
+    data = {
+        "name": "dev-sandbox-token",
+        "token_type": "sandbox_api_token"  # Sandbox mode
+    }
+
+    response = requests.post(
+        "https://api.edenai.run/v2/user/custom_token/",
+        headers=headers,
+        json=data
+    )
+
+    result = response.json()
+    print(f"Sandbox token created: {result['token']}")
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+**Sandbox Benefits:**
+- No real provider API calls
+- No costs incurred
+- Returns mock data for testing
+- Perfect for development and CI/CD
+
+### Create a Token with Expiration
+
+Create a temporary token that expires automatically:
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import requests
+    from datetime import datetime, timedelta
+
+    API_KEY = "eyJhbG...xxxxxxxxxxxxxxxxxxxxxxxx"
+
+    # Set expiration to 30 days from now
+    expire_time = (datetime.now() + timedelta(days=30)).isoformat()
+
+    headers = {
+        "Authorization": f"Bearer {API_KEY}",
+        "Content-Type": "application/json"
+    }
+
+    data = {
+        "name": "temporary-token",
+        "token_type": "api_token",
+        "expire_time": expire_time
+    }
+
+    response = requests.post(
+        "https://api.edenai.run/v2/user/custom_token/",
+        headers=headers,
+        json=data
+    )
+
+    result = response.json()
+    print(f"Token expires: {result['expire_time']}")
+    ```
+  </CodeBlock>
+
+  <CodeBlock title="JavaScript">
+    ```javascript
+    const API_KEY = 'eyJhbG...xxxxxxxxxxxxxxxxxxxxxxxx';
+
+    // Set expiration to 30 days from now
+    const expireTime = new Date();
+    expireTime.setDate(expireTime.getDate() + 30);
+
+    const response = await fetch(
+      'https://api.edenai.run/v2/user/custom_token/',
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: 'temporary-token',
+          token_type: 'api_token',
+          expire_time: expireTime.toISOString()
+        })
+      }
+    );
+
+    const result = await response.json();
+    console.log(`Token expires: ${result.expire_time}`);
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Listing Tokens
+
+### List All Tokens
+
+Get all your custom tokens:
+
+<CodeBlocks>
+  <CodeBlock title="cURL">
+    ```bash
+    curl -X GET https://api.edenai.run/v2/user/custom_token/ \
+      -H "Authorization: Bearer sk_xxxxxxxxxxxxxxxxxxxxxxxx"
+    ```
+  </CodeBlock>
+
+  <CodeBlock title="Python">
+    ```python
+    import requests
+
+    API_KEY = "eyJhbG...xxxxxxxxxxxxxxxxxxxxxxxx"
+
+    headers = {"Authorization": f"Bearer {API_KEY}"}
+
+    response = requests.get(
+        "https://api.edenai.run/v2/user/custom_token/",
+        headers=headers
+    )
+
+    tokens = response.json()
+
+    print(f"Total tokens: {len(tokens)}\n")
+
+    for token in tokens:
+        print(f"Name: {token['name']}")
+        print(f"Type: {token['token_type']}")
+        if token.get('active_balance'):
+            print(f"Balance: ${token.get('balance', 'N/A')}")
+        if token.get('expire_time'):
+            print(f"Expires: {token['expire_time']}")
+        print("-" * 40)
+    ```
+  </CodeBlock>
+
+  <CodeBlock title="JavaScript">
+    ```javascript
+    const API_KEY = 'sk_xxxxxxxxxxxxxxxxxxxxxxxx';
+
+    const response = await fetch(
+      'https://api.edenai.run/v2/user/custom_token/',
+      {
+        headers: {
+          'Authorization': `Bearer ${API_KEY}`
+        }
+      }
+    );
+
+    const tokens = await response.json();
+
+    console.log(`Total tokens: ${tokens.length}\n`);
+
+    tokens.forEach(token => {
+      console.log(`Name: ${token.name}`);
+      console.log(`Type: ${token.token_type}`);
+      if (token.active_balance) {
+        console.log(`Balance: $${token.balance || 'N/A'}`);
+      }
+      if (token.expire_time) {
+        console.log(`Expires: ${token.expire_time}`);
+      }
+      console.log('-'.repeat(40));
+    });
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+**Response:**
+
+```json
+[
+  {
+    "name": "production-api-token",
+    "token": "eyJhbG...1234567890abcdefghijklmnop",
+    "token_type": "api_token",
+    "balance": null,
+    "active_balance": false,
+    "expire_time": null
+  },
+  {
+    "name": "dev-sandbox-token",
+    "token": "eyJhbG...abcdef1234567890ghijklmnop",
+    "token_type": "sandbox_api_token",
+    "balance": null,
+    "active_balance": false,
+    "expire_time": null
+  },
+  {
+    "name": "limited-budget-token",
+    "token": "eyJhbG...xyz789abc123def456ghi789jk",
+    "token_type": "api_token",
+    "balance": 87.45,
+    "active_balance": true,
+    "expire_time": null
+  }
+]
+```
+
+## Retrieving a Specific Token
+
+Get details for a single token by name:
+
+<CodeBlocks>
+  <CodeBlock title="cURL">
+    ```bash
+    curl -X GET "https://api.edenai.run/v2/user/custom_token/production-api-token/" \
+      -H "Authorization: Bearer eyJhbG...xxxxxxxxxxxxxxxxxxxxxxxx"
+    ```
+  </CodeBlock>
+
+  <CodeBlock title="Python">
+    ```python
+    import requests
+
+    API_KEY = "eyJhbG...xxxxxxxxxxxxxxxxxxxxxxxx"
+    TOKEN_NAME = "production-api-token"
+
+    headers = {"Authorization": f"Bearer {API_KEY}"}
+
+    response = requests.get(
+        f"https://api.edenai.run/v2/user/custom_token/{TOKEN_NAME}/",
+        headers=headers
+    )
+
+    token = response.json()
+    print(f"Token: {token['token']}")
+    print(f"Balance: ${token.get('balance', 'Unlimited')}")
+    ```
+  </CodeBlock>
+
+  <CodeBlock title="JavaScript">
+    ```javascript
+    const API_KEY = 'eyJhbG...xxxxxxxxxxxxxxxxxxxxxxxx';
+    const TOKEN_NAME = 'production-api-token';
+
+    const response = await fetch(
+      `https://api.edenai.run/v2/user/custom_token/${TOKEN_NAME}/`,
+      {
+        headers: {
+          'Authorization': `Bearer ${API_KEY}`
+        }
+      }
+    );
+
+    const token = await response.json();
+    console.log(`Token: ${token.token}`);
+    console.log(`Balance: $${token.balance || 'Unlimited'}`);
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Updating Tokens
+
+### Update Token Balance
+
+Add or adjust credit balance for a token:
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import requests
+
+    API_KEY = "eyJhbG...xxxxxxxxxxxxxxxxxxxxxxxx"
+    TOKEN_NAME = "limited-budget-token"
+
+    headers = {
+        "Authorization": f"Bearer {API_KEY}",
+        "Content-Type": "application/json"
+    }
+
+    # Increase balance to $200
+    data = {
+        "balance": 200.00,
+        "active_balance": True
+    }
+
+    response = requests.patch(
+        f"https://api.edenai.run/v2/user/custom_token/{TOKEN_NAME}/",
+        headers=headers,
+        json=data
+    )
+
+    result = response.json()
+    print(f"New balance: ${result['balance']}")
+    ```
+  </CodeBlock>
+
+  <CodeBlock title="JavaScript">
+    ```javascript
+    const API_KEY = 'eyJhbG...xxxxxxxxxxxxxxxxxxxxxxxx';
+    const TOKEN_NAME = 'limited-budget-token';
+
+    const response = await fetch(
+      `https://api.edenai.run/v2/user/custom_token/${TOKEN_NAME}/`,
+      {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          balance: 200.00,
+          active_balance: true
+        })
+      }
+    );
+
+    const result = await response.json();
+    console.log(`New balance: $${result.balance}`);
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+### Update Token Expiration
+
+Extend or set expiration date:
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import requests
+    from datetime import datetime, timedelta
+
+    API_KEY = "eyJhbG...xxxxxxxxxxxxxxxxxxxxxxxx"
+    TOKEN_NAME = "temporary-token"
+
+    headers = {
+        "Authorization": f"Bearer {API_KEY}",
+        "Content-Type": "application/json"
+    }
+
+    # Extend expiration by 60 days
+    new_expiry = (datetime.now() + timedelta(days=60)).isoformat()
+
+    data = {"expire_time": new_expiry}
+
+    response = requests.patch(
+        f"https://api.edenai.run/v2/user/custom_token/{TOKEN_NAME}/",
+        headers=headers,
+        json=data
+    )
+
+    result = response.json()
+    print(f"New expiry: {result['expire_time']}")
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+### Disable Balance Tracking
+
+Remove balance limit from a token:
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import requests
+
+    API_KEY = "eyJhbG...xxxxxxxxxxxxxxxxxxxxxxxx"
+    TOKEN_NAME = "limited-budget-token"
+
+    headers = {
+        "Authorization": f"Bearer {API_KEY}",
+        "Content-Type": "application/json"
+    }
+
+    # Disable balance tracking
+    data = {"active_balance": False}
+
+    response = requests.patch(
+        f"https://api.edenai.run/v2/user/custom_token/{TOKEN_NAME}/",
+        headers=headers,
+        json=data
+    )
+
+    print("Balance tracking disabled - unlimited spending")
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Deleting Tokens
+
+Delete a custom token when no longer needed:
+
+<CodeBlocks>
+  <CodeBlock title="cURL">
+    ```bash
+    curl -X DELETE "https://api.edenai.run/v2/user/custom_token/old-token/" \
+      -H "Authorization: Bearer sk_xxxxxxxxxxxxxxxxxxxxxxxx"
+    ```
+  </CodeBlock>
+
+  <CodeBlock title="Python">
+    ```python
+    import requests
+
+    API_KEY = "eyJhbG...xxxxxxxxxxxxxxxxxxxxxxxx"
+    TOKEN_NAME = "old-token"
+
+    headers = {"Authorization": f"Bearer {API_KEY}"}
+
+    response = requests.delete(
+        f"https://api.edenai.run/v2/user/custom_token/{TOKEN_NAME}/",
+        headers=headers
+    )
+
+    if response.status_code == 204:
+        print(f"Token '{TOKEN_NAME}' deleted successfully")
+    ```
+  </CodeBlock>
+
+  <CodeBlock title="JavaScript">
+    ```javascript
+    const API_KEY = 'eyJhbG...xxxxxxxxxxxxxxxxxxxxxxxx';
+    const TOKEN_NAME = 'old-token';
+
+    const response = await fetch(
+      `https://api.edenai.run/v2/user/custom_token/${TOKEN_NAME}/`,
+      {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${API_KEY}`
+        }
+      }
+    );
+
+    if (response.status_code === 204) {
+      console.log(`Token '${TOKEN_NAME}' deleted successfully`);
+    }
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+**Important:** Deleting a token immediately revokes access. Any applications using that token will start receiving 401 authentication errors.
+
+## Best Practices
+
+### Token Naming Conventions
+
+Use descriptive, consistent names:
+
+```python
+# Good naming patterns
+"prod-web-app"           # Environment + application
+"staging-mobile-ios"     # Environment + platform
+"dev-john-testing"       # Environment + developer
+"ci-cd-pipeline"         # Purpose
+"partner-acme-corp"      # External usage
+
+# Avoid
+"token1", "test", "temp"  # Too generic
+```
+
+### Budget Control Strategy
+
+Implement budget controls per token:
+
+```python
+import requests
+
+API_KEY = "eyJhbG...xxxxxxxxxxxxxxxxxxxxxxxx"
+
+# Create tokens with appropriate budgets
+token_configs = [
+    {
+        "name": "prod-main-app",
+        "balance": "1000.00",  # High limit for production
+        "active_balance": True
+    },
+    {
+        "name": "staging-test-env",
+        "balance": "50.00",  # Low limit for staging
+        "active_balance": True
+    },
+    {
+        "name": "dev-sandbox",
+        "token_type": "sandbox_api_token",  # No cost
+        "active_balance": False
+    }
+]
+
+headers = {
+    "Authorization": f"Bearer {API_KEY}",
+    "Content-Type": "application/json"
+}
+
+for config in token_configs:
+    response = requests.post(
+        "https://api.edenai.run/v2/user/custom_token/",
+        headers=headers,
+        json=config
+    )
+    print(f"Created: {config['name']}")
+```
+
+### Token Rotation
+
+Regularly rotate tokens for security:
+
+```python
+import requests
+from datetime import datetime, timedelta
+
+API_KEY = "eyJhbG...xxxxxxxxxxxxxxxxxxxxxxxx"
+
+def rotate_token(old_token_name: str, new_token_name: str):
+    """
+    Rotate a token by creating a new one and deleting the old one.
+    """
+    headers = {
+        "Authorization": f"Bearer {API_KEY}",
+        "Content-Type": "application/json"
+    }
+
+    # Get old token details
+    old_response = requests.get(
+        f"https://api.edenai.run/v2/user/custom_token/{old_token_name}/",
+        headers=headers
+    )
+    old_token = old_response.json()
+
+    # Create new token with same settings
+    new_data = {
+        "name": new_token_name,
+        "token_type": old_token['token_type'],
+        "active_balance": old_token['active_balance']
+    }
+
+    if old_token.get('balance'):
+        new_data['balance'] = str(old_token['balance'])
+
+    new_response = requests.post(
+        "https://api.edenai.run/v2/user/custom_token/",
+        headers=headers,
+        json=new_data
+    )
+
+    new_token = new_response.json()
+
+    print(f"New token created: {new_token['token']}")
+    print("Update your application with the new token")
+    print(f"Once confirmed, delete old token: {old_token_name}")
+
+    return new_token
+
+# Rotate quarterly
+rotate_token("prod-q1-2024", "prod-q2-2024")
+```
+
+### Monitor Token Usage
+
+Track usage and remaining balance:
+
+```python
+import requests
+
+API_KEY = "eyJhbG...xxxxxxxxxxxxxxxxxxxxxxxx"
+
+def check_token_health():
+    """Check all tokens for low balance or expiration"""
+    headers = {"Authorization": f"Bearer {API_KEY}"}
+
+    response = requests.get(
+        "https://api.edenai.run/v2/user/custom_token/",
+        headers=headers
+    )
+
+    tokens = response.json()
+
+    for token in tokens:
+        print(f"\nToken: {token['name']}")
+
+        # Check balance
+        if token.get('active_balance') and token.get('balance') is not None:
+            if token['balance'] < 10:
+                print(f"⚠️  LOW BALANCE: ${token['balance']:.2f}")
+            else:
+                print(f"✓ Balance: ${token['balance']:.2f}")
+
+        # Check expiration
+        if token.get('expire_time'):
+            from datetime import datetime
+            expiry = datetime.fromisoformat(token['expire_time'].replace('Z', '+00:00'))
+            days_left = (expiry - datetime.now()).days
+
+            if days_left < 7:
+                print(f"⚠️  EXPIRES SOON: {days_left} days")
+            else:
+                print(f"✓ Expires in {days_left} days")
+
+check_token_health()
+```
+
+### Scope Limitations
+
+Use different tokens for different scopes:
+
+```python
+# Production tokens - full access
+production_tokens = [
+    {"name": "prod-us-east", "balance": "500"},
+    {"name": "prod-eu-west", "balance": "500"}
+]
+
+# Development tokens - limited budget
+dev_tokens = [
+    {"name": "dev-feature-xyz", "balance": "25", "expire_time": "+30 days"},
+    {"name": "dev-testing", "token_type": "sandbox_api_token"}
+]
+
+# External tokens - strict limits
+external_tokens = [
+    {"name": "partner-demo", "balance": "10", "expire_time": "+7 days"},
+    {"name": "client-trial", "balance": "5", "expire_time": "+14 days"}
+]
+```
+
+## Error Handling
+
+### 400 Bad Request
+
+Invalid token name or parameters:
+
+```json
+{
+  "error": {
+    "type": "validation_error",
+    "message": {
+      "name": ["Token with this name already exists."]
+    }
+  }
+}
+```
+
+### 404 Not Found
+
+Token doesn't exist:
+
+```json
+{
+  "details": "Not Found"
+}
+```
+
+### 403 Forbidden
+
+Insufficient permissions:
+
+```json
+{
+  "error": {
+    "type": "permission_error",
+    "message": "You do not have permission to manage tokens"
+  }
+}
+```
+
+## Next Steps
+
+- [Multi-Environment Token Management Tutorial](../../tutorials/multi-environment-tokens.mdx) - Complete workflow
+- [Monitor Usage and Costs](../../how-to/cost-management/monitor-usage.mdx) - Track spending per token
+- [Authentication Guide](../../how-to/authentication/bearer-token-auth.mdx) - Use your tokens

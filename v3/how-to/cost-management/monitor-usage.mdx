@@ -1,0 +1,687 @@
+---
+icon:"square-activity"
+---
+
+# Monitor API Usage and Costs
+
+Learn how to track your Eden AI API consumption and costs using the Cost Monitoring endpoints.
+
+> **Note**: These are admin/dashboard endpoints typically used by the Eden AI dashboard or custom admin interfaces. For standard API usage authentication, see the [Authentication Guide](../authentication/bearer-token-auth.mdx).
+
+## Overview
+
+The Cost Monitoring API provides two key endpoints to help you track and manage your Eden AI spending:
+
+- **Monitor Consumptions** - Get detailed usage and cost breakdowns by date, provider, and feature
+- **Check Credits** - Retrieve your current account credit balance
+
+These endpoints are designed for building dashboards, generating reports, and monitoring API usage patterns.
+
+## Endpoints
+
+### Monitor Consumptions
+
+```
+GET https://api.edenai.run/v2/cost_management/
+```
+
+Retrieve detailed cost and usage data for a specific date range.
+
+### Check Current Credits
+
+```
+GET https://api.edenai.run/v2/cost_management/credits/
+```
+
+Get your current Eden AI account credit balance.
+
+## Key Concepts
+
+### Step Parameter
+
+The `step` parameter controls how data is aggregated:
+
+| Step Value | Aggregation Period | Use Case |
+|------------|-------------------|----------|
+| 1 | Daily | Detailed daily analysis |
+| 2 | Weekly | Weekly trends |
+| 3 | Monthly | Monthly reports |
+| 4 | Yearly | Annual summaries |
+
+### Date Ranges
+
+- Dates must be in `YYYY-MM-DD` format
+- Both `begin` and `end` dates are required
+- Data is grouped by the specified `step` value
+
+### Filtering Options
+
+Filter your cost data by:
+- **Provider**: Specific AI provider (e.g., `openai`, `anthropic`)
+- **Subfeature**: Specific feature (e.g., `chat`, `ocr`, `text_to_speech`)
+- **Token**: Specific API token
+- **Workflow ID**: Specific workflow execution
+- **RAG Project ID**: Specific RAG project
+
+## Check Your Current Credits
+
+Get your current credit balance to verify available funds:
+
+<CodeBlocks>
+  <CodeBlock title="cURL">
+    ```bash
+    curl -X GET https://api.edenai.run/v2/cost_management/credits/ \
+      -H "Authorization: Bearer sk_xxxxxxxxxxxxxxxxxxxxxxxx"
+    ```
+  </CodeBlock>
+
+  <CodeBlock title="Python">
+    ```python
+    import requests
+
+    API_KEY = "eyJhbG...xxxxxxxxxxxxxxxxxxxxxxxx"
+
+    headers = {"Authorization": f"Bearer {API_KEY}"}
+
+    response = requests.get(
+        "https://api.edenai.run/v2/cost_management/credits/",
+        headers=headers
+    )
+
+    credits_data = response.json()
+    print(f"Current credits: ${credits_data['credits']:.2f}")
+    ```
+  </CodeBlock>
+
+  <CodeBlock title="JavaScript">
+    ```javascript
+    const API_KEY = 'sk_xxxxxxxxxxxxxxxxxxxxxxxx';
+
+    const response = await fetch(
+      'https://api.edenai.run/v2/cost_management/credits/',
+      {
+        headers: {
+          'Authorization': `Bearer ${API_KEY}`
+        }
+      }
+    );
+
+    const creditsData = await response.json();
+    console.log(`Current credits: $${creditsData.credits.toFixed(2)}`);
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+**Response:**
+
+```json
+{
+  "credits": 42.50
+}
+```
+
+## Monitor Usage - Basic Example
+
+Get your last 30 days of usage, grouped by day:
+
+<CodeBlocks>
+  <CodeBlock title="cURL">
+    ```bash
+    curl -X GET "https://api.edenai.run/v2/cost_management/?begin=2024-01-01&end=2024-01-31&step=1" \
+      -H "Authorization: Bearer sk_xxxxxxxxxxxxxxxxxxxxxxxx"
+    ```
+  </CodeBlock>
+
+  <CodeBlock title="Python">
+    ```python
+    import requests
+    from datetime import datetime, timedelta
+
+    API_KEY = "eyJhbG...xxxxxxxxxxxxxxxxxxxxxxxx"
+
+    # Get last 30 days
+    end_date = datetime.now()
+    begin_date = end_date - timedelta(days=30)
+
+    headers = {"Authorization": f"Bearer {API_KEY}"}
+    params = {
+        "begin": begin_date.strftime("%Y-%m-%d"),
+        "end": end_date.strftime("%Y-%m-%d"),
+        "step": 1  # Daily aggregation
+    }
+
+    response = requests.get(
+        "https://api.edenai.run/v2/cost_management/",
+        headers=headers,
+        params=params
+    )
+
+    data = response.json()
+    print(f"Usage data retrieved for {len(data['response'])} token(s)")
+    ```
+  </CodeBlock>
+
+  <CodeBlock title="JavaScript">
+    ```javascript
+    const API_KEY = 'sk_xxxxxxxxxxxxxxxxxxxxxxxx';
+
+    // Get last 30 days
+    const endDate = new Date();
+    const beginDate = new Date();
+    beginDate.setDate(beginDate.getDate() - 30);
+
+    const params = new URLSearchParams({
+      begin: beginDate.toISOString().split('T')[0],
+      end: endDate.toISOString().split('T')[0],
+      step: '1'  // Daily aggregation
+    });
+
+    const response = await fetch(
+      `https://api.edenai.run/v2/cost_management/?${params}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${API_KEY}`
+        }
+      }
+    );
+
+    const data = await response.json();
+    console.log(`Usage data retrieved for ${data.response.length} token(s)`);
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Filter by Provider
+
+Get costs for a specific AI provider only:
+
+<CodeBlocks>
+  <CodeBlock title="cURL">
+    ```bash
+    curl -X GET "https://api.edenai.run/v2/cost_management/?begin=2024-01-01&end=2024-01-31&step=3&provider=openai" \
+      -H "Authorization: Bearer sk_xxxxxxxxxxxxxxxxxxxxxxxx"
+    ```
+  </CodeBlock>
+
+  <CodeBlock title="Python">
+    ```python
+    import requests
+
+    API_KEY = "eyJhbG...xxxxxxxxxxxxxxxxxxxxxxxx"
+
+    headers = {"Authorization": f"Bearer {API_KEY}"}
+    params = {
+        "begin": "2024-01-01",
+        "end": "2024-12-31",
+        "step": 3,  # Monthly aggregation
+        "provider": "openai"  # Filter by OpenAI only
+    }
+
+    response = requests.get(
+        "https://api.edenai.run/v2/cost_management/",
+        headers=headers,
+        params=params
+    )
+
+    data = response.json()
+
+    # Calculate total OpenAI costs
+    total_cost = 0
+    for token_data in data['response']:
+        for date, features in token_data['data'].items():
+            for feature, details in features.items():
+                total_cost += details['total_cost']
+
+    print(f"Total OpenAI cost: ${total_cost:.2f}")
+    ```
+  </CodeBlock>
+
+  <CodeBlock title="JavaScript">
+    ```javascript
+    const API_KEY = 'sk_xxxxxxxxxxxxxxxxxxxxxxxx';
+
+    const params = new URLSearchParams({
+      begin: '2024-01-01',
+      end: '2024-12-31',
+      step: '3',  // Monthly aggregation
+      provider: 'openai'  // Filter by OpenAI only
+    });
+
+    const response = await fetch(
+      `https://api.edenai.run/v2/cost_management/?${params}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${API_KEY}`
+        }
+      }
+    );
+
+    const data = await response.json();
+
+    // Calculate total OpenAI costs
+    let totalCost = 0;
+    data.response.forEach(tokenData => {
+      Object.values(tokenData.data).forEach(features => {
+        Object.values(features).forEach(details => {
+          totalCost += details.total_cost;
+        });
+      });
+    });
+
+    console.log(`Total OpenAI cost: $${totalCost.toFixed(2)}`);
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Filter by Subfeature
+
+Track costs for specific features like LLM chat or OCR:
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import requests
+
+    API_KEY = "eyJhbG...xxxxxxxxxxxxxxxxxxxxxxxx"
+
+    headers = {"Authorization": f"Bearer {API_KEY}"}
+    params = {
+        "begin": "2024-01-01",
+        "end": "2024-01-31",
+        "step": 1,  # Daily
+        "subfeature": "chat"  # Only LLM chat costs
+    }
+
+    response = requests.get(
+        "https://api.edenai.run/v2/cost_management/",
+        headers=headers,
+        params=params
+    )
+
+    data = response.json()
+    print(f"Chat feature costs retrieved")
+    ```
+  </CodeBlock>
+
+  <CodeBlock title="JavaScript">
+    ```javascript
+    const API_KEY = 'sk_xxxxxxxxxxxxxxxxxxxxxxxx';
+
+    const params = new URLSearchParams({
+      begin: '2024-01-01',
+      end: '2024-01-31',
+      step: '1',
+      subfeature: 'chat'  // Only LLM chat costs
+    });
+
+    const response = await fetch(
+      `https://api.edenai.run/v2/cost_management/?${params}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${API_KEY}`
+        }
+      }
+    );
+
+    const data = await response.json();
+    console.log('Chat feature costs retrieved');
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Filter by Token
+
+Track usage for a specific API token:
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import requests
+
+    API_KEY = "eyJhbG...xxxxxxxxxxxxxxxxxxxxxxxx"
+    TRACKED_TOKEN = "prod_token_123"
+
+    headers = {"Authorization": f"Bearer {API_KEY}"}
+    params = {
+        "begin": "2024-01-01",
+        "end": "2024-01-31",
+        "step": 2,  # Weekly
+        "token": TRACKED_TOKEN
+    }
+
+    response = requests.get(
+        "https://api.edenai.run/v2/cost_management/",
+        headers=headers,
+        params=params
+    )
+
+    data = response.json()
+    print(f"Usage for token '{TRACKED_TOKEN}' retrieved")
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Response Format
+
+The monitoring endpoint returns data structured by token, date, and feature:
+
+```json
+{
+  "response": [
+    {
+      "token": "base_token",
+      "data": {
+        "2024-01-01": {
+          "text__chat": {
+            "total_cost": 11.30,
+            "details": 381,
+            "cost_per_provider": {
+              "openai": 11.28,
+              "anthropic": 0.02
+            }
+          },
+          "image__explicit_content": {
+            "total_cost": 0.15,
+            "details": 101,
+            "cost_per_provider": {
+              "google": 0.15
+            }
+          }
+        },
+        "2024-01-02": {
+          "ocr__ocr": {
+            "total_cost": 0.006,
+            "details": 4,
+            "cost_per_provider": {
+              "google": 0.006
+            }
+          }
+        }
+      }
+    }
+  ]
+}
+```
+
+### Response Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `token` | string | API token identifier |
+| `data` | object | Date-keyed usage data |
+| `total_cost` | number | Total cost for this feature on this date |
+| `details` | integer | Number of API calls made |
+| `cost_per_provider` | object | Cost breakdown by provider |
+
+### Feature Naming Convention
+
+Features follow the pattern `{category}__{subfeature}`:
+
+- `text__chat` - LLM chat completions
+- `text__generation` - Text generation
+- `text__embeddings` - Text embeddings
+- `image__explicit_content` - Image moderation
+- `image__question_answer` - Image Q&A
+- `ocr__ocr` - OCR text extraction
+- `audio__text_to_speech` - Text-to-speech
+
+## Analyze Costs by Provider
+
+Compare costs across different AI providers:
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import requests
+    from collections import defaultdict
+
+    API_KEY = "eyJhbG...xxxxxxxxxxxxxxxxxxxxxxxx"
+
+    headers = {"Authorization": f"Bearer {API_KEY}"}
+    params = {
+        "begin": "2024-01-01",
+        "end": "2024-12-31",
+        "step": 4  # Yearly summary
+    }
+
+    response = requests.get(
+        "https://api.edenai.run/v2/cost_management/",
+        headers=headers,
+        params=params
+    )
+
+    data = response.json()
+
+    # Aggregate costs by provider
+    provider_costs = defaultdict(float)
+    total_calls = defaultdict(int)
+
+    for token_data in data['response']:
+        for date, features in token_data['data'].items():
+            for feature, details in features.items():
+                total_calls[feature] += details['details']
+                for provider, cost in details['cost_per_provider'].items():
+                    provider_costs[provider] += cost
+
+    # Display results
+    print("Cost Breakdown by Provider:")
+    print("-" * 40)
+    for provider, cost in sorted(provider_costs.items(),
+                                   key=lambda x: x[1],
+                                   reverse=True):
+        print(f"{provider:15s}: ${cost:>10.2f}")
+
+    print("-" * 40)
+    print(f"{'TOTAL':15s}: ${sum(provider_costs.values()):>10.2f}")
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+**Example Output:**
+
+```
+Cost Breakdown by Provider:
+----------------------------------------
+openai         :     $34.04
+anthropic      :      $2.97
+google         :      $0.35
+elevenlabs     :      $0.75
+cohere         :      $0.08
+----------------------------------------
+TOTAL          :     $38.19
+```
+
+## Best Practices
+
+### Query Optimization
+
+**Use appropriate step sizes:**
+- Daily (`step=1`): Last 30-90 days for detailed analysis
+- Weekly (`step=2`): Last 3-6 months for trend analysis
+- Monthly (`step=3`): Last year for reporting
+- Yearly (`step=4`): Multi-year historical data
+
+**Limit date ranges:**
+```python
+# Good - Focused query
+params = {"begin": "2024-01-01", "end": "2024-01-31", "step": 1}
+
+# Less efficient - Very large range with daily granularity
+params = {"begin": "2020-01-01", "end": "2024-12-31", "step": 1}
+```
+
+### Dashboard Integration
+
+**Cache results** for frequently accessed data:
+
+```python
+import requests
+from datetime import datetime, timedelta
+import redis
+
+API_KEY = "eyJhbG...xxxxxxxxxxxxxxxxxxxxxxxx"
+cache = redis.Redis(host='localhost', port=6379, db=0)
+
+def get_monthly_costs(year, month):
+    cache_key = f"costs:{year}:{month}"
+
+    # Check cache first
+    cached = cache.get(cache_key)
+    if cached:
+        return eval(cached)
+
+    # Fetch from API
+    headers = {"Authorization": f"Bearer {API_KEY}"}
+    params = {
+        "begin": f"{year}-{month:02d}-01",
+        "end": f"{year}-{month:02d}-28",
+        "step": 3
+    }
+
+    response = requests.get(
+        "https://api.edenai.run/v2/cost_management/",
+        headers=headers,
+        params=params
+    )
+
+    data = response.json()
+
+    # Cache for 1 hour
+    cache.setex(cache_key, 3600, str(data))
+
+    return data
+```
+
+### Cost Alerting
+
+**Monitor for unexpected spikes:**
+
+```python
+import requests
+
+API_KEY = "eyJhbG...xxxxxxxxxxxxxxxxxxxxxxxx"
+ALERT_THRESHOLD = 100.0  # Alert if daily cost > $100
+
+headers = {"Authorization": f"Bearer {API_KEY}"}
+params = {
+    "begin": "2024-01-01",
+    "end": "2024-01-31",
+    "step": 1
+}
+
+response = requests.get(
+    "https://api.edenai.run/v2/cost_management/",
+    headers=headers,
+    params=params
+)
+
+data = response.json()
+
+# Check for high-cost days
+for token_data in data['response']:
+    for date, features in token_data['data'].items():
+        daily_cost = sum(
+            details['total_cost']
+            for details in features.values()
+        )
+
+        if daily_cost > ALERT_THRESHOLD:
+            print(f"⚠️  Alert: High cost on {date}: ${daily_cost:.2f}")
+            # Send notification (email, Slack, etc.)
+```
+
+### Track Budget Usage
+
+**Monitor remaining budget:**
+
+```python
+import requests
+
+API_KEY = "eyJhbG...xxxxxxxxxxxxxxxxxxxxxxxx"
+MONTHLY_BUDGET = 500.0
+
+# Get current credits
+credits_response = requests.get(
+    "https://api.edenai.run/v2/cost_management/credits/",
+    headers={"Authorization": f"Bearer {API_KEY}"}
+)
+current_credits = credits_response.json()['credits']
+
+# Get this month's spending
+import datetime
+today = datetime.date.today()
+first_day = today.replace(day=1)
+
+params = {
+    "begin": first_day.strftime("%Y-%m-%d"),
+    "end": today.strftime("%Y-%m-%d"),
+    "step": 3
+}
+
+usage_response = requests.get(
+    "https://api.edenai.run/v2/cost_management/",
+    headers={"Authorization": f"Bearer {API_KEY}"},
+    params=params
+)
+
+# Calculate month's spending
+month_spending = 0
+for token_data in usage_response.json()['response']:
+    for date, features in token_data['data'].items():
+        for details in features.values():
+            month_spending += details['total_cost']
+
+remaining_budget = MONTHLY_BUDGET - month_spending
+budget_pct = (month_spending / MONTHLY_BUDGET) * 100
+
+print(f"Monthly Budget: ${MONTHLY_BUDGET:.2f}")
+print(f"Spent This Month: ${month_spending:.2f} ({budget_pct:.1f}%)")
+print(f"Remaining: ${remaining_budget:.2f}")
+print(f"Current Credits: ${current_credits:.2f}")
+```
+
+## Error Handling
+
+### 400 Bad Request
+
+Invalid parameters (missing required fields, invalid dates):
+
+```json
+{
+  "error": {
+    "type": "validation_error",
+    "message": {
+      "begin": ["This field is required."]
+    }
+  }
+}
+```
+
+### 403 Forbidden
+
+Insufficient permissions to access cost data:
+
+```json
+{
+  "error": {
+    "type": "permission_error",
+    "message": "You do not have permission to access this resource"
+  }
+}
+```
+
+### 404 Not Found
+
+No data found for the specified filters:
+
+```json
+{
+  "details": "Not Found"
+}
+```
+
+## Next Steps
+
+- [Track and Optimize API Spending Tutorial](../../tutorials/track-optimize-spending.mdx)
+- [Manage Custom Tokens](../../how-to/user-management/manage-tokens.mdx)
+- [Authentication Guide](../../how-to/authentication/bearer-token-auth.mdx)

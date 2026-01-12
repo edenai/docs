@@ -1,0 +1,663 @@
+# LibreChat
+
+Configure LibreChat, the open-source ChatGPT alternative, to use Eden AI for access to 200+ AI models.
+
+## Overview
+
+[LibreChat](https://librechat.ai) is a free, open-source AI chat platform that supports multiple providers. By connecting it to Eden AI, you get:
+
+- **200+ models**: Access OpenAI, Anthropic, Google, Cohere, and more through one interface
+- **Self-hosted**: Full control over your data and infrastructure
+- **Cost savings**: Leverage Eden AI's competitive pricing
+- **Unified experience**: Single chat interface for all providers
+
+## Prerequisites
+
+- Docker and Docker Compose installed
+- Eden AI API key from [https://app.edenai.run](https://app.edenai.run)
+- Basic knowledge of environment variables
+
+## Installation
+
+### Option 1: Docker Compose (Recommended)
+
+Clone LibreChat and set up with Docker:
+
+<CodeBlocks>
+  <CodeBlock title="bash">
+    ```bash
+    # Clone LibreChat
+    git clone https://github.com/danny-avila/LibreChat.git
+    cd LibreChat
+
+    # Copy example environment file
+    cp .env.example .env
+
+    # Start LibreChat
+    docker compose up -d
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+### Option 2: Manual Installation
+
+<CodeBlocks>
+  <CodeBlock title="bash">
+    ```bash
+    # Clone repository
+    git clone https://github.com/danny-avila/LibreChat.git
+    cd LibreChat
+
+    # Install dependencies
+    npm install
+
+    # Set up environment
+    cp .env.example .env
+
+    # Build and start
+    npm run build
+    npm run backend
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Configuration
+
+### Step 1: Configure Environment Variables
+
+Edit the `.env` file to add Eden AI configuration:
+
+<CodeBlocks>
+  <CodeBlock title=".env">
+    ```bash
+    # Eden AI Configuration
+    OPENAI_API_KEY=YOUR_EDEN_AI_API_KEY
+    OPENAI_REVERSE_PROXY=https://api.edenai.run/v3/llm
+
+    # Optional: Enable multiple endpoints
+    ANTHROPIC_API_KEY=YOUR_EDEN_AI_API_KEY
+    ANTHROPIC_REVERSE_PROXY=https://api.edenai.run/v3/llm
+
+    GOOGLE_API_KEY=YOUR_EDEN_AI_API_KEY
+    GOOGLE_REVERSE_PROXY=https://api.edenai.run/v3/llm
+
+    # Application settings
+    HOST=localhost
+    PORT=3080
+    MONGO_URI=mongodb://127.0.0.1:27017/LibreChat
+
+    # Session secret (generate your own)
+    SESSION_SECRET=your_random_secret_here
+    JWT_SECRET=your_jwt_secret_here
+    JWT_REFRESH_SECRET=your_refresh_secret_here
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+### Step 2: Configure librechat.yaml
+
+Create or edit `librechat.yaml` for advanced configuration:
+
+<CodeBlocks>
+  <CodeBlock title="librechat.yaml">
+    ```yaml
+    version: 1.0.5
+    cache: true
+
+    endpoints:
+      custom:
+        - name: "Eden AI"
+          apiKey: "${OPENAI_API_KEY}"
+          baseURL: "https://api.edenai.run/v3/llm"
+          models:
+            default:
+              - "anthropic/claude-3-5-sonnet-20241022"
+              - "openai/gpt-4"
+              - "openai/gpt-4-turbo"
+              - "google/gemini-pro"
+              - "google/gemini-1.5-pro"
+              - "cohere/command-r-plus"
+              - "openai/gpt-3.5-turbo"
+            fetch: false
+          titleConvo: true
+          titleModel: "openai/gpt-3.5-turbo"
+          summarize: false
+          summaryModel: "openai/gpt-3.5-turbo"
+          forcePrompt: false
+          modelDisplayLabel: "Eden AI"
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+### Step 3: Start LibreChat
+
+<CodeBlocks>
+  <CodeBlock title="bash">
+    ```bash
+    # With Docker
+    docker compose up -d
+
+    # Without Docker
+    npm run backend
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+Access LibreChat at `http://localhost:3080`
+
+## Available Models
+
+Configure which models appear in the LibreChat interface:
+
+<CodeBlocks>
+  <CodeBlock title="librechat.yaml">
+    ```yaml
+    endpoints:
+      custom:
+        - name: "Eden AI - Claude"
+          apiKey: "${OPENAI_API_KEY}"
+          baseURL: "https://api.edenai.run/v3/llm"
+          models:
+            default:
+              - "anthropic/claude-3-5-sonnet-20241022"
+              - "anthropic/claude-3-opus-20240229"
+              - "anthropic/claude-3-sonnet-20240229"
+              - "anthropic/claude-3-haiku-20240307"
+          modelDisplayLabel: "Claude (Eden AI)"
+
+        - name: "Eden AI - OpenAI"
+          apiKey: "${OPENAI_API_KEY}"
+          baseURL: "https://api.edenai.run/v3/llm"
+          models:
+            default:
+              - "openai/gpt-4"
+              - "openai/gpt-4-turbo"
+              - "openai/gpt-4o"
+              - "openai/gpt-3.5-turbo"
+          modelDisplayLabel: "OpenAI (Eden AI)"
+
+        - name: "Eden AI - Google"
+          apiKey: "${OPENAI_API_KEY}"
+          baseURL: "https://api.edenai.run/v3/llm"
+          models:
+            default:
+              - "google/gemini-pro"
+              - "google/gemini-1.5-pro"
+              - "google/gemini-1.5-flash"
+          modelDisplayLabel: "Google (Eden AI)"
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Features
+
+### Multi-Model Conversations
+
+Switch between models mid-conversation:
+
+1. Start a conversation with Claude
+2. Click the model selector
+3. Switch to GPT-4 or Gemini
+4. Continue the conversation seamlessly
+
+### File Attachments
+
+Upload files for vision-capable models:
+
+<CodeBlocks>
+  <CodeBlock title="librechat.yaml">
+    ```yaml
+    endpoints:
+      custom:
+        - name: "Eden AI - Vision"
+          apiKey: "${OPENAI_API_KEY}"
+          baseURL: "https://api.edenai.run/v3/llm"
+          models:
+            default:
+              - "openai/gpt-4o"
+              - "google/gemini-1.5-pro"
+              - "anthropic/claude-3-5-sonnet-20241022"
+          # Enable file uploads
+          fileConfig:
+            endpoints:
+              assistants:
+                fileLimit: 5
+                fileSizeLimit: 10
+                totalSizeLimit: 50
+                supportedMimeTypes:
+                  - "image/jpeg"
+                  - "image/png"
+                  - "image/webp"
+                  - "image/gif"
+          modelDisplayLabel: "Vision Models"
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+### Preset Prompts
+
+Create custom prompts for common tasks:
+
+<CodeBlocks>
+  <CodeBlock title="librechat.yaml">
+    ```yaml
+    endpoints:
+      custom:
+        - name: "Eden AI"
+          apiKey: "${OPENAI_API_KEY}"
+          baseURL: "https://api.edenai.run/v3/llm"
+          models:
+            default:
+              - "anthropic/claude-3-5-sonnet-20241022"
+              - "openai/gpt-4"
+          # Add custom presets
+          presets:
+            - title: "Code Assistant"
+              model: "anthropic/claude-3-5-sonnet-20241022"
+              temperature: 0.1
+              system_message: "You are an expert programmer. Provide clean, well-documented code."
+
+            - title: "Creative Writer"
+              model: "openai/gpt-4"
+              temperature: 0.9
+              system_message: "You are a creative writer. Be imaginative and engaging."
+
+            - title: "Data Analyst"
+              model: "google/gemini-1.5-pro"
+              temperature: 0.3
+              system_message: "You are a data analyst. Provide clear, data-driven insights."
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Advanced Configuration
+
+### Custom Model Parameters
+
+Configure temperature, max tokens, and other parameters:
+
+<CodeBlocks>
+  <CodeBlock title="librechat.yaml">
+    ```yaml
+    endpoints:
+      custom:
+        - name: "Eden AI"
+          apiKey: "${OPENAI_API_KEY}"
+          baseURL: "https://api.edenai.run/v3/llm"
+          models:
+            default:
+              - "anthropic/claude-3-5-sonnet-20241022"
+          # Default parameters
+          default:
+            temperature: 0.7
+            max_tokens: 2000
+            top_p: 1.0
+            frequency_penalty: 0.0
+            presence_penalty: 0.0
+          # Allow users to override
+          userProvidedParameters:
+            - "temperature"
+            - "max_tokens"
+            - "top_p"
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+### User Authentication
+
+Enable user registration and authentication:
+
+<CodeBlocks>
+  <CodeBlock title=".env">
+    ```bash
+    # Allow user registration
+    ALLOW_REGISTRATION=true
+
+    # Email verification (optional)
+    EMAIL_SERVICE=gmail
+    EMAIL_USERNAME=your-email@gmail.com
+    EMAIL_PASSWORD=your-app-password
+
+    # Social auth (optional)
+    GOOGLE_CLIENT_ID=your-google-client-id
+    GOOGLE_CLIENT_SECRET=your-google-client-secret
+    GOOGLE_CALLBACK_URL=http://localhost:3080/oauth/google/callback
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+### Rate Limiting
+
+Protect your API key with rate limiting:
+
+<CodeBlocks>
+  <CodeBlock title="librechat.yaml">
+    ```yaml
+    rateLimits:
+      fileUploads:
+        ipMax: 100
+        ipWindowInMinutes: 60
+        userMax: 50
+        userWindowInMinutes: 60
+
+      conversationsImport:
+        ipMax: 10
+        ipWindowInMinutes: 60
+        userMax: 5
+        userWindowInMinutes: 60
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+### Conversation History
+
+Configure MongoDB for persistent conversations:
+
+<CodeBlocks>
+  <CodeBlock title=".env">
+    ```bash
+    # MongoDB connection
+    MONGO_URI=mongodb://127.0.0.1:27017/LibreChat
+
+    # Or use MongoDB Atlas (cloud)
+    # MONGO_URI=mongodb+srv://username:password@cluster.mongodb.net/LibreChat
+    ```
+  </CodeBlock>
+
+  <CodeBlock title="docker-compose.yml">
+    ```yaml
+    services:
+      mongodb:
+        image: mongo
+        container_name: chat-mongodb
+        restart: always
+        volumes:
+          - ./data-node:/data/db
+        ports:
+          - 27017:27017
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Docker Deployment
+
+### Production Docker Compose
+
+<CodeBlocks>
+  <CodeBlock title="docker-compose.override.yml">
+    ```yaml
+    version: '3.4'
+
+    services:
+      api:
+        image: ghcr.io/danny-avila/librechat:latest
+        container_name: LibreChat
+        ports:
+          - 3080:3080
+        depends_on:
+          - mongodb
+        restart: always
+        environment:
+          - HOST=0.0.0.0
+          - MONGO_URI=mongodb://mongodb:27017/LibreChat
+          - OPENAI_API_KEY=${OPENAI_API_KEY}
+          - OPENAI_REVERSE_PROXY=https://api.edenai.run/v3/llm
+        volumes:
+          - ./librechat.yaml:/app/librechat.yaml
+          - ./images:/app/client/public/images
+
+      mongodb:
+        image: mongo
+        container_name: chat-mongodb
+        restart: always
+        volumes:
+          - ./data-node:/data/db
+        ports:
+          - 27017:27017
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+### Deploy to Production
+
+<CodeBlocks>
+  <CodeBlock title="bash">
+    ```bash
+    # Pull latest image
+    docker compose pull
+
+    # Start services
+    docker compose up -d
+
+    # View logs
+    docker compose logs -f api
+
+    # Check status
+    docker compose ps
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Troubleshooting
+
+### Models Not Appearing
+
+If models don't show up in the interface:
+
+1. **Check librechat.yaml syntax**:
+   ```bash
+   # Validate YAML
+   docker compose config
+   ```
+
+2. **Verify API key**:
+   ```bash
+   # Test Eden AI endpoint
+   curl -X POST https://api.edenai.run/v3/llm/chat/completions \
+     -H "Authorization: Bearer YOUR_API_KEY" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "model": "anthropic/claude-3-5-sonnet-20241022",
+       "messages": [{"role": "user", "content": "test"}],
+       "stream": true
+     }'
+   ```
+
+3. **Clear cache and restart**:
+   ```bash
+   docker compose down
+   docker compose up -d
+   ```
+
+### Authentication Errors
+
+If you see 401 errors:
+
+1. Check `.env` has correct API key
+2. Ensure no extra spaces in the key
+3. Verify `OPENAI_REVERSE_PROXY` URL is correct
+4. Restart services after changing `.env`
+
+### Slow Responses
+
+If responses are slow:
+
+1. **Use faster models** for chat titles:
+   ```yaml
+   titleModel: "openai/gpt-3.5-turbo"
+   ```
+
+2. **Disable unnecessary features**:
+   ```yaml
+   summarize: false
+   ```
+
+3. **Check your internet connection** and Eden AI status
+
+### Connection Refused
+
+If LibreChat can't connect to MongoDB:
+
+1. **Check MongoDB is running**:
+   ```bash
+   docker compose ps mongodb
+   ```
+
+2. **Verify MONGO_URI in .env**:
+   ```bash
+   MONGO_URI=mongodb://mongodb:27017/LibreChat
+   ```
+
+3. **Check network connectivity**:
+   ```bash
+   docker compose logs mongodb
+   ```
+
+## Security Best Practices
+
+### 1. Secure API Keys
+
+Never commit API keys to version control:
+
+<CodeBlocks>
+  <CodeBlock title=".gitignore">
+    ```
+    .env
+    .env.local
+    .env.production
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+### 2. Use Environment-Specific Configs
+
+<CodeBlocks>
+  <CodeBlock title=".env.production">
+    ```bash
+    # Production settings
+    NODE_ENV=production
+    ALLOW_REGISTRATION=false
+    SESSION_SECRET=strong_random_secret_here
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+### 3. Enable HTTPS
+
+Use a reverse proxy like Nginx:
+
+<CodeBlocks>
+  <CodeBlock title="nginx.conf">
+    ```nginx
+    server {
+      listen 443 ssl;
+      server_name chat.yourdomain.com;
+
+      ssl_certificate /path/to/cert.pem;
+      ssl_certificate_key /path/to/key.pem;
+
+      location / {
+        proxy_pass http://localhost:3080;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+      }
+    }
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+### 4. Implement Rate Limiting
+
+Protect against abuse:
+
+<CodeBlocks>
+  <CodeBlock title="librechat.yaml">
+    ```yaml
+    rateLimits:
+      fileUploads:
+        ipMax: 50
+        ipWindowInMinutes: 60
+      conversationsImport:
+        ipMax: 5
+        ipWindowInMinutes: 60
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Cost Optimization
+
+### 1. Use Appropriate Models
+
+Configure cheaper models for simple tasks:
+
+<CodeBlocks>
+  <CodeBlock title="librechat.yaml">
+    ```yaml
+    endpoints:
+      custom:
+        - name: "Eden AI"
+          # Use GPT-3.5 for titles (cheaper)
+          titleModel: "openai/gpt-3.5-turbo"
+          # Use Claude Haiku for summaries (fast & cheap)
+          summaryModel: "anthropic/claude-3-haiku-20240307"
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+### 2. Monitor Usage
+
+Track costs through Eden AI dashboard:
+
+- View usage at [https://app.edenai.run](https://app.edenai.run)
+- Set up billing alerts
+- Review monthly reports
+
+### 3. Limit Token Usage
+
+<CodeBlocks>
+  <CodeBlock title="librechat.yaml">
+    ```yaml
+    endpoints:
+      custom:
+        - name: "Eden AI"
+          default:
+            max_tokens: 1000  # Limit response length
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Example Use Cases
+
+### 1. Team Collaboration
+
+Set up LibreChat for your team:
+
+- **Enable user registration** for team members
+- **Configure multiple endpoints** for different projects
+- **Use presets** for common workflows (code review, documentation, etc.)
+
+### 2. Customer Support
+
+Deploy as an internal support tool:
+
+- **Create presets** for support responses
+- **Use conversation history** to maintain context
+- **Configure rate limits** to prevent abuse
+
+### 3. Development Assistant
+
+Integrate with your development workflow:
+
+- **Code assistance** with Claude or GPT-4
+- **Documentation generation** with presets
+- **Bug analysis** with vision models (screenshots)
+
+## Next Steps
+
+- [Open WebUI](./open-webui) - Alternative chat interface
+- [Python SDK](../sdks/python-openai) - Programmatic access
+- [API Reference](/v3-api/reference) - Complete API documentation
+- [Cost Management](../../how-to/cost-management/monitor-usage) - Track spending

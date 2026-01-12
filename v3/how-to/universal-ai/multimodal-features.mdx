@@ -1,0 +1,891 @@
+# Multimodal Workflows
+
+Combine multiple Universal AI features to build powerful processing pipelines.
+
+## Overview
+
+Universal AI's multimodal workflows enable you to:
+- Chain multiple AI features together
+- Process files through multiple stages
+- Combine text, image, and document analysis
+- Build complex automation pipelines
+
+Unlike LLM multimodal (which focuses on conversational understanding of media), Universal AI multimodal workflows are about **processing pipelines** and **structured data extraction**.
+
+## Workflow Patterns
+
+### Sequential Processing
+
+Process data through multiple features in sequence:
+
+```
+Input File → OCR → Translation → Summary
+Image → Detection → Classification → Analysis
+```
+
+### Parallel Processing
+
+Run multiple features simultaneously:
+
+```
+Document → [OCR, Identity Parser, Invoice Parser] → Aggregate Results
+Image → [Object Detection, Face Detection, Explicit Content] → Combined Analysis
+```
+
+### Conditional Routing
+
+Route to different features based on results:
+
+```
+Image → Moderation → [If safe: Generate Caption | If unsafe: Flag for Review]
+Text → AI Detection → [If AI: Analyze Further | If Human: Skip]
+```
+
+## Common Multimodal Workflows
+
+### Document Processing Pipeline
+
+Extract, translate, and analyze documents:
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import requests
+
+    def process_document_workflow(file_path):
+        """Complete document processing: OCR → Translation → Analysis."""
+
+        # Step 1: Upload file
+        upload_url = "https://api.edenai.run/v3/upload"
+        upload_headers = {"Authorization": "Bearer YOUR_API_KEY"}
+
+        files = {"file": open(file_path, "rb")}
+        upload_response = requests.post(upload_url, headers=upload_headers, files=files)
+        file_id = upload_response.json()["file_id"]
+
+        print(f"Uploaded file: {file_id}")
+
+        # Step 2: Extract text with OCR
+        universal_ai_url = "https://api.edenai.run/v3/universal-ai"
+        headers = {
+            "Authorization": "Bearer YOUR_API_KEY",
+            "Content-Type": "application/json"
+        }
+
+        ocr_payload = {
+            "model": "ocr/financial_parser/google",
+            "input": {"file": file_id}
+        }
+
+        ocr_response = requests.post(universal_ai_url, headers=headers, json=ocr_payload)
+        extracted_text = ocr_response.json()["output"]["text"]
+
+        print(f"Extracted text: {extracted_text[:100]}...")
+
+        # Step 3: Translate if needed (check language first)
+        # Assume text is in French, translate to English
+        translation_payload = {
+            "model": "translation/document_translation/deepl",
+            "input": {
+                "text": extracted_text,
+                "source_language": "fr",
+                "target_language": "en"
+            }
+        }
+
+        translation_response = requests.post(
+            universal_ai_url,
+            headers=headers,
+            json=translation_payload
+        )
+        translated_text = translation_response.json()["output"]["text"]
+
+        print(f"Translated text: {translated_text[:100]}...")
+
+        # Step 4: Analyze sentiment of translated text
+        sentiment_payload = {
+            "model": "text/sentiment_analysis/openai",
+            "input": {"text": translated_text}
+        }
+
+        sentiment_response = requests.post(
+            universal_ai_url,
+            headers=headers,
+            json=sentiment_payload
+        )
+        sentiment = sentiment_response.json()["output"]
+
+        print(f"Sentiment: {sentiment['sentiment']} (rate: {sentiment['sentiment_rate']})")
+
+        return {
+            "original_text": extracted_text,
+            "translated_text": translated_text,
+            "sentiment": sentiment
+        }
+
+    # Usage
+    result = process_document_workflow("french_document.pdf")
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+### Image Content Moderation Pipeline
+
+Screen images through multiple checks:
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import requests
+
+    def moderate_image_workflow(image_path):
+        """Multi-stage image moderation pipeline."""
+
+        # Upload image
+        upload_response = requests.post(
+            "https://api.edenai.run/v3/upload",
+            headers={"Authorization": "Bearer YOUR_API_KEY"},
+            files={"file": open(image_path, "rb")}
+        )
+        file_id = upload_response.json()["file_id"]
+
+        url = "https://api.edenai.run/v3/universal-ai"
+        headers = {
+            "Authorization": "Bearer YOUR_API_KEY",
+            "Content-Type": "application/json"
+        }
+
+        # Stage 1: Explicit content detection
+        explicit_payload = {
+            "model": "image/explicit_content_detection/google",
+            "input": {"file": file_id}
+        }
+        explicit_response = requests.post(url, headers=headers, json=explicit_payload)
+        explicit_result = explicit_response.json()["output"]
+
+        print(f"Explicit content likelihood: {explicit_result.get('nsfw_likelihood', 0)}")
+
+        # Stage 2: Face detection (check for people)
+        face_payload = {
+            "model": "image/face_detection/amazon",
+            "input": {"file": file_id}
+        }
+        face_response = requests.post(url, headers=headers, json=face_payload)
+        faces = face_response.json()["output"].get("faces", [])
+
+        print(f"Faces detected: {len(faces)}")
+
+        # Stage 3: Object detection
+        object_payload = {
+            "model": "image/object_detection/google",
+            "input": {"file": file_id}
+        }
+        object_response = requests.post(url, headers=headers, json=object_payload)
+        objects = object_response.json()["output"].get("objects", [])
+
+        print(f"Objects detected: {len(objects)}")
+
+        # Aggregate results
+        moderation_result = {
+            "safe": explicit_result.get("nsfw_likelihood", 0) < 3,
+            "has_people": len(faces) > 0,
+            "detected_objects": [obj["label"] for obj in objects],
+            "moderation_score": explicit_result.get("nsfw_likelihood", 0),
+            "details": {
+                "explicit_content": explicit_result,
+                "faces": faces,
+                "objects": objects
+            }
+        }
+
+        return moderation_result
+
+    # Usage
+    result = moderate_image_workflow("user_upload.jpg")
+
+    if result["safe"]:
+        print("✓ Image approved")
+    else:
+        print("✗ Image flagged for review")
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+### Invoice Processing Workflow
+
+Extract and validate invoice data:
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import requests
+    from datetime import datetime
+
+    def process_invoice_workflow(invoice_path):
+        """Complete invoice processing with validation."""
+
+        # Upload invoice
+        upload_response = requests.post(
+            "https://api.edenai.run/v3/upload",
+            headers={"Authorization": "Bearer YOUR_API_KEY"},
+            files={"file": open(invoice_path, "rb")}
+        )
+        file_id = upload_response.json()["file_id"]
+
+        url = "https://api.edenai.run/v3/universal-ai"
+        headers = {
+            "Authorization": "Bearer YOUR_API_KEY",
+            "Content-Type": "application/json"
+        }
+
+        # Stage 1: Parse invoice structure
+        parser_payload = {
+            "model": "ocr/invoice_parser/microsoft",
+            "input": {"file": file_id}
+        }
+        parser_response = requests.post(url, headers=headers, json=parser_payload)
+        invoice_data = parser_response.json()["output"]
+
+        print(f"Invoice number: {invoice_data.get('invoice_number')}")
+        print(f"Total: {invoice_data.get('total_amount')} {invoice_data.get('currency')}")
+
+        # Stage 2: OCR for additional text extraction
+        ocr_payload = {
+            "model": "ocr/financial_parser/google",
+            "input": {"file": file_id}
+        }
+        ocr_response = requests.post(url, headers=headers, json=ocr_payload)
+        full_text = ocr_response.json()["output"]["text"]
+
+        # Stage 3: Validate data consistency
+        validation_results = {
+            "has_invoice_number": bool(invoice_data.get("invoice_number")),
+            "has_total": bool(invoice_data.get("total_amount")),
+            "has_vendor": bool(invoice_data.get("vendor_name")),
+            "has_date": bool(invoice_data.get("invoice_date")),
+            "line_items_count": len(invoice_data.get("line_items", []))
+        }
+
+        # Calculate completeness score
+        completeness = sum(validation_results.values()) / len(validation_results) * 100
+
+        return {
+            "invoice_data": invoice_data,
+            "full_text": full_text,
+            "validation": validation_results,
+            "completeness_score": completeness,
+            "is_valid": completeness >= 80
+        }
+
+    # Usage
+    result = process_invoice_workflow("invoice.pdf")
+
+    if result["is_valid"]:
+        print(f"✓ Invoice processed ({result['completeness_score']:.0f}% complete)")
+        print(f"  Total: {result['invoice_data']['total_amount']}")
+    else:
+        print(f"✗ Invoice incomplete ({result['completeness_score']:.0f}% complete)")
+        print("  Missing fields:", [k for k, v in result['validation'].items() if not v])
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+### Multilingual Content Pipeline
+
+Process content in multiple languages:
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import requests
+
+    def multilingual_content_workflow(text, target_languages):
+        """Translate and analyze content in multiple languages."""
+
+        url = "https://api.edenai.run/v3/universal-ai"
+        headers = {
+            "Authorization": "Bearer YOUR_API_KEY",
+            "Content-Type": "application/json"
+        }
+
+        results = {}
+
+        # Stage 1: Analyze original text
+        sentiment_payload = {
+            "model": "text/sentiment_analysis/openai",
+            "input": {"text": text}
+        }
+        sentiment_response = requests.post(url, headers=headers, json=sentiment_payload)
+        original_sentiment = sentiment_response.json()["output"]
+
+        results["original"] = {
+            "language": "en",
+            "text": text,
+            "sentiment": original_sentiment
+        }
+
+        # Stage 2: Translate and analyze in each target language
+        for lang_code in target_languages:
+            # Translate
+            translation_payload = {
+                "model": "translation/document_translation/deepl",
+                "input": {
+                    "text": text,
+                    "source_language": "en",
+                    "target_language": lang_code
+                }
+            }
+            translation_response = requests.post(url, headers=headers, json=translation_payload)
+            translated_text = translation_response.json()["output"]["text"]
+
+            # Analyze translated sentiment
+            translated_sentiment_payload = {
+                "model": "text/sentiment_analysis/openai",
+                "input": {"text": translated_text}
+            }
+            translated_sentiment_response = requests.post(
+                url,
+                headers=headers,
+                json=translated_sentiment_payload
+            )
+            translated_sentiment = translated_sentiment_response.json()["output"]
+
+            results[lang_code] = {
+                "language": lang_code,
+                "text": translated_text,
+                "sentiment": translated_sentiment
+            }
+
+            print(f"{lang_code}: {translated_sentiment['sentiment']} (rate: {translated_sentiment['sentiment_rate']})")
+
+        return results
+
+    # Usage
+    results = multilingual_content_workflow(
+        "Our new product is absolutely amazing and will change your life!",
+        target_languages=["fr", "es", "de", "ja"]
+    )
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Advanced Patterns
+
+### Parallel Feature Execution
+
+Run multiple features simultaneously for faster processing:
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import requests
+    import asyncio
+    import aiohttp
+
+    async def analyze_text_parallel(text):
+        """Run multiple text analyses in parallel."""
+
+        url = "https://api.edenai.run/v3/universal-ai"
+        headers = {
+            "Authorization": "Bearer YOUR_API_KEY",
+            "Content-Type": "application/json"
+        }
+
+        # Define all analyses to run
+        analyses = [
+            {"name": "sentiment", "model": "text/sentiment_analysis/openai"},
+            {"name": "moderation", "model": "text/moderation/openai"},
+            {"name": "ai_detection", "model": "text/ai_detection/openai/gpt-4"},
+            {"name": "entities", "model": "text/named_entity_recognition/openai"}
+        ]
+
+        async def run_analysis(session, analysis):
+            """Run single analysis."""
+            payload = {
+                "model": analysis["model"],
+                "input": {"text": text}
+            }
+
+            async with session.post(url, headers=headers, json=payload) as response:
+                result = await response.json()
+                return {analysis["name"]: result["output"]}
+
+        # Run all analyses in parallel
+        async with aiohttp.ClientSession() as session:
+            tasks = [run_analysis(session, analysis) for analysis in analyses]
+            results = await asyncio.gather(*tasks)
+
+        # Combine results
+        combined = {}
+        for result in results:
+            combined.update(result)
+
+        return combined
+
+    # Usage
+    results = asyncio.run(analyze_text_parallel(
+        "This is an amazing product that will revolutionize the industry!"
+    ))
+
+    print("Sentiment:", results["sentiment"]["sentiment"])
+    print("Moderation:", results["moderation"])
+    print("AI Detection:", results["ai_detection"]["is_ai_generated"])
+    print("Entities:", results["entities"])
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+### Conditional Workflows
+
+Route based on analysis results:
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import requests
+
+    def smart_content_workflow(text):
+        """Process content with conditional routing."""
+
+        url = "https://api.edenai.run/v3/universal-ai"
+        headers = {
+            "Authorization": "Bearer YOUR_API_KEY",
+            "Content-Type": "application/json"
+        }
+
+        # Step 1: Check if AI-generated
+        ai_detection_payload = {
+            "model": "text/ai_detection/openai/gpt-4",
+            "input": {"text": text}
+        }
+        ai_response = requests.post(url, headers=headers, json=ai_detection_payload)
+        is_ai = ai_response.json()["output"]["is_ai_generated"]
+
+        workflow_result = {"is_ai": is_ai}
+
+        if is_ai:
+            # AI content → Check for plagiarism
+            print("AI content detected, checking plagiarism...")
+
+            plagiarism_payload = {
+                "model": "text/plagiarism_detection/copyleaks",
+                "input": {"text": text}
+            }
+            plagiarism_response = requests.post(url, headers=headers, json=plagiarism_payload)
+            workflow_result["plagiarism"] = plagiarism_response.json()["output"]
+
+        else:
+            # Human content → Run sentiment analysis
+            print("Human content detected, analyzing sentiment...")
+
+            sentiment_payload = {
+                "model": "text/sentiment_analysis/openai",
+                "input": {"text": text}
+            }
+            sentiment_response = requests.post(url, headers=headers, json=sentiment_payload)
+            workflow_result["sentiment"] = sentiment_response.json()["output"]
+
+        # Always moderate
+        moderation_payload = {
+            "model": "text/moderation/openai",
+            "input": {"text": text}
+        }
+        moderation_response = requests.post(url, headers=headers, json=moderation_payload)
+        workflow_result["moderation"] = moderation_response.json()["output"]
+
+        return workflow_result
+
+    # Usage
+    result = smart_content_workflow("This is sample content to analyze.")
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+### Iterative Refinement
+
+Refine results through multiple passes:
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import requests
+
+    def iterative_ocr_workflow(image_path, max_iterations=3):
+        """Improve OCR accuracy through iterative processing."""
+
+        # Upload image
+        upload_response = requests.post(
+            "https://api.edenai.run/v3/upload",
+            headers={"Authorization": "Bearer YOUR_API_KEY"},
+            files={"file": open(image_path, "rb")}
+        )
+        file_id = upload_response.json()["file_id"]
+
+        url = "https://api.edenai.run/v3/universal-ai"
+        headers = {
+            "Authorization": "Bearer YOUR_API_KEY",
+            "Content-Type": "application/json"
+        }
+
+        # Try multiple providers and combine results
+        providers = ["google", "amazon", "microsoft"]
+        all_results = []
+
+        for provider in providers:
+            ocr_payload = {
+                "model": f"ocr/financial_parser/{provider}",
+                "input": {"file": file_id}
+            }
+
+            response = requests.post(url, headers=headers, json=ocr_payload)
+            if response.status_code == 200:
+                text = response.json()["output"]["text"]
+                all_results.append({
+                    "provider": provider,
+                    "text": text,
+                    "length": len(text)
+                })
+
+        # Select best result (longest text = most complete)
+        best_result = max(all_results, key=lambda x: x["length"])
+
+        return {
+            "best_text": best_result["text"],
+            "best_provider": best_result["provider"],
+            "all_results": all_results
+        }
+
+    # Usage
+    result = iterative_ocr_workflow("complex_document.jpg")
+    print(f"Best provider: {result['best_provider']}")
+    print(f"Extracted text: {result['best_text'][:200]}...")
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Real-World Workflow Examples
+
+### E-commerce Product Processing
+
+Process product images and descriptions:
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import requests
+
+    def process_product_workflow(image_path, description):
+        """Complete product processing workflow."""
+
+        # Upload product image
+        upload_response = requests.post(
+            "https://api.edenai.run/v3/upload",
+            headers={"Authorization": "Bearer YOUR_API_KEY"},
+            files={"file": open(image_path, "rb")}
+        )
+        file_id = upload_response.json()["file_id"]
+
+        url = "https://api.edenai.run/v3/universal-ai"
+        headers = {
+            "Authorization": "Bearer YOUR_API_KEY",
+            "Content-Type": "application/json"
+        }
+
+        # 1. Moderate image
+        moderation_payload = {
+            "model": "image/explicit_content_detection/google",
+            "input": {"file": file_id}
+        }
+        moderation_response = requests.post(url, headers=headers, json=moderation_payload)
+        is_safe = moderation_response.json()["output"]["nsfw_likelihood"] < 3
+
+        # 2. Detect objects in image
+        detection_payload = {
+            "model": "image/object_detection/google",
+            "input": {"file": file_id}
+        }
+        detection_response = requests.post(url, headers=headers, json=detection_payload)
+        detected_objects = detection_response.json()["output"]["objects"]
+
+        # 3. Analyze description sentiment
+        sentiment_payload = {
+            "model": "text/sentiment_analysis/openai",
+            "input": {"text": description}
+        }
+        sentiment_response = requests.post(url, headers=headers, json=sentiment_payload)
+        sentiment = sentiment_response.json()["output"]
+
+        # 4. Check description for AI generation
+        ai_detection_payload = {
+            "model": "text/ai_detection/openai/gpt-4",
+            "input": {"text": description}
+        }
+        ai_response = requests.post(url, headers=headers, json=ai_detection_payload)
+        is_ai_generated = ai_response.json()["output"]["is_ai_generated"]
+
+        return {
+            "image_safe": is_safe,
+            "detected_objects": [obj["label"] for obj in detected_objects],
+            "description_sentiment": sentiment["sentiment"],
+            "description_ai_generated": is_ai_generated,
+            "approved": is_safe and sentiment["sentiment"] in ["Positive", "Neutral"]
+        }
+
+    # Usage
+    result = process_product_workflow(
+        "product.jpg",
+        "Amazing product with incredible features!"
+    )
+
+    if result["approved"]:
+        print("✓ Product approved for listing")
+    else:
+        print("✗ Product requires review")
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+### Content Moderation Pipeline
+
+Comprehensive content screening:
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import requests
+
+    def comprehensive_moderation_workflow(content_type, file_path=None, text=None):
+        """Multi-stage moderation for various content types."""
+
+        url = "https://api.edenai.run/v3/universal-ai"
+        headers = {
+            "Authorization": "Bearer YOUR_API_KEY",
+            "Content-Type": "application/json"
+        }
+
+        moderation_results = {}
+
+        if content_type == "text":
+            # Text moderation
+            text_mod_payload = {
+                "model": "text/moderation/openai",
+                "input": {"text": text}
+            }
+            response = requests.post(url, headers=headers, json=text_mod_payload)
+            moderation_results["text_moderation"] = response.json()["output"]
+
+            # AI detection
+            ai_payload = {
+                "model": "text/ai_detection/openai/gpt-4",
+                "input": {"text": text}
+            }
+            response = requests.post(url, headers=headers, json=ai_payload)
+            moderation_results["ai_detection"] = response.json()["output"]
+
+        elif content_type == "image":
+            # Upload image
+            upload_response = requests.post(
+                "https://api.edenai.run/v3/upload",
+                headers={"Authorization": "Bearer YOUR_API_KEY"},
+                files={"file": open(file_path, "rb")}
+            )
+            file_id = upload_response.json()["file_id"]
+
+            # Explicit content detection
+            explicit_payload = {
+                "model": "image/explicit_content_detection/google",
+                "input": {"file": file_id}
+            }
+            response = requests.post(url, headers=headers, json=explicit_payload)
+            moderation_results["explicit_content"] = response.json()["output"]
+
+            # Face detection
+            face_payload = {
+                "model": "image/face_detection/amazon",
+                "input": {"file": file_id}
+            }
+            response = requests.post(url, headers=headers, json=face_payload)
+            moderation_results["faces"] = response.json()["output"]
+
+        # Calculate overall safety score
+        if content_type == "text":
+            safe = moderation_results["text_moderation"]["nsfw_likelihood"] < 3
+        else:
+            safe = moderation_results["explicit_content"]["nsfw_likelihood"] < 3
+
+        return {
+            "safe": safe,
+            "details": moderation_results,
+            "action": "approve" if safe else "review"
+        }
+
+    # Usage
+    text_result = comprehensive_moderation_workflow("text", text="Sample text content")
+    image_result = comprehensive_moderation_workflow("image", file_path="user_photo.jpg")
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Best Practices
+
+### Error Handling in Workflows
+
+Handle failures gracefully:
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import requests
+    from typing import Optional, Dict, Any
+
+    class WorkflowExecutor:
+        def __init__(self, api_key):
+            self.api_key = api_key
+            self.url = "https://api.edenai.run/v3/universal-ai"
+            self.headers = {
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json"
+            }
+
+        def execute_step(
+            self,
+            model: str,
+            input_data: Dict[str, Any],
+            fallback_model: Optional[str] = None
+        ) -> Optional[Dict]:
+            """Execute a workflow step with optional fallback."""
+
+            payload = {"model": model, "input": input_data}
+
+            try:
+                response = requests.post(self.url, headers=self.headers, json=payload)
+                response.raise_for_status()
+                return response.json()["output"]
+
+            except requests.exceptions.HTTPError as e:
+                print(f"Error with {model}: {e}")
+
+                if fallback_model:
+                    print(f"Trying fallback: {fallback_model}")
+                    return self.execute_step(fallback_model, input_data)
+
+                return None
+
+        def run_workflow(self, steps):
+            """Execute multi-step workflow with error handling."""
+
+            results = {}
+            context = {}
+
+            for step in steps:
+                print(f"Running step: {step['name']}")
+
+                # Prepare input (may use previous results)
+                input_data = step["input"]
+                if callable(input_data):
+                    input_data = input_data(context)
+
+                # Execute with fallback
+                result = self.execute_step(
+                    step["model"],
+                    input_data,
+                    step.get("fallback")
+                )
+
+                if result is None and step.get("required", True):
+                    print(f"✗ Required step {step['name']} failed")
+                    return None
+
+                results[step["name"]] = result
+                context[step["name"]] = result
+
+            return results
+
+    # Usage
+    executor = WorkflowExecutor("YOUR_API_KEY")
+
+    workflow = [
+        {
+            "name": "moderate",
+            "model": "text/moderation/openai",
+            "input": {"text": "Sample text"},
+            "fallback": "text/moderation/google",
+            "required": True
+        },
+        {
+            "name": "sentiment",
+            "model": "text/sentiment_analysis/openai",
+            "input": lambda ctx: {"text": "Sample text"} if ctx["moderate"]["nsfw_likelihood"] < 3 else None,
+            "required": False
+        }
+    ]
+
+    results = executor.run_workflow(workflow)
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+### Cost Optimization
+
+Monitor and optimize workflow costs:
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import requests
+
+    class CostAwareWorkflow:
+        def __init__(self, api_key, max_cost=1.0):
+            self.api_key = api_key
+            self.max_cost = max_cost
+            self.total_cost = 0.0
+
+        def execute_with_budget(self, model, input_data):
+            """Execute with cost tracking."""
+
+            if self.total_cost >= self.max_cost:
+                raise ValueError(f"Budget exceeded: ${self.total_cost:.4f}")
+
+            url = "https://api.edenai.run/v3/universal-ai"
+            headers = {
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json"
+            }
+
+            payload = {"model": model, "input": input_data}
+            response = requests.post(url, headers=headers, json=payload)
+            result = response.json()
+
+            # Track cost
+            cost = result.get("cost", 0)
+            self.total_cost += cost
+
+            print(f"Step cost: ${cost:.4f} | Total: ${self.total_cost:.4f}")
+
+            return result["output"]
+
+    # Usage
+    workflow = CostAwareWorkflow("YOUR_API_KEY", max_cost=0.50)
+
+    try:
+        result1 = workflow.execute_with_budget(
+            "text/moderation/openai",
+            {"text": "Sample"}
+        )
+        result2 = workflow.execute_with_budget(
+            "text/sentiment_analysis/openai",
+            {"text": "Sample"}
+        )
+    except ValueError as e:
+        print(f"Workflow stopped: {e}")
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Next Steps
+
+- [Text Features](text-features.mdx) - Text analysis capabilities
+- [OCR Features](ocr-features.mdx) - Document processing
+- [Image Features](image-features.mdx) - Image analysis
+- [Upload Files](../../how-to/upload/upload-files.mdx) - File management
+- [Monitor Costs](../../how-to/cost-management/monitor-usage.mdx) - Track spending

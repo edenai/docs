@@ -1,0 +1,1720 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "title": "Eden AI API V3",
+        "version": "3.0.0"
+    },
+    "paths": {
+        "/v3/info": {
+            "get": {
+                "tags": [
+                    "Universal-ai-info"
+                ],
+                "summary": "List Features",
+                "description": "List all available features and their subfeatures.\n\nReturns a simple dictionary mapping feature names to lists of subfeature names.",
+                "operationId": "list_features_v3_info_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "additionalProperties": {
+                                        "items": {
+                                            "type": "string"
+                                        },
+                                        "type": "array"
+                                    },
+                                    "type": "object",
+                                    "title": "Response List Features V3 Info Get"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v3/info/{feature}": {
+            "get": {
+                "tags": [
+                    "Universal-ai-info"
+                ],
+                "summary": "List Subfeatures",
+                "description": "List all subfeatures for a specific feature.\n\nArgs:\n    feature: Feature name (e.g., 'text', 'image', 'ocr', 'translation')\n\nReturns:\n    Dictionary with feature name and list of its subfeatures.",
+                "operationId": "list_subfeatures_v3_info__feature__get",
+                "parameters": [
+                    {
+                        "name": "feature",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Feature"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true,
+                                    "title": "Response List Subfeatures V3 Info  Feature  Get"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v3/info/{feature}/{subfeature}": {
+            "get": {
+                "tags": [
+                    "Universal-ai-info"
+                ],
+                "summary": "Get Feature Info",
+                "description": "Get detailed information for a specific feature/subfeature.\n\nArgs:\n    feature: Feature name (e.g., 'text', 'image', 'ocr', 'translation')\n    subfeature: Subfeature name (e.g., 'ai_detection', 'ocr', 'generation')\n    format: Schema output format (simplified or json_schema)\n\nReturns:\n    - Input schema\n    - Output schema\n    - Available providers and their models",
+                "operationId": "get_feature_info_v3_info__feature___subfeature__get",
+                "parameters": [
+                    {
+                        "name": "feature",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Feature"
+                        }
+                    },
+                    {
+                        "name": "subfeature",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Subfeature"
+                        }
+                    },
+                    {
+                        "name": "format",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/components/schemas/SchemaFormat",
+                            "description": "Schema format: 'simplified' for flat readable format, 'json_schema' for full Pydantic JSON Schema",
+                            "default": "simplified"
+                        },
+                        "description": "Schema format: 'simplified' for flat readable format, 'json_schema' for full Pydantic JSON Schema"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true,
+                                    "title": "Response Get Feature Info V3 Info  Feature   Subfeature  Get"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v3/llm/chat/completions": {
+            "post": {
+                "tags": [
+                    "Completions"
+                ],
+                "summary": "Chat Completions",
+                "description": "OpenAI-compatible chat completions endpoint (v3).",
+                "operationId": "chat_completions_v3_llm_chat_completions_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/LlmFeatureBody"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "AuthBearer": []
+                    }
+                ]
+            }
+        },
+        "/v3/llm/models": {
+            "get": {
+                "tags": [
+                    "Completions"
+                ],
+                "summary": "List Models",
+                "description": "List available LLM models with extended metadata.",
+                "operationId": "list_models_v3_llm_models_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ListModelsResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v3/universal-ai": {
+            "post": {
+                "tags": [
+                    "Universal-ai"
+                ],
+                "summary": "Universal Ai",
+                "description": "Universal AI endpoint for all non-LLM AI features.\n\nModel format: feature/subfeature/provider[/model]\n\nRequest body:\n- model: Model string in format feature/subfeature/provider[/model]\n- input: Feature-specific input parameters\n- provider_params: Optional provider-specific parameters\n- show_original_response: Include raw provider response (default: false)\n\nExample:\n```json\n{\n    \"model\": \"text/ai_detection/openai/gpt-4\",\n    \"input\": {\"text\": \"Analyze this text\"}\n}\n```\n\nResponse:\n```json\n{\n    \"status\": \"success\",\n    \"cost\": \"0.001\",\n    \"provider\": \"openai\",\n    \"feature\": \"text\",\n    \"subfeature\": \"ai_detection\",\n    \"output\": {...},\n    \"error\": null\n}\n```",
+                "operationId": "universal_ai_v3_universal_ai_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UniversalAIBody"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UniversalAIResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "AuthBearer": []
+                    }
+                ]
+            }
+        },
+        "/v3/upload": {
+            "post": {
+                "tags": [
+                    "Files management"
+                ],
+                "summary": "Upload File",
+                "description": "Upload a file for persistent storage.\n\nReturns a file_id that can be used in subsequent API calls to /v3/universal-ai.\n\nFiles are stored securely and only accessible by the file owner.\nDefault expiration is 30 days, maximum 30 days.",
+                "operationId": "upload_file_v3_upload_post",
+                "security": [
+                    {
+                        "AuthBearer": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Body_upload_file_v3_upload_post"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UploadResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "get": {
+                "tags": [
+                    "Files management"
+                ],
+                "summary": "List Files",
+                "description": "List uploaded files for the authenticated user.\n\nOptionally filter by purpose. Only returns non-expired files.\nResults are ordered by creation date (newest first).",
+                "operationId": "list_files_v3_upload_get",
+                "security": [
+                    {
+                        "AuthBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "purpose",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "maxLength": 50
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Filter by purpose",
+                            "title": "Purpose"
+                        },
+                        "description": "Filter by purpose"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "description": "Page number (1-indexed)",
+                            "default": 1,
+                            "title": "Page"
+                        },
+                        "description": "Page number (1-indexed)"
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "maximum": 1000,
+                            "minimum": 1,
+                            "description": "Maximum number of items per page",
+                            "default": 100,
+                            "title": "Limit"
+                        },
+                        "description": "Maximum number of items per page"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ListFilesResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Files management"
+                ],
+                "summary": "Delete All Files",
+                "description": "Delete all uploaded files for the authenticated user.\n\nThis permanently deletes all files from storage.\nThis action cannot be undone.",
+                "operationId": "delete_all_files_v3_upload_delete",
+                "security": [
+                    {
+                        "AuthBearer": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DeleteFilesResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v3/upload/delete": {
+            "post": {
+                "tags": [
+                    "Files management"
+                ],
+                "summary": "Delete Files By Ids",
+                "description": "Delete specific files by their IDs.\n\nOnly files owned by the authenticated user will be deleted.\nFiles that don't exist or aren't owned by the user are silently ignored.\nThis action cannot be undone.",
+                "operationId": "delete_files_by_ids_v3_upload_delete_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DeleteFilesRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DeleteFilesResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "AuthBearer": []
+                    }
+                ]
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "Body_upload_file_v3_upload_post": {
+                "properties": {
+                    "file": {
+                        "type": "string",
+                        "format": "binary",
+                        "title": "File",
+                        "description": "File to upload"
+                    },
+                    "expires_in_days": {
+                        "type": "integer",
+                        "maximum": 30.0,
+                        "minimum": 1.0,
+                        "title": "Expires In Days",
+                        "description": "Expiration in days (1-30)",
+                        "default": 30
+                    },
+                    "purpose": {
+                        "type": "string",
+                        "maxLength": 50,
+                        "minLength": 1,
+                        "title": "Purpose",
+                        "description": "Purpose of the file",
+                        "default": "general"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "file"
+                ],
+                "title": "Body_upload_file_v3_upload_post"
+            },
+            "DeleteFilesRequest": {
+                "properties": {
+                    "file_ids": {
+                        "items": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "type": "array",
+                        "maxItems": 100,
+                        "minItems": 1,
+                        "title": "File Ids",
+                        "description": "List of file IDs to delete (1-100)"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "file_ids"
+                ],
+                "title": "DeleteFilesRequest",
+                "description": "Request body for deleting multiple files.",
+                "example": {
+                    "file_ids": [
+                        "550e8400-e29b-41d4-a716-446655440000",
+                        "550e8400-e29b-41d4-a716-446655440001"
+                    ]
+                }
+            },
+            "DeleteFilesResponse": {
+                "properties": {
+                    "deleted_count": {
+                        "type": "integer",
+                        "title": "Deleted Count",
+                        "description": "Number of files deleted"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "deleted_count"
+                ],
+                "title": "DeleteFilesResponse",
+                "description": "Response for file deletion.",
+                "example": {
+                    "deleted_count": 5
+                }
+            },
+            "FileResponse": {
+                "properties": {
+                    "file_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "File Id",
+                        "description": "Unique file identifier for use in API calls"
+                    },
+                    "file_name": {
+                        "type": "string",
+                        "title": "File Name",
+                        "description": "Original filename"
+                    },
+                    "file_size": {
+                        "type": "integer",
+                        "title": "File Size",
+                        "description": "File size in bytes"
+                    },
+                    "file_mimetype": {
+                        "type": "string",
+                        "title": "File Mimetype",
+                        "description": "Detected MIME type"
+                    },
+                    "purpose": {
+                        "type": "string",
+                        "title": "Purpose",
+                        "description": "Purpose of the file (e.g., 'general', 'assistants')"
+                    },
+                    "metadata": {
+                        "additionalProperties": true,
+                        "type": "object",
+                        "title": "Metadata",
+                        "description": "File metadata (e.g., page_count for PDFs/documents)"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At",
+                        "description": "Upload timestamp"
+                    },
+                    "expires_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Expires At",
+                        "description": "Expiration timestamp"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "file_id",
+                    "file_name",
+                    "file_size",
+                    "file_mimetype",
+                    "purpose",
+                    "created_at"
+                ],
+                "title": "FileResponse",
+                "description": "Response for a file."
+            },
+            "HTTPValidationError": {
+                "properties": {
+                    "detail": {
+                        "items": {
+                            "$ref": "#/components/schemas/ValidationError"
+                        },
+                        "type": "array",
+                        "title": "Detail"
+                    }
+                },
+                "type": "object",
+                "title": "HTTPValidationError"
+            },
+            "ListFilesResponse": {
+                "properties": {
+                    "items": {
+                        "items": {
+                            "$ref": "#/components/schemas/FileResponse"
+                        },
+                        "type": "array",
+                        "title": "Items",
+                        "description": "List of items"
+                    },
+                    "total": {
+                        "type": "integer",
+                        "title": "Total",
+                        "description": "Total number of items"
+                    },
+                    "page": {
+                        "type": "integer",
+                        "title": "Page",
+                        "description": "Current page number"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "title": "Limit",
+                        "description": "Items per page"
+                    },
+                    "total_pages": {
+                        "type": "integer",
+                        "title": "Total Pages",
+                        "description": "Total number of pages"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "items",
+                    "total",
+                    "page",
+                    "limit",
+                    "total_pages"
+                ],
+                "title": "ListFilesResponse",
+                "description": "Response for listing files with pagination.",
+                "example": {
+                    "items": [
+                        {
+                            "created_at": "2025-12-08T10:30:00Z",
+                            "expires_at": "2026-01-07T10:30:00Z",
+                            "file_id": "550e8400-e29b-41d4-a716-446655440000",
+                            "file_mimetype": "application/pdf",
+                            "file_name": "invoice.pdf",
+                            "file_size": 1048576,
+                            "metadata": {
+                                "page_count": 5
+                            },
+                            "purpose": "general"
+                        }
+                    ],
+                    "limit": 100,
+                    "page": 1,
+                    "total": 25,
+                    "total_pages": 1
+                }
+            },
+            "ListModelsResponse": {
+                "properties": {
+                    "object": {
+                        "type": "string",
+                        "const": "list",
+                        "title": "Object",
+                        "description": "Object type",
+                        "default": "list"
+                    },
+                    "data": {
+                        "items": {
+                            "$ref": "#/components/schemas/ModelObject"
+                        },
+                        "type": "array",
+                        "title": "Data",
+                        "description": "List of models"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "data"
+                ],
+                "title": "ListModelsResponse",
+                "description": "List models response."
+            },
+            "LlmFeatureBody": {
+                "properties": {
+                    "model": {
+                        "type": "string",
+                        "title": "Model",
+                        "description": "The name of the LLM model to use."
+                    },
+                    "messages": {
+                        "items": {
+                            "$ref": "#/components/schemas/Message"
+                        },
+                        "type": "array",
+                        "title": "Messages",
+                        "description": "The messages to send to the LLM model."
+                    },
+                    "router_candidates": {
+                        "anyOf": [
+                            {
+                                "items": {
+                                    "type": "string"
+                                },
+                                "type": "array"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Router Candidates",
+                        "description": "List of model candidates for dynamic routing when using model='@edenai'. If not provided, defaults to all available models."
+                    },
+                    "n": {
+                        "anyOf": [
+                            {
+                                "type": "integer",
+                                "minimum": 1.0
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "N",
+                        "description": "The number of completions to generate for each prompt. Defaults to 1.",
+                        "default": 1
+                    },
+                    "reasoning_effort": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "enum": [
+                                    "low",
+                                    "medium",
+                                    "high"
+                                ]
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Reasoning Effort",
+                        "description": "The reasoning effort level for the LLM model."
+                    },
+                    "metadata": {
+                        "anyOf": [
+                            {
+                                "items": {
+                                    "additionalProperties": true,
+                                    "type": "object"
+                                },
+                                "type": "array"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Metadata",
+                        "description": "list of metadata associated with the chat request. \nCan be used to provide additional context or tracking information."
+                    },
+                    "frequency_penalty": {
+                        "anyOf": [
+                            {
+                                "type": "number",
+                                "maximum": 2.0,
+                                "minimum": -2.0
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Frequency Penalty",
+                        "description": "Penalty for repeated tokens in the output."
+                    },
+                    "logit_bias": {
+                        "anyOf": [
+                            {
+                                "additionalProperties": {
+                                    "type": "number"
+                                },
+                                "type": "object"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Logit Bias",
+                        "description": "Logit bias to influence token generation."
+                    },
+                    "logprobs": {
+                        "anyOf": [
+                            {
+                                "type": "boolean"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Logprobs",
+                        "description": "Whether to include log probabilities of tokens in the output. Defaults to False.",
+                        "default": false
+                    },
+                    "top_logprobs": {
+                        "anyOf": [
+                            {
+                                "type": "integer",
+                                "maximum": 20.0,
+                                "minimum": 1.0
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Top Logprobs",
+                        "description": "Number of top log probabilities to return with each token."
+                    },
+                    "max_tokens": {
+                        "anyOf": [
+                            {
+                                "type": "integer",
+                                "minimum": 1.0
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Max Tokens",
+                        "description": "The maximum number of tokens to generate in the chat completion"
+                    },
+                    "max_completion_tokens": {
+                        "anyOf": [
+                            {
+                                "type": "integer",
+                                "minimum": 1.0
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Max Completion Tokens",
+                        "description": "An upper bound for the number of tokens that can be generated for a completion, including visible output tokens and reasoning tokens."
+                    },
+                    "modalities": {
+                        "anyOf": [
+                            {
+                                "items": {
+                                    "type": "string"
+                                },
+                                "type": "array"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Modalities",
+                        "description": "List of supported input/output modalities for the chat."
+                    },
+                    "prediction": {
+                        "anyOf": [
+                            {
+                                "additionalProperties": true,
+                                "type": "object"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Prediction",
+                        "description": "field for storing prediction-related information."
+                    },
+                    "audio": {
+                        "anyOf": [
+                            {
+                                "additionalProperties": true,
+                                "type": "object"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Audio",
+                        "description": "dictionary for audio-related parameters or metadata."
+                    },
+                    "presence_penalty": {
+                        "anyOf": [
+                            {
+                                "type": "number",
+                                "maximum": 2.0,
+                                "minimum": -2.0
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Presence Penalty",
+                        "description": "Penalty for new tokens based on their presence in the text so far."
+                    },
+                    "response_format": {
+                        "anyOf": [
+                            {
+                                "additionalProperties": true,
+                                "type": "object"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Response Format",
+                        "description": "Specify the desired response format for the completion."
+                    },
+                    "seed": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Seed",
+                        "description": "Seed for random number generation."
+                    },
+                    "service_tier": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "enum": [
+                                    "auto",
+                                    "default"
+                                ]
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Service Tier",
+                        "description": "'auto': Automatically select appropriate tier\n'default': Use the default service tier"
+                    },
+                    "stop": {
+                        "anyOf": [
+                            {
+                                "items": {
+                                    "type": "string"
+                                },
+                                "type": "array"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Stop",
+                        "description": "List of stop sequences to end the generation."
+                    },
+                    "stream": {
+                        "anyOf": [
+                            {
+                                "type": "boolean"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Stream",
+                        "description": "Whether to stream the response in real-time. Defaults to False.",
+                        "default": false
+                    },
+                    "stream_options": {
+                        "anyOf": [
+                            {
+                                "additionalProperties": true,
+                                "type": "object"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Stream Options",
+                        "description": "Options for streaming responses, such as chunk size or format."
+                    },
+                    "temperature": {
+                        "anyOf": [
+                            {
+                                "type": "number",
+                                "maximum": 2.0,
+                                "minimum": 0.0
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Temperature",
+                        "description": "Sampling temperature for controlling randomness in output."
+                    },
+                    "top_p": {
+                        "anyOf": [
+                            {
+                                "type": "number",
+                                "maximum": 1.0,
+                                "minimum": 0.0
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Top P",
+                        "description": "Nucleus sampling parameter for controlling diversity in output. Defaults to 1.0.",
+                        "default": 1.0
+                    },
+                    "tools": {
+                        "anyOf": [
+                            {
+                                "items": {
+                                    "additionalProperties": true,
+                                    "type": "object"
+                                },
+                                "type": "array"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Tools",
+                        "description": "List of tools that can be used by the model to assist in generating responses."
+                    },
+                    "tool_choice": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "$ref": "#/components/schemas/ToolChoiceFunction"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Tool Choice",
+                        "description": "Specify how tools should be used. Can be 'auto', 'required', 'none', or an object like {'type': 'function', 'function': {'name': 'tool_name'}} to force a specific tool."
+                    },
+                    "parallel_tool_calls": {
+                        "anyOf": [
+                            {
+                                "type": "boolean"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Parallel Tool Calls",
+                        "description": "Whether to allow parallel tool calls in the completion."
+                    },
+                    "user": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "User",
+                        "description": "User identifier for tracking or personalization purposes."
+                    },
+                    "function_call": {
+                        "anyOf": [
+                            {
+                                "additionalProperties": true,
+                                "type": "object"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Function Call",
+                        "description": "Function call parameters for invoking specific functions during the chat."
+                    },
+                    "functions": {
+                        "anyOf": [
+                            {
+                                "items": {
+                                    "additionalProperties": true,
+                                    "type": "object"
+                                },
+                                "type": "array"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Functions",
+                        "description": "List of functions that can be called by the model to assist in generating responses."
+                    },
+                    "thinking": {
+                        "anyOf": [
+                            {
+                                "additionalProperties": true,
+                                "type": "object"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Thinking",
+                        "description": "Parameters related to the model's reasoning or thinking process."
+                    },
+                    "web_search_options": {
+                        "anyOf": [
+                            {
+                                "additionalProperties": true,
+                                "type": "object"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Web Search Options",
+                        "description": "Options for web search integration. Example: json web_search_options={ \"search_context_size\": \"medium\" # Options: \"low\", \"medium\", \"high\" }"
+                    },
+                    "verbosity": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "enum": [
+                                    "low",
+                                    "medium",
+                                    "high"
+                                ]
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Verbosity",
+                        "description": "Hint the model to be more or less expansive in its replies. Values: \"low\", \"medium\", \"high\". low (gpt5 models)"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "model",
+                    "messages"
+                ],
+                "title": "LlmFeatureBody"
+            },
+            "Message": {
+                "properties": {
+                    "role": {
+                        "type": "string",
+                        "enum": [
+                            "user",
+                            "assistant",
+                            "system",
+                            "tool"
+                        ],
+                        "title": "Role",
+                        "description": "The role of the message sender (e.g., 'user', 'assistant')."
+                    },
+                    "content": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "items": {
+                                    "anyOf": [
+                                        {
+                                            "$ref": "#/components/schemas/MessageTextContent"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/MessageImageContent"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/MessageFileContent"
+                                        }
+                                    ]
+                                },
+                                "type": "array"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Content",
+                        "description": "The content of the message, either text or image."
+                    }
+                },
+                "additionalProperties": true,
+                "type": "object",
+                "required": [
+                    "role",
+                    "content"
+                ],
+                "title": "Message"
+            },
+            "MessageFileB64Input": {
+                "properties": {
+                    "file_data": {
+                        "type": "string",
+                        "title": "File Data",
+                        "description": "The file data in base64 format."
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "file_data"
+                ],
+                "title": "MessageFileB64Input"
+            },
+            "MessageFileContent": {
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "const": "file",
+                        "title": "Type"
+                    },
+                    "file": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/MessageFileUrlInput"
+                            },
+                            {
+                                "$ref": "#/components/schemas/MessageFileB64Input"
+                            }
+                        ],
+                        "title": "File"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "type",
+                    "file"
+                ],
+                "title": "MessageFileContent"
+            },
+            "MessageFileUrlInput": {
+                "properties": {
+                    "file_id": {
+                        "type": "string",
+                        "title": "File Id",
+                        "description": "File identifier: either a UUID from /v3/upload endpoint or an HTTP(S) URL."
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "file_id"
+                ],
+                "title": "MessageFileUrlInput"
+            },
+            "MessageImageContent": {
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "const": "image_url",
+                        "title": "Type"
+                    },
+                    "image_url": {
+                        "$ref": "#/components/schemas/MessageImageUrl"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "type",
+                    "image_url"
+                ],
+                "title": "MessageImageContent"
+            },
+            "MessageImageUrl": {
+                "properties": {
+                    "url": {
+                        "type": "string",
+                        "title": "Url"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "url"
+                ],
+                "title": "MessageImageUrl"
+            },
+            "MessageTextContent": {
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "const": "text",
+                        "title": "Type"
+                    },
+                    "text": {
+                        "type": "string",
+                        "minLength": 1,
+                        "title": "Text",
+                        "description": "The text content of the message."
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "type",
+                    "text"
+                ],
+                "title": "MessageTextContent"
+            },
+            "ModelObject": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "title": "Id",
+                        "description": "Model identifier (e.g., 'openai/gpt-4')"
+                    },
+                    "object": {
+                        "type": "string",
+                        "const": "model",
+                        "title": "Object",
+                        "description": "Object type",
+                        "default": "model"
+                    },
+                    "created": {
+                        "type": "integer",
+                        "title": "Created",
+                        "description": "Unix timestamp of model creation/release"
+                    },
+                    "owned_by": {
+                        "type": "string",
+                        "title": "Owned By",
+                        "description": "Provider/organization that owns the model"
+                    },
+                    "model_name": {
+                        "type": "string",
+                        "title": "Model Name",
+                        "description": "Model name without provider prefix"
+                    },
+                    "context_length": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Context Length",
+                        "description": "Maximum context length in tokens"
+                    },
+                    "description": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Description",
+                        "description": "Model description"
+                    },
+                    "source": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Source",
+                        "description": "Model source URL"
+                    },
+                    "capabilities": {
+                        "additionalProperties": true,
+                        "type": "object",
+                        "title": "Capabilities",
+                        "description": "Model capabilities"
+                    },
+                    "pricing": {
+                        "additionalProperties": true,
+                        "type": "object",
+                        "title": "Pricing",
+                        "description": "Pricing information"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "created",
+                    "owned_by",
+                    "model_name"
+                ],
+                "title": "ModelObject",
+                "description": "Extended model object with full metadata."
+            },
+            "SchemaFormat": {
+                "type": "string",
+                "enum": [
+                    "simplified",
+                    "json_schema"
+                ],
+                "title": "SchemaFormat",
+                "description": "Output format for schema information."
+            },
+            "ToolChoiceFunction": {
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "const": "function",
+                        "title": "Type"
+                    },
+                    "function": {
+                        "$ref": "#/components/schemas/ToolChoiceFunctionName",
+                        "description": "The function to force the model to call."
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "type",
+                    "function"
+                ],
+                "title": "ToolChoiceFunction"
+            },
+            "ToolChoiceFunctionName": {
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "title": "Name",
+                        "description": "The name of the function to call."
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "name"
+                ],
+                "title": "ToolChoiceFunctionName"
+            },
+            "UniversalAIBody": {
+                "properties": {
+                    "model": {
+                        "type": "string",
+                        "title": "Model",
+                        "description": "Model in format: feature/subfeature/provider[/model]",
+                        "examples": [
+                            "text/ai_detection/openai/gpt-4",
+                            "ocr/ocr/amazon",
+                            "image/generation/google/imagen-3"
+                        ]
+                    },
+                    "provider_params": {
+                        "anyOf": [
+                            {
+                                "additionalProperties": true,
+                                "type": "object"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Provider Params",
+                        "description": "Provider-specific parameters"
+                    },
+                    "input": {
+                        "additionalProperties": true,
+                        "type": "object",
+                        "title": "Input",
+                        "description": "Feature-specific input parameters. Required fields depend on the feature/subfeature specified in provider. Examples:\n- text/ai_detection: {'text': 'content to analyze'}\n- text/embeddings: {'texts': ['text1', 'text2']}\n- ocr/ocr: {'file_id': 'abc123', 'language': 'en'}\n- image/generation: {'text': 'prompt', 'resolution': '1024x1024'}\n- translation/document_translation: {'file_id': 'abc123', 'target_language': 'fr'}",
+                        "examples": [
+                            {
+                                "text": "Analyze this text for AI detection"
+                            },
+                            {
+                                "dimensions": 512,
+                                "texts": [
+                                    "text1",
+                                    "text2"
+                                ]
+                            },
+                            {
+                                "file_id": "abc123",
+                                "language": "en"
+                            }
+                        ]
+                    },
+                    "show_original_response": {
+                        "anyOf": [
+                            {
+                                "type": "boolean"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Show Original Response",
+                        "description": "Include raw provider response in the output",
+                        "default": false
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "model",
+                    "input"
+                ],
+                "title": "UniversalAIBody",
+                "description": "Universal AI request body.\n\nModel format: feature/subfeature/provider[/model]\n\nExamples:\n    - text/ai_detection/openai/gpt-4\n    - ocr/ocr/amazon\n    - image/generation/google/imagen-3\n\nThe `input` dict contains feature-specific parameters that are\nvalidated at runtime based on the parsed feature/subfeature."
+            },
+            "UniversalAIResponse": {
+                "properties": {
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "success",
+                            "fail"
+                        ],
+                        "title": "Status",
+                        "description": "Whether the request succeeded or failed"
+                    },
+                    "cost": {
+                        "type": "string",
+                        "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                        "title": "Cost",
+                        "description": "Cost in credits for this request"
+                    },
+                    "provider": {
+                        "type": "string",
+                        "title": "Provider",
+                        "description": "Provider name that processed the request"
+                    },
+                    "feature": {
+                        "type": "string",
+                        "title": "Feature",
+                        "description": "Feature category (e.g., text, ocr, image)"
+                    },
+                    "subfeature": {
+                        "type": "string",
+                        "title": "Subfeature",
+                        "description": "Specific subfeature (e.g., ai_detection, sentiment)"
+                    },
+                    "output": {
+                        "title": "Output",
+                        "description": "Normalized output from the provider"
+                    },
+                    "error": {
+                        "anyOf": [
+                            {
+                                "additionalProperties": true,
+                                "type": "object"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Error",
+                        "description": "Error message from the provider (only present when status is 'fail')"
+                    },
+                    "original_response": {
+                        "anyOf": [
+                            {},
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Original Response",
+                        "description": "Raw response from the provider (if show_original_response=true)"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "status",
+                    "cost",
+                    "provider",
+                    "feature",
+                    "subfeature",
+                    "output"
+                ],
+                "title": "UniversalAIResponse",
+                "description": "Normalized response from universal-ai endpoint.\n\nAll responses have a consistent structure regardless of the feature/subfeature."
+            },
+            "UploadResponse": {
+                "properties": {
+                    "file_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "File Id",
+                        "description": "Unique file identifier for use in API calls"
+                    },
+                    "file_name": {
+                        "type": "string",
+                        "title": "File Name",
+                        "description": "Original filename"
+                    },
+                    "file_size": {
+                        "type": "integer",
+                        "title": "File Size",
+                        "description": "File size in bytes"
+                    },
+                    "file_mimetype": {
+                        "type": "string",
+                        "title": "File Mimetype",
+                        "description": "Detected MIME type"
+                    },
+                    "purpose": {
+                        "type": "string",
+                        "title": "Purpose",
+                        "description": "Purpose of the file (e.g., 'general', 'assistants')"
+                    },
+                    "metadata": {
+                        "additionalProperties": true,
+                        "type": "object",
+                        "title": "Metadata",
+                        "description": "File metadata (e.g., page_count for PDFs/documents)"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At",
+                        "description": "Upload timestamp"
+                    },
+                    "expires_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Expires At",
+                        "description": "Expiration timestamp"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "file_id",
+                    "file_name",
+                    "file_size",
+                    "file_mimetype",
+                    "purpose",
+                    "created_at"
+                ],
+                "title": "UploadResponse",
+                "description": "Response for a successful file upload.",
+                "example": {
+                    "created_at": "2025-12-08T10:30:00Z",
+                    "expires_at": "2026-01-07T10:30:00Z",
+                    "file_id": "550e8400-e29b-41d4-a716-446655440000",
+                    "file_mimetype": "application/pdf",
+                    "file_name": "invoice.pdf",
+                    "file_size": 1048576,
+                    "metadata": {
+                        "page_count": 5
+                    },
+                    "purpose": "general"
+                }
+            },
+            "ValidationError": {
+                "properties": {
+                    "loc": {
+                        "items": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "integer"
+                                }
+                            ]
+                        },
+                        "type": "array",
+                        "title": "Location"
+                    },
+                    "msg": {
+                        "type": "string",
+                        "title": "Message"
+                    },
+                    "type": {
+                        "type": "string",
+                        "title": "Error Type"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "loc",
+                    "msg",
+                    "type"
+                ],
+                "title": "ValidationError"
+            }
+        },
+        "securitySchemes": {
+            "AuthBearer": {
+                "type": "http",
+                "scheme": "bearer"
+            }
+        }
+    },
+    "servers": [
+        {
+            "url": "https://api.edenai.run",
+            "description": "Production server"
+        }
+    ]
+}

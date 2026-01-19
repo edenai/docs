@@ -33,7 +33,7 @@ Choose based on your use case:
 - Text embeddings
 - Translation
 
-See [Getting Started](introduction.mdx) for detailed endpoint comparison.
+See [Getting Started](./introduction) for detailed endpoint comparison.
 
 ### How does the model string format work?
 
@@ -59,7 +59,7 @@ Examples:
 - `anthropic/claude-3-5-sonnet-20241022`
 - `google/gemini-pro`
 
-See [Universal AI Getting Started](../how-to/universal-ai/getting-started.mdx) and [Chat Completions](../how-to/llm/chat-completions.mdx) for details.
+See [Universal AI Getting Started](../how-to/universal-ai/getting-started) and [Chat Completions](../how-to/llm/chat-completions) for details.
 
 ## Authentication & Access
 
@@ -70,7 +70,7 @@ See [Universal AI Getting Started](../how-to/universal-ai/getting-started.mdx) a
 3. Generate an API token under "API Keys"
 4. Use it in the `Authorization` header: `Bearer YOUR_API_KEY`
 
-See [Authentication Guide](../how-to/authentication/bearer-token-auth.mdx) for details.
+See [Authentication Guide](../how-to/authentication/bearer-token-auth) for details.
 
 ### Can I use my own provider API keys?
 
@@ -112,7 +112,7 @@ Every API response includes a `cost` field showing the charge in USD for that re
 }
 ```
 
-See [Monitor Usage and Costs](../how-to/cost-management/monitor-usage.mdx) for tracking and optimization.
+See [Monitor Usage and Costs](../how-to/cost-management/monitor-usage) for tracking and optimization.
 
 ## File Handling
 
@@ -150,7 +150,7 @@ payload = {
 }
 ```
 
-See [Upload Files](../how-to/upload/upload-files.mdx) for detailed guide.
+See [Upload Files](../how-to/upload/upload-files) for detailed guide.
 
 ### How long are uploaded files stored?
 
@@ -198,7 +198,7 @@ Exceeding limits returns a `413 Payload Too Large` error with specific limit inf
 **Audio:**
 - MP3, WAV (provider-dependent)
 
-Format support varies by provider. Check provider-specific documentation or use the [API Discovery](../how-to/discovery/explore-api.mdx) endpoint for details.
+Format support varies by provider. Check provider-specific documentation or use the [API Discovery](../how-to/discovery/explore-api) endpoint for details.
 
 ## LLM Features
 
@@ -210,7 +210,7 @@ All LLM responses in V3 use **Server-Sent Events (SSE)** streaming to:
 - Match OpenAI's API behavior
 - Enable better UX for chat applications
 
-Even when `stream: false` is sent, responses are streamed. See [Streaming Responses](../how-to/llm/streaming.mdx) for implementation guide.
+Even when `stream: false` is sent, responses are streamed. See [Streaming Responses](../how-to/llm/streaming) for implementation guide.
 
 ### How do I send images to LLMs?
 
@@ -241,7 +241,7 @@ Supports:
 - Base64 data URLs (`data:image/jpeg;base64,...`)
 - Uploaded file UUIDs
 
-See [Working with Media Files](../how-to/llm/working-with-media.mdx) for complete guide.
+See [Working with Media Files](../how-to/llm/working-with-media) for complete guide.
 
 ### Which providers support vision/multimodal?
 
@@ -252,7 +252,7 @@ See [Working with Media Files](../how-to/llm/working-with-media.mdx) for complet
 | Google | gemini-1.5-pro, gemini-1.5-flash | ✓ | ✓ |
 | Mistral | pixtral-12b | ✓ | - |
 
-See [Vision Capabilities](../how-to/llm/vision-capabilities.mdx) for provider comparison.
+See [Vision Capabilities](../how-to/llm/vision-capabilities) for provider comparison.
 
 ### Does V3 support tool/function calling?
 
@@ -302,7 +302,7 @@ response = requests.get(
 # Returns: providers, input schema, output schema
 ```
 
-See [Explore the API](../how-to/discovery/explore-api.mdx) for details.
+See [Explore the API](../how-to/discovery/explore-api) for details.
 
 ### Can I use fallback providers?
 
@@ -343,7 +343,7 @@ result = call_with_fallback(
    - Process multiple items in fewer API calls when supported
 
 5. **Monitor usage:**
-   - Track costs via [Monitor Usage](../how-to/cost-management/monitor-usage.mdx)
+   - Track costs via [Monitor Usage](../how-to/cost-management/monitor-usage)
    - Set up alerts in dashboard
 
 ### I've been an Eden AI user for some time. Is the previous version going to disappear?
@@ -490,8 +490,8 @@ def call_with_retry(url, payload, max_retries=3):
 
 ## Next Steps
 
-- [Getting Started Guide](introduction.mdx)
-- [Authentication Setup](../how-to/authentication/bearer-token-auth.mdx)
-- [Universal AI Overview](../how-to/universal-ai/getting-started.mdx)
-- [LLM Chat Completions](../how-to/llm/chat-completions.mdx)
-- [Monitor Costs](../how-to/cost-management/monitor-usage.mdx)
+- [Getting Started Guide](./introduction)
+- [Authentication Setup](../how-to/authentication/bearer-token-auth)
+- [Universal AI Overview](../how-to/universal-ai/getting-started)
+- [LLM Chat Completions](../how-to/llm/chat-completions)
+- [Monitor Costs](../how-to/cost-management/monitor-usage)

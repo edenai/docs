@@ -1,6 +1,6 @@
 # Eden AI Documentation
 
-Official documentation repository for [Eden AI](https://edenai.co) - the unified API platform for accessing multiple AI providers through a single interface. [Eden AI Docs](https://docs.edenai.co/).
+Official documentation repository for [Eden AI](https://edenai.co) - the unified API platform for accessing multiple AI providers through a single interface.
 
 ## About This Repository
 

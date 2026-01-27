@@ -56,515 +56,506 @@ This tutorial shows you how to build a Python-based system that solves all these
 
 Create a Python client to interact with the Eden AI Cost Monitoring API:
 
-<CodeBlocks>
-  <CodeBlock title="cost_monitor.py">
-    ```python
-    import requests
-    from datetime import datetime, timedelta
-    from typing import Dict, List, Optional
-    import json
+<CodeGroup>
+```python cost_monitor.py
+import requests
+from datetime import datetime, timedelta
+from typing import Dict, List, Optional
+import json
 
-    class EdenAICostMonitor:
-        """Client for Eden AI Cost Monitoring API"""
+class EdenAICostMonitor:
+    """Client for Eden AI Cost Monitoring API"""
 
-        BASE_URL = "https://api.edenai.run/v2/cost_management"
+    BASE_URL = "https://api.edenai.run/v2/cost_management"
 
-        def __init__(self, api_key: str):
-            """
-            Initialize the cost monitor.
+    def __init__(self, api_key: str):
+        """
+        Initialize the cost monitor.
 
-            Args:
-                api_key: Your Eden AI API key
-            """
-            self.api_key = api_key
-            self.headers = {"Authorization": f"Bearer {api_key}"}
+        Args:
+            api_key: Your Eden AI API key
+        """
+        self.api_key = api_key
+        self.headers = {"Authorization": f"Bearer {api_key}"}
 
-        def get_credits(self) -> float:
-            """
-            Get current account credit balance.
+    def get_credits(self) -> float:
+        """
+        Get current account credit balance.
 
-            Returns:
-                Current credit balance as float
-            """
-            response = requests.get(
-                f"{self.BASE_URL}/credits/",
-                headers=self.headers
-            )
-            response.raise_for_status()
-            return response.json()['credits']
+        Returns:
+            Current credit balance as float
+        """
+        response = requests.get(
+            f"{self.BASE_URL}/credits/",
+            headers=self.headers
+        )
+        response.raise_for_status()
+        return response.json()['credits']
 
-        def get_usage(
-            self,
-            begin: str,
-            end: str,
-            step: int = 1,
-            provider: Optional[str] = None,
-            subfeature: Optional[str] = None,
-            token: Optional[str] = None
-        ) -> Dict:
-            """
-            Get usage and cost data for a date range.
+    def get_usage(
+        self,
+        begin: str,
+        end: str,
+        step: int = 1,
+        provider: Optional[str] = None,
+        subfeature: Optional[str] = None,
+        token: Optional[str] = None
+    ) -> Dict:
+        """
+        Get usage and cost data for a date range.
 
-            Args:
-                begin: Start date (YYYY-MM-DD)
-                end: End date (YYYY-MM-DD)
-                step: Aggregation period (1=daily, 2=weekly, 3=monthly, 4=yearly)
-                provider: Filter by provider (optional)
-                subfeature: Filter by subfeature (optional)
-                token: Filter by token (optional)
+        Args:
+            begin: Start date (YYYY-MM-DD)
+            end: End date (YYYY-MM-DD)
+            step: Aggregation period (1=daily, 2=weekly, 3=monthly, 4=yearly)
+            provider: Filter by provider (optional)
+            subfeature: Filter by subfeature (optional)
+            token: Filter by token (optional)
 
-            Returns:
-                Usage data dictionary
-            """
-            params = {
-                "begin": begin,
-                "end": end,
-                "step": step
-            }
+        Returns:
+            Usage data dictionary
+        """
+        params = {
+            "begin": begin,
+            "end": end,
+            "step": step
+        }
 
-            if provider:
-                params["provider"] = provider
-            if subfeature:
-                params["subfeature"] = subfeature
-            if token:
-                params["token"] = token
+        if provider:
+            params["provider"] = provider
+        if subfeature:
+            params["subfeature"] = subfeature
+        if token:
+            params["token"] = token
 
-            response = requests.get(
-                f"{self.BASE_URL}/",
-                headers=self.headers,
-                params=params
-            )
-            response.raise_for_status()
-            return response.json()
+        response = requests.get(
+            f"{self.BASE_URL}/",
+            headers=self.headers,
+            params=params
+        )
+        response.raise_for_status()
+        return response.json()
 
-        def get_date_range_cost(
-            self,
-            begin: str,
-            end: str,
-            provider: Optional[str] = None
-        ) -> float:
-            """
-            Calculate total cost for a date range.
+    def get_date_range_cost(
+        self,
+        begin: str,
+        end: str,
+        provider: Optional[str] = None
+    ) -> float:
+        """
+        Calculate total cost for a date range.
 
-            Args:
-                begin: Start date (YYYY-MM-DD)
-                end: End date (YYYY-MM-DD)
-                provider: Filter by provider (optional)
+        Args:
+            begin: Start date (YYYY-MM-DD)
+            end: End date (YYYY-MM-DD)
+            provider: Filter by provider (optional)
 
-            Returns:
-                Total cost as float
-            """
-            data = self.get_usage(begin, end, step=1, provider=provider)
+        Returns:
+            Total cost as float
+        """
+        data = self.get_usage(begin, end, step=1, provider=provider)
 
-            total_cost = 0.0
-            for token_data in data['response']:
-                for date, features in token_data['data'].items():
-                    for feature, details in features.items():
-                        total_cost += details['total_cost']
+        total_cost = 0.0
+        for token_data in data['response']:
+            for date, features in token_data['data'].items():
+                for feature, details in features.items():
+                    total_cost += details['total_cost']
 
-            return total_cost
+        return total_cost
 
-        def get_provider_breakdown(
-            self,
-            begin: str,
-            end: str
-        ) -> Dict[str, float]:
-            """
-            Get cost breakdown by provider.
+    def get_provider_breakdown(
+        self,
+        begin: str,
+        end: str
+    ) -> Dict[str, float]:
+        """
+        Get cost breakdown by provider.
 
-            Args:
-                begin: Start date (YYYY-MM-DD)
-                end: End date (YYYY-MM-DD)
+        Args:
+            begin: Start date (YYYY-MM-DD)
+            end: End date (YYYY-MM-DD)
 
-            Returns:
-                Dictionary mapping provider names to costs
-            """
-            data = self.get_usage(begin, end, step=1)
+        Returns:
+            Dictionary mapping provider names to costs
+        """
+        data = self.get_usage(begin, end, step=1)
 
-            provider_costs = {}
-            for token_data in data['response']:
-                for date, features in token_data['data'].items():
-                    for feature, details in features.items():
-                        for provider, cost in details['cost_per_provider'].items():
-                            provider_costs[provider] = (
-                                provider_costs.get(provider, 0.0) + cost
-                            )
+        provider_costs = {}
+        for token_data in data['response']:
+            for date, features in token_data['data'].items():
+                for feature, details in features.items():
+                    for provider, cost in details['cost_per_provider'].items():
+                        provider_costs[provider] = (
+                            provider_costs.get(provider, 0.0) + cost
+                        )
 
-            return provider_costs
+        return provider_costs
 
-        def get_feature_breakdown(
-            self,
-            begin: str,
-            end: str
-        ) -> Dict[str, Dict]:
-            """
-            Get detailed breakdown by feature.
+    def get_feature_breakdown(
+        self,
+        begin: str,
+        end: str
+    ) -> Dict[str, Dict]:
+        """
+        Get detailed breakdown by feature.
 
-            Args:
-                begin: Start date (YYYY-MM-DD)
-                end: End date (YYYY-MM-DD)
+        Args:
+            begin: Start date (YYYY-MM-DD)
+            end: End date (YYYY-MM-DD)
 
-            Returns:
-                Dictionary with feature costs and call counts
-            """
-            data = self.get_usage(begin, end, step=1)
+        Returns:
+            Dictionary with feature costs and call counts
+        """
+        data = self.get_usage(begin, end, step=1)
 
-            feature_stats = {}
-            for token_data in data['response']:
-                for date, features in token_data['data'].items():
-                    for feature, details in features.items():
-                        if feature not in feature_stats:
-                            feature_stats[feature] = {
-                                'total_cost': 0.0,
-                                'total_calls': 0
-                            }
+        feature_stats = {}
+        for token_data in data['response']:
+            for date, features in token_data['data'].items():
+                for feature, details in features.items():
+                    if feature not in feature_stats:
+                        feature_stats[feature] = {
+                            'total_cost': 0.0,
+                            'total_calls': 0
+                        }
 
-                        feature_stats[feature]['total_cost'] += details['total_cost']
-                        feature_stats[feature]['total_calls'] += details['details']
+                    feature_stats[feature]['total_cost'] += details['total_cost']
+                    feature_stats[feature]['total_calls'] += details['details']
 
-            return feature_stats
+        return feature_stats
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ## Step 2: Fetch and Cache Daily Usage Data
 
 Implement caching to reduce API calls and improve performance:
 
-<CodeBlocks>
-  <CodeBlock title="cache_manager.py">
-    ```python
-    import sqlite3
-    import json
-    from datetime import datetime, timedelta
-    from typing import Optional, Dict
+<CodeGroup>
+```python cache_manager.py
+import sqlite3
+import json
+from datetime import datetime, timedelta
+from typing import Optional, Dict
 
-    class CostCache:
-        """SQLite-based cache for cost data"""
+class CostCache:
+    """SQLite-based cache for cost data"""
 
-        def __init__(self, db_path: str = "cost_cache.db"):
-            """Initialize cache database"""
-            self.conn = sqlite3.connect(db_path)
-            self.create_tables()
+    def __init__(self, db_path: str = "cost_cache.db"):
+        """Initialize cache database"""
+        self.conn = sqlite3.connect(db_path)
+        self.create_tables()
 
-        def create_tables(self):
-            """Create cache tables if they don't exist"""
-            cursor = self.conn.cursor()
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS daily_costs (
-                    date TEXT PRIMARY KEY,
-                    data TEXT NOT NULL,
-                    fetched_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS provider_costs (
-                    provider TEXT,
-                    date TEXT,
-                    cost REAL,
-                    PRIMARY KEY (provider, date)
-                )
-            """)
-            self.conn.commit()
+    def create_tables(self):
+        """Create cache tables if they don't exist"""
+        cursor = self.conn.cursor()
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS daily_costs (
+                date TEXT PRIMARY KEY,
+                data TEXT NOT NULL,
+                fetched_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS provider_costs (
+                provider TEXT,
+                date TEXT,
+                cost REAL,
+                PRIMARY KEY (provider, date)
+            )
+        """)
+        self.conn.commit()
 
-        def cache_daily_data(self, date: str, data: Dict):
-            """
-            Cache daily cost data.
+    def cache_daily_data(self, date: str, data: Dict):
+        """
+        Cache daily cost data.
 
-            Args:
-                date: Date string (YYYY-MM-DD)
-                data: Cost data dictionary
-            """
-            cursor = self.conn.cursor()
-            cursor.execute("""
-                INSERT OR REPLACE INTO daily_costs (date, data, fetched_at)
-                VALUES (?, ?, ?)
-            """, (date, json.dumps(data), datetime.now()))
-            self.conn.commit()
+        Args:
+            date: Date string (YYYY-MM-DD)
+            data: Cost data dictionary
+        """
+        cursor = self.conn.cursor()
+        cursor.execute("""
+            INSERT OR REPLACE INTO daily_costs (date, data, fetched_at)
+            VALUES (?, ?, ?)
+        """, (date, json.dumps(data), datetime.now()))
+        self.conn.commit()
 
-        def get_cached_data(self, date: str, max_age_hours: int = 24) -> Optional[Dict]:
-            """
-            Get cached data if it's fresh enough.
+    def get_cached_data(self, date: str, max_age_hours: int = 24) -> Optional[Dict]:
+        """
+        Get cached data if it's fresh enough.
 
-            Args:
-                date: Date string (YYYY-MM-DD)
-                max_age_hours: Maximum cache age in hours
+        Args:
+            date: Date string (YYYY-MM-DD)
+            max_age_hours: Maximum cache age in hours
 
-            Returns:
-                Cached data or None if not found/expired
-            """
-            cursor = self.conn.cursor()
-            cursor.execute("""
-                SELECT data, fetched_at
-                FROM daily_costs
-                WHERE date = ?
-            """, (date,))
+        Returns:
+            Cached data or None if not found/expired
+        """
+        cursor = self.conn.cursor()
+        cursor.execute("""
+            SELECT data, fetched_at
+            FROM daily_costs
+            WHERE date = ?
+        """, (date,))
 
-            row = cursor.fetchone()
-            if not row:
-                return None
+        row = cursor.fetchone()
+        if not row:
+            return None
 
-            data, fetched_at = row
-            fetched_time = datetime.fromisoformat(fetched_at)
+        data, fetched_at = row
+        fetched_time = datetime.fromisoformat(fetched_at)
 
-            if datetime.now() - fetched_time > timedelta(hours=max_age_hours):
-                return None  # Cache expired
+        if datetime.now() - fetched_time > timedelta(hours=max_age_hours):
+            return None  # Cache expired
 
-            return json.loads(data)
+        return json.loads(data)
 
-        def cache_provider_cost(self, provider: str, date: str, cost: float):
-            """Cache provider-specific cost"""
-            cursor = self.conn.cursor()
-            cursor.execute("""
-                INSERT OR REPLACE INTO provider_costs (provider, date, cost)
-                VALUES (?, ?, ?)
-            """, (provider, date, cost))
-            self.conn.commit()
+    def cache_provider_cost(self, provider: str, date: str, cost: float):
+        """Cache provider-specific cost"""
+        cursor = self.conn.cursor()
+        cursor.execute("""
+            INSERT OR REPLACE INTO provider_costs (provider, date, cost)
+            VALUES (?, ?, ?)
+        """, (provider, date, cost))
+        self.conn.commit()
 
-        def get_provider_total(self, provider: str, begin: str, end: str) -> float:
-            """Get total cost for a provider in date range"""
-            cursor = self.conn.cursor()
-            cursor.execute("""
-                SELECT SUM(cost)
-                FROM provider_costs
-                WHERE provider = ? AND date BETWEEN ? AND ?
-            """, (provider, begin, end))
+    def get_provider_total(self, provider: str, begin: str, end: str) -> float:
+        """Get total cost for a provider in date range"""
+        cursor = self.conn.cursor()
+        cursor.execute("""
+            SELECT SUM(cost)
+            FROM provider_costs
+            WHERE provider = ? AND date BETWEEN ? AND ?
+        """, (provider, begin, end))
 
-            result = cursor.fetchone()[0]
-            return result or 0.0
+        result = cursor.fetchone()[0]
+        return result or 0.0
 
-        def close(self):
-            """Close database connection"""
-            self.conn.close()
+    def close(self):
+        """Close database connection"""
+        self.conn.close()
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ## Step 3: Analyze Costs by Provider and Feature
 
 Create analysis tools to understand your spending patterns:
 
-<CodeBlocks>
-  <CodeBlock title="cost_analyzer.py">
-    ```python
-    from cost_monitor import EdenAICostMonitor
-    from datetime import datetime, timedelta
-    from typing import Dict, List, Tuple
+<CodeGroup>
+```python cost_analyzer.py
+from cost_monitor import EdenAICostMonitor
+from datetime import datetime, timedelta
+from typing import Dict, List, Tuple
 
-    class CostAnalyzer:
-        """Analyze and report on API costs"""
+class CostAnalyzer:
+    """Analyze and report on API costs"""
 
-        def __init__(self, monitor: EdenAICostMonitor):
-            self.monitor = monitor
+    def __init__(self, monitor: EdenAICostMonitor):
+        self.monitor = monitor
 
-        def compare_providers(
-            self,
-            begin: str,
-            end: str
-        ) -> List[Tuple[str, float, float]]:
-            """
-            Compare costs across providers.
+    def compare_providers(
+        self,
+        begin: str,
+        end: str
+    ) -> List[Tuple[str, float, float]]:
+        """
+        Compare costs across providers.
 
-            Returns:
-                List of (provider, cost, percentage) tuples
-            """
-            provider_costs = self.monitor.get_provider_breakdown(begin, end)
-            total_cost = sum(provider_costs.values())
+        Returns:
+            List of (provider, cost, percentage) tuples
+        """
+        provider_costs = self.monitor.get_provider_breakdown(begin, end)
+        total_cost = sum(provider_costs.values())
 
-            results = [
-                (provider, cost, (cost / total_cost * 100) if total_cost > 0 else 0)
-                for provider, cost in provider_costs.items()
-            ]
+        results = [
+            (provider, cost, (cost / total_cost * 100) if total_cost > 0 else 0)
+            for provider, cost in provider_costs.items()
+        ]
 
-            # Sort by cost (highest first)
-            return sorted(results, key=lambda x: x[1], reverse=True)
+        # Sort by cost (highest first)
+        return sorted(results, key=lambda x: x[1], reverse=True)
 
-        def find_most_expensive_features(
-            self,
-            begin: str,
-            end: str,
-            top_n: int = 5
-        ) -> List[Tuple[str, float, int]]:
-            """
-            Find the most expensive features.
+    def find_most_expensive_features(
+        self,
+        begin: str,
+        end: str,
+        top_n: int = 5
+    ) -> List[Tuple[str, float, int]]:
+        """
+        Find the most expensive features.
 
-            Args:
-                begin: Start date
-                end: End date
-                top_n: Number of top features to return
+        Args:
+            begin: Start date
+            end: End date
+            top_n: Number of top features to return
 
-            Returns:
-                List of (feature, cost, num_calls) tuples
-            """
-            features = self.monitor.get_feature_breakdown(begin, end)
+        Returns:
+            List of (feature, cost, num_calls) tuples
+        """
+        features = self.monitor.get_feature_breakdown(begin, end)
 
-            results = [
-                (feature, stats['total_cost'], stats['total_calls'])
-                for feature, stats in features.items()
-            ]
+        results = [
+            (feature, stats['total_cost'], stats['total_calls'])
+            for feature, stats in features.items()
+        ]
 
-            return sorted(results, key=lambda x: x[1], reverse=True)[:top_n]
+        return sorted(results, key=lambda x: x[1], reverse=True)[:top_n]
 
-        def calculate_cost_per_call(
-            self,
-            begin: str,
-            end: str
-        ) -> Dict[str, float]:
-            """
-            Calculate average cost per API call for each feature.
+    def calculate_cost_per_call(
+        self,
+        begin: str,
+        end: str
+    ) -> Dict[str, float]:
+        """
+        Calculate average cost per API call for each feature.
 
-            Returns:
-                Dictionary mapping feature to cost-per-call
-            """
-            features = self.monitor.get_feature_breakdown(begin, end)
+        Returns:
+            Dictionary mapping feature to cost-per-call
+        """
+        features = self.monitor.get_feature_breakdown(begin, end)
 
-            return {
-                feature: (
-                    stats['total_cost'] / stats['total_calls']
-                    if stats['total_calls'] > 0 else 0
+        return {
+            feature: (
+                stats['total_cost'] / stats['total_calls']
+                if stats['total_calls'] > 0 else 0
+            )
+            for feature, stats in features.items()
+        }
+
+    def get_daily_trend(
+        self,
+        begin: str,
+        end: str
+    ) -> List[Tuple[str, float]]:
+        """
+        Get daily cost trend.
+
+        Returns:
+            List of (date, cost) tuples
+        """
+        data = self.monitor.get_usage(begin, end, step=1)
+
+        daily_costs = {}
+        for token_data in data['response']:
+            for date, features in token_data['data'].items():
+                daily_total = sum(
+                    details['total_cost']
+                    for details in features.values()
                 )
-                for feature, stats in features.items()
-            }
+                daily_costs[date] = daily_costs.get(date, 0.0) + daily_total
 
-        def get_daily_trend(
-            self,
-            begin: str,
-            end: str
-        ) -> List[Tuple[str, float]]:
-            """
-            Get daily cost trend.
+        return sorted(daily_costs.items())
 
-            Returns:
-                List of (date, cost) tuples
-            """
-            data = self.monitor.get_usage(begin, end, step=1)
+    def print_cost_report(self, begin: str, end: str):
+        """Print a formatted cost report"""
+        print("=" * 60)
+        print(f"Cost Report: {begin} to {end}")
+        print("=" * 60)
+        print()
 
-            daily_costs = {}
-            for token_data in data['response']:
-                for date, features in token_data['data'].items():
-                    daily_total = sum(
-                        details['total_cost']
-                        for details in features.values()
-                    )
-                    daily_costs[date] = daily_costs.get(date, 0.0) + daily_total
+        # Total cost
+        total_cost = self.monitor.get_date_range_cost(begin, end)
+        print(f"Total Cost: ${total_cost:.2f}")
+        print()
 
-            return sorted(daily_costs.items())
+        # Provider breakdown
+        print("Cost by Provider:")
+        print("-" * 60)
+        for provider, cost, pct in self.compare_providers(begin, end):
+            print(f"{provider:20s} ${cost:>10.2f} ({pct:>5.1f}%)")
+        print()
 
-        def print_cost_report(self, begin: str, end: str):
-            """Print a formatted cost report"""
-            print("=" * 60)
-            print(f"Cost Report: {begin} to {end}")
-            print("=" * 60)
-            print()
+        # Most expensive features
+        print("Top 5 Most Expensive Features:")
+        print("-" * 60)
+        for feature, cost, calls in self.find_most_expensive_features(begin, end):
+            avg_cost = cost / calls if calls > 0 else 0
+            print(f"{feature:30s} ${cost:>8.2f} ({calls:>6,} calls, ${avg_cost:.4f}/call)")
+        print()
 
-            # Total cost
-            total_cost = self.monitor.get_date_range_cost(begin, end)
-            print(f"Total Cost: ${total_cost:.2f}")
-            print()
-
-            # Provider breakdown
-            print("Cost by Provider:")
-            print("-" * 60)
-            for provider, cost, pct in self.compare_providers(begin, end):
-                print(f"{provider:20s} ${cost:>10.2f} ({pct:>5.1f}%)")
-            print()
-
-            # Most expensive features
-            print("Top 5 Most Expensive Features:")
-            print("-" * 60)
-            for feature, cost, calls in self.find_most_expensive_features(begin, end):
-                avg_cost = cost / calls if calls > 0 else 0
-                print(f"{feature:30s} ${cost:>8.2f} ({calls:>6,} calls, ${avg_cost:.4f}/call)")
-            print()
-
-            # Current credits
-            credits = self.monitor.get_credits()
-            print(f"Current Credits: ${credits:.2f}")
-            print("=" * 60)
+        # Current credits
+        credits = self.monitor.get_credits()
+        print(f"Current Credits: ${credits:.2f}")
+        print("=" * 60)
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ## Step 4: Generate Cost Reports and Visualizations
 
 Create visual reports to understand trends:
 
-<CodeBlocks>
-  <CodeBlock title="cost_visualizer.py">
-    ```python
-    from cost_analyzer import CostAnalyzer
-    import matplotlib.pyplot as plt
-    from datetime import datetime
+<CodeGroup>
+```python cost_visualizer.py
+from cost_analyzer import CostAnalyzer
+import matplotlib.pyplot as plt
+from datetime import datetime
 
-    class CostVisualizer:
-        """Generate visualizations for cost data"""
+class CostVisualizer:
+    """Generate visualizations for cost data"""
 
-        def __init__(self, analyzer: CostAnalyzer):
-            self.analyzer = analyzer
+    def __init__(self, analyzer: CostAnalyzer):
+        self.analyzer = analyzer
 
-        def plot_daily_trend(self, begin: str, end: str, save_path: str = None):
-            """Plot daily cost trend"""
-            trend = self.analyzer.get_daily_trend(begin, end)
-            dates = [datetime.strptime(d, "%Y-%m-%d") for d, _ in trend]
-            costs = [c for _, c in trend]
+    def plot_daily_trend(self, begin: str, end: str, save_path: str = None):
+        """Plot daily cost trend"""
+        trend = self.analyzer.get_daily_trend(begin, end)
+        dates = [datetime.strptime(d, "%Y-%m-%d") for d, _ in trend]
+        costs = [c for _, c in trend]
 
-            plt.figure(figsize=(12, 6))
-            plt.plot(dates, costs, marker='o', linestyle='-', linewidth=2)
-            plt.xlabel('Date')
-            plt.ylabel('Cost ($)')
-            plt.title('Daily API Cost Trend')
-            plt.grid(True, alpha=0.3)
-            plt.xticks(rotation=45)
-            plt.tight_layout()
+        plt.figure(figsize=(12, 6))
+        plt.plot(dates, costs, marker='o', linestyle='-', linewidth=2)
+        plt.xlabel('Date')
+        plt.ylabel('Cost ($)')
+        plt.title('Daily API Cost Trend')
+        plt.grid(True, alpha=0.3)
+        plt.xticks(rotation=45)
+        plt.tight_layout()
 
-            if save_path:
-                plt.savefig(save_path)
-            else:
-                plt.show()
+        if save_path:
+            plt.savefig(save_path)
+        else:
+            plt.show()
 
-        def plot_provider_breakdown(self, begin: str, end: str, save_path: str = None):
-            """Plot provider cost breakdown as pie chart"""
-            providers = self.analyzer.compare_providers(begin, end)
-            labels = [p for p, _, _ in providers]
-            costs = [c for _, c, _ in providers]
+    def plot_provider_breakdown(self, begin: str, end: str, save_path: str = None):
+        """Plot provider cost breakdown as pie chart"""
+        providers = self.analyzer.compare_providers(begin, end)
+        labels = [p for p, _, _ in providers]
+        costs = [c for _, c, _ in providers]
 
-            plt.figure(figsize=(10, 8))
-            plt.pie(costs, labels=labels, autopct='%1.1f%%', startangle=90)
-            plt.title(f'Cost Distribution by Provider\n{begin} to {end}')
-            plt.axis('equal')
+        plt.figure(figsize=(10, 8))
+        plt.pie(costs, labels=labels, autopct='%1.1f%%', startangle=90)
+        plt.title(f'Cost Distribution by Provider\n{begin} to {end}')
+        plt.axis('equal')
 
-            if save_path:
-                plt.savefig(save_path)
-            else:
-                plt.show()
+        if save_path:
+            plt.savefig(save_path)
+        else:
+            plt.show()
 
-        def plot_feature_costs(self, begin: str, end: str, save_path: str = None):
-            """Plot top features by cost as horizontal bar chart"""
-            features = self.analyzer.find_most_expensive_features(begin, end, top_n=10)
-            names = [f.replace('__', '\n') for f, _, _ in features]
-            costs = [c for _, c, _ in features]
+    def plot_feature_costs(self, begin: str, end: str, save_path: str = None):
+        """Plot top features by cost as horizontal bar chart"""
+        features = self.analyzer.find_most_expensive_features(begin, end, top_n=10)
+        names = [f.replace('__', '\n') for f, _, _ in features]
+        costs = [c for _, c, _ in features]
 
-            plt.figure(figsize=(10, 8))
-            plt.barh(names, costs)
-            plt.xlabel('Cost ($)')
-            plt.title(f'Top 10 Features by Cost\n{begin} to {end}')
-            plt.tight_layout()
+        plt.figure(figsize=(10, 8))
+        plt.barh(names, costs)
+        plt.xlabel('Cost ($)')
+        plt.title(f'Top 10 Features by Cost\n{begin} to {end}')
+        plt.tight_layout()
 
-            if save_path:
-                plt.savefig(save_path)
-            else:
-                plt.show()
+        if save_path:
+            plt.savefig(save_path)
+        else:
+            plt.show()
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ## Step 5: Implement Budget Alerts
 
 Add automated alerts when approaching budget limits:
 
-<CodeBlocks>
-  <CodeBlock title="budget_alerts.py">
-    ```python
+<CodeGroup>
+```python budget_alerts.py
     import smtplib
     from email.mime.text import MIMEText
     from email.mime.multipart import MIMEMultipart
@@ -720,268 +711,261 @@ View detailed breakdown in your dashboard.
 
             print("=" * 60)
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ## Step 6: Optimize - Identify Most Expensive Operations
 
 Create an optimizer to find cost-saving opportunities:
 
-<CodeBlocks>
-  <CodeBlock title="cost_optimizer.py">
-    ```python
-    from cost_analyzer import CostAnalyzer
-    from typing import List, Dict
+<CodeGroup>
+```python cost_optimizer.py
+from cost_analyzer import CostAnalyzer
+from typing import List, Dict
 
-    class CostOptimizer:
-        """Identify cost optimization opportunities"""
+class CostOptimizer:
+    """Identify cost optimization opportunities"""
 
-        def __init__(self, analyzer: CostAnalyzer):
-            self.analyzer = analyzer
+    def __init__(self, analyzer: CostAnalyzer):
+        self.analyzer = analyzer
 
-        def find_expensive_providers(
-            self,
-            begin: str,
-            end: str,
-            feature: str = None
-        ) -> List[Dict]:
-            """
-            Identify providers that might have cheaper alternatives.
+    def find_expensive_providers(
+        self,
+        begin: str,
+        end: str,
+        feature: str = None
+    ) -> List[Dict]:
+        """
+        Identify providers that might have cheaper alternatives.
 
-            Returns:
-                List of optimization suggestions
-            """
-            suggestions = []
+        Returns:
+            List of optimization suggestions
+        """
+        suggestions = []
 
-            # Get provider costs
-            if feature:
-                # Filter by feature - would need additional API support
-                pass
-            else:
-                providers = self.analyzer.compare_providers(begin, end)
+        # Get provider costs
+        if feature:
+            # Filter by feature - would need additional API support
+            pass
+        else:
+            providers = self.analyzer.compare_providers(begin, end)
 
-            # Check for high-cost providers
-            total = sum(cost for _, cost, _ in providers)
+        # Check for high-cost providers
+        total = sum(cost for _, cost, _ in providers)
 
-            for provider, cost, pct in providers:
-                if pct > 50:  # Provider represents >50% of costs
-                    suggestions.append({
-                        'type': 'high_cost_provider',
-                        'provider': provider,
-                        'cost': cost,
-                        'percentage': pct,
-                        'suggestion': f"Provider '{provider}' accounts for {pct:.1f}% of costs. "
-                                      f"Consider comparing with alternative providers."
-                    })
+        for provider, cost, pct in providers:
+            if pct > 50:  # Provider represents >50% of costs
+                suggestions.append({
+                    'type': 'high_cost_provider',
+                    'provider': provider,
+                    'cost': cost,
+                    'percentage': pct,
+                    'suggestion': f"Provider '{provider}' accounts for {pct:.1f}% of costs. "
+                                  f"Consider comparing with alternative providers."
+                })
 
+        return suggestions
+
+    def find_inefficient_features(
+        self,
+        begin: str,
+        end: str
+    ) -> List[Dict]:
+        """
+        Find features with unusually high cost-per-call.
+
+        Returns:
+            List of features that might be inefficient
+        """
+        suggestions = []
+
+        cost_per_call = self.analyzer.calculate_cost_per_call(begin, end)
+        features = self.analyzer.monitor.get_feature_breakdown(begin, end)
+
+        # Calculate average cost per call across all features
+        all_costs = list(cost_per_call.values())
+        if not all_costs:
             return suggestions
 
-        def find_inefficient_features(
-            self,
-            begin: str,
-            end: str
-        ) -> List[Dict]:
-            """
-            Find features with unusually high cost-per-call.
+        avg_cost = sum(all_costs) / len(all_costs)
 
-            Returns:
-                List of features that might be inefficient
-            """
-            suggestions = []
+        # Find features significantly above average
+        for feature, cpc in cost_per_call.items():
+            if cpc > avg_cost * 3:  # 3x average
+                suggestions.append({
+                    'type': 'high_cost_per_call',
+                    'feature': feature,
+                    'cost_per_call': cpc,
+                    'total_calls': features[feature]['total_calls'],
+                    'total_cost': features[feature]['total_cost'],
+                    'suggestion': f"Feature '{feature}' has high cost-per-call "
+                                  f"(${cpc:.4f}, 3x average). Review usage patterns."
+                })
 
-            cost_per_call = self.analyzer.calculate_cost_per_call(begin, end)
-            features = self.analyzer.monitor.get_feature_breakdown(begin, end)
+        return suggestions
 
-            # Calculate average cost per call across all features
-            all_costs = list(cost_per_call.values())
-            if not all_costs:
-                return suggestions
+    def suggest_optimizations(self, begin: str, end: str):
+        """Print all optimization suggestions"""
+        print("=" * 60)
+        print("Cost Optimization Suggestions")
+        print("=" * 60)
+        print()
 
-            avg_cost = sum(all_costs) / len(all_costs)
+        provider_suggestions = self.find_expensive_providers(begin, end)
+        feature_suggestions = self.find_inefficient_features(begin, end)
 
-            # Find features significantly above average
-            for feature, cpc in cost_per_call.items():
-                if cpc > avg_cost * 3:  # 3x average
-                    suggestions.append({
-                        'type': 'high_cost_per_call',
-                        'feature': feature,
-                        'cost_per_call': cpc,
-                        'total_calls': features[feature]['total_calls'],
-                        'total_cost': features[feature]['total_cost'],
-                        'suggestion': f"Feature '{feature}' has high cost-per-call "
-                                      f"(${cpc:.4f}, 3x average). Review usage patterns."
-                    })
+        if not provider_suggestions and not feature_suggestions:
+            print("✓ No obvious optimization opportunities found.")
+            print("  Your usage appears efficient!")
+            return
 
-            return suggestions
-
-        def suggest_optimizations(self, begin: str, end: str):
-            """Print all optimization suggestions"""
-            print("=" * 60)
-            print("Cost Optimization Suggestions")
-            print("=" * 60)
+        if provider_suggestions:
+            print("Provider Optimization Opportunities:")
+            print("-" * 60)
+            for i, sugg in enumerate(provider_suggestions, 1):
+                print(f"{i}. {sugg['suggestion']}")
+                print(f"   Current Cost: ${sugg['cost']:.2f} ({sugg['percentage']:.1f}%)")
             print()
 
-            provider_suggestions = self.find_expensive_providers(begin, end)
-            feature_suggestions = self.find_inefficient_features(begin, end)
+        if feature_suggestions:
+            print("Feature Optimization Opportunities:")
+            print("-" * 60)
+            for i, sugg in enumerate(feature_suggestions, 1):
+                print(f"{i}. {sugg['suggestion']}")
+                print(f"   Cost: ${sugg['total_cost']:.2f} ({sugg['total_calls']:,} calls)")
+            print()
 
-            if not provider_suggestions and not feature_suggestions:
-                print("✓ No obvious optimization opportunities found.")
-                print("  Your usage appears efficient!")
-                return
-
-            if provider_suggestions:
-                print("Provider Optimization Opportunities:")
-                print("-" * 60)
-                for i, sugg in enumerate(provider_suggestions, 1):
-                    print(f"{i}. {sugg['suggestion']}")
-                    print(f"   Current Cost: ${sugg['cost']:.2f} ({sugg['percentage']:.1f}%)")
-                print()
-
-            if feature_suggestions:
-                print("Feature Optimization Opportunities:")
-                print("-" * 60)
-                for i, sugg in enumerate(feature_suggestions, 1):
-                    print(f"{i}. {sugg['suggestion']}")
-                    print(f"   Cost: ${sugg['total_cost']:.2f} ({sugg['total_calls']:,} calls)")
-                print()
-
-            print("=" * 60)
+        print("=" * 60)
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ## Step 7: Put It All Together
 
 Create a main script that ties everything together:
 
-<CodeBlocks>
-  <CodeBlock title="main.py">
-    ```python
-    #!/usr/bin/env python3
-    """
-    Eden AI Cost Monitoring and Optimization System
-    """
+<CodeGroup>
+```python main.py
+#!/usr/bin/env python3
+"""
+Eden AI Cost Monitoring and Optimization System
+"""
 
-    import os
-    from datetime import datetime, timedelta
-    from cost_monitor import EdenAICostMonitor
-    from cost_analyzer import CostAnalyzer
-    from cost_optimizer import CostOptimizer
-    from budget_alerts import BudgetAlertSystem
-    from cache_manager import CostCache
+import os
+from datetime import datetime, timedelta
+from cost_monitor import EdenAICostMonitor
+from cost_analyzer import CostAnalyzer
+from cost_optimizer import CostOptimizer
+from budget_alerts import BudgetAlertSystem
+from cache_manager import CostCache
 
-    def main():
-        # Configuration
-        API_KEY = os.getenv("EDENAI_API_KEY")
-        MONTHLY_BUDGET = 500.0  # Your monthly budget
+def main():
+    # Configuration
+    API_KEY = os.getenv("EDENAI_API_KEY")
+    MONTHLY_BUDGET = 500.0  # Your monthly budget
 
-        if not API_KEY:
-            print("Error: EDENAI_API_KEY environment variable not set")
-            return
+    if not API_KEY:
+        print("Error: EDENAI_API_KEY environment variable not set")
+        return
 
-        # Initialize components
-        monitor = EdenAICostMonitor(API_KEY)
-        analyzer = CostAnalyzer(monitor)
-        optimizer = CostOptimizer(analyzer)
-        cache = CostCache()
+    # Initialize components
+    monitor = EdenAICostMonitor(API_KEY)
+    analyzer = CostAnalyzer(monitor)
+    optimizer = CostOptimizer(analyzer)
+    cache = CostCache()
 
-        # Set up budget alerts
-        budget_system = BudgetAlertSystem(
-            monitor=monitor,
-            monthly_budget=MONTHLY_BUDGET,
-            alert_thresholds=[0.5, 0.75, 0.9]
-        )
+    # Set up budget alerts
+    budget_system = BudgetAlertSystem(
+        monitor=monitor,
+        monthly_budget=MONTHLY_BUDGET,
+        alert_thresholds=[0.5, 0.75, 0.9]
+    )
 
-        # Date ranges
-        today = datetime.now()
-        month_start = today.replace(day=1).strftime("%Y-%m-%d")
-        current_date = today.strftime("%Y-%m-%d")
+    # Date ranges
+    today = datetime.now()
+    month_start = today.replace(day=1).strftime("%Y-%m-%d")
+    current_date = today.strftime("%Y-%m-%d")
 
-        print("\n🔍 Eden AI Cost Monitoring System\n")
+    print("\n🔍 Eden AI Cost Monitoring System\n")
 
-        # 1. Check and display budget status
-        print("📊 Budget Status")
-        budget_system.print_budget_status()
-        print()
+    # 1. Check and display budget status
+    print("📊 Budget Status")
+    budget_system.print_budget_status()
+    print()
 
-        # 2. Check for budget alerts
-        budget_system.check_and_alert()
-        print()
+    # 2. Check for budget alerts
+    budget_system.check_and_alert()
+    print()
 
-        # 3. Display cost report
-        print("📈 Cost Report")
-        analyzer.print_cost_report(month_start, current_date)
-        print()
+    # 3. Display cost report
+    print("📈 Cost Report")
+    analyzer.print_cost_report(month_start, current_date)
+    print()
 
-        # 4. Show optimization suggestions
-        print("💡 Optimization Suggestions")
-        optimizer.suggest_optimizations(month_start, current_date)
-        print()
+    # 4. Show optimization suggestions
+    print("💡 Optimization Suggestions")
+    optimizer.suggest_optimizations(month_start, current_date)
+    print()
 
-        # 5. Show current credits
-        credits = monitor.get_credits()
-        print(f"💳 Current Account Balance: ${credits:.2f}")
-        print()
+    # 5. Show current credits
+    credits = monitor.get_credits()
+    print(f"💳 Current Account Balance: ${credits:.2f}")
+    print()
 
-        # Clean up
-        cache.close()
+    # Clean up
+    cache.close()
 
-    if __name__ == "__main__":
-        main()
+if __name__ == "__main__":
+    main()
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ## Testing
 
 Test your cost monitoring system:
 
-<CodeBlocks>
-  <CodeBlock title="test_system.py">
-    ```python
-    import os
-    from datetime import datetime, timedelta
-    from cost_monitor import EdenAICostMonitor
+<CodeGroup>
+```python test_system.py
+import os
+from datetime import datetime, timedelta
+from cost_monitor import EdenAICostMonitor
 
-    def test_cost_monitor():
-        """Test basic cost monitoring functionality"""
-        API_KEY = os.getenv("EDENAI_API_KEY")
-        monitor = EdenAICostMonitor(API_KEY)
+def test_cost_monitor():
+    """Test basic cost monitoring functionality"""
+    API_KEY = os.getenv("EDENAI_API_KEY")
+    monitor = EdenAICostMonitor(API_KEY)
 
-        # Test 1: Get credits
-        print("Test 1: Get current credits")
-        credits = monitor.get_credits()
-        print(f"✓ Credits: ${credits:.2f}\n")
+    # Test 1: Get credits
+    print("Test 1: Get current credits")
+    credits = monitor.get_credits()
+    print(f"✓ Credits: ${credits:.2f}\n")
 
-        # Test 2: Get usage data
-        print("Test 2: Get last 7 days usage")
-        end = datetime.now()
-        begin = end - timedelta(days=7)
+    # Test 2: Get usage data
+    print("Test 2: Get last 7 days usage")
+    end = datetime.now()
+    begin = end - timedelta(days=7)
 
-        data = monitor.get_usage(
-            begin.strftime("%Y-%m-%d"),
-            end.strftime("%Y-%m-%d"),
-            step=1
-        )
-        print(f"✓ Retrieved data for {len(data['response'])} token(s)\n")
+    data = monitor.get_usage(
+        begin.strftime("%Y-%m-%d"),
+        end.strftime("%Y-%m-%d"),
+        step=1
+    )
+    print(f"✓ Retrieved data for {len(data['response'])} token(s)\n")
 
-        # Test 3: Get provider breakdown
-        print("Test 3: Provider breakdown")
-        providers = monitor.get_provider_breakdown(
-            begin.strftime("%Y-%m-%d"),
-            end.strftime("%Y-%m-%d")
-        )
-        for provider, cost in providers.items():
-            print(f"  {provider}: ${cost:.2f}")
-        print()
+    # Test 3: Get provider breakdown
+    print("Test 3: Provider breakdown")
+    providers = monitor.get_provider_breakdown(
+        begin.strftime("%Y-%m-%d"),
+        end.strftime("%Y-%m-%d")
+    )
+    for provider, cost in providers.items():
+        print(f"  {provider}: ${cost:.2f}")
+    print()
 
-        print("✅ All tests passed!")
+    print("✅ All tests passed!")
 
-    if __name__ == "__main__":
-        test_cost_monitor()
+if __name__ == "__main__":
+    test_cost_monitor()
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 Run the test:
 

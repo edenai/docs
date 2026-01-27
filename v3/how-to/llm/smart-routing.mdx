@@ -24,289 +24,279 @@ This guide provides LLM-specific patterns and examples for smart routing. For co
 
 Let the system choose from all available models:
 
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    import requests
+<CodeGroup>
+```python Python
+import requests
 
-    def chat_with_smart_routing(message: str) -> str:
-        """Simple chat with automatic model selection."""
-        url = "https://api.edenai.run/v3/llm/chat/completions"
-        headers = {
-            "Authorization": f"Bearer {API_KEY}",
-            "Content-Type": "application/json"
-        }
-
-        payload = {
-            "model": "@edenai",  # Automatic routing
-            "messages": [{"role": "user", "content": message}],
-            "stream": True
-        }
-
-        response = requests.post(url, headers=headers, json=payload, stream=True)
-
-        full_response = ""
-        for line in response.iter_lines():
-            if line:
-                line_str = line.decode('utf-8')
-                if line_str.startswith('data: ') and line_str != 'data: [DONE]':
-                    # Parse SSE chunk
-                    import json
-                    data = json.loads(line_str[6:])
-                    content = data.get('choices', [{}])[0].get('delta', {}).get('content', '')
-                    full_response += content
-
-        return full_response
-
-    # Usage
-    response = chat_with_smart_routing("Explain machine learning")
-    print(response)
-    ```
-  </CodeBlock>
-
-  <CodeBlock title="JavaScript">
-    ```javascript
-    async function chatWithSmartRouting(message) {
-      const url = 'https://api.edenai.run/v3/llm/chat/completions';
-      const headers = {
-        'Authorization': `Bearer ${API_KEY}`,
-        'Content-Type': 'application/json'
-      };
-
-      const payload = {
-        model: '@edenai',
-        messages: [{role: 'user', content: message}],
-        stream: true
-      };
-
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: headers,
-        body: JSON.stringify(payload)
-      });
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let fullResponse = '';
-
-      while (true) {
-        const {done, value} = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value);
-        const lines = chunk.split('\n');
-
-        for (const line of lines) {
-          if (line.startsWith('data: ') && line !== 'data: [DONE]') {
-            const data = JSON.parse(line.slice(6));
-            const content = data.choices?.[0]?.delta?.content || '';
-            fullResponse += content;
-          }
-        }
-      }
-
-      return fullResponse;
+def chat_with_smart_routing(message: str) -> str:
+    """Simple chat with automatic model selection."""
+    url = "https://api.edenai.run/v3/llm/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {API_KEY}",
+        "Content-Type": "application/json"
     }
 
-    // Usage
-    const response = await chatWithSmartRouting('Explain machine learning');
-    console.log(response);
+    payload = {
+        "model": "@edenai",  # Automatic routing
+        "messages": [{"role": "user", "content": message}],
+        "stream": True
+    }
+
+    response = requests.post(url, headers=headers, json=payload, stream=True)
+
+    full_response = ""
+    for line in response.iter_lines():
+        if line:
+            line_str = line.decode('utf-8')
+            if line_str.startswith('data: ') and line_str != 'data: [DONE]':
+                # Parse SSE chunk
+                import json
+                data = json.loads(line_str[6:])
+                content = data.get('choices', [{}])[0].get('delta', {}).get('content', '')
+                full_response += content
+
+    return full_response
+
+# Usage
+response = chat_with_smart_routing("Explain machine learning")
+print(response)
     ```
-  </CodeBlock>
-</CodeBlocks>
+
+```javascript JavaScript
+async function chatWithSmartRouting(message) {
+  const url = 'https://api.edenai.run/v3/llm/chat/completions';
+  const headers = {
+    'Authorization': `Bearer ${API_KEY}`,
+    'Content-Type': 'application/json'
+  };
+
+  const payload = {
+    model: '@edenai',
+    messages: [{role: 'user', content: message}],
+    stream: true
+  };
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: headers,
+    body: JSON.stringify(payload)
+  });
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let fullResponse = '';
+
+  while (true) {
+    const {done, value} = await reader.read();
+    if (done) break;
+
+    const chunk = decoder.decode(value);
+    const lines = chunk.split('\n');
+
+    for (const line of lines) {
+      if (line.startsWith('data: ') && line !== 'data: [DONE]') {
+        const data = JSON.parse(line.slice(6));
+        const content = data.choices?.[0]?.delta?.content || '';
+        fullResponse += content;
+      }
+    }
+  }
+
+  return fullResponse;
+}
+
+// Usage
+const response = await chatWithSmartRouting('Explain machine learning');
+console.log(response);
+    ```
+</CodeGroup>
 
 ### Pattern 2: Custom Candidate Pool
 
 Define specific models for your use case:
 
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    import requests
+<CodeGroup>
+```python Python
+import requests
 
-    def chat_with_custom_candidates(
-        message: str,
-        use_case: str = "general"
-    ) -> str:
-        """Chat with use-case-specific model candidates."""
+def chat_with_custom_candidates(
+    message: str,
+    use_case: str = "general"
+) -> str:
+    """Chat with use-case-specific model candidates."""
 
-        # Define candidate pools for different use cases
-        CANDIDATE_POOLS = {
-            "code": [
-                "openai/gpt-4o",
-                "anthropic/claude-sonnet-4-5",
-            ],
-            "creative": [
-                "anthropic/claude-opus-4-5",
-                "openai/gpt-4o",
-                "google/gemini-2.5-pro",
-            ],
-            "fast": [
-                "openai/gpt-4o-mini",
-                "google/gemini-2.0-flash",
-                "anthropic/claude-haiku-4-5",
-            ],
-            "general": [
-                "openai/gpt-4o",
-                "anthropic/claude-sonnet-4-5",
-                "google/gemini-2.0-flash",
-            ]
-        }
+    # Define candidate pools for different use cases
+    CANDIDATE_POOLS = {
+        "code": [
+            "openai/gpt-4o",
+            "anthropic/claude-sonnet-4-5",
+        ],
+        "creative": [
+            "anthropic/claude-opus-4-5",
+            "openai/gpt-4o",
+            "google/gemini-2.5-pro",
+        ],
+        "fast": [
+            "openai/gpt-4o-mini",
+            "google/gemini-2.0-flash",
+            "anthropic/claude-haiku-4-5",
+        ],
+        "general": [
+            "openai/gpt-4o",
+            "anthropic/claude-sonnet-4-5",
+            "google/gemini-2.0-flash",
+        ]
+    }
 
-        url = "https://api.edenai.run/v3/llm/chat/completions"
-        headers = {
-            "Authorization": f"Bearer {API_KEY}",
-            "Content-Type": "application/json"
-        }
+    url = "https://api.edenai.run/v3/llm/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {API_KEY}",
+        "Content-Type": "application/json"
+    }
 
-        payload = {
-            "model": "@edenai",
-            "router_candidates": CANDIDATE_POOLS.get(use_case, CANDIDATE_POOLS["general"]),
-            "messages": [{"role": "user", "content": message}],
-            "stream": True
-        }
+    payload = {
+        "model": "@edenai",
+        "router_candidates": CANDIDATE_POOLS.get(use_case, CANDIDATE_POOLS["general"]),
+        "messages": [{"role": "user", "content": message}],
+        "stream": True
+    }
 
-        response = requests.post(url, headers=headers, json=payload, stream=True)
+    response = requests.post(url, headers=headers, json=payload, stream=True)
 
-        # Stream processing...
-        full_response = ""
-        for line in response.iter_lines():
-            if line:
-                line_str = line.decode('utf-8')
-                if line_str.startswith('data: ') and line_str != 'data: [DONE]':
-                    import json
-                    data = json.loads(line_str[6:])
-                    content = data.get('choices', [{}])[0].get('delta', {}).get('content', '')
-                    full_response += content
+    # Stream processing...
+    full_response = ""
+    for line in response.iter_lines():
+        if line:
+            line_str = line.decode('utf-8')
+            if line_str.startswith('data: ') and line_str != 'data: [DONE]':
+                import json
+                data = json.loads(line_str[6:])
+                content = data.get('choices', [{}])[0].get('delta', {}).get('content', '')
+                full_response += content
 
-        return full_response
+    return full_response
 
-    # Usage examples
-    code_response = chat_with_custom_candidates(
-        "Write a Python function to merge two sorted lists",
-        use_case="code"
-    )
+# Usage examples
+code_response = chat_with_custom_candidates(
+    "Write a Python function to merge two sorted lists",
+    use_case="code"
+)
 
-    creative_response = chat_with_custom_candidates(
-        "Write a short story about a robot",
-        use_case="creative"
-    )
+creative_response = chat_with_custom_candidates(
+    "Write a short story about a robot",
+    use_case="creative"
+)
 
-    fast_response = chat_with_custom_candidates(
-        "What's the capital of France?",
-        use_case="fast"
-    )
+fast_response = chat_with_custom_candidates(
+    "What's the capital of France?",
+    use_case="fast"
+)
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ### Pattern 3: OpenAI SDK Integration
 
 Use smart routing with the official OpenAI SDK:
 
-<CodeBlocks>
-  <CodeBlock title="Python (OpenAI SDK)">
-    ```python
-    from openai import OpenAI
+<CodeGroup>
+```python Python (OpenAI SDK)
+from openai import OpenAI
 
-    client = OpenAI(
-        api_key="YOUR_API_KEY",
-        base_url="https://api.edenai.run/v3/llm"
+client = OpenAI(
+    api_key="YOUR_API_KEY",
+    base_url="https://api.edenai.run/v3/llm"
+)
+
+def chat_with_openai_sdk(message: str, candidates: list[str] = None):
+    """Use smart routing with OpenAI SDK."""
+
+    extra_params = {}
+    if candidates:
+        extra_params["router_candidates"] = candidates
+
+    stream = client.chat.completions.create(
+        model="@edenai",
+        messages=[
+            {"role": "user", "content": message}
+        ],
+        stream=True,
+        extra_body=extra_params  # Pass router_candidates here
     )
 
-    def chat_with_openai_sdk(message: str, candidates: list[str] = None):
-        """Use smart routing with OpenAI SDK."""
+    full_response = ""
+    selected_model = None
 
-        extra_params = {}
-        if candidates:
-            extra_params["router_candidates"] = candidates
+    for chunk in stream:
+        # Track which model was selected
+        if not selected_model and hasattr(chunk, 'model'):
+            selected_model = chunk.model
+            print(f"Router selected: {selected_model}")
 
-        stream = client.chat.completions.create(
-            model="@edenai",
-            messages=[
-                {"role": "user", "content": message}
-            ],
-            stream=True,
-            extra_body=extra_params  # Pass router_candidates here
-        )
+        if chunk.choices[0].delta.content:
+            content = chunk.choices[0].delta.content
+            full_response += content
+            print(content, end="", flush=True)
 
-        full_response = ""
-        selected_model = None
+    print()  # New line
+    return full_response, selected_model
 
-        for chunk in stream:
-            # Track which model was selected
-            if not selected_model and hasattr(chunk, 'model'):
-                selected_model = chunk.model
-                print(f"Router selected: {selected_model}")
-
-            if chunk.choices[0].delta.content:
-                content = chunk.choices[0].delta.content
-                full_response += content
-                print(content, end="", flush=True)
-
-        print()  # New line
-        return full_response, selected_model
-
-    # Usage
-    response, model = chat_with_openai_sdk(
-        "Explain neural networks",
-        candidates=["openai/gpt-4o", "anthropic/claude-sonnet-4-5"]
-    )
-    print(f"\nModel used: {model}")
+# Usage
+response, model = chat_with_openai_sdk(
+    "Explain neural networks",
+    candidates=["openai/gpt-4o", "anthropic/claude-sonnet-4-5"]
+)
+print(f"\nModel used: {model}")
     ```
-  </CodeBlock>
 
-  <CodeBlock title="TypeScript (OpenAI SDK)">
-    ```typescript
-    import OpenAI from 'openai';
+```typescript TypeScript (OpenAI SDK)
+import OpenAI from 'openai';
 
-    const client = new OpenAI({
-      apiKey: process.env.EDEN_AI_API_KEY,
-      baseURL: 'https://api.edenai.run/v3/llm'
-    });
+const client = new OpenAI({
+  apiKey: process.env.EDEN_AI_API_KEY,
+  baseURL: 'https://api.edenai.run/v3/llm'
+});
 
-    async function chatWithOpenAISDK(
-      message: string,
-      candidates?: string[]
-    ): Promise<{response: string, model: string}> {
+async function chatWithOpenAISDK(
+  message: string,
+  candidates?: string[]
+): Promise<{response: string, model: string}> {
 
-      const extraBody = candidates ? { router_candidates: candidates } : {};
+  const extraBody = candidates ? { router_candidates: candidates } : {};
 
-      const stream = await client.chat.completions.create({
-        model: '@edenai',
-        messages: [{role: 'user', content: message}],
-        stream: true,
-        // @ts-ignore - extra_body not in types
-        extra_body: extraBody
-      });
+  const stream = await client.chat.completions.create({
+    model: '@edenai',
+    messages: [{role: 'user', content: message}],
+    stream: true,
+    // @ts-ignore - extra_body not in types
+    extra_body: extraBody
+  });
 
-      let fullResponse = '';
-      let selectedModel = '';
+  let fullResponse = '';
+  let selectedModel = '';
 
-      for await (const chunk of stream) {
-        if (!selectedModel && chunk.model) {
-          selectedModel = chunk.model;
-          console.log(`Router selected: ${selectedModel}`);
-        }
-
-        const content = chunk.choices[0]?.delta?.content || '';
-        fullResponse += content;
-        process.stdout.write(content);
-      }
-
-      console.log();
-      return {response: fullResponse, model: selectedModel};
+  for await (const chunk of stream) {
+    if (!selectedModel && chunk.model) {
+      selectedModel = chunk.model;
+      console.log(`Router selected: ${selectedModel}`);
     }
 
-    // Usage
-    const {response, model} = await chatWithOpenAISDK(
-      'Explain neural networks',
-      ['openai/gpt-4o', 'anthropic/claude-sonnet-4-5']
-    );
-    console.log(`\nModel used: ${model}`);
+    const content = chunk.choices[0]?.delta?.content || '';
+    fullResponse += content;
+    process.stdout.write(content);
+  }
+
+  console.log();
+  return {response: fullResponse, model: selectedModel};
+}
+
+// Usage
+const {response, model} = await chatWithOpenAISDK(
+  'Explain neural networks',
+  ['openai/gpt-4o', 'anthropic/claude-sonnet-4-5']
+);
+console.log(`\nModel used: ${model}`);
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ## Advanced Patterns
 
@@ -314,281 +304,275 @@ Use smart routing with the official OpenAI SDK:
 
 Combine smart routing with function/tool calling:
 
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    import requests
-    import json
+<CodeGroup>
+```python Python
+import requests
+import json
 
-    def chat_with_tools(message: str, tools: list):
-        """Smart routing with function calling."""
+def chat_with_tools(message: str, tools: list):
+    """Smart routing with function calling."""
+
+    url = "https://api.edenai.run/v3/llm/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {API_KEY}",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "model": "@edenai",
+        # Choose models good at function calling
+        "router_candidates": [
+            "openai/gpt-4o",
+            "anthropic/claude-sonnet-4-5",
+            "google/gemini-2.0-flash"
+        ],
+        "messages": [{"role": "user", "content": message}],
+        "tools": tools,  # Router considers tool compatibility
+        "stream": True
+    }
+
+    response = requests.post(url, headers=headers, json=payload, stream=True)
+
+    tool_calls = []
+    full_response = ""
+
+    for line in response.iter_lines():
+        if line:
+            line_str = line.decode('utf-8')
+            if line_str.startswith('data: ') and line_str != 'data: [DONE]':
+                data = json.loads(line_str[6:])
+                delta = data.get('choices', [{}])[0].get('delta', {})
+
+                # Collect tool calls
+                if 'tool_calls' in delta:
+                    tool_calls.extend(delta['tool_calls'])
+
+                # Collect text content
+                if 'content' in delta and delta['content']:
+                    full_response += delta['content']
+
+    return {
+        "response": full_response,
+        "tool_calls": tool_calls
+    }
+
+# Define tools
+tools = [
+    {
+        "type": "function",
+        "function": {
+            "name": "get_weather",
+            "description": "Get current weather for a location",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "location": {
+                        "type": "string",
+                        "description": "City name"
+                    }
+                },
+                "required": ["location"]
+            }
+        }
+    }
+]
+
+# Usage
+result = chat_with_tools(
+    "What's the weather like in Paris?",
+    tools=tools
+)
+print(f"Response: {result['response']}")
+print(f"Tool calls: {result['tool_calls']}")
+    ```
+</CodeGroup>
+
+### Pattern 5: Cost-Optimized Routing with Budget Constraints
+
+Optimize costs by limiting to budget-friendly models:
+
+<CodeGroup>
+```python Python
+import requests
+
+class CostOptimizedRouter:
+    """Smart routing with cost optimization."""
+
+    # Model tiers by cost
+    BUDGET_MODELS = [
+        "openai/gpt-4o-mini",
+        "google/gemini-2.0-flash",
+        "anthropic/claude-haiku-4-5",
+    ]
+
+    BALANCED_MODELS = [
+        "openai/gpt-4o",
+        "anthropic/claude-sonnet-4-5",
+        "google/gemini-2.0-flash",
+    ]
+
+    PREMIUM_MODELS = [
+        "anthropic/claude-opus-4-5",
+        "openai/gpt-4o",
+        "google/gemini-2.5-pro",
+    ]
+
+    def __init__(self, api_key: str, cost_tier: str = "balanced"):
+        self.api_key = api_key
+        self.cost_tier = cost_tier
+
+    def get_candidates(self) -> list[str]:
+        """Get candidates based on cost tier."""
+        if self.cost_tier == "budget":
+            return self.BUDGET_MODELS
+        elif self.cost_tier == "premium":
+            return self.PREMIUM_MODELS
+        else:
+            return self.BALANCED_MODELS
+
+    def chat(self, message: str) -> tuple[str, float]:
+        """Chat and return response with estimated cost."""
 
         url = "https://api.edenai.run/v3/llm/chat/completions"
         headers = {
-            "Authorization": f"Bearer {API_KEY}",
+            "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json"
         }
 
         payload = {
             "model": "@edenai",
-            # Choose models good at function calling
-            "router_candidates": [
-                "openai/gpt-4o",
-                "anthropic/claude-sonnet-4-5",
-                "google/gemini-2.0-flash"
-            ],
+            "router_candidates": self.get_candidates(),
             "messages": [{"role": "user", "content": message}],
-            "tools": tools,  # Router considers tool compatibility
             "stream": True
         }
 
         response = requests.post(url, headers=headers, json=payload, stream=True)
 
-        tool_calls = []
         full_response = ""
+        selected_model = None
+
+        for line in response.iter_lines():
+            if line:
+                line_str = line.decode('utf-8')
+                if line_str.startswith('data: ') and line_str != 'data: [DONE]':
+                    import json
+                    data = json.loads(line_str[6:])
+
+                    # Track selected model
+                    if not selected_model and 'model' in data:
+                        selected_model = data['model']
+                        print(f"Router selected: {selected_model} ({self.cost_tier} tier)")
+
+                    content = data.get('choices', [{}])[0].get('delta', {}).get('content', '')
+                    full_response += content
+
+        # You could track actual cost from response metadata
+        estimated_cost = 0.001  # Placeholder
+
+        return full_response, estimated_cost
+
+# Usage examples
+budget_router = CostOptimizedRouter(API_KEY, cost_tier="budget")
+response, cost = budget_router.chat("Summarize this article")
+print(f"Cost: ${cost:.4f}")
+
+premium_router = CostOptimizedRouter(API_KEY, cost_tier="premium")
+response, cost = premium_router.chat("Write a comprehensive analysis")
+print(f"Cost: ${cost:.4f}")
+    ```
+</CodeGroup>
+
+### Pattern 6: Multi-Turn Conversations with Context
+
+Maintain conversation context with smart routing:
+
+<CodeGroup>
+```python Python
+import requests
+import json
+
+class SmartRoutingChatSession:
+    """Maintain conversation with smart routing."""
+
+    def __init__(self, api_key: str, candidates: list[str] = None):
+        self.api_key = api_key
+        self.candidates = candidates
+        self.messages = []
+        self.selected_models = []  # Track model selection per turn
+
+    def send_message(self, content: str) -> str:
+        """Send a message and get response."""
+
+        # Add user message to history
+        self.messages.append({"role": "user", "content": content})
+
+        url = "https://api.edenai.run/v3/llm/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+
+        payload = {
+            "model": "@edenai",
+            "messages": self.messages,  # Include full conversation
+            "stream": True
+        }
+
+        if self.candidates:
+            payload["router_candidates"] = self.candidates
+
+        response = requests.post(url, headers=headers, json=payload, stream=True)
+
+        assistant_response = ""
+        selected_model = None
 
         for line in response.iter_lines():
             if line:
                 line_str = line.decode('utf-8')
                 if line_str.startswith('data: ') and line_str != 'data: [DONE]':
                     data = json.loads(line_str[6:])
-                    delta = data.get('choices', [{}])[0].get('delta', {})
 
-                    # Collect tool calls
-                    if 'tool_calls' in delta:
-                        tool_calls.extend(delta['tool_calls'])
+                    if not selected_model and 'model' in data:
+                        selected_model = data['model']
 
-                    # Collect text content
-                    if 'content' in delta and delta['content']:
-                        full_response += delta['content']
+                    content = data.get('choices', [{}])[0].get('delta', {}).get('content', '')
+                    assistant_response += content
 
+        # Add assistant response to history
+        self.messages.append({"role": "assistant", "content": assistant_response})
+        self.selected_models.append(selected_model)
+
+        return assistant_response
+
+    def get_conversation_summary(self) -> dict:
+        """Get conversation statistics."""
         return {
-            "response": full_response,
-            "tool_calls": tool_calls
+            "turns": len(self.messages) // 2,
+            "models_used": self.selected_models,
+            "total_messages": len(self.messages)
         }
 
-    # Define tools
-    tools = [
-        {
-            "type": "function",
-            "function": {
-                "name": "get_weather",
-                "description": "Get current weather for a location",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "location": {
-                            "type": "string",
-                            "description": "City name"
-                        }
-                    },
-                    "required": ["location"]
-                }
-            }
-        }
-    ]
+# Usage
+session = SmartRoutingChatSession(
+    API_KEY,
+    candidates=["openai/gpt-4o", "anthropic/claude-sonnet-4-5"]
+)
 
-    # Usage
-    result = chat_with_tools(
-        "What's the weather like in Paris?",
-        tools=tools
-    )
-    print(f"Response: {result['response']}")
-    print(f"Tool calls: {result['tool_calls']}")
+# Multi-turn conversation
+response1 = session.send_message("What is Python?")
+print(f"Assistant: {response1}\n")
+
+response2 = session.send_message("Can you give me a code example?")
+print(f"Assistant: {response2}\n")
+
+response3 = session.send_message("Explain that example in detail")
+print(f"Assistant: {response3}\n")
+
+# Summary
+summary = session.get_conversation_summary()
+print(f"\nConversation summary: {summary}")
     ```
-  </CodeBlock>
-</CodeBlocks>
-
-### Pattern 5: Cost-Optimized Routing with Budget Constraints
-
-Optimize costs by limiting to budget-friendly models:
-
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    import requests
-
-    class CostOptimizedRouter:
-        """Smart routing with cost optimization."""
-
-        # Model tiers by cost
-        BUDGET_MODELS = [
-            "openai/gpt-4o-mini",
-            "google/gemini-2.0-flash",
-            "anthropic/claude-haiku-4-5",
-        ]
-
-        BALANCED_MODELS = [
-            "openai/gpt-4o",
-            "anthropic/claude-sonnet-4-5",
-            "google/gemini-2.0-flash",
-        ]
-
-        PREMIUM_MODELS = [
-            "anthropic/claude-opus-4-5",
-            "openai/gpt-4o",
-            "google/gemini-2.5-pro",
-        ]
-
-        def __init__(self, api_key: str, cost_tier: str = "balanced"):
-            self.api_key = api_key
-            self.cost_tier = cost_tier
-
-        def get_candidates(self) -> list[str]:
-            """Get candidates based on cost tier."""
-            if self.cost_tier == "budget":
-                return self.BUDGET_MODELS
-            elif self.cost_tier == "premium":
-                return self.PREMIUM_MODELS
-            else:
-                return self.BALANCED_MODELS
-
-        def chat(self, message: str) -> tuple[str, float]:
-            """Chat and return response with estimated cost."""
-
-            url = "https://api.edenai.run/v3/llm/chat/completions"
-            headers = {
-                "Authorization": f"Bearer {self.api_key}",
-                "Content-Type": "application/json"
-            }
-
-            payload = {
-                "model": "@edenai",
-                "router_candidates": self.get_candidates(),
-                "messages": [{"role": "user", "content": message}],
-                "stream": True
-            }
-
-            response = requests.post(url, headers=headers, json=payload, stream=True)
-
-            full_response = ""
-            selected_model = None
-
-            for line in response.iter_lines():
-                if line:
-                    line_str = line.decode('utf-8')
-                    if line_str.startswith('data: ') and line_str != 'data: [DONE]':
-                        import json
-                        data = json.loads(line_str[6:])
-
-                        # Track selected model
-                        if not selected_model and 'model' in data:
-                            selected_model = data['model']
-                            print(f"Router selected: {selected_model} ({self.cost_tier} tier)")
-
-                        content = data.get('choices', [{}])[0].get('delta', {}).get('content', '')
-                        full_response += content
-
-            # You could track actual cost from response metadata
-            estimated_cost = 0.001  # Placeholder
-
-            return full_response, estimated_cost
-
-    # Usage examples
-    budget_router = CostOptimizedRouter(API_KEY, cost_tier="budget")
-    response, cost = budget_router.chat("Summarize this article")
-    print(f"Cost: ${cost:.4f}")
-
-    premium_router = CostOptimizedRouter(API_KEY, cost_tier="premium")
-    response, cost = premium_router.chat("Write a comprehensive analysis")
-    print(f"Cost: ${cost:.4f}")
-    ```
-  </CodeBlock>
-</CodeBlocks>
-
-### Pattern 6: Multi-Turn Conversations with Context
-
-Maintain conversation context with smart routing:
-
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    import requests
-    import json
-
-    class SmartRoutingChatSession:
-        """Maintain conversation with smart routing."""
-
-        def __init__(self, api_key: str, candidates: list[str] = None):
-            self.api_key = api_key
-            self.candidates = candidates
-            self.messages = []
-            self.selected_models = []  # Track model selection per turn
-
-        def send_message(self, content: str) -> str:
-            """Send a message and get response."""
-
-            # Add user message to history
-            self.messages.append({"role": "user", "content": content})
-
-            url = "https://api.edenai.run/v3/llm/chat/completions"
-            headers = {
-                "Authorization": f"Bearer {self.api_key}",
-                "Content-Type": "application/json"
-            }
-
-            payload = {
-                "model": "@edenai",
-                "messages": self.messages,  # Include full conversation
-                "stream": True
-            }
-
-            if self.candidates:
-                payload["router_candidates"] = self.candidates
-
-            response = requests.post(url, headers=headers, json=payload, stream=True)
-
-            assistant_response = ""
-            selected_model = None
-
-            for line in response.iter_lines():
-                if line:
-                    line_str = line.decode('utf-8')
-                    if line_str.startswith('data: ') and line_str != 'data: [DONE]':
-                        data = json.loads(line_str[6:])
-
-                        if not selected_model and 'model' in data:
-                            selected_model = data['model']
-
-                        content = data.get('choices', [{}])[0].get('delta', {}).get('content', '')
-                        assistant_response += content
-
-            # Add assistant response to history
-            self.messages.append({"role": "assistant", "content": assistant_response})
-            self.selected_models.append(selected_model)
-
-            return assistant_response
-
-        def get_conversation_summary(self) -> dict:
-            """Get conversation statistics."""
-            return {
-                "turns": len(self.messages) // 2,
-                "models_used": self.selected_models,
-                "total_messages": len(self.messages)
-            }
-
-    # Usage
-    session = SmartRoutingChatSession(
-        API_KEY,
-        candidates=["openai/gpt-4o", "anthropic/claude-sonnet-4-5"]
-    )
-
-    # Multi-turn conversation
-    response1 = session.send_message("What is Python?")
-    print(f"Assistant: {response1}\n")
-
-    response2 = session.send_message("Can you give me a code example?")
-    print(f"Assistant: {response2}\n")
-
-    response3 = session.send_message("Explain that example in detail")
-    print(f"Assistant: {response3}\n")
-
-    # Summary
-    summary = session.get_conversation_summary()
-    print(f"\nConversation summary: {summary}")
-    ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ## Monitoring and Debugging
 
@@ -596,167 +580,194 @@ Maintain conversation context with smart routing:
 
 Monitor which models are selected:
 
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    import requests
-    import json
-    from collections import defaultdict
-    from datetime import datetime
+<CodeGroup>
+```python Python
+import requests
+import json
+from collections import defaultdict
+from datetime import datetime
 
-    class RoutingMonitor:
-        """Track and analyze routing decisions."""
+class RoutingMonitor:
+    """Track and analyze routing decisions."""
 
-        def __init__(self, api_key: str):
-            self.api_key = api_key
-            self.routing_history = []
+    def __init__(self, api_key: str):
+        self.api_key = api_key
+        self.routing_history = []
 
-        def chat_with_tracking(
-            self,
-            message: str,
-            candidates: list[str] = None
-        ) -> dict:
-            """Chat and track routing decision."""
+    def chat_with_tracking(
+        self,
+        message: str,
+        candidates: list[str] = None
+    ) -> dict:
+        """Chat and track routing decision."""
 
-            start_time = datetime.now()
+        start_time = datetime.now()
 
-            url = "https://api.edenai.run/v3/llm/chat/completions"
-            headers = {
-                "Authorization": f"Bearer {self.api_key}",
-                "Content-Type": "application/json"
-            }
+        url = "https://api.edenai.run/v3/llm/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
 
-            payload = {
-                "model": "@edenai",
-                "messages": [{"role": "user", "content": message}],
-                "stream": True
-            }
+        payload = {
+            "model": "@edenai",
+            "messages": [{"role": "user", "content": message}],
+            "stream": True
+        }
 
-            if candidates:
-                payload["router_candidates"] = candidates
+        if candidates:
+            payload["router_candidates"] = candidates
 
-            response = requests.post(url, headers=headers, json=payload, stream=True)
+        response = requests.post(url, headers=headers, json=payload, stream=True)
 
-            full_response = ""
-            selected_model = None
-            first_chunk_time = None
+        full_response = ""
+        selected_model = None
+        first_chunk_time = None
 
-            for line in response.iter_lines():
-                if line:
-                    if not first_chunk_time:
-                        first_chunk_time = datetime.now()
+        for line in response.iter_lines():
+            if line:
+                if not first_chunk_time:
+                    first_chunk_time = datetime.now()
 
-                    line_str = line.decode('utf-8')
-                    if line_str.startswith('data: ') and line_str != 'data: [DONE]':
-                        data = json.loads(line_str[6:])
+                line_str = line.decode('utf-8')
+                if line_str.startswith('data: ') and line_str != 'data: [DONE]':
+                    data = json.loads(line_str[6:])
 
-                        if not selected_model and 'model' in data:
-                            selected_model = data['model']
+                    if not selected_model and 'model' in data:
+                        selected_model = data['model']
 
-                        content = data.get('choices', [{}])[0].get('delta', {}).get('content', '')
-                        full_response += content
+                    content = data.get('choices', [{}])[0].get('delta', {}).get('content', '')
+                    full_response += content
 
-            end_time = datetime.now()
+        end_time = datetime.now()
 
-            # Record routing decision
-            routing_info = {
-                "timestamp": start_time.isoformat(),
-                "message": message[:50],  # Truncate for logging
-                "selected_model": selected_model,
-                "candidates": candidates or "default",
-                "routing_latency_ms": (first_chunk_time - start_time).total_seconds() * 1000 if first_chunk_time else None,
-                "total_latency_ms": (end_time - start_time).total_seconds() * 1000,
-                "response_length": len(full_response)
-            }
+        # Record routing decision
+        routing_info = {
+            "timestamp": start_time.isoformat(),
+            "message": message[:50],  # Truncate for logging
+            "selected_model": selected_model,
+            "candidates": candidates or "default",
+            "routing_latency_ms": (first_chunk_time - start_time).total_seconds() * 1000 if first_chunk_time else None,
+            "total_latency_ms": (end_time - start_time).total_seconds() * 1000,
+            "response_length": len(full_response)
+        }
 
-            self.routing_history.append(routing_info)
+        self.routing_history.append(routing_info)
 
-            return {
-                "response": full_response,
-                "routing_info": routing_info
-            }
+        return {
+            "response": full_response,
+            "routing_info": routing_info
+        }
 
-        def get_statistics(self) -> dict:
-            """Get routing statistics."""
-            if not self.routing_history:
-                return {"error": "No routing history"}
+    def get_statistics(self) -> dict:
+        """Get routing statistics."""
+        if not self.routing_history:
+            return {"error": "No routing history"}
 
-            model_counts = defaultdict(int)
-            total_routing_latency = 0
-            total_latency = 0
+        model_counts = defaultdict(int)
+        total_routing_latency = 0
+        total_latency = 0
 
-            for entry in self.routing_history:
-                model_counts[entry["selected_model"]] += 1
-                if entry["routing_latency_ms"]:
-                    total_routing_latency += entry["routing_latency_ms"]
-                total_latency += entry["total_latency_ms"]
+        for entry in self.routing_history:
+            model_counts[entry["selected_model"]] += 1
+            if entry["routing_latency_ms"]:
+                total_routing_latency += entry["routing_latency_ms"]
+            total_latency += entry["total_latency_ms"]
 
-            return {
-                "total_requests": len(self.routing_history),
-                "model_distribution": dict(model_counts),
-                "avg_routing_latency_ms": total_routing_latency / len(self.routing_history),
-                "avg_total_latency_ms": total_latency / len(self.routing_history),
-                "most_selected_model": max(model_counts, key=model_counts.get)
-            }
+        return {
+            "total_requests": len(self.routing_history),
+            "model_distribution": dict(model_counts),
+            "avg_routing_latency_ms": total_routing_latency / len(self.routing_history),
+            "avg_total_latency_ms": total_latency / len(self.routing_history),
+            "most_selected_model": max(model_counts, key=model_counts.get)
+        }
 
-    # Usage
-    monitor = RoutingMonitor(API_KEY)
+# Usage
+monitor = RoutingMonitor(API_KEY)
 
-    # Make several requests
-    for query in [
-        "What is machine learning?",
-        "Write a Python function to sort",
-        "Explain quantum physics",
-        "Tell me a joke"
-    ]:
-        result = monitor.chat_with_tracking(
-            query,
-            candidates=["openai/gpt-4o", "anthropic/claude-sonnet-4-5", "google/gemini-2.0-flash"]
-        )
-        print(f"Q: {query}")
-        print(f"Model: {result['routing_info']['selected_model']}")
-        print(f"Routing latency: {result['routing_info']['routing_latency_ms']:.0f}ms\n")
+# Make several requests
+for query in [
+    "What is machine learning?",
+    "Write a Python function to sort",
+    "Explain quantum physics",
+    "Tell me a joke"
+]:
+    result = monitor.chat_with_tracking(
+        query,
+        candidates=["openai/gpt-4o", "anthropic/claude-sonnet-4-5", "google/gemini-2.0-flash"]
+    )
+    print(f"Q: {query}")
+    print(f"Model: {result['routing_info']['selected_model']}")
+    print(f"Routing latency: {result['routing_info']['routing_latency_ms']:.0f}ms\n")
 
-    # Get statistics
-    stats = monitor.get_statistics()
-    print("\n=== Routing Statistics ===")
-    print(f"Total requests: {stats['total_requests']}")
-    print(f"Model distribution: {stats['model_distribution']}")
-    print(f"Average routing latency: {stats['avg_routing_latency_ms']:.0f}ms")
-    print(f"Most selected: {stats['most_selected_model']}")
+# Get statistics
+stats = monitor.get_statistics()
+print("\n=== Routing Statistics ===")
+print(f"Total requests: {stats['total_requests']}")
+print(f"Model distribution: {stats['model_distribution']}")
+print(f"Average routing latency: {stats['avg_routing_latency_ms']:.0f}ms")
+print(f"Most selected: {stats['most_selected_model']}")
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ## Error Handling
 
 ### Robust Error Handling with Fallbacks
 
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    import requests
-    import json
-    from typing import Optional
+<CodeGroup>
+```python Python
+import requests
+import json
+from typing import Optional
 
-    def chat_with_fallback(
-        message: str,
-        primary_candidates: list[str],
-        fallback_model: str = "openai/gpt-4o"
-    ) -> dict:
-        """Chat with smart routing and fallback to fixed model on error."""
+def chat_with_fallback(
+    message: str,
+    primary_candidates: list[str],
+    fallback_model: str = "openai/gpt-4o"
+) -> dict:
+    """Chat with smart routing and fallback to fixed model on error."""
 
-        url = "https://api.edenai.run/v3/llm/chat/completions"
-        headers = {
-            "Authorization": f"Bearer {API_KEY}",
-            "Content-Type": "application/json"
+    url = "https://api.edenai.run/v3/llm/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {API_KEY}",
+        "Content-Type": "application/json"
+    }
+
+    # Try smart routing first
+    try:
+        payload = {
+            "model": "@edenai",
+            "router_candidates": primary_candidates,
+            "messages": [{"role": "user", "content": message}],
+            "stream": True
         }
 
-        # Try smart routing first
+        response = requests.post(url, headers=headers, json=payload, stream=True, timeout=30)
+        response.raise_for_status()
+
+        full_response = ""
+        for line in response.iter_lines():
+            if line:
+                line_str = line.decode('utf-8')
+                if line_str.startswith('data: ') and line_str != 'data: [DONE]':
+                    data = json.loads(line_str[6:])
+                    content = data.get('choices', [{}])[0].get('delta', {}).get('content', '')
+                    full_response += content
+
+        return {
+            "response": full_response,
+            "method": "smart_routing",
+            "success": True
+        }
+
+    except Exception as e:
+        print(f"Smart routing failed: {e}")
+        print(f"Falling back to {fallback_model}")
+
+        # Fallback to fixed model
         try:
             payload = {
-                "model": "@edenai",
-                "router_candidates": primary_candidates,
+                "model": fallback_model,
                 "messages": [{"role": "user", "content": message}],
                 "stream": True
             }
@@ -775,63 +786,32 @@ Monitor which models are selected:
 
             return {
                 "response": full_response,
-                "method": "smart_routing",
-                "success": True
+                "method": "fallback",
+                "fallback_model": fallback_model,
+                "success": True,
+                "original_error": str(e)
             }
 
-        except Exception as e:
-            print(f"Smart routing failed: {e}")
-            print(f"Falling back to {fallback_model}")
+        except Exception as fallback_error:
+            return {
+                "response": None,
+                "method": "failed",
+                "success": False,
+                "error": str(fallback_error)
+            }
 
-            # Fallback to fixed model
-            try:
-                payload = {
-                    "model": fallback_model,
-                    "messages": [{"role": "user", "content": message}],
-                    "stream": True
-                }
+# Usage
+result = chat_with_fallback(
+    "Explain neural networks",
+    primary_candidates=["openai/gpt-4o", "anthropic/claude-sonnet-4-5"]
+)
 
-                response = requests.post(url, headers=headers, json=payload, stream=True, timeout=30)
-                response.raise_for_status()
-
-                full_response = ""
-                for line in response.iter_lines():
-                    if line:
-                        line_str = line.decode('utf-8')
-                        if line_str.startswith('data: ') and line_str != 'data: [DONE]':
-                            data = json.loads(line_str[6:])
-                            content = data.get('choices', [{}])[0].get('delta', {}).get('content', '')
-                            full_response += content
-
-                return {
-                    "response": full_response,
-                    "method": "fallback",
-                    "fallback_model": fallback_model,
-                    "success": True,
-                    "original_error": str(e)
-                }
-
-            except Exception as fallback_error:
-                return {
-                    "response": None,
-                    "method": "failed",
-                    "success": False,
-                    "error": str(fallback_error)
-                }
-
-    # Usage
-    result = chat_with_fallback(
-        "Explain neural networks",
-        primary_candidates=["openai/gpt-4o", "anthropic/claude-sonnet-4-5"]
-    )
-
-    if result["success"]:
-        print(f"Response (via {result['method']}): {result['response']}")
-    else:
-        print(f"Failed: {result['error']}")
+if result["success"]:
+    print(f"Response (via {result['method']}): {result['response']}")
+else:
+    print(f"Failed: {result['error']}")
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ## Best Practices
 

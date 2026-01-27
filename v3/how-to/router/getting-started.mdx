@@ -48,114 +48,108 @@ Response (includes selected model info)
 
 The simplest way to use smart routing is to set `model: "@edenai"` without specifying candidates. The system will choose from all available models.
 
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    import requests
+<CodeGroup>
+```python Python
+import requests
 
-    url = "https://api.edenai.run/v3/llm/chat/completions"
-    headers = {
-        "Authorization": "Bearer YOUR_API_KEY",
-        "Content-Type": "application/json"
-    }
+url = "https://api.edenai.run/v3/llm/chat/completions"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
 
-    payload = {
-        "model": "@edenai",  # Activates smart routing
-        "messages": [
-            {"role": "user", "content": "Explain machine learning"}
-        ],
-        "stream": True
-    }
+payload = {
+    "model": "@edenai",  # Activates smart routing
+    "messages": [
+        {"role": "user", "content": "Explain machine learning"}
+    ],
+    "stream": True
+}
 
-    response = requests.post(url, headers=headers, json=payload, stream=True)
+response = requests.post(url, headers=headers, json=payload, stream=True)
 
-    selected_model = None
-    for line in response.iter_lines():
-        if line:
-            line_str = line.decode('utf-8')
-            if line_str.startswith('data: ') and line_str != 'data: [DONE]':
-                import json
-                data = json.loads(line_str[6:])
+selected_model = None
+for line in response.iter_lines():
+    if line:
+        line_str = line.decode('utf-8')
+        if line_str.startswith('data: ') and line_str != 'data: [DONE]':
+            import json
+            data = json.loads(line_str[6:])
 
-                # The first chunk contains the selected model
-                if not selected_model and 'model' in data:
-                    selected_model = data['model']
-                    print(f"Router selected: {selected_model}")
+            # The first chunk contains the selected model
+            if not selected_model and 'model' in data:
+                selected_model = data['model']
+                print(f"Router selected: {selected_model}")
 
-                # Process content
-                content = data.get('choices', [{}])[0].get('delta', {}).get('content', '')
-                if content:
-                    print(content, end='', flush=True)
+            # Process content
+            content = data.get('choices', [{}])[0].get('delta', {}).get('content', '')
+            if content:
+                print(content, end='', flush=True)
     ```
-  </CodeBlock>
 
-  <CodeBlock title="JavaScript">
-    ```javascript
-    const url = 'https://api.edenai.run/v3/llm/chat/completions';
-    const headers = {
-      'Authorization': 'Bearer YOUR_API_KEY',
-      'Content-Type': 'application/json'
-    };
+```javascript JavaScript
+const url = 'https://api.edenai.run/v3/llm/chat/completions';
+const headers = {
+  'Authorization': 'Bearer YOUR_API_KEY',
+  'Content-Type': 'application/json'
+};
 
-    const payload = {
-      model: '@edenai',  // Activates smart routing
-      messages: [
-        {role: 'user', content: 'Explain machine learning'}
-      ],
-      stream: true
-    };
+const payload = {
+  model: '@edenai',  // Activates smart routing
+  messages: [
+    {role: 'user', content: 'Explain machine learning'}
+  ],
+  stream: true
+};
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: headers,
-      body: JSON.stringify(payload)
-    });
+const response = await fetch(url, {
+  method: 'POST',
+  headers: headers,
+  body: JSON.stringify(payload)
+});
 
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let selectedModel = null;
+const reader = response.body.getReader();
+const decoder = new TextDecoder();
+let selectedModel = null;
 
-    while (true) {
-      const {done, value} = await reader.read();
-      if (done) break;
+while (true) {
+  const {done, value} = await reader.read();
+  if (done) break;
 
-      const chunk = decoder.decode(value);
-      const lines = chunk.split('\n');
+  const chunk = decoder.decode(value);
+  const lines = chunk.split('\n');
 
-      for (const line of lines) {
-        if (line.startsWith('data: ') && line !== 'data: [DONE]') {
-          const data = JSON.parse(line.slice(6));
+  for (const line of lines) {
+    if (line.startsWith('data: ') && line !== 'data: [DONE]') {
+      const data = JSON.parse(line.slice(6));
 
-          // Track selected model
-          if (!selectedModel && data.model) {
-            selectedModel = data.model;
-            console.log(`Router selected: ${selectedModel}`);
-          }
-
-          // Process content
-          const content = data.choices?.[0]?.delta?.content || '';
-          if (content) process.stdout.write(content);
-        }
+      // Track selected model
+      if (!selectedModel && data.model) {
+        selectedModel = data.model;
+        console.log(`Router selected: ${selectedModel}`);
       }
-    }
-    ```
-  </CodeBlock>
 
-  <CodeBlock title="cURL">
-    ```bash
-    curl -X POST https://api.edenai.run/v3/llm/chat/completions \
-      -H "Authorization: Bearer YOUR_API_KEY" \
-      -H "Content-Type: application/json" \
-      -d '{
-        "model": "@edenai",
-        "messages": [
-          {"role": "user", "content": "Explain machine learning"}
-        ],
-        "stream": true
-      }'
+      // Process content
+      const content = data.choices?.[0]?.delta?.content || '';
+      if (content) process.stdout.write(content);
+    }
+  }
+}
     ```
-  </CodeBlock>
-</CodeBlocks>
+
+```bash cURL
+curl -X POST https://api.edenai.run/v3/llm/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "@edenai",
+    "messages": [
+      {"role": "user", "content": "Explain machine learning"}
+    ],
+    "stream": true
+  }'
+    ```
+</CodeGroup>
 
 **Response includes selected model:**
 ```json
@@ -166,66 +160,62 @@ data: {"id":"...","model":"openai/gpt-4o","choices":[{"delta":{"content":"Machin
 
 Restrict routing to specific models using `router_candidates`:
 
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    import requests
+<CodeGroup>
+```python Python
+import requests
 
-    url = "https://api.edenai.run/v3/llm/chat/completions"
-    headers = {
-        "Authorization": "Bearer YOUR_API_KEY",
-        "Content-Type": "application/json"
-    }
+url = "https://api.edenai.run/v3/llm/chat/completions"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
 
-    payload = {
-        "model": "@edenai",
-        # Only choose from these models
-        "router_candidates": [
-            "openai/gpt-4o",
-            "anthropic/claude-sonnet-4-5",
-            "google/gemini-2.0-flash"
-        ],
-        "messages": [
-            {"role": "user", "content": "Write a Python function to sort a list"}
-        ],
-        "stream": True
-    }
+payload = {
+    "model": "@edenai",
+    # Only choose from these models
+    "router_candidates": [
+        "openai/gpt-4o",
+        "anthropic/claude-sonnet-4-5",
+        "google/gemini-2.0-flash"
+    ],
+    "messages": [
+        {"role": "user", "content": "Write a Python function to sort a list"}
+    ],
+    "stream": True
+}
 
-    response = requests.post(url, headers=headers, json=payload, stream=True)
+response = requests.post(url, headers=headers, json=payload, stream=True)
 
-    # Process response...
-    for line in response.iter_lines():
-        if line:
-            print(line.decode('utf-8'))
+# Process response...
+for line in response.iter_lines():
+    if line:
+        print(line.decode('utf-8'))
     ```
-  </CodeBlock>
 
-  <CodeBlock title="JavaScript">
-    ```javascript
-    const payload = {
-      model: '@edenai',
-      // Only choose from these models
-      router_candidates: [
-        'openai/gpt-4o',
-        'anthropic/claude-sonnet-4-5',
-        'google/gemini-2.0-flash'
-      ],
-      messages: [
-        {role: 'user', content: 'Write a Python function to sort a list'}
-      ],
-      stream: true
-    };
+```javascript JavaScript
+const payload = {
+  model: '@edenai',
+  // Only choose from these models
+  router_candidates: [
+    'openai/gpt-4o',
+    'anthropic/claude-sonnet-4-5',
+    'google/gemini-2.0-flash'
+  ],
+  messages: [
+    {role: 'user', content: 'Write a Python function to sort a list'}
+  ],
+  stream: true
+};
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: headers,
-      body: JSON.stringify(payload)
-    });
+const response = await fetch(url, {
+  method: 'POST',
+  headers: headers,
+  body: JSON.stringify(payload)
+});
 
-    // Process response...
+// Process response...
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 **Benefits of custom candidates:**
 - Control over which models can be selected
@@ -250,140 +240,130 @@ provider/model
 **Finding available models:**
 Use the `/v3/llm/models` endpoint to list all available models:
 
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    import requests
+<CodeGroup>
+```python Python
+import requests
 
-    url = "https://api.edenai.run/v3/llm/models"
-    headers = {"Authorization": "Bearer YOUR_API_KEY"}
+url = "https://api.edenai.run/v3/llm/models"
+headers = {"Authorization": "Bearer YOUR_API_KEY"}
 
-    response = requests.get(url, headers=headers)
-    models = response.json()
+response = requests.get(url, headers=headers)
+models = response.json()
 
-    # List all models
-    for model in models['data']:
-        print(f"{model['id']} - {model['description']}")
-        print(f"  Context: {model['context_length']} tokens")
-        print(f"  Pricing: {model['pricing']}")
-        print()
+# List all models
+for model in models['data']:
+    print(f"{model['id']} - {model['description']}")
+    print(f"  Context: {model['context_length']} tokens")
+    print(f"  Pricing: {model['pricing']}")
+    print()
     ```
-  </CodeBlock>
 
-  <CodeBlock title="JavaScript">
-    ```javascript
-    const url = 'https://api.edenai.run/v3/llm/models';
-    const headers = {'Authorization': 'Bearer YOUR_API_KEY'};
+```javascript JavaScript
+const url = 'https://api.edenai.run/v3/llm/models';
+const headers = {'Authorization': 'Bearer YOUR_API_KEY'};
 
-    const response = await fetch(url, {headers});
-    const models = await response.json();
+const response = await fetch(url, {headers});
+const models = await response.json();
 
-    // List all models
-    for (const model of models.data) {
-      console.log(`${model.id} - ${model.description}`);
-      console.log(`  Context: ${model.context_length} tokens`);
-      console.log(`  Pricing:`, model.pricing);
-    }
+// List all models
+for (const model of models.data) {
+  console.log(`${model.id} - ${model.description}`);
+  console.log(`  Context: ${model.context_length} tokens`);
+  console.log(`  Pricing:`, model.pricing);
+}
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ## Routing with OpenAI SDK
 
 Smart routing works seamlessly with the official OpenAI SDK:
 
-<CodeBlocks>
-  <CodeBlock title="Python (OpenAI SDK)">
-    ```python
-    from openai import OpenAI
+<CodeGroup>
+```python Python (OpenAI SDK)
+from openai import OpenAI
 
-    client = OpenAI(
-        api_key="YOUR_EDEN_AI_KEY",
-        base_url="https://api.edenai.run/v3/llm"
-    )
+client = OpenAI(
+    api_key="YOUR_EDEN_AI_KEY",
+    base_url="https://api.edenai.run/v3/llm"
+)
 
-    # Default routing
-    stream = client.chat.completions.create(
-        model="@edenai",
-        messages=[
-            {"role": "user", "content": "Explain neural networks"}
-        ],
-        stream=True
-    )
+# Default routing
+stream = client.chat.completions.create(
+    model="@edenai",
+    messages=[
+        {"role": "user", "content": "Explain neural networks"}
+    ],
+    stream=True
+)
 
-    selected_model = None
-    for chunk in stream:
-        if not selected_model and chunk.model:
-            selected_model = chunk.model
-            print(f"\nRouter selected: {selected_model}\n")
+selected_model = None
+for chunk in stream:
+    if not selected_model and chunk.model:
+        selected_model = chunk.model
+        print(f"\nRouter selected: {selected_model}\n")
 
-        if chunk.choices[0].delta.content:
-            print(chunk.choices[0].delta.content, end="", flush=True)
+    if chunk.choices[0].delta.content:
+        print(chunk.choices[0].delta.content, end="", flush=True)
     ```
-  </CodeBlock>
 
-  <CodeBlock title="Python (OpenAI SDK with candidates)">
-    ```python
-    from openai import OpenAI
+```python Python (OpenAI SDK with candidates)
+from openai import OpenAI
 
-    client = OpenAI(
-        api_key="YOUR_EDEN_AI_KEY",
-        base_url="https://api.edenai.run/v3/llm"
-    )
+client = OpenAI(
+    api_key="YOUR_EDEN_AI_KEY",
+    base_url="https://api.edenai.run/v3/llm"
+)
 
-    # Custom candidates via extra_body
-    stream = client.chat.completions.create(
-        model="@edenai",
-        messages=[
-            {"role": "user", "content": "Write a haiku about coding"}
-        ],
-        stream=True,
-        extra_body={
-            "router_candidates": [
-                "openai/gpt-4o",
-                "anthropic/claude-sonnet-4-5"
-            ]
-        }
-    )
-
-    for chunk in stream:
-        if chunk.choices[0].delta.content:
-            print(chunk.choices[0].delta.content, end="", flush=True)
-    ```
-  </CodeBlock>
-
-  <CodeBlock title="TypeScript (OpenAI SDK)">
-    ```typescript
-    import OpenAI from 'openai';
-
-    const client = new OpenAI({
-      apiKey: process.env.EDEN_AI_KEY,
-      baseURL: 'https://api.edenai.run/v3/llm'
-    });
-
-    // Custom candidates
-    const stream = await client.chat.completions.create({
-      model: '@edenai',
-      messages: [
-        {role: 'user', content: 'Write a haiku about coding'}
-      ],
-      stream: true,
-      // @ts-ignore - extra_body not in types
-      extra_body: {
-        router_candidates: [
-          'openai/gpt-4o',
-          'anthropic/claude-sonnet-4-5'
+# Custom candidates via extra_body
+stream = client.chat.completions.create(
+    model="@edenai",
+    messages=[
+        {"role": "user", "content": "Write a haiku about coding"}
+    ],
+    stream=True,
+    extra_body={
+        "router_candidates": [
+            "openai/gpt-4o",
+            "anthropic/claude-sonnet-4-5"
         ]
-      }
-    });
-
-    for await (const chunk of stream) {
-      const content = chunk.choices[0]?.delta?.content || '';
-      process.stdout.write(content);
     }
+)
+
+for chunk in stream:
+    if chunk.choices[0].delta.content:
+        print(chunk.choices[0].delta.content, end="", flush=True)
     ```
-  </CodeBlock>
-</CodeBlocks>
+
+```typescript TypeScript (OpenAI SDK)
+import OpenAI from 'openai';
+
+const client = new OpenAI({
+  apiKey: process.env.EDEN_AI_KEY,
+  baseURL: 'https://api.edenai.run/v3/llm'
+});
+
+// Custom candidates
+const stream = await client.chat.completions.create({
+  model: '@edenai',
+  messages: [
+    {role: 'user', content: 'Write a haiku about coding'}
+  ],
+  stream: true,
+  // @ts-ignore - extra_body not in types
+  extra_body: {
+    router_candidates: [
+      'openai/gpt-4o',
+      'anthropic/claude-sonnet-4-5'
+    ]
+  }
+});
+
+for await (const chunk of stream) {
+  const content = chunk.choices[0]?.delta?.content || '';
+  process.stdout.write(content);
+}
+    ```
+</CodeGroup>
 
 ## When to Use Smart Routing
 
@@ -434,65 +414,63 @@ Total to first token: ~500ms
 
 The router has built-in fallback mechanisms:
 
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    import requests
+<CodeGroup>
+```python Python
+import requests
 
-    def chat_with_router(message: str):
-        """Chat with router and handle errors."""
-        url = "https://api.edenai.run/v3/llm/chat/completions"
-        headers = {
-            "Authorization": f"Bearer {API_KEY}",
-            "Content-Type": "application/json"
-        }
+def chat_with_router(message: str):
+    """Chat with router and handle errors."""
+    url = "https://api.edenai.run/v3/llm/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {API_KEY}",
+        "Content-Type": "application/json"
+    }
 
-        payload = {
-            "model": "@edenai",
-            "messages": [{"role": "user", "content": message}],
-            "stream": True
-        }
+    payload = {
+        "model": "@edenai",
+        "messages": [{"role": "user", "content": message}],
+        "stream": True
+    }
 
-        try:
-            response = requests.post(
-                url,
-                headers=headers,
-                json=payload,
-                stream=True,
-                timeout=30  # Set timeout
-            )
-            response.raise_for_status()
+    try:
+        response = requests.post(
+            url,
+            headers=headers,
+            json=payload,
+            stream=True,
+            timeout=30  # Set timeout
+        )
+        response.raise_for_status()
 
-            full_response = ""
-            for line in response.iter_lines():
-                if line:
-                    line_str = line.decode('utf-8')
-                    if line_str.startswith('data: '):
-                        data_str = line_str[6:]
-                        if data_str != '[DONE]':
-                            import json
-                            data = json.loads(data_str)
-                            content = data.get('choices', [{}])[0].get('delta', {}).get('content', '')
-                            full_response += content
+        full_response = ""
+        for line in response.iter_lines():
+            if line:
+                line_str = line.decode('utf-8')
+                if line_str.startswith('data: '):
+                    data_str = line_str[6:]
+                    if data_str != '[DONE]':
+                        import json
+                        data = json.loads(data_str)
+                        content = data.get('choices', [{}])[0].get('delta', {}).get('content', '')
+                        full_response += content
 
-            return {"success": True, "response": full_response}
+        return {"success": True, "response": full_response}
 
-        except requests.exceptions.Timeout:
-            return {"success": False, "error": "Routing timed out"}
-        except requests.exceptions.HTTPError as e:
-            return {"success": False, "error": f"HTTP error: {e}"}
-        except Exception as e:
-            return {"success": False, "error": f"Unexpected error: {e}"}
+    except requests.exceptions.Timeout:
+        return {"success": False, "error": "Routing timed out"}
+    except requests.exceptions.HTTPError as e:
+        return {"success": False, "error": f"HTTP error: {e}"}
+    except Exception as e:
+        return {"success": False, "error": f"Unexpected error: {e}"}
 
-    # Usage
-    result = chat_with_router("Hello!")
-    if result["success"]:
-        print(result["response"])
-    else:
-        print(f"Error: {result['error']}")
+# Usage
+result = chat_with_router("Hello!")
+if result["success"]:
+    print(result["response"])
+else:
+    print(f"Error: {result['error']}")
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 **Common errors:**
 - `503 Service Unavailable` - Router service temporarily down

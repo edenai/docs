@@ -1,3 +1,6 @@
+---
+title: Working with Media Files
+---
 # Working with Media Files
 
 Send images, documents, and other media files to LLMs for analysis and understanding.
@@ -33,243 +36,231 @@ V3 supports multiple ways to send media to LLMs:
 
 The simplest method for publicly accessible images:
 
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    import requests
+<CodeGroup>
+```python Python
+import requests
 
-    url = "https://api.edenai.run/v3/llm/chat/completions"
-    headers = {
-        "Authorization": "Bearer YOUR_API_KEY",
-        "Content-Type": "application/json"
-    }
+url = "https://api.edenai.run/v3/llm/chat/completions"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
 
-    payload = {
-        "model": "openai/gpt-4o",
-        "messages": [
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": "What's in this image?"
-                    },
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": "https://example.com/photo.jpg"
-                        }
-                    }
-                ]
-            }
-        ],
-        "stream": True
-    }
-
-    response = requests.post(url, headers=headers, json=payload, stream=True)
-
-    for line in response.iter_lines():
-        if line:
-            print(line.decode('utf-8'))
-    ```
-  </CodeBlock>
-
-  <CodeBlock title="JavaScript">
-    ```javascript
-    const url = 'https://api.edenai.run/v3/llm/chat/completions';
-    const headers = {
-      'Authorization': 'Bearer YOUR_API_KEY',
-      'Content-Type': 'application/json'
-    };
-
-    const payload = {
-      model: 'openai/gpt-4o',
-      messages: [
+payload = {
+    "model": "openai/gpt-4o",
+    "messages": [
         {
-          role: 'user',
-          content: [
-            {
-              type: 'text',
-              text: "What's in this image?"
-            },
-            {
-              type: 'image_url',
-              image_url: {
-                url: 'https://example.com/photo.jpg'
-              }
-            }
-          ]
-        }
-      ],
-      stream: true
-    };
-
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: headers,
-      body: JSON.stringify(payload)
-    });
-
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-
-    while (true) {
-      const {done, value} = await reader.read();
-      if (done) break;
-      console.log(decoder.decode(value));
-    }
-    ```
-  </CodeBlock>
-
-  <CodeBlock title="cURL">
-    ```bash
-    curl -X POST https://api.edenai.run/v3/llm/chat/completions \
-      -H "Authorization: Bearer YOUR_API_KEY" \
-      -H "Content-Type: application/json" \
-      -d '{
-        "model": "openai/gpt-4o",
-        "messages": [
-          {
             "role": "user",
             "content": [
-              {"type": "text", "text": "What'\''s in this image?"},
-              {
-                "type": "image_url",
-                "image_url": {"url": "https://example.com/photo.jpg"}
-              }
+                {
+                    "type": "text",
+                    "text": "What's in this image?"
+                },
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": "https://example.com/photo.jpg"
+                    }
+                }
             ]
-          }
-        ],
-        "stream": true
-      }'
-    ```
-  </CodeBlock>
-</CodeBlocks>
+        }
+    ],
+    "stream": True
+}
+
+response = requests.post(url, headers=headers, json=payload, stream=True)
+
+for line in response.iter_lines():
+    if line:
+        print(line.decode('utf-8'))
+```
+
+```javascript JavaScript
+const url = 'https://api.edenai.run/v3/llm/chat/completions';
+const headers = {
+    'Authorization': 'Bearer YOUR_API_KEY',
+    'Content-Type': 'application/json'
+};
+
+const payload = {
+    model: 'openai/gpt-4o',
+    messages: [
+    {
+        role: 'user',
+        content: [
+        {
+            type: 'text',
+            text: "What's in this image?"
+        },
+        {
+            type: 'image_url',
+            image_url: {
+            url: 'https://example.com/photo.jpg'
+            }
+        }
+        ]
+    }
+    ],
+    stream: true
+};
+
+const response = await fetch(url, {
+    method: 'POST',
+    headers: headers,
+    body: JSON.stringify(payload)
+});
+
+const reader = response.body.getReader();
+const decoder = new TextDecoder();
+
+while (true) {
+    const {done, value} = await reader.read();
+    if (done) break;
+    console.log(decoder.decode(value));
+}
+```
+
+```bash cURL
+curl -X POST https://api.edenai.run/v3/llm/chat/completions \
+    -H "Authorization: Bearer YOUR_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{
+    "model": "openai/gpt-4o",
+    "messages": [
+        {
+        "role": "user",
+        "content": [
+            {"type": "text", "text": "What'\''s in this image?"},
+            {
+            "type": "image_url",
+            "image_url": {"url": "https://example.com/photo.jpg"}
+            }
+        ]
+        }
+    ],
+    "stream": true
+    }'
+```
+</CodeGroup>
 
 ### Using Base64 Image Data
 
 For inline images or when URLs aren't available:
 
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    import base64
-    import requests
+<CodeGroup>
+```python Python
+import base64
+import requests
 
-    # Read and encode image
-    with open("image.jpg", "rb") as f:
-        image_data = base64.b64encode(f.read()).decode('utf-8')
+# Read and encode image
+with open("image.jpg", "rb") as f:
+    image_data = base64.b64encode(f.read()).decode('utf-8')
 
-    # Create data URL
-    data_url = f"data:image/jpeg;base64,{image_data}"
+# Create data URL
+data_url = f"data:image/jpeg;base64,{image_data}"
 
-    payload = {
-        "model": "anthropic/claude-3-5-sonnet-20241022",
-        "messages": [
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": "Describe this image in detail."},
-                    {
-                        "type": "image_url",
-                        "image_url": {"url": data_url}
-                    }
-                ]
-            }
-        ],
-        "stream": True
-    }
-
-    response = requests.post(url, headers=headers, json=payload, stream=True)
-    ```
-  </CodeBlock>
-
-  <CodeBlock title="JavaScript">
-    ```javascript
-    const fs = require('fs');
-
-    // Read and encode image
-    const imageBuffer = fs.readFileSync('image.jpg');
-    const imageData = imageBuffer.toString('base64');
-    const dataUrl = `data:image/jpeg;base64,${imageData}`;
-
-    const payload = {
-      model: 'anthropic/claude-3-5-sonnet-20241022',
-      messages: [
+payload = {
+    "model": "anthropic/claude-3-5-sonnet-20241022",
+    "messages": [
         {
-          role: 'user',
-          content: [
-            {type: 'text', text: 'Describe this image in detail.'},
-            {
-              type: 'image_url',
-              image_url: {url: dataUrl}
-            }
-          ]
+            "role": "user",
+            "content": [
+                {"type": "text", "text": "Describe this image in detail."},
+                {
+                    "type": "image_url",
+                    "image_url": {"url": data_url}
+                }
+            ]
         }
-      ],
-      stream: true
-    };
+    ],
+    "stream": True
+}
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: headers,
-      body: JSON.stringify(payload)
-    });
-    ```
-  </CodeBlock>
-</CodeBlocks>
+response = requests.post(url, headers=headers, json=payload, stream=True)
+```
+
+```javascript JavaScript
+const fs = require('fs');
+
+// Read and encode image
+const imageBuffer = fs.readFileSync('image.jpg');
+const imageData = imageBuffer.toString('base64');
+const dataUrl = `data:image/jpeg;base64,${imageData}`;
+
+const payload = {
+    model: 'anthropic/claude-3-5-sonnet-20241022',
+    messages: [
+    {
+        role: 'user',
+        content: [
+        {type: 'text', text: 'Describe this image in detail.'},
+        {
+            type: 'image_url',
+            image_url: {url: dataUrl}
+        }
+        ]
+    }
+    ],
+    stream: true
+};
+
+const response = await fetch(url, {
+    method: 'POST',
+    headers: headers,
+    body: JSON.stringify(payload)
+});
+```
+</CodeGroup>
 
 ### Using Uploaded Files
 
 For reusable images or better performance:
 
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    import requests
+<CodeGroup>
+```python Python
+import requests
 
-    # Step 1: Upload the image
-    upload_url = "https://api.edenai.run/v3/upload"
-    upload_headers = {"Authorization": "Bearer YOUR_API_KEY"}
+# Step 1: Upload the image
+upload_url = "https://api.edenai.run/v3/upload"
+upload_headers = {"Authorization": "Bearer YOUR_API_KEY"}
 
-    files = {"file": open("screenshot.png", "rb")}
-    upload_response = requests.post(upload_url, headers=upload_headers, files=files)
-    file_id = upload_response.json()["file_id"]
+files = {"file": open("screenshot.png", "rb")}
+upload_response = requests.post(upload_url, headers=upload_headers, files=files)
+file_id = upload_response.json()["file_id"]
 
-    print(f"Uploaded file ID: {file_id}")
+print(f"Uploaded file ID: {file_id}")
 
-    # Step 2: Use the file in LLM request
-    llm_url = "https://api.edenai.run/v3/llm/chat/completions"
-    llm_headers = {
-        "Authorization": "Bearer YOUR_API_KEY",
-        "Content-Type": "application/json"
-    }
+# Step 2: Use the file in LLM request
+llm_url = "https://api.edenai.run/v3/llm/chat/completions"
+llm_headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
 
-    payload = {
-        "model": "google/gemini-1.5-pro",
-        "messages": [
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": "Analyze this screenshot and list all UI elements."},
-                    {
-                        "type": "file",
-                        "file": {"file_id": file_id}
-                    }
-                ]
-            }
-        ],
-        "stream": True
-    }
+payload = {
+    "model": "google/gemini-1.5-pro",
+    "messages": [
+        {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": "Analyze this screenshot and list all UI elements."},
+                {
+                    "type": "file",
+                    "file": {"file_id": file_id}
+                }
+            ]
+        }
+    ],
+    "stream": True
+}
 
-    response = requests.post(llm_url, headers=llm_headers, json=payload, stream=True)
+response = requests.post(llm_url, headers=llm_headers, json=payload, stream=True)
 
-    for line in response.iter_lines():
-        if line:
-            print(line.decode('utf-8'))
-    ```
-  </CodeBlock>
-</CodeBlocks>
+for line in response.iter_lines():
+    if line:
+        print(line.decode('utf-8'))
+```
+</CodeGroup>
 
 ## Document Inputs
 
@@ -277,97 +268,94 @@ For reusable images or better performance:
 
 Send PDFs and documents for analysis:
 
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    import requests
+<CodeGroup>
+```python Python
+import requests
 
-    # Upload PDF document
-    upload_url = "https://api.edenai.run/v3/upload"
-    upload_headers = {"Authorization": "Bearer YOUR_API_KEY"}
+# Upload PDF document
+upload_url = "https://api.edenai.run/v3/upload"
+upload_headers = {"Authorization": "Bearer YOUR_API_KEY"}
 
-    files = {"file": open("report.pdf", "rb")}
-    data = {"purpose": "llm-analysis"}
+files = {"file": open("report.pdf", "rb")}
+data = {"purpose": "llm-analysis"}
 
-    upload_response = requests.post(
-        upload_url,
-        headers=upload_headers,
-        files=files,
-        data=data
-    )
-    file_id = upload_response.json()["file_id"]
+upload_response = requests.post(
+    upload_url,
+    headers=upload_headers,
+    files=files,
+    data=data
+)
+file_id = upload_response.json()["file_id"]
 
-    # Analyze the PDF with LLM
-    llm_url = "https://api.edenai.run/v3/llm/chat/completions"
-    llm_headers = {
-        "Authorization": "Bearer YOUR_API_KEY",
-        "Content-Type": "application/json"
-    }
+# Analyze the PDF with LLM
+llm_url = "https://api.edenai.run/v3/llm/chat/completions"
+llm_headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
 
-    payload = {
-        "model": "anthropic/claude-3-5-sonnet-20241022",
-        "messages": [
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": "Summarize this document and extract key findings."},
-                    {
-                        "type": "file",
-                        "file": {"file_id": file_id}
-                    }
-                ]
-            }
-        ],
-        "stream": True
-    }
+payload = {
+    "model": "anthropic/claude-3-5-sonnet-20241022",
+    "messages": [
+        {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": "Summarize this document and extract key findings."},
+                {
+                    "type": "file",
+                    "file": {"file_id": file_id}
+                }
+            ]
+        }
+    ],
+    "stream": True
+}
 
-    response = requests.post(llm_url, headers=llm_headers, json=payload, stream=True)
+response = requests.post(llm_url, headers=llm_headers, json=payload, stream=True)
 
-    for line in response.iter_lines():
-        if line:
-            print(line.decode('utf-8'))
-    ```
-  </CodeBlock>
-</CodeBlocks>
+for line in response.iter_lines():
+    if line:
+        print(line.decode('utf-8'))
+```
+  
+</CodeGroup>
 
 ### Base64 Document Data
 
 For inline document processing:
 
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    import base64
-    import requests
+<CodeGroup>
+```python Python
+import base64
+import requests
 
-    # Read and encode PDF
-    with open("invoice.pdf", "rb") as f:
-        pdf_data = base64.b64encode(f.read()).decode('utf-8')
+# Read and encode PDF
+with open("invoice.pdf", "rb") as f:
+    pdf_data = base64.b64encode(f.read()).decode('utf-8')
 
-    # Create data URL for PDF
-    data_url = f"data:application/pdf;base64,{pdf_data}"
+# Create data URL for PDF
+data_url = f"data:application/pdf;base64,{pdf_data}"
 
-    payload = {
-        "model": "openai/gpt-4o",
-        "messages": [
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": "Extract all line items and totals from this invoice."},
-                    {
-                        "type": "file",
-                        "file": {"file_data": data_url}
-                    }
-                ]
-            }
-        ],
-        "stream": True
-    }
+payload = {
+    "model": "openai/gpt-4o",
+    "messages": [
+        {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": "Extract all line items and totals from this invoice."},
+                {
+                    "type": "file",
+                    "file": {"file_data": data_url}
+                }
+            ]
+        }
+    ],
+    "stream": True
+}
 
-    response = requests.post(url, headers=headers, json=payload, stream=True)
-    ```
-  </CodeBlock>
-</CodeBlocks>
+response = requests.post(url, headers=headers, json=payload, stream=True)
+```
+</CodeGroup>
 
 ## Mixed Content Messages
 
@@ -375,277 +363,265 @@ For inline document processing:
 
 Send multiple images in a single message:
 
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    import requests
-    payload = {
-        "model": "openai/gpt-4o",
-        "messages": [
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": "Compare these two images and describe the differences."},
-                    {
-                        "type": "image_url",
-                        "image_url": {"url": "https://example.com/before.jpg"}
-                    },
-                    {
-                        "type": "image_url",
-                        "image_url": {"url": "https://example.com/after.jpg"}
-                    }
-                ]
-            }
-        ],
-        "stream": True
-    }
+<CodeGroup>
+```python Python
+import requests
+payload = {
+    "model": "openai/gpt-4o",
+    "messages": [
+        {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": "Compare these two images and describe the differences."},
+                {
+                    "type": "image_url",
+                    "image_url": {"url": "https://example.com/before.jpg"}
+                },
+                {
+                    "type": "image_url",
+                    "image_url": {"url": "https://example.com/after.jpg"}
+                }
+            ]
+        }
+    ],
+    "stream": True
+}
 
-    response = requests.post(url, headers=headers, json=payload, stream=True)
-    ```
-  </CodeBlock>
-</CodeBlocks>
+response = requests.post(url, headers=headers, json=payload, stream=True)
+```
+</CodeGroup>
 
 ### Text + Images + Documents
 
 Combine different media types:
 
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    import requests
-    payload = {
-        "model": "anthropic/claude-3-5-sonnet-20241022",
-        "messages": [
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": "Review the chart and supporting documentation. Provide analysis."
-                    },
-                    {
-                        "type": "image_url",
-                        "image_url": {"url": "https://example.com/chart.png"}
-                    },
-                    {
-                        "type": "file",
-                        "file": {"file_id": "550e8400-e29b-41d4-a716-446655440000"}
-                    }
-                ]
-            }
-        ],
-        "stream": True
-    }
+<CodeGroup>
+```python Python
+import requests
+payload = {
+    "model": "anthropic/claude-3-5-sonnet-20241022",
+    "messages": [
+        {
+            "role": "user",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Review the chart and supporting documentation. Provide analysis."
+                },
+                {
+                    "type": "image_url",
+                    "image_url": {"url": "https://example.com/chart.png"}
+                },
+                {
+                    "type": "file",
+                    "file": {"file_id": "550e8400-e29b-41d4-a716-446655440000"}
+                }
+            ]
+        }
+    ],
+    "stream": True
+}
 
-    response = requests.post(url, headers=headers, json=payload, stream=True)
-    ```
-  </CodeBlock>
-</CodeBlocks>
+response = requests.post(url, headers=headers, json=payload, stream=True)
+```
+</CodeGroup>
 
 ## Practical Examples
 
 ### Analyze a Screenshot
 
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    import requests
+<CodeGroup>
+```python Python
+import requests
 
-    url = "https://api.edenai.run/v3/llm/chat/completions"
-    headers = {
-        "Authorization": "Bearer YOUR_API_KEY",
-        "Content-Type": "application/json"
-    }
+url = "https://api.edenai.run/v3/llm/chat/completions"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
 
-    payload = {
-        "model": "openai/gpt-4o",
-        "messages": [
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": "This is a screenshot of an error message. What's wrong and how do I fix it?"
-                    },
-                    {
-                        "type": "image_url",
-                        "image_url": {"url": "https://example.com/error-screenshot.png"}
-                    }
-                ]
-            }
-        ],
-        "stream": True,
-        "max_tokens": 500
-    }
+payload = {
+    "model": "openai/gpt-4o",
+    "messages": [
+        {
+            "role": "user",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "This is a screenshot of an error message. What's wrong and how do I fix it?"
+                },
+                {
+                    "type": "image_url",
+                    "image_url": {"url": "https://example.com/error-screenshot.png"}
+                }
+            ]
+        }
+    ],
+    "stream": True,
+    "max_tokens": 500
+}
 
-    response = requests.post(url, headers=headers, json=payload, stream=True)
+response = requests.post(url, headers=headers, json=payload, stream=True)
 
-    for line in response.iter_lines():
-        if line:
-            line_str = line.decode('utf-8')
-            if line_str.startswith('data: '):
-                data = line_str[6:]
-                if data != '[DONE]':
-                    print(data)
-    ```
-  </CodeBlock>
-</CodeBlocks>
+for line in response.iter_lines():
+    if line:
+        line_str = line.decode('utf-8')
+        if line_str.startswith('data: '):
+            data = line_str[6:]
+            if data != '[DONE]':
+                print(data)
+```
+</CodeGroup>
 
 ### Extract Receipt Data
 
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    import requests
-    import base64
+<CodeGroup>
+```python Python
+import requests
+import base64
 
-    # Read receipt image
-    with open("receipt.jpg", "rb") as f:
-        image_data = base64.b64encode(f.read()).decode('utf-8')
+# Read receipt image
+with open("receipt.jpg", "rb") as f:
+    image_data = base64.b64encode(f.read()).decode('utf-8')
 
-    url = "https://api.edenai.run/v3/llm/chat/completions"
-    headers = {
-        "Authorization": "Bearer YOUR_API_KEY",
-        "Content-Type": "application/json"
-    }
+url = "https://api.edenai.run/v3/llm/chat/completions"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
 
-    payload = {
-        "model": "anthropic/claude-3-5-sonnet-20241022",
-        "messages": [
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": "Extract the following from this receipt: merchant name, date, total amount, items purchased. Format as JSON."
-                    },
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": f"data:image/jpeg;base64,{image_data}"
-                        }
+payload = {
+    "model": "anthropic/claude-3-5-sonnet-20241022",
+    "messages": [
+        {
+            "role": "user",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Extract the following from this receipt: merchant name, date, total amount, items purchased. Format as JSON."
+                },
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:image/jpeg;base64,{image_data}"
                     }
-                ]
-            }
-        ],
-        "stream": True,
-        "temperature": 0.2  # Lower temperature for structured extraction
-    }
+                }
+            ]
+        }
+    ],
+    "stream": True,
+    "temperature": 0.2  # Lower temperature for structured extraction
+}
 
-    response = requests.post(url, headers=headers, json=payload, stream=True)
+response = requests.post(url, headers=headers, json=payload, stream=True)
 
-    full_response = ""
-    for line in response.iter_lines():
-        if line:
-            line_str = line.decode('utf-8')
-            if line_str.startswith('data: '):
-                data = line_str[6:]
-                if data != '[DONE]':
-                    # Parse and accumulate response
-                    import json
-                    chunk = json.loads(data)
-                    if chunk.get('choices', [{}])[0].get('delta', {}).get('content'):
-                        full_response += chunk['choices'][0]['delta']['content']
+full_response = ""
+for line in response.iter_lines():
+    if line:
+        line_str = line.decode('utf-8')
+        if line_str.startswith('data: '):
+            data = line_str[6:]
+            if data != '[DONE]':
+                # Parse and accumulate response
+                import json
+                chunk = json.loads(data)
+                if chunk.get('choices', [{}])[0].get('delta', {}).get('content'):
+                    full_response += chunk['choices'][0]['delta']['content']
 
-    print("Extracted data:", full_response)
-    ```
-  </CodeBlock>
-</CodeBlocks>
+print("Extracted data:", full_response)
+```
+</CodeGroup>
 
 ### Summarize PDF Document
 
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    import requests
+<CodeGroup>
+```python Python
+import requests
 
-    # Upload PDF
-    upload_url = "https://api.edenai.run/v3/upload"
-    upload_headers = {"Authorization": "Bearer YOUR_API_KEY"}
+# Upload PDF
+upload_url = "https://api.edenai.run/v3/upload"
+upload_headers = {"Authorization": "Bearer YOUR_API_KEY"}
 
-    files = {"file": open("research-paper.pdf", "rb")}
-    upload_response = requests.post(upload_url, headers=upload_headers, files=files)
-    file_id = upload_response.json()["file_id"]
+files = {"file": open("research-paper.pdf", "rb")}
+upload_response = requests.post(upload_url, headers=upload_headers, files=files)
+file_id = upload_response.json()["file_id"]
 
-    # Request summary
-    llm_url = "https://api.edenai.run/v3/llm/chat/completions"
-    llm_headers = {
-        "Authorization": "Bearer YOUR_API_KEY",
-        "Content-Type": "application/json"
-    }
+# Request summary
+llm_url = "https://api.edenai.run/v3/llm/chat/completions"
+llm_headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
 
-    payload = {
-        "model": "google/gemini-1.5-pro",
-        "messages": [
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": "Provide a comprehensive summary of this research paper, including methodology, key findings, and conclusions."
-                    },
-                    {
-                        "type": "file",
-                        "file": {"file_id": file_id}
-                    }
-                ]
-            }
-        ],
-        "stream": True,
-        "max_tokens": 1000
-    }
+payload = {
+    "model": "google/gemini-1.5-pro",
+    "messages": [
+        {
+            "role": "user",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Provide a comprehensive summary of this research paper, including methodology, key findings, and conclusions."
+                },
+                {
+                    "type": "file",
+                    "file": {"file_id": file_id}
+                }
+            ]
+        }
+    ],
+    "stream": True,
+    "max_tokens": 1000
+}
 
-    response = requests.post(llm_url, headers=llm_headers, json=payload, stream=True)
+response = requests.post(llm_url, headers=llm_headers, json=payload, stream=True)
 
-    for line in response.iter_lines():
-        if line:
-            print(line.decode('utf-8'))
-    ```
-  </CodeBlock>
-</CodeBlocks>
+for line in response.iter_lines():
+    if line:
+        print(line.decode('utf-8'))
+```
+</CodeGroup>
 
 ### Chart Analysis
 
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    import requests
+<CodeGroup>
+```python Python
+import requests
 
-    url = "https://api.edenai.run/v3/llm/chat/completions"
-    headers = {
-        "Authorization": "Bearer YOUR_API_KEY",
-        "Content-Type": "application/json"
-    }
+url = "https://api.edenai.run/v3/llm/chat/completions"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
 
-    payload = {
-        "model": "openai/gpt-4o",
-        "messages": [
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": "Analyze this chart and provide: 1) Main trends, 2) Notable outliers, 3) Key insights, 4) Recommendations"
-                    },
-                    {
-                        "type": "image_url",
-                        "image_url": {"url": "https://example.com/sales-chart.png"}
-                    }
-                ]
-            }
-        ],
-        "stream": True,
-        "temperature": 0.3
-    }
+payload = {
+    "model": "openai/gpt-4o",
+    "messages": [
+        {
+            "role": "user",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Analyze this chart and provide: 1) Main trends, 2) Notable outliers, 3) Key insights, 4) Recommendations"
+                },
+                {
+                    "type": "image_url",
+                    "image_url": {"url": "https://example.com/sales-chart.png"}
+                }
+            ]
+        }
+    ],
+    "stream": True,
+    "temperature": 0.3
+}
 
-    response = requests.post(url, headers=headers, json=payload, stream=True)
+response = requests.post(url, headers=headers, json=payload, stream=True)
 
-    for line in response.iter_lines():
-        if line:
-            print(line.decode('utf-8'))
-    ```
-  </CodeBlock>
-</CodeBlocks>
+for line in response.iter_lines():
+    if line:
+        print(line.decode('utf-8'))
+```
+</CodeGroup>
 
 ## Provider Support Matrix
 
@@ -754,29 +730,27 @@ See [Vision Capabilities](./vision-capabilities) for detailed provider compariso
 
 ### Handling Errors
 
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    import requests
+<CodeGroup>
+```python Python
+import requests
 
-    try:
-        response = requests.post(url, headers=headers, json=payload, stream=True)
-        response.raise_for_status()
+try:
+    response = requests.post(url, headers=headers, json=payload, stream=True)
+    response.raise_for_status()
 
-        for line in response.iter_lines():
-            if line:
-                print(line.decode('utf-8'))
+    for line in response.iter_lines():
+        if line:
+            print(line.decode('utf-8'))
 
-    except requests.exceptions.HTTPError as e:
-        if e.response.status_code == 413:
-            print("File too large. Try compressing or resizing.")
-        elif e.response.status_code == 422:
-            print("Invalid request:", e.response.json())
-        else:
-            print(f"HTTP error: {e}")
-    ```
-  </CodeBlock>
-</CodeBlocks>
+except requests.exceptions.HTTPError as e:
+    if e.response.status_code == 413:
+        print("File too large. Try compressing or resizing.")
+    elif e.response.status_code == 422:
+        print("Invalid request:", e.response.json())
+    else:
+        print(f"HTTP error: {e}")
+```
+</CodeGroup>
 
 ## Next Steps
 

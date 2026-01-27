@@ -19,43 +19,39 @@ Most integrations only require two simple changes:
 1. **API Key**: Use your Eden AI API key
 2. **Base URL**: Point to `https://api.edenai.run/v3/llm`
 
-<CodeBlocks>
-  <CodeBlock title="Python (OpenAI SDK)">
-    ```python
-    from openai import OpenAI
+<CodeGroup>
+```python Python (OpenAI SDK)
+from openai import OpenAI
 
-    client = OpenAI(
-        api_key="YOUR_EDEN_AI_API_KEY",
-        base_url="https://api.edenai.run/v3/llm"
-    )
+client = OpenAI(
+    api_key="YOUR_EDEN_AI_API_KEY",
+    base_url="https://api.edenai.run/v3/llm"
+)
 
-    # Now use any provider through the OpenAI SDK
-    response = client.chat.completions.create(
-        model="anthropic/claude-3-5-sonnet-20241022",
-        messages=[{"role": "user", "content": "Hello!"}],
-        stream=True
-    )
+# Now use any provider through the OpenAI SDK
+response = client.chat.completions.create(
+    model="anthropic/claude-3-5-sonnet-20241022",
+    messages=[{"role": "user", "content": "Hello!"}],
+    stream=True
+)
     ```
-  </CodeBlock>
 
-  <CodeBlock title="TypeScript (OpenAI SDK)">
-    ```typescript
-    import OpenAI from 'openai';
+```typescript TypeScript (OpenAI SDK)
+import OpenAI from 'openai';
 
-    const client = new OpenAI({
-      apiKey: 'YOUR_EDEN_AI_API_KEY',
-      baseURL: 'https://api.edenai.run/v3/llm',
-    });
+const client = new OpenAI({
+  apiKey: 'YOUR_EDEN_AI_API_KEY',
+  baseURL: 'https://api.edenai.run/v3/llm',
+});
 
-    // Use any provider
-    const stream = await client.chat.completions.create({
-      model: 'openai/gpt-4',
-      messages: [{role: 'user', content: 'Hello!'}],
-      stream: true,
-    });
+// Use any provider
+const stream = await client.chat.completions.create({
+  model: 'openai/gpt-4',
+  messages: [{role: 'user', content: 'Hello!'}],
+  stream: true,
+});
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ## Integration Categories
 
@@ -141,33 +137,31 @@ Eden AI isn't just for chat. The **Universal AI endpoint** gives you access to:
 - **Image**: Generation, object detection, face detection, background removal
 - **Translation**: Multi-language document translation
 
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    import requests
+<CodeGroup>
+```python Python
+import requests
 
-    # OCR with Google Cloud Vision
-    response = requests.post(
-        "https://api.edenai.run/v3/universal-ai",
-        headers={"Authorization": "Bearer YOUR_API_KEY"},
-        json={
-            "model": "ocr/financial_parser/google",
-            "input": {"file": "file_id_or_url"}
-        }
-    )
+# OCR with Google Cloud Vision
+response = requests.post(
+    "https://api.edenai.run/v3/universal-ai",
+    headers={"Authorization": "Bearer YOUR_API_KEY"},
+    json={
+        "model": "ocr/financial_parser/google",
+        "input": {"file": "file_id_or_url"}
+    }
+)
 
-    # Image generation with DALL-E 3
-    response = requests.post(
-        "https://api.edenai.run/v3/universal-ai",
-        headers={"Authorization": "Bearer YOUR_API_KEY"},
-        json={
-            "model": "image/generation/openai/dall-e-3",
-            "input": {"prompt": "A sunset over mountains"}
-        }
-    )
+# Image generation with DALL-E 3
+response = requests.post(
+    "https://api.edenai.run/v3/universal-ai",
+    headers={"Authorization": "Bearer YOUR_API_KEY"},
+    json={
+        "model": "image/generation/openai/dall-e-3",
+        "input": {"prompt": "A sunset over mountains"}
+    }
+)
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ## Need Help?
 

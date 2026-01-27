@@ -20,296 +20,292 @@ This guide covers advanced routing techniques for production applications, inclu
 
 Route simple queries to cheaper models and complex queries to premium models:
 
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    import requests
-    from typing import Literal
+<CodeGroup>
+```python Python
+import requests
+from typing import Literal
 
-    class TieredRouter:
-        """Route based on query complexity tiers."""
+class TieredRouter:
+    """Route based on query complexity tiers."""
 
-        BUDGET_MODELS = [
-            "openai/gpt-4o-mini",
-            "google/gemini-2.0-flash",
-            "anthropic/claude-haiku-4-5"
-        ]
+    BUDGET_MODELS = [
+        "openai/gpt-4o-mini",
+        "google/gemini-2.0-flash",
+        "anthropic/claude-haiku-4-5"
+    ]
 
-        BALANCED_MODELS = [
-            "openai/gpt-4o",
-            "anthropic/claude-sonnet-4-5",
-            "google/gemini-2.0-flash"
-        ]
+    BALANCED_MODELS = [
+        "openai/gpt-4o",
+        "anthropic/claude-sonnet-4-5",
+        "google/gemini-2.0-flash"
+    ]
 
-        PREMIUM_MODELS = [
-            "anthropic/claude-opus-4-5",
-            "openai/gpt-4o",
-            "google/gemini-2.5-pro"
-        ]
+    PREMIUM_MODELS = [
+        "anthropic/claude-opus-4-5",
+        "openai/gpt-4o",
+        "google/gemini-2.5-pro"
+    ]
 
-        def __init__(self, api_key: str):
-            self.api_key = api_key
-            self.url = "https://api.edenai.run/v3/llm/chat/completions"
+    def __init__(self, api_key: str):
+        self.api_key = api_key
+        self.url = "https://api.edenai.run/v3/llm/chat/completions"
 
-        def _classify_query(self, message: str) -> Literal["budget", "balanced", "premium"]:
-            """Classify query complexity (simple heuristic)."""
-            message_lower = message.lower()
+    def _classify_query(self, message: str) -> Literal["budget", "balanced", "premium"]:
+        """Classify query complexity (simple heuristic)."""
+        message_lower = message.lower()
 
-            # Simple queries
-            simple_keywords = ["what is", "define", "who is", "when", "where"]
-            if any(kw in message_lower for kw in simple_keywords) and len(message) < 100:
-                return "budget"
+        # Simple queries
+        simple_keywords = ["what is", "define", "who is", "when", "where"]
+        if any(kw in message_lower for kw in simple_keywords) and len(message) < 100:
+            return "budget"
 
-            # Complex queries
-            complex_keywords = ["analyze", "compare", "evaluate", "design", "architect"]
-            if any(kw in message_lower for kw in complex_keywords) or len(message) > 500:
-                return "premium"
+        # Complex queries
+        complex_keywords = ["analyze", "compare", "evaluate", "design", "architect"]
+        if any(kw in message_lower for kw in complex_keywords) or len(message) > 500:
+            return "premium"
 
-            # Default to balanced
-            return "balanced"
+        # Default to balanced
+        return "balanced"
 
-        def get_candidates(self, tier: str) -> list[str]:
-            """Get model candidates for tier."""
-            return {
-                "budget": self.BUDGET_MODELS,
-                "balanced": self.BALANCED_MODELS,
-                "premium": self.PREMIUM_MODELS
-            }.get(tier, self.BALANCED_MODELS)
+    def get_candidates(self, tier: str) -> list[str]:
+        """Get model candidates for tier."""
+        return {
+            "budget": self.BUDGET_MODELS,
+            "balanced": self.BALANCED_MODELS,
+            "premium": self.PREMIUM_MODELS
+        }.get(tier, self.BALANCED_MODELS)
 
-        def chat(self, message: str, force_tier: str = None) -> dict:
-            """Chat with automatic tier selection."""
-            tier = force_tier or self._classify_query(message)
-            candidates = self.get_candidates(tier)
+    def chat(self, message: str, force_tier: str = None) -> dict:
+        """Chat with automatic tier selection."""
+        tier = force_tier or self._classify_query(message)
+        candidates = self.get_candidates(tier)
 
-            headers = {
-                "Authorization": f"Bearer {self.api_key}",
-                "Content-Type": "application/json"
-            }
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
 
-            payload = {
-                "model": "@edenai",
-                "router_candidates": candidates,
-                "messages": [{"role": "user", "content": message}],
-                "stream": True
-            }
+        payload = {
+            "model": "@edenai",
+            "router_candidates": candidates,
+            "messages": [{"role": "user", "content": message}],
+            "stream": True
+        }
 
-            response = requests.post(
-                self.url,
-                headers=headers,
-                json=payload,
-                stream=True
-            )
+        response = requests.post(
+            self.url,
+            headers=headers,
+            json=payload,
+            stream=True
+        )
 
-            full_response = ""
-            selected_model = None
+        full_response = ""
+        selected_model = None
 
-            for line in response.iter_lines():
-                if line:
-                    line_str = line.decode('utf-8')
-                    if line_str.startswith('data: ') and line_str != 'data: [DONE]':
-                        import json
-                        data = json.loads(line_str[6:])
+        for line in response.iter_lines():
+            if line:
+                line_str = line.decode('utf-8')
+                if line_str.startswith('data: ') and line_str != 'data: [DONE]':
+                    import json
+                    data = json.loads(line_str[6:])
 
-                        if not selected_model and 'model' in data:
-                            selected_model = data['model']
+                    if not selected_model and 'model' in data:
+                        selected_model = data['model']
 
-                        content = data.get('choices', [{}])[0].get('delta', {}).get('content', '')
-                        full_response += content
+                    content = data.get('choices', [{}])[0].get('delta', {}).get('content', '')
+                    full_response += content
 
-            return {
-                "response": full_response,
-                "tier": tier,
-                "model": selected_model,
-                "candidates": candidates
-            }
+        return {
+            "response": full_response,
+            "tier": tier,
+            "model": selected_model,
+            "candidates": candidates
+        }
 
-    # Usage
-    router = TieredRouter("YOUR_API_KEY")
+# Usage
+router = TieredRouter("YOUR_API_KEY")
 
-    # Simple query → Budget tier
-    result1 = router.chat("What is Python?")
-    print(f"Tier: {result1['tier']}, Model: {result1['model']}")
+# Simple query → Budget tier
+result1 = router.chat("What is Python?")
+print(f"Tier: {result1['tier']}, Model: {result1['model']}")
 
-    # Complex query → Premium tier
-    result2 = router.chat(
-        "Design a scalable microservices architecture for an e-commerce platform "
-        "with considerations for high availability, security, and performance"
-    )
-    print(f"Tier: {result2['tier']}, Model: {result2['model']}")
+# Complex query → Premium tier
+result2 = router.chat(
+    "Design a scalable microservices architecture for an e-commerce platform "
+    "with considerations for high availability, security, and performance"
+)
+print(f"Tier: {result2['tier']}, Model: {result2['model']}")
 
-    # Force specific tier
-    result3 = router.chat("Tell me a joke", force_tier="budget")
-    print(f"Tier: {result3['tier']}, Model: {result3['model']}")
+# Force specific tier
+result3 = router.chat("Tell me a joke", force_tier="budget")
+print(f"Tier: {result3['tier']}, Model: {result3['model']}")
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ### Strategy 2: Dynamic Budget Management
 
 Track spending and adjust routing based on budget:
 
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    import requests
-    from datetime import datetime, timedelta
-    from typing import Optional
+<CodeGroup>
+```python Python
+import requests
+from datetime import datetime, timedelta
+from typing import Optional
 
-    class BudgetAwareRouter:
-        """Route with budget tracking and limits."""
+class BudgetAwareRouter:
+    """Route with budget tracking and limits."""
 
-        # Rough cost estimates per 1k tokens (input + output avg)
-        MODEL_COSTS = {
-            "openai/gpt-4o-mini": 0.0002,
-            "google/gemini-2.0-flash": 0.0002,
-            "anthropic/claude-haiku-4-5": 0.0005,
-            "openai/gpt-4o": 0.003,
-            "anthropic/claude-sonnet-4-5": 0.004,
-            "anthropic/claude-opus-4-5": 0.015,
-        }
+    # Rough cost estimates per 1k tokens (input + output avg)
+    MODEL_COSTS = {
+        "openai/gpt-4o-mini": 0.0002,
+        "google/gemini-2.0-flash": 0.0002,
+        "anthropic/claude-haiku-4-5": 0.0005,
+        "openai/gpt-4o": 0.003,
+        "anthropic/claude-sonnet-4-5": 0.004,
+        "anthropic/claude-opus-4-5": 0.015,
+    }
 
-        def __init__(self, api_key: str, daily_budget: float = 10.0):
-            self.api_key = api_key
-            self.daily_budget = daily_budget
-            self.url = "https://api.edenai.run/v3/llm/chat/completions"
+    def __init__(self, api_key: str, daily_budget: float = 10.0):
+        self.api_key = api_key
+        self.daily_budget = daily_budget
+        self.url = "https://api.edenai.run/v3/llm/chat/completions"
 
-            # Track spending
+        # Track spending
+        self.spending_today = 0.0
+        self.last_reset = datetime.now().date()
+
+    def _check_budget_reset(self):
+        """Reset budget counter at midnight."""
+        today = datetime.now().date()
+        if today > self.last_reset:
             self.spending_today = 0.0
-            self.last_reset = datetime.now().date()
+            self.last_reset = today
 
-        def _check_budget_reset(self):
-            """Reset budget counter at midnight."""
-            today = datetime.now().date()
-            if today > self.last_reset:
-                self.spending_today = 0.0
-                self.last_reset = today
+    def get_affordable_candidates(self) -> list[str]:
+        """Get candidates based on remaining budget."""
+        self._check_budget_reset()
+        remaining = self.daily_budget - self.spending_today
 
-        def get_affordable_candidates(self) -> list[str]:
-            """Get candidates based on remaining budget."""
-            self._check_budget_reset()
-            remaining = self.daily_budget - self.spending_today
+        if remaining < 0.01:  # Less than 1 cent
+            return []  # Budget exhausted
 
-            if remaining < 0.01:  # Less than 1 cent
-                return []  # Budget exhausted
-
-            if remaining < 1.0:  # Less than $1
-                # Only budget models
-                return [
-                    "openai/gpt-4o-mini",
-                    "google/gemini-2.0-flash",
-                    "anthropic/claude-haiku-4-5"
-                ]
-
-            if remaining < 5.0:  # Less than $5
-                # Balanced models
-                return [
-                    "openai/gpt-4o",
-                    "anthropic/claude-sonnet-4-5",
-                    "google/gemini-2.0-flash"
-                ]
-
-            # Full budget available - use premium
+        if remaining < 1.0:  # Less than $1
+            # Only budget models
             return [
-                "anthropic/claude-opus-4-5",
-                "openai/gpt-4o",
-                "google/gemini-2.5-pro"
+                "openai/gpt-4o-mini",
+                "google/gemini-2.0-flash",
+                "anthropic/claude-haiku-4-5"
             ]
 
-        def estimate_cost(self, message: str, response: str) -> float:
-            """Estimate cost based on token count (rough)."""
-            # Rough estimate: 4 chars = 1 token
-            total_chars = len(message) + len(response)
-            estimated_tokens = total_chars / 4
-            estimated_1k_tokens = estimated_tokens / 1000
+        if remaining < 5.0:  # Less than $5
+            # Balanced models
+            return [
+                "openai/gpt-4o",
+                "anthropic/claude-sonnet-4-5",
+                "google/gemini-2.0-flash"
+            ]
 
-            # Use average cost for simplicity
-            avg_cost_per_1k = 0.003
-            return estimated_1k_tokens * avg_cost_per_1k
+        # Full budget available - use premium
+        return [
+            "anthropic/claude-opus-4-5",
+            "openai/gpt-4o",
+            "google/gemini-2.5-pro"
+        ]
 
-        def chat(self, message: str) -> dict:
-            """Chat with budget awareness."""
-            candidates = self.get_affordable_candidates()
+    def estimate_cost(self, message: str, response: str) -> float:
+        """Estimate cost based on token count (rough)."""
+        # Rough estimate: 4 chars = 1 token
+        total_chars = len(message) + len(response)
+        estimated_tokens = total_chars / 4
+        estimated_1k_tokens = estimated_tokens / 1000
 
-            if not candidates:
-                return {
-                    "success": False,
-                    "error": "Daily budget exhausted",
-                    "budget_info": {
-                        "daily_budget": self.daily_budget,
-                        "spent_today": self.spending_today,
-                        "remaining": 0
-                    }
-                }
+        # Use average cost for simplicity
+        avg_cost_per_1k = 0.003
+        return estimated_1k_tokens * avg_cost_per_1k
 
-            headers = {
-                "Authorization": f"Bearer {self.api_key}",
-                "Content-Type": "application/json"
-            }
+    def chat(self, message: str) -> dict:
+        """Chat with budget awareness."""
+        candidates = self.get_affordable_candidates()
 
-            payload = {
-                "model": "@edenai",
-                "router_candidates": candidates,
-                "messages": [{"role": "user", "content": message}],
-                "stream": True
-            }
-
-            response = requests.post(
-                self.url,
-                headers=headers,
-                json=payload,
-                stream=True
-            )
-
-            full_response = ""
-            selected_model = None
-
-            for line in response.iter_lines():
-                if line:
-                    line_str = line.decode('utf-8')
-                    if line_str.startswith('data: ') and line_str != 'data: [DONE]':
-                        import json
-                        data = json.loads(line_str[6:])
-
-                        if not selected_model and 'model' in data:
-                            selected_model = data['model']
-
-                        content = data.get('choices', [{}])[0].get('delta', {}).get('content', '')
-                        full_response += content
-
-            # Track spending
-            estimated_cost = self.estimate_cost(message, full_response)
-            self.spending_today += estimated_cost
-
-            remaining = self.daily_budget - self.spending_today
-
+        if not candidates:
             return {
-                "success": True,
-                "response": full_response,
-                "model": selected_model,
+                "success": False,
+                "error": "Daily budget exhausted",
                 "budget_info": {
                     "daily_budget": self.daily_budget,
-                    "spent_today": round(self.spending_today, 4),
-                    "remaining": round(remaining, 4),
-                    "estimated_request_cost": round(estimated_cost, 4)
+                    "spent_today": self.spending_today,
+                    "remaining": 0
                 }
             }
 
-    # Usage
-    router = BudgetAwareRouter("YOUR_API_KEY", daily_budget=10.0)
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
 
-    # Make requests
-    for i in range(5):
-        result = router.chat(f"Question {i+1}: Explain AI")
-        if result["success"]:
-            print(f"Request {i+1}:")
-            print(f"  Model: {result['model']}")
-            print(f"  Cost: ${result['budget_info']['estimated_request_cost']}")
-            print(f"  Remaining: ${result['budget_info']['remaining']}")
-        else:
-            print(f"Request {i+1}: {result['error']}")
+        payload = {
+            "model": "@edenai",
+            "router_candidates": candidates,
+            "messages": [{"role": "user", "content": message}],
+            "stream": True
+        }
+
+        response = requests.post(
+            self.url,
+            headers=headers,
+            json=payload,
+            stream=True
+        )
+
+        full_response = ""
+        selected_model = None
+
+        for line in response.iter_lines():
+            if line:
+                line_str = line.decode('utf-8')
+                if line_str.startswith('data: ') and line_str != 'data: [DONE]':
+                    import json
+                    data = json.loads(line_str[6:])
+
+                    if not selected_model and 'model' in data:
+                        selected_model = data['model']
+
+                    content = data.get('choices', [{}])[0].get('delta', {}).get('content', '')
+                    full_response += content
+
+        # Track spending
+        estimated_cost = self.estimate_cost(message, full_response)
+        self.spending_today += estimated_cost
+
+        remaining = self.daily_budget - self.spending_today
+
+        return {
+            "success": True,
+            "response": full_response,
+            "model": selected_model,
+            "budget_info": {
+                "daily_budget": self.daily_budget,
+                "spent_today": round(self.spending_today, 4),
+                "remaining": round(remaining, 4),
+                "estimated_request_cost": round(estimated_cost, 4)
+            }
+        }
+
+# Usage
+router = BudgetAwareRouter("YOUR_API_KEY", daily_budget=10.0)
+
+# Make requests
+for i in range(5):
+    result = router.chat(f"Question {i+1}: Explain AI")
+    if result["success"]:
+        print(f"Request {i+1}:")
+        print(f"  Model: {result['model']}")
+        print(f"  Cost: ${result['budget_info']['estimated_request_cost']}")
+        print(f"  Remaining: ${result['budget_info']['remaining']}")
+    else:
+        print(f"Request {i+1}: {result['error']}")
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ## Context-Aware Routing
 
@@ -317,145 +313,143 @@ Track spending and adjust routing based on budget:
 
 Define different candidate pools for different use cases:
 
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    import requests
-    from enum import Enum
-    from typing import Literal
+<CodeGroup>
+```python Python
+import requests
+from enum import Enum
+from typing import Literal
 
-    class UseCase(str, Enum):
-        """Supported use cases."""
-        CODE = "code"
-        CREATIVE = "creative"
-        ANALYSIS = "analysis"
-        TRANSLATION = "translation"
-        CHAT = "chat"
-        SUMMARIZATION = "summarization"
+class UseCase(str, Enum):
+    """Supported use cases."""
+    CODE = "code"
+    CREATIVE = "creative"
+    ANALYSIS = "analysis"
+    TRANSLATION = "translation"
+    CHAT = "chat"
+    SUMMARIZATION = "summarization"
 
-    class ContextAwareRouter:
-        """Route based on use case context."""
+class ContextAwareRouter:
+    """Route based on use case context."""
 
-        # Define optimal models for each use case
-        CANDIDATES = {
-            UseCase.CODE: [
-                "openai/gpt-4o",
-                "anthropic/claude-sonnet-4-5",
-            ],
-            UseCase.CREATIVE: [
-                "anthropic/claude-opus-4-5",
-                "openai/gpt-4o",
-                "google/gemini-2.5-pro"
-            ],
-            UseCase.ANALYSIS: [
-                "anthropic/claude-opus-4-5",
-                "openai/gpt-4o",
-                "google/gemini-2.5-pro"
-            ],
-            UseCase.TRANSLATION: [
-                "openai/gpt-4o",
-                "google/gemini-2.0-flash",
-                "anthropic/claude-sonnet-4-5"
-            ],
-            UseCase.CHAT: [
-                "openai/gpt-4o",
-                "anthropic/claude-sonnet-4-5",
-                "google/gemini-2.0-flash"
-            ],
-            UseCase.SUMMARIZATION: [
-                "openai/gpt-4o-mini",
-                "google/gemini-2.0-flash",
-                "anthropic/claude-haiku-4-5"
-            ]
+    # Define optimal models for each use case
+    CANDIDATES = {
+        UseCase.CODE: [
+            "openai/gpt-4o",
+            "anthropic/claude-sonnet-4-5",
+        ],
+        UseCase.CREATIVE: [
+            "anthropic/claude-opus-4-5",
+            "openai/gpt-4o",
+            "google/gemini-2.5-pro"
+        ],
+        UseCase.ANALYSIS: [
+            "anthropic/claude-opus-4-5",
+            "openai/gpt-4o",
+            "google/gemini-2.5-pro"
+        ],
+        UseCase.TRANSLATION: [
+            "openai/gpt-4o",
+            "google/gemini-2.0-flash",
+            "anthropic/claude-sonnet-4-5"
+        ],
+        UseCase.CHAT: [
+            "openai/gpt-4o",
+            "anthropic/claude-sonnet-4-5",
+            "google/gemini-2.0-flash"
+        ],
+        UseCase.SUMMARIZATION: [
+            "openai/gpt-4o-mini",
+            "google/gemini-2.0-flash",
+            "anthropic/claude-haiku-4-5"
+        ]
+    }
+
+    def __init__(self, api_key: str):
+        self.api_key = api_key
+        self.url = "https://api.edenai.run/v3/llm/chat/completions"
+
+    def chat(
+        self,
+        message: str,
+        use_case: UseCase = UseCase.CHAT,
+        system_prompt: str = None
+    ) -> dict:
+        """Chat with use case-specific routing."""
+
+        candidates = self.CANDIDATES.get(use_case, self.CANDIDATES[UseCase.CHAT])
+
+        messages = []
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+        messages.append({"role": "user", "content": message})
+
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
         }
 
-        def __init__(self, api_key: str):
-            self.api_key = api_key
-            self.url = "https://api.edenai.run/v3/llm/chat/completions"
+        payload = {
+            "model": "@edenai",
+            "router_candidates": candidates,
+            "messages": messages,
+            "stream": True
+        }
 
-        def chat(
-            self,
-            message: str,
-            use_case: UseCase = UseCase.CHAT,
-            system_prompt: str = None
-        ) -> dict:
-            """Chat with use case-specific routing."""
+        response = requests.post(
+            self.url,
+            headers=headers,
+            json=payload,
+            stream=True
+        )
 
-            candidates = self.CANDIDATES.get(use_case, self.CANDIDATES[UseCase.CHAT])
+        full_response = ""
+        selected_model = None
 
-            messages = []
-            if system_prompt:
-                messages.append({"role": "system", "content": system_prompt})
-            messages.append({"role": "user", "content": message})
+        for line in response.iter_lines():
+            if line:
+                line_str = line.decode('utf-8')
+                if line_str.startswith('data: ') and line_str != 'data: [DONE]':
+                    import json
+                    data = json.loads(line_str[6:])
 
-            headers = {
-                "Authorization": f"Bearer {self.api_key}",
-                "Content-Type": "application/json"
-            }
+                    if not selected_model and 'model' in data:
+                        selected_model = data['model']
 
-            payload = {
-                "model": "@edenai",
-                "router_candidates": candidates,
-                "messages": messages,
-                "stream": True
-            }
+                    content = data.get('choices', [{}])[0].get('delta', {}).get('content', '')
+                    full_response += content
 
-            response = requests.post(
-                self.url,
-                headers=headers,
-                json=payload,
-                stream=True
-            )
+        return {
+            "response": full_response,
+            "use_case": use_case.value,
+            "model": selected_model,
+            "candidates": candidates
+        }
 
-            full_response = ""
-            selected_model = None
+# Usage examples
+router = ContextAwareRouter("YOUR_API_KEY")
 
-            for line in response.iter_lines():
-                if line:
-                    line_str = line.decode('utf-8')
-                    if line_str.startswith('data: ') and line_str != 'data: [DONE]':
-                        import json
-                        data = json.loads(line_str[6:])
+# Code generation
+code_result = router.chat(
+    "Write a Python function to parse JSON",
+    use_case=UseCase.CODE
+)
+print(f"Code task → {code_result['model']}")
 
-                        if not selected_model and 'model' in data:
-                            selected_model = data['model']
+# Creative writing
+creative_result = router.chat(
+    "Write a short story about a time traveler",
+    use_case=UseCase.CREATIVE
+)
+print(f"Creative task → {creative_result['model']}")
 
-                        content = data.get('choices', [{}])[0].get('delta', {}).get('content', '')
-                        full_response += content
-
-            return {
-                "response": full_response,
-                "use_case": use_case.value,
-                "model": selected_model,
-                "candidates": candidates
-            }
-
-    # Usage examples
-    router = ContextAwareRouter("YOUR_API_KEY")
-
-    # Code generation
-    code_result = router.chat(
-        "Write a Python function to parse JSON",
-        use_case=UseCase.CODE
-    )
-    print(f"Code task → {code_result['model']}")
-
-    # Creative writing
-    creative_result = router.chat(
-        "Write a short story about a time traveler",
-        use_case=UseCase.CREATIVE
-    )
-    print(f"Creative task → {creative_result['model']}")
-
-    # Summarization
-    summary_result = router.chat(
-        "Summarize this article: [long text]",
-        use_case=UseCase.SUMMARIZATION
-    )
-    print(f"Summarization task → {summary_result['model']}")
+# Summarization
+summary_result = router.chat(
+    "Summarize this article: [long text]",
+    use_case=UseCase.SUMMARIZATION
+)
+print(f"Summarization task → {summary_result['model']}")
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ## Multi-Turn Conversations
 
@@ -463,59 +457,554 @@ Define different candidate pools for different use cases:
 
 Maintain conversation state while using smart routing:
 
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    import requests
-    import json
-    from typing import Optional
+<CodeGroup>
+```python Python
+import requests
+import json
+from typing import Optional
 
-    class SmartConversation:
-        """Manage multi-turn conversations with smart routing."""
+class SmartConversation:
+    """Manage multi-turn conversations with smart routing."""
 
-        def __init__(
-            self,
-            api_key: str,
-            candidates: list[str] = None,
-            system_prompt: str = None
-        ):
-            self.api_key = api_key
-            self.candidates = candidates
-            self.url = "https://api.edenai.run/v3/llm/chat/completions"
-            self.messages = []
-            self.routing_history = []
+    def __init__(
+        self,
+        api_key: str,
+        candidates: list[str] = None,
+        system_prompt: str = None
+    ):
+        self.api_key = api_key
+        self.candidates = candidates
+        self.url = "https://api.edenai.run/v3/llm/chat/completions"
+        self.messages = []
+        self.routing_history = []
 
-            # Add system prompt if provided
-            if system_prompt:
-                self.messages.append({"role": "system", "content": system_prompt})
+        # Add system prompt if provided
+        if system_prompt:
+            self.messages.append({"role": "system", "content": system_prompt})
 
-        def send(self, message: str) -> dict:
-            """Send a message and get response."""
-            # Add user message
-            self.messages.append({"role": "user", "content": message})
+    def send(self, message: str) -> dict:
+        """Send a message and get response."""
+        # Add user message
+        self.messages.append({"role": "user", "content": message})
 
-            headers = {
-                "Authorization": f"Bearer {self.api_key}",
-                "Content-Type": "application/json"
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+
+        payload = {
+            "model": "@edenai",
+            "messages": self.messages,  # Full conversation history
+            "stream": True
+        }
+
+        if self.candidates:
+            payload["router_candidates"] = self.candidates
+
+        response = requests.post(
+            self.url,
+            headers=headers,
+            json=payload,
+            stream=True
+        )
+
+        assistant_response = ""
+        selected_model = None
+
+        for line in response.iter_lines():
+            if line:
+                line_str = line.decode('utf-8')
+                if line_str.startswith('data: ') and line_str != 'data: [DONE]':
+                    data = json.loads(line_str[6:])
+
+                    if not selected_model and 'model' in data:
+                        selected_model = data['model']
+
+                    content = data.get('choices', [{}])[0].get('delta', {}).get('content', '')
+                    assistant_response += content
+
+        # Add assistant response to history
+        self.messages.append({"role": "assistant", "content": assistant_response})
+
+        # Track routing decision
+        self.routing_history.append({
+            "turn": len(self.routing_history) + 1,
+            "model": selected_model,
+            "user_message": message[:50] + "..." if len(message) > 50 else message
+        })
+
+        return {
+            "response": assistant_response,
+            "model": selected_model,
+            "turn": len(self.routing_history)
+        }
+
+    def get_history(self) -> list[dict]:
+        """Get conversation history."""
+        return self.messages.copy()
+
+    def get_routing_stats(self) -> dict:
+        """Get routing statistics."""
+        if not self.routing_history:
+            return {}
+
+        from collections import Counter
+        model_counts = Counter(entry["model"] for entry in self.routing_history)
+
+        return {
+            "total_turns": len(self.routing_history),
+            "models_used": dict(model_counts),
+            "routing_history": self.routing_history
+        }
+
+    def reset(self):
+        """Reset conversation."""
+        system_msg = [m for m in self.messages if m["role"] == "system"]
+        self.messages = system_msg
+        self.routing_history = []
+
+# Usage
+conversation = SmartConversation(
+    "YOUR_API_KEY",
+    candidates=["openai/gpt-4o", "anthropic/claude-sonnet-4-5"],
+    system_prompt="You are a helpful coding assistant."
+)
+
+# Multi-turn conversation
+result1 = conversation.send("What is Python?")
+print(f"Turn 1 [{result1['model']}]: {result1['response'][:100]}...")
+
+result2 = conversation.send("Can you show me a code example?")
+print(f"Turn 2 [{result2['model']}]: {result2['response'][:100]}...")
+
+result3 = conversation.send("Explain that code in detail")
+print(f"Turn 3 [{result3['model']}]: {result3['response'][:100]}...")
+
+# Get statistics
+stats = conversation.get_routing_stats()
+print(f"\nConversation stats:")
+print(f"  Total turns: {stats['total_turns']}")
+print(f"  Models used: {stats['models_used']}")
+    ```
+</CodeGroup>
+
+## Function Calling with Routing
+
+### Smart Routing with Tools
+
+Combine smart routing with function calling:
+
+<CodeGroup>
+```python Python
+import requests
+import json
+
+def get_weather(location: str) -> str:
+    """Simulated weather function."""
+    return f"The weather in {location} is sunny, 72°F"
+
+def calculate(expression: str) -> float:
+    """Simulated calculator function."""
+    try:
+        return eval(expression)  # Don't use in production!
+    except:
+        return "Error"
+
+# Function definitions for the model
+tools = [
+    {
+        "type": "function",
+        "function": {
+            "name": "get_weather",
+            "description": "Get current weather for a location",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "location": {
+                        "type": "string",
+                        "description": "City name"
+                    }
+                },
+                "required": ["location"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "calculate",
+            "description": "Perform mathematical calculation",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "expression": {
+                        "type": "string",
+                        "description": "Math expression to evaluate"
+                    }
+                },
+                "required": ["expression"]
+            }
+        }
+    }
+]
+
+# Chat with tools
+url = "https://api.edenai.run/v3/llm/chat/completions"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+payload = {
+    "model": "@edenai",
+    # Router will consider tool compatibility
+    "router_candidates": [
+        "openai/gpt-4o",
+        "anthropic/claude-sonnet-4-5",
+        "google/gemini-2.0-flash"
+    ],
+    "messages": [
+        {"role": "user", "content": "What's the weather in Paris and what's 15 * 23?"}
+    ],
+    "tools": tools,
+    "stream": True
+}
+
+response = requests.post(url, headers=headers, json=payload, stream=True)
+
+tool_calls = []
+full_response = ""
+selected_model = None
+
+for line in response.iter_lines():
+    if line:
+        line_str = line.decode('utf-8')
+        if line_str.startswith('data: ') and line_str != 'data: [DONE]':
+            data = json.loads(line_str[6:])
+
+            if not selected_model and 'model' in data:
+                selected_model = data['model']
+                print(f"Router selected: {selected_model}")
+
+            delta = data.get('choices', [{}])[0].get('delta', {})
+
+            # Collect tool calls
+            if 'tool_calls' in delta:
+                tool_calls.extend(delta['tool_calls'])
+
+            # Collect text content
+            if 'content' in delta and delta['content']:
+                full_response += delta['content']
+
+print(f"Response: {full_response}")
+print(f"Tool calls: {tool_calls}")
+    ```
+</CodeGroup>
+
+## Performance Optimization
+
+### Strategy 1: Client-Side Caching
+
+Cache routing decisions for repeated queries:
+
+<CodeGroup>
+```python Python
+import requests
+import json
+import hashlib
+from typing import Optional, Dict
+from datetime import datetime, timedelta
+
+class CachedRouter:
+    """Router with client-side caching of routing decisions."""
+
+    def __init__(self, api_key: str, cache_ttl_seconds: int = 3600):
+        self.api_key = api_key
+        self.url = "https://api.edenai.run/v3/llm/chat/completions"
+        self.cache_ttl = timedelta(seconds=cache_ttl_seconds)
+
+        # Cache: query_hash -> (model, timestamp)
+        self.routing_cache: Dict[str, tuple[str, datetime]] = {}
+
+    def _hash_query(self, message: str, candidates: list[str]) -> str:
+        """Create hash for caching."""
+        cache_key = f"{message[:200]}|{'|'.join(sorted(candidates or []))}"
+        return hashlib.md5(cache_key.encode()).hexdigest()
+
+    def _get_cached_model(
+        self,
+        message: str,
+        candidates: list[str]
+    ) -> Optional[str]:
+        """Get cached routing decision if valid."""
+        cache_key = self._hash_query(message, candidates)
+
+        if cache_key in self.routing_cache:
+            model, timestamp = self.routing_cache[cache_key]
+            age = datetime.now() - timestamp
+
+            if age < self.cache_ttl:
+                print(f"[Cache hit] Using cached model: {model}")
+                return model
+            else:
+                # Cache expired
+                del self.routing_cache[cache_key]
+
+        return None
+
+    def _cache_model(
+        self,
+        message: str,
+        candidates: list[str],
+        model: str
+    ):
+        """Cache routing decision."""
+        cache_key = self._hash_query(message, candidates)
+        self.routing_cache[cache_key] = (model, datetime.now())
+
+    def chat(
+        self,
+        message: str,
+        candidates: list[str] = None,
+        use_cache: bool = True
+    ) -> dict:
+        """Chat with caching."""
+
+        # Check cache first
+        cached_model = None
+        if use_cache:
+            cached_model = self._get_cached_model(message, candidates or [])
+
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+
+        # Use cached model if available
+        if cached_model:
+            payload = {
+                "model": cached_model,  # Use cached model directly
+                "messages": [{"role": "user", "content": message}],
+                "stream": True
+            }
+            used_routing = False
+        else:
+            payload = {
+                "model": "@edenai",  # Use routing
+                "messages": [{"role": "user", "content": message}],
+                "stream": True
+            }
+            if candidates:
+                payload["router_candidates"] = candidates
+            used_routing = True
+
+        response = requests.post(
+            self.url,
+            headers=headers,
+            json=payload,
+            stream=True
+        )
+
+        full_response = ""
+        selected_model = cached_model
+
+        for line in response.iter_lines():
+            if line:
+                line_str = line.decode('utf-8')
+                if line_str.startswith('data: ') and line_str != 'data: [DONE]':
+                    data = json.loads(line_str[6:])
+
+                    if not selected_model and 'model' in data:
+                        selected_model = data['model']
+
+                    content = data.get('choices', [{}])[0].get('delta', {}).get('content', '')
+                    full_response += content
+
+        # Cache the routing decision
+        if used_routing and selected_model and use_cache:
+            self._cache_model(message, candidates or [], selected_model)
+
+        return {
+            "response": full_response,
+            "model": selected_model,
+            "cached": not used_routing,
+            "cache_size": len(self.routing_cache)
+        }
+
+# Usage
+router = CachedRouter("YOUR_API_KEY", cache_ttl_seconds=3600)
+
+# First request - uses routing
+result1 = router.chat(
+    "What is machine learning?",
+    candidates=["openai/gpt-4o", "anthropic/claude-sonnet-4-5"]
+)
+print(f"First request: {result1['model']} (cached: {result1['cached']})")
+
+# Second identical request - uses cache
+result2 = router.chat(
+    "What is machine learning?",
+    candidates=["openai/gpt-4o", "anthropic/claude-sonnet-4-5"]
+)
+print(f"Second request: {result2['model']} (cached: {result2['cached']})")
+    ```
+</CodeGroup>
+
+### Strategy 2: Parallel Requests with Routing
+
+Make multiple routed requests in parallel:
+
+<CodeGroup>
+```python Python
+import asyncio
+import httpx
+import json
+
+async def routed_chat_async(
+    api_key: str,
+    message: str,
+    candidates: list[str] = None
+) -> dict:
+    """Async chat with routing."""
+    url = "https://api.edenai.run/v3/llm/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "model": "@edenai",
+        "messages": [{"role": "user", "content": message}],
+        "stream": True
+    }
+
+    if candidates:
+        payload["router_candidates"] = candidates
+
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        async with client.stream(
+            "POST",
+            url,
+            headers=headers,
+            json=payload
+        ) as response:
+            full_response = ""
+            selected_model = None
+
+            async for line in response.aiter_lines():
+                if line.startswith('data: ') and line != 'data: [DONE]':
+                    data = json.loads(line[6:])
+
+                    if not selected_model and 'model' in data:
+                        selected_model = data['model']
+
+                    content = data.get('choices', [{}])[0].get('delta', {}).get('content', '')
+                    full_response += content
+
+            return {
+                "message": message,
+                "response": full_response,
+                "model": selected_model
             }
 
+async def batch_routed_requests(
+    api_key: str,
+    messages: list[str],
+    candidates: list[str] = None
+) -> list[dict]:
+    """Process multiple messages in parallel with routing."""
+    tasks = [
+        routed_chat_async(api_key, msg, candidates)
+        for msg in messages
+    ]
+
+    results = await asyncio.gather(*tasks)
+    return results
+
+# Usage
+async def main():
+    api_key = "YOUR_API_KEY"
+    messages = [
+        "What is Python?",
+        "What is JavaScript?",
+        "What is Rust?",
+        "What is Go?",
+        "What is TypeScript?"
+    ]
+
+    candidates = ["openai/gpt-4o", "anthropic/claude-sonnet-4-5"]
+
+    print("Processing 5 requests in parallel...")
+    results = await batch_routed_requests(api_key, messages, candidates)
+
+    for result in results:
+        print(f"\nQ: {result['message']}")
+        print(f"Model: {result['model']}")
+        print(f"A: {result['response'][:100]}...")
+
+# Run
+asyncio.run(main())
+    ```
+</CodeGroup>
+
+## Production Deployment Patterns
+
+### Pattern 1: Fallback to Fixed Model
+
+Implement graceful fallback when routing fails:
+
+<CodeGroup>
+```python Python
+import requests
+import json
+from typing import Optional
+
+class ResilientRouter:
+    """Router with automatic fallback to fixed model."""
+
+    def __init__(
+        self,
+        api_key: str,
+        fallback_model: str = "openai/gpt-4o"
+    ):
+        self.api_key = api_key
+        self.fallback_model = fallback_model
+        self.url = "https://api.edenai.run/v3/llm/chat/completions"
+
+    def chat(
+        self,
+        message: str,
+        candidates: list[str] = None,
+        timeout: int = 30
+    ) -> dict:
+        """Chat with automatic fallback."""
+
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+
+        # Try routing first
+        try:
             payload = {
                 "model": "@edenai",
-                "messages": self.messages,  # Full conversation history
+                "messages": [{"role": "user", "content": message}],
                 "stream": True
             }
 
-            if self.candidates:
-                payload["router_candidates"] = self.candidates
+            if candidates:
+                payload["router_candidates"] = candidates
 
             response = requests.post(
                 self.url,
                 headers=headers,
                 json=payload,
-                stream=True
+                stream=True,
+                timeout=timeout
             )
+            response.raise_for_status()
 
-            assistant_response = ""
+            full_response = ""
             selected_model = None
 
             for line in response.iter_lines():
@@ -528,487 +1017,26 @@ Maintain conversation state while using smart routing:
                             selected_model = data['model']
 
                         content = data.get('choices', [{}])[0].get('delta', {}).get('content', '')
-                        assistant_response += content
-
-            # Add assistant response to history
-            self.messages.append({"role": "assistant", "content": assistant_response})
-
-            # Track routing decision
-            self.routing_history.append({
-                "turn": len(self.routing_history) + 1,
-                "model": selected_model,
-                "user_message": message[:50] + "..." if len(message) > 50 else message
-            })
-
-            return {
-                "response": assistant_response,
-                "model": selected_model,
-                "turn": len(self.routing_history)
-            }
-
-        def get_history(self) -> list[dict]:
-            """Get conversation history."""
-            return self.messages.copy()
-
-        def get_routing_stats(self) -> dict:
-            """Get routing statistics."""
-            if not self.routing_history:
-                return {}
-
-            from collections import Counter
-            model_counts = Counter(entry["model"] for entry in self.routing_history)
-
-            return {
-                "total_turns": len(self.routing_history),
-                "models_used": dict(model_counts),
-                "routing_history": self.routing_history
-            }
-
-        def reset(self):
-            """Reset conversation."""
-            system_msg = [m for m in self.messages if m["role"] == "system"]
-            self.messages = system_msg
-            self.routing_history = []
-
-    # Usage
-    conversation = SmartConversation(
-        "YOUR_API_KEY",
-        candidates=["openai/gpt-4o", "anthropic/claude-sonnet-4-5"],
-        system_prompt="You are a helpful coding assistant."
-    )
-
-    # Multi-turn conversation
-    result1 = conversation.send("What is Python?")
-    print(f"Turn 1 [{result1['model']}]: {result1['response'][:100]}...")
-
-    result2 = conversation.send("Can you show me a code example?")
-    print(f"Turn 2 [{result2['model']}]: {result2['response'][:100]}...")
-
-    result3 = conversation.send("Explain that code in detail")
-    print(f"Turn 3 [{result3['model']}]: {result3['response'][:100]}...")
-
-    # Get statistics
-    stats = conversation.get_routing_stats()
-    print(f"\nConversation stats:")
-    print(f"  Total turns: {stats['total_turns']}")
-    print(f"  Models used: {stats['models_used']}")
-    ```
-  </CodeBlock>
-</CodeBlocks>
-
-## Function Calling with Routing
-
-### Smart Routing with Tools
-
-Combine smart routing with function calling:
-
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    import requests
-    import json
-
-    def get_weather(location: str) -> str:
-        """Simulated weather function."""
-        return f"The weather in {location} is sunny, 72°F"
-
-    def calculate(expression: str) -> float:
-        """Simulated calculator function."""
-        try:
-            return eval(expression)  # Don't use in production!
-        except:
-            return "Error"
-
-    # Function definitions for the model
-    tools = [
-        {
-            "type": "function",
-            "function": {
-                "name": "get_weather",
-                "description": "Get current weather for a location",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "location": {
-                            "type": "string",
-                            "description": "City name"
-                        }
-                    },
-                    "required": ["location"]
-                }
-            }
-        },
-        {
-            "type": "function",
-            "function": {
-                "name": "calculate",
-                "description": "Perform mathematical calculation",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "expression": {
-                            "type": "string",
-                            "description": "Math expression to evaluate"
-                        }
-                    },
-                    "required": ["expression"]
-                }
-            }
-        }
-    ]
-
-    # Chat with tools
-    url = "https://api.edenai.run/v3/llm/chat/completions"
-    headers = {
-        "Authorization": "Bearer YOUR_API_KEY",
-        "Content-Type": "application/json"
-    }
-
-    payload = {
-        "model": "@edenai",
-        # Router will consider tool compatibility
-        "router_candidates": [
-            "openai/gpt-4o",
-            "anthropic/claude-sonnet-4-5",
-            "google/gemini-2.0-flash"
-        ],
-        "messages": [
-            {"role": "user", "content": "What's the weather in Paris and what's 15 * 23?"}
-        ],
-        "tools": tools,
-        "stream": True
-    }
-
-    response = requests.post(url, headers=headers, json=payload, stream=True)
-
-    tool_calls = []
-    full_response = ""
-    selected_model = None
-
-    for line in response.iter_lines():
-        if line:
-            line_str = line.decode('utf-8')
-            if line_str.startswith('data: ') and line_str != 'data: [DONE]':
-                data = json.loads(line_str[6:])
-
-                if not selected_model and 'model' in data:
-                    selected_model = data['model']
-                    print(f"Router selected: {selected_model}")
-
-                delta = data.get('choices', [{}])[0].get('delta', {})
-
-                # Collect tool calls
-                if 'tool_calls' in delta:
-                    tool_calls.extend(delta['tool_calls'])
-
-                # Collect text content
-                if 'content' in delta and delta['content']:
-                    full_response += delta['content']
-
-    print(f"Response: {full_response}")
-    print(f"Tool calls: {tool_calls}")
-    ```
-  </CodeBlock>
-</CodeBlocks>
-
-## Performance Optimization
-
-### Strategy 1: Client-Side Caching
-
-Cache routing decisions for repeated queries:
-
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    import requests
-    import json
-    import hashlib
-    from typing import Optional, Dict
-    from datetime import datetime, timedelta
-
-    class CachedRouter:
-        """Router with client-side caching of routing decisions."""
-
-        def __init__(self, api_key: str, cache_ttl_seconds: int = 3600):
-            self.api_key = api_key
-            self.url = "https://api.edenai.run/v3/llm/chat/completions"
-            self.cache_ttl = timedelta(seconds=cache_ttl_seconds)
-
-            # Cache: query_hash -> (model, timestamp)
-            self.routing_cache: Dict[str, tuple[str, datetime]] = {}
-
-        def _hash_query(self, message: str, candidates: list[str]) -> str:
-            """Create hash for caching."""
-            cache_key = f"{message[:200]}|{'|'.join(sorted(candidates or []))}"
-            return hashlib.md5(cache_key.encode()).hexdigest()
-
-        def _get_cached_model(
-            self,
-            message: str,
-            candidates: list[str]
-        ) -> Optional[str]:
-            """Get cached routing decision if valid."""
-            cache_key = self._hash_query(message, candidates)
-
-            if cache_key in self.routing_cache:
-                model, timestamp = self.routing_cache[cache_key]
-                age = datetime.now() - timestamp
-
-                if age < self.cache_ttl:
-                    print(f"[Cache hit] Using cached model: {model}")
-                    return model
-                else:
-                    # Cache expired
-                    del self.routing_cache[cache_key]
-
-            return None
-
-        def _cache_model(
-            self,
-            message: str,
-            candidates: list[str],
-            model: str
-        ):
-            """Cache routing decision."""
-            cache_key = self._hash_query(message, candidates)
-            self.routing_cache[cache_key] = (model, datetime.now())
-
-        def chat(
-            self,
-            message: str,
-            candidates: list[str] = None,
-            use_cache: bool = True
-        ) -> dict:
-            """Chat with caching."""
-
-            # Check cache first
-            cached_model = None
-            if use_cache:
-                cached_model = self._get_cached_model(message, candidates or [])
-
-            headers = {
-                "Authorization": f"Bearer {self.api_key}",
-                "Content-Type": "application/json"
-            }
-
-            # Use cached model if available
-            if cached_model:
-                payload = {
-                    "model": cached_model,  # Use cached model directly
-                    "messages": [{"role": "user", "content": message}],
-                    "stream": True
-                }
-                used_routing = False
-            else:
-                payload = {
-                    "model": "@edenai",  # Use routing
-                    "messages": [{"role": "user", "content": message}],
-                    "stream": True
-                }
-                if candidates:
-                    payload["router_candidates"] = candidates
-                used_routing = True
-
-            response = requests.post(
-                self.url,
-                headers=headers,
-                json=payload,
-                stream=True
-            )
-
-            full_response = ""
-            selected_model = cached_model
-
-            for line in response.iter_lines():
-                if line:
-                    line_str = line.decode('utf-8')
-                    if line_str.startswith('data: ') and line_str != 'data: [DONE]':
-                        data = json.loads(line_str[6:])
-
-                        if not selected_model and 'model' in data:
-                            selected_model = data['model']
-
-                        content = data.get('choices', [{}])[0].get('delta', {}).get('content', '')
                         full_response += content
-
-            # Cache the routing decision
-            if used_routing and selected_model and use_cache:
-                self._cache_model(message, candidates or [], selected_model)
 
             return {
                 "response": full_response,
                 "model": selected_model,
-                "cached": not used_routing,
-                "cache_size": len(self.routing_cache)
+                "method": "routing",
+                "success": True
             }
 
-    # Usage
-    router = CachedRouter("YOUR_API_KEY", cache_ttl_seconds=3600)
+        except Exception as e:
+            print(f"[Warning] Routing failed: {e}")
+            print(f"[Fallback] Using fixed model: {self.fallback_model}")
 
-    # First request - uses routing
-    result1 = router.chat(
-        "What is machine learning?",
-        candidates=["openai/gpt-4o", "anthropic/claude-sonnet-4-5"]
-    )
-    print(f"First request: {result1['model']} (cached: {result1['cached']})")
-
-    # Second identical request - uses cache
-    result2 = router.chat(
-        "What is machine learning?",
-        candidates=["openai/gpt-4o", "anthropic/claude-sonnet-4-5"]
-    )
-    print(f"Second request: {result2['model']} (cached: {result2['cached']})")
-    ```
-  </CodeBlock>
-</CodeBlocks>
-
-### Strategy 2: Parallel Requests with Routing
-
-Make multiple routed requests in parallel:
-
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    import asyncio
-    import httpx
-    import json
-
-    async def routed_chat_async(
-        api_key: str,
-        message: str,
-        candidates: list[str] = None
-    ) -> dict:
-        """Async chat with routing."""
-        url = "https://api.edenai.run/v3/llm/chat/completions"
-        headers = {
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json"
-        }
-
-        payload = {
-            "model": "@edenai",
-            "messages": [{"role": "user", "content": message}],
-            "stream": True
-        }
-
-        if candidates:
-            payload["router_candidates"] = candidates
-
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            async with client.stream(
-                "POST",
-                url,
-                headers=headers,
-                json=payload
-            ) as response:
-                full_response = ""
-                selected_model = None
-
-                async for line in response.aiter_lines():
-                    if line.startswith('data: ') and line != 'data: [DONE]':
-                        data = json.loads(line[6:])
-
-                        if not selected_model and 'model' in data:
-                            selected_model = data['model']
-
-                        content = data.get('choices', [{}])[0].get('delta', {}).get('content', '')
-                        full_response += content
-
-                return {
-                    "message": message,
-                    "response": full_response,
-                    "model": selected_model
-                }
-
-    async def batch_routed_requests(
-        api_key: str,
-        messages: list[str],
-        candidates: list[str] = None
-    ) -> list[dict]:
-        """Process multiple messages in parallel with routing."""
-        tasks = [
-            routed_chat_async(api_key, msg, candidates)
-            for msg in messages
-        ]
-
-        results = await asyncio.gather(*tasks)
-        return results
-
-    # Usage
-    async def main():
-        api_key = "YOUR_API_KEY"
-        messages = [
-            "What is Python?",
-            "What is JavaScript?",
-            "What is Rust?",
-            "What is Go?",
-            "What is TypeScript?"
-        ]
-
-        candidates = ["openai/gpt-4o", "anthropic/claude-sonnet-4-5"]
-
-        print("Processing 5 requests in parallel...")
-        results = await batch_routed_requests(api_key, messages, candidates)
-
-        for result in results:
-            print(f"\nQ: {result['message']}")
-            print(f"Model: {result['model']}")
-            print(f"A: {result['response'][:100]}...")
-
-    # Run
-    asyncio.run(main())
-    ```
-  </CodeBlock>
-</CodeBlocks>
-
-## Production Deployment Patterns
-
-### Pattern 1: Fallback to Fixed Model
-
-Implement graceful fallback when routing fails:
-
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    import requests
-    import json
-    from typing import Optional
-
-    class ResilientRouter:
-        """Router with automatic fallback to fixed model."""
-
-        def __init__(
-            self,
-            api_key: str,
-            fallback_model: str = "openai/gpt-4o"
-        ):
-            self.api_key = api_key
-            self.fallback_model = fallback_model
-            self.url = "https://api.edenai.run/v3/llm/chat/completions"
-
-        def chat(
-            self,
-            message: str,
-            candidates: list[str] = None,
-            timeout: int = 30
-        ) -> dict:
-            """Chat with automatic fallback."""
-
-            headers = {
-                "Authorization": f"Bearer {self.api_key}",
-                "Content-Type": "application/json"
-            }
-
-            # Try routing first
+            # Fallback to fixed model
             try:
                 payload = {
-                    "model": "@edenai",
+                    "model": self.fallback_model,
                     "messages": [{"role": "user", "content": message}],
                     "stream": True
                 }
-
-                if candidates:
-                    payload["router_candidates"] = candidates
 
                 response = requests.post(
                     self.url,
@@ -1020,88 +1048,44 @@ Implement graceful fallback when routing fails:
                 response.raise_for_status()
 
                 full_response = ""
-                selected_model = None
-
                 for line in response.iter_lines():
                     if line:
                         line_str = line.decode('utf-8')
                         if line_str.startswith('data: ') and line_str != 'data: [DONE]':
                             data = json.loads(line_str[6:])
-
-                            if not selected_model and 'model' in data:
-                                selected_model = data['model']
-
                             content = data.get('choices', [{}])[0].get('delta', {}).get('content', '')
                             full_response += content
 
                 return {
                     "response": full_response,
-                    "model": selected_model,
-                    "method": "routing",
-                    "success": True
+                    "model": self.fallback_model,
+                    "method": "fallback",
+                    "success": True,
+                    "routing_error": str(e)
                 }
 
-            except Exception as e:
-                print(f"[Warning] Routing failed: {e}")
-                print(f"[Fallback] Using fixed model: {self.fallback_model}")
+            except Exception as fallback_error:
+                return {
+                    "response": None,
+                    "model": None,
+                    "method": "failed",
+                    "success": False,
+                    "error": str(fallback_error)
+                }
 
-                # Fallback to fixed model
-                try:
-                    payload = {
-                        "model": self.fallback_model,
-                        "messages": [{"role": "user", "content": message}],
-                        "stream": True
-                    }
+# Usage
+router = ResilientRouter("YOUR_API_KEY", fallback_model="openai/gpt-4o")
 
-                    response = requests.post(
-                        self.url,
-                        headers=headers,
-                        json=payload,
-                        stream=True,
-                        timeout=timeout
-                    )
-                    response.raise_for_status()
+result = router.chat("Explain quantum computing")
 
-                    full_response = ""
-                    for line in response.iter_lines():
-                        if line:
-                            line_str = line.decode('utf-8')
-                            if line_str.startswith('data: ') and line_str != 'data: [DONE]':
-                                data = json.loads(line_str[6:])
-                                content = data.get('choices', [{}])[0].get('delta', {}).get('content', '')
-                                full_response += content
-
-                    return {
-                        "response": full_response,
-                        "model": self.fallback_model,
-                        "method": "fallback",
-                        "success": True,
-                        "routing_error": str(e)
-                    }
-
-                except Exception as fallback_error:
-                    return {
-                        "response": None,
-                        "model": None,
-                        "method": "failed",
-                        "success": False,
-                        "error": str(fallback_error)
-                    }
-
-    # Usage
-    router = ResilientRouter("YOUR_API_KEY", fallback_model="openai/gpt-4o")
-
-    result = router.chat("Explain quantum computing")
-
-    if result["success"]:
-        print(f"Method: {result['method']}")
-        print(f"Model: {result['model']}")
-        print(f"Response: {result['response'][:100]}...")
-    else:
-        print(f"Failed: {result['error']}")
+if result["success"]:
+    print(f"Method: {result['method']}")
+    print(f"Model: {result['model']}")
+    print(f"Response: {result['response'][:100]}...")
+else:
+    print(f"Failed: {result['error']}")
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ## Best Practices Summary
 

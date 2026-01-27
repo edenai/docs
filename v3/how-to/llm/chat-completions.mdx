@@ -29,167 +29,155 @@ provider/model
 
 ## Basic Chat Completion
 
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    import requests
+<CodeGroup>
+```python Python
+import requests
 
-    url = "https://api.edenai.run/v3/llm/chat/completions"
-    headers = {
-        "Authorization": "Bearer YOUR_API_KEY",
-        "Content-Type": "application/json"
-    }
+url = "https://api.edenai.run/v3/llm/chat/completions"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
 
-    payload = {
-        "model": "openai/gpt-4",
-        "messages": [
-            {"role": "user", "content": "Hello! How are you?"}
-        ],
-        "stream": True
-    }
+payload = {
+    "model": "openai/gpt-4",
+    "messages": [
+        {"role": "user", "content": "Hello! How are you?"}
+    ],
+    "stream": True
+}
 
-    # Streaming response
-    response = requests.post(url, headers=headers, json=payload, stream=True)
+# Streaming response
+response = requests.post(url, headers=headers, json=payload, stream=True)
 
-    for line in response.iter_lines():
-        if line:
-            line_str = line.decode('utf-8')
-            if line_str.startswith('data: '):
-                data = line_str[6:]  # Remove 'data: ' prefix
-                if data != '[DONE]':
-                    print(data)
+for line in response.iter_lines():
+    if line:
+        line_str = line.decode('utf-8')
+        if line_str.startswith('data: '):
+            data = line_str[6:]  # Remove 'data: ' prefix
+            if data != '[DONE]':
+                print(data)
     ```
-  </CodeBlock>
 
-  <CodeBlock title="JavaScript">
-    ```javascript
-    const url = 'https://api.edenai.run/v3/llm/chat/completions';
-    const headers = {
-      'Authorization': 'Bearer YOUR_API_KEY',
-      'Content-Type': 'application/json'
-    };
+```javascript JavaScript
+const url = 'https://api.edenai.run/v3/llm/chat/completions';
+const headers = {
+  'Authorization': 'Bearer YOUR_API_KEY',
+  'Content-Type': 'application/json'
+};
 
-    const payload = {
-      model: 'openai/gpt-4',
-      messages: [{role: 'user', content: 'Hello!'}],
-      stream: true
-    };
+const payload = {
+  model: 'openai/gpt-4',
+  messages: [{role: 'user', content: 'Hello!'}],
+  stream: true
+};
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: headers,
-      body: JSON.stringify(payload)
-    });
+const response = await fetch(url, {
+  method: 'POST',
+  headers: headers,
+  body: JSON.stringify(payload)
+});
 
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
+const reader = response.body.getReader();
+const decoder = new TextDecoder();
 
-    while (true) {
-      const {done, value} = await reader.read();
-      if (done) break;
+while (true) {
+  const {done, value} = await reader.read();
+  if (done) break;
       
-      const chunk = decoder.decode(value);
-      console.log(chunk);
-    }
+  const chunk = decoder.decode(value);
+  console.log(chunk);
+}
     ```
-  </CodeBlock>
 
-  <CodeBlock title="cURL">
-    ```bash
-    curl -X POST https://api.edenai.run/v3/llm/chat/completions \
-      -H "Authorization: Bearer YOUR_API_KEY" \
-      -H "Content-Type: application/json" \
-      -d '{
-        "model": "openai/gpt-4",
-        "messages": [{"role": "user", "content": "Hello!"}],
-        "stream": true
-      }'
+```bash cURL
+curl -X POST https://api.edenai.run/v3/llm/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-4",
+    "messages": [{"role": "user", "content": "Hello!"}],
+    "stream": true
+  }'
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ## Multi-Turn Conversations
 
 Build conversations with message history:
 
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    import requests
-    payload = {
-        "model": "anthropic/claude-3-5-sonnet-20241022",
-        "messages": [
-            {"role": "user", "content": "What is the capital of France?"},
-            {"role": "assistant", "content": "The capital of France is Paris."},
-            {"role": "user", "content": "What's the population?"}
-        ],
-        "stream": True
-    }
+<CodeGroup>
+```python Python
+import requests
+payload = {
+    "model": "anthropic/claude-3-5-sonnet-20241022",
+    "messages": [
+        {"role": "user", "content": "What is the capital of France?"},
+        {"role": "assistant", "content": "The capital of France is Paris."},
+        {"role": "user", "content": "What's the population?"}
+    ],
+    "stream": True
+}
 
-    response = requests.post(url, headers=headers, json=payload, stream=True)
+response = requests.post(url, headers=headers, json=payload, stream=True)
 
-    for line in response.iter_lines():
-        if line:
-            line_str = line.decode('utf-8')
-            if line_str.startswith('data: '):
-                data = line_str[6:]
-                if data != '[DONE]':
-                    print(data)
+for line in response.iter_lines():
+    if line:
+        line_str = line.decode('utf-8')
+        if line_str.startswith('data: '):
+            data = line_str[6:]
+            if data != '[DONE]':
+                print(data)
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ## System Messages
 
 Guide the model's behavior with system messages:
 
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    import requests
-    payload = {
-        "model": "openai/gpt-4",
-        "messages": [
-            {
-                "role": "system",
-                "content": "You are a helpful assistant that speaks like a pirate."
-            },
-            {
-                "role": "user",
-                "content": "Tell me about artificial intelligence."
-            }
-        ],
-        "stream": True
-    }
+<CodeGroup>
+```python Python
+import requests
+payload = {
+    "model": "openai/gpt-4",
+    "messages": [
+        {
+            "role": "system",
+            "content": "You are a helpful assistant that speaks like a pirate."
+        },
+        {
+            "role": "user",
+            "content": "Tell me about artificial intelligence."
+        }
+    ],
+    "stream": True
+}
 
-    response = requests.post(url, headers=headers, json=payload, stream=True)
+response = requests.post(url, headers=headers, json=payload, stream=True)
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ## Temperature and Parameters
 
 Control response creativity and behavior:
 
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    import requests
-    payload = {
-        "model": "openai/gpt-4",
-        "messages": [
-            {"role": "user", "content": "Write a creative story about a robot."}
-        ],
-        "temperature": 0.9,  # Higher = more creative (0-2)
-        "max_tokens": 500,   # Limit response length
-        "top_p": 1.0,        # Nucleus sampling
-        "stream": True
-    }
+<CodeGroup>
+```python Python
+import requests
+payload = {
+    "model": "openai/gpt-4",
+    "messages": [
+        {"role": "user", "content": "Write a creative story about a robot."}
+    ],
+    "temperature": 0.9,  # Higher = more creative (0-2)
+    "max_tokens": 500,   # Limit response length
+    "top_p": 1.0,        # Nucleus sampling
+    "stream": True
+}
 
-    response = requests.post(url, headers=headers, json=payload, stream=True)
+response = requests.post(url, headers=headers, json=payload, stream=True)
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ## Available Parameters
 
@@ -248,30 +236,28 @@ data: [DONE]
 
 Use Eden AI with the OpenAI SDK:
 
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    from openai import OpenAI
+<CodeGroup>
+```python Python
+from openai import OpenAI
 
-    # Point to Eden AI endpoint
-    client = OpenAI(
-        api_key="YOUR_EDEN_AI_API_KEY",
-        base_url="https://api.edenai.run/v3/llm"
-    )
+# Point to Eden AI endpoint
+client = OpenAI(
+    api_key="YOUR_EDEN_AI_API_KEY",
+    base_url="https://api.edenai.run/v3/llm"
+)
 
-    # Use any provider through OpenAI SDK
-    stream = client.chat.completions.create(
-        model="anthropic/claude-3-5-sonnet-20241022",
-        messages=[{"role": "user", "content": "Hello!"}],
-        stream=True
-    )
+# Use any provider through OpenAI SDK
+stream = client.chat.completions.create(
+    model="anthropic/claude-3-5-sonnet-20241022",
+    messages=[{"role": "user", "content": "Hello!"}],
+    stream=True
+)
 
-    for chunk in stream:
-        if chunk.choices[0].delta.content:
-            print(chunk.choices[0].delta.content, end='')
+for chunk in stream:
+    if chunk.choices[0].delta.content:
+        print(chunk.choices[0].delta.content, end='')
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ## Next Steps
 

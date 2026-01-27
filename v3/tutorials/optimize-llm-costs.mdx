@@ -62,143 +62,141 @@ You're building a customer support chatbot with diverse query types:
 
 First, let's build a simple chatbot using a single fixed model to establish a baseline:
 
-<CodeBlocks>
-  <CodeBlock title="baseline_chatbot.py">
-    ```python
-    import requests
-    import json
-    from datetime import datetime
-    from typing import List, Dict
+<CodeGroup>
+```python baseline_chatbot.py
+import requests
+import json
+from datetime import datetime
+from typing import List, Dict
 
-    class BaselineChatbot:
-        """Simple chatbot with fixed model (baseline for comparison)."""
+class BaselineChatbot:
+    """Simple chatbot with fixed model (baseline for comparison)."""
 
-        def __init__(self, api_key: str, model: str = "openai/gpt-4o"):
-            self.api_key = api_key
-            self.model = model
-            self.conversation_history = []
-            self.cost_log = []
+    def __init__(self, api_key: str, model: str = "openai/gpt-4o"):
+        self.api_key = api_key
+        self.model = model
+        self.conversation_history = []
+        self.cost_log = []
 
-        def chat(self, message: str) -> Dict:
-            """Send a message and get response."""
+    def chat(self, message: str) -> Dict:
+        """Send a message and get response."""
 
-            self.conversation_history.append({
-                "role": "user",
-                "content": message
-            })
+        self.conversation_history.append({
+            "role": "user",
+            "content": message
+        })
 
-            url = "https://api.edenai.run/v3/llm/chat/completions"
-            headers = {
-                "Authorization": f"Bearer {self.api_key}",
-                "Content-Type": "application/json"
-            }
+        url = "https://api.edenai.run/v3/llm/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
 
-            payload = {
-                "model": self.model,
-                "messages": self.conversation_history,
-                "stream": True
-            }
+        payload = {
+            "model": self.model,
+            "messages": self.conversation_history,
+            "stream": True
+        }
 
-            start_time = datetime.now()
-            response = requests.post(url, headers=headers, json=payload, stream=True)
+        start_time = datetime.now()
+        response = requests.post(url, headers=headers, json=payload, stream=True)
 
-            full_response = ""
-            for line in response.iter_lines():
-                if line:
-                    line_str = line.decode('utf-8')
-                    if line_str.startswith('data: ') and line_str != 'data: [DONE]':
-                        data = json.loads(line_str[6:])
-                        content = data.get('choices', [{}])[0].get('delta', {}).get('content', '')
-                        full_response += content
+        full_response = ""
+        for line in response.iter_lines():
+            if line:
+                line_str = line.decode('utf-8')
+                if line_str.startswith('data: ') and line_str != 'data: [DONE]':
+                    data = json.loads(line_str[6:])
+                    content = data.get('choices', [{}])[0].get('delta', {}).get('content', '')
+                    full_response += content
 
-            end_time = datetime.now()
-            latency = (end_time - start_time).total_seconds()
+        end_time = datetime.now()
+        latency = (end_time - start_time).total_seconds()
 
-            # Add to conversation history
-            self.conversation_history.append({
-                "role": "assistant",
-                "content": full_response
-            })
+        # Add to conversation history
+        self.conversation_history.append({
+            "role": "assistant",
+            "content": full_response
+        })
 
-            # Log cost (approximate - you'd get this from response metadata)
-            estimated_cost = self._estimate_cost(message, full_response)
-            self.cost_log.append({
-                "timestamp": start_time.isoformat(),
-                "model": self.model,
-                "input_tokens": len(message.split()) * 1.3,  # Rough estimate
-                "output_tokens": len(full_response.split()) * 1.3,
-                "cost": estimated_cost,
-                "latency": latency
-            })
+        # Log cost (approximate - you'd get this from response metadata)
+        estimated_cost = self._estimate_cost(message, full_response)
+        self.cost_log.append({
+            "timestamp": start_time.isoformat(),
+            "model": self.model,
+            "input_tokens": len(message.split()) * 1.3,  # Rough estimate
+            "output_tokens": len(full_response.split()) * 1.3,
+            "cost": estimated_cost,
+            "latency": latency
+        })
 
-            return {
-                "response": full_response,
-                "model": self.model,
-                "latency": latency,
-                "estimated_cost": estimated_cost
-            }
+        return {
+            "response": full_response,
+            "model": self.model,
+            "latency": latency,
+            "estimated_cost": estimated_cost
+        }
 
-        def _estimate_cost(self, input_text: str, output_text: str) -> float:
-            """Estimate cost based on token counts (simplified)."""
-            # Rough token estimation: ~1.3 tokens per word
-            input_tokens = len(input_text.split()) * 1.3
-            output_tokens = len(output_text.split()) * 1.3
+    def _estimate_cost(self, input_text: str, output_text: str) -> float:
+        """Estimate cost based on token counts (simplified)."""
+        # Rough token estimation: ~1.3 tokens per word
+        input_tokens = len(input_text.split()) * 1.3
+        output_tokens = len(output_text.split()) * 1.3
 
-            # GPT-4o pricing (example)
-            COST_PER_1K_INPUT = 0.0025
-            COST_PER_1K_OUTPUT = 0.01
+        # GPT-4o pricing (example)
+        COST_PER_1K_INPUT = 0.0025
+        COST_PER_1K_OUTPUT = 0.01
 
-            cost = (input_tokens / 1000 * COST_PER_1K_INPUT +
-                    output_tokens / 1000 * COST_PER_1K_OUTPUT)
-            return cost
+        cost = (input_tokens / 1000 * COST_PER_1K_INPUT +
+                output_tokens / 1000 * COST_PER_1K_OUTPUT)
+        return cost
 
-        def get_total_cost(self) -> float:
-            """Get total conversation cost."""
-            return sum(log["cost"] for log in self.cost_log)
+    def get_total_cost(self) -> float:
+        """Get total conversation cost."""
+        return sum(log["cost"] for log in self.cost_log)
 
-        def get_stats(self) -> Dict:
-            """Get conversation statistics."""
-            total_queries = len(self.cost_log)
-            if total_queries == 0:
-                return {"error": "No queries yet"}
+    def get_stats(self) -> Dict:
+        """Get conversation statistics."""
+        total_queries = len(self.cost_log)
+        if total_queries == 0:
+            return {"error": "No queries yet"}
 
-            return {
-                "total_queries": total_queries,
-                "total_cost": self.get_total_cost(),
-                "avg_cost_per_query": self.get_total_cost() / total_queries,
-                "avg_latency": sum(log["latency"] for log in self.cost_log) / total_queries,
-                "model_used": self.model
-            }
+        return {
+            "total_queries": total_queries,
+            "total_cost": self.get_total_cost(),
+            "avg_cost_per_query": self.get_total_cost() / total_queries,
+            "avg_latency": sum(log["latency"] for log in self.cost_log) / total_queries,
+            "model_used": self.model
+        }
 
 
-    # Test baseline chatbot
-    if __name__ == "__main__":
-        chatbot = BaselineChatbot(api_key="YOUR_API_KEY")
+# Test baseline chatbot
+if __name__ == "__main__":
+    chatbot = BaselineChatbot(api_key="YOUR_API_KEY")
 
-        # Test queries
-        queries = [
-            "What are your business hours?",
-            "How do I reset my password?",
-            "My server is returning 500 errors after upgrading to version 2.0. The logs show 'Connection timeout' but only for API endpoints, not static content.",
-        ]
+    # Test queries
+    queries = [
+        "What are your business hours?",
+        "How do I reset my password?",
+        "My server is returning 500 errors after upgrading to version 2.0. The logs show 'Connection timeout' but only for API endpoints, not static content.",
+    ]
 
-        print("=== Baseline Chatbot (Fixed Model: GPT-4o) ===\n")
+    print("=== Baseline Chatbot (Fixed Model: GPT-4o) ===\n")
 
-        for query in queries:
-            print(f"User: {query}")
-            result = chatbot.chat(query)
-            print(f"Assistant: {result['response'][:100]}...")
-            print(f"Cost: ${result['estimated_cost']:.4f} | Latency: {result['latency']:.2f}s\n")
+    for query in queries:
+        print(f"User: {query}")
+        result = chatbot.chat(query)
+        print(f"Assistant: {result['response'][:100]}...")
+        print(f"Cost: ${result['estimated_cost']:.4f} | Latency: {result['latency']:.2f}s\n")
 
-        # Print stats
-        stats = chatbot.get_stats()
-        print("\n=== Baseline Statistics ===")
-        print(f"Total queries: {stats['total_queries']}")
-        print(f"Total cost: ${stats['total_cost']:.4f}")
-        print(f"Avg cost per query: ${stats['avg_cost_per_query']:.4f}")
+    # Print stats
+    stats = chatbot.get_stats()
+    print("\n=== Baseline Statistics ===")
+    print(f"Total queries: {stats['total_queries']}")
+    print(f"Total cost: ${stats['total_cost']:.4f}")
+    print(f"Avg cost per query: ${stats['avg_cost_per_query']:.4f}")
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 **Expected Output:**
 ```
@@ -216,187 +214,185 @@ Avg cost per query: $0.0041
 
 Now let's migrate to smart routing with default model selection:
 
-<CodeBlocks>
-  <CodeBlock title="smart_routing_chatbot.py">
-    ```python
-    import requests
-    import json
-    from datetime import datetime
-    from typing import List, Dict, Optional
+<CodeGroup>
+```python smart_routing_chatbot.py
+import requests
+import json
+from datetime import datetime
+from typing import List, Dict, Optional
 
-    class SmartRoutingChatbot:
-        """Chatbot with smart routing for automatic model selection."""
+class SmartRoutingChatbot:
+    """Chatbot with smart routing for automatic model selection."""
 
-        def __init__(self, api_key: str, router_candidates: Optional[List[str]] = None):
-            self.api_key = api_key
-            self.router_candidates = router_candidates
-            self.conversation_history = []
-            self.cost_log = []
+    def __init__(self, api_key: str, router_candidates: Optional[List[str]] = None):
+        self.api_key = api_key
+        self.router_candidates = router_candidates
+        self.conversation_history = []
+        self.cost_log = []
 
-        def chat(self, message: str) -> Dict:
-            """Send a message with smart routing."""
+    def chat(self, message: str) -> Dict:
+        """Send a message with smart routing."""
 
-            self.conversation_history.append({
-                "role": "user",
-                "content": message
-            })
+        self.conversation_history.append({
+            "role": "user",
+            "content": message
+        })
 
-            url = "https://api.edenai.run/v3/llm/chat/completions"
-            headers = {
-                "Authorization": f"Bearer {self.api_key}",
-                "Content-Type": "application/json"
-            }
+        url = "https://api.edenai.run/v3/llm/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
 
-            payload = {
-                "model": "@edenai",  # Smart routing trigger
-                "messages": self.conversation_history,
-                "stream": True
-            }
+        payload = {
+            "model": "@edenai",  # Smart routing trigger
+            "messages": self.conversation_history,
+            "stream": True
+        }
 
-            # Add custom candidates if provided
-            if self.router_candidates:
-                payload["router_candidates"] = self.router_candidates
+        # Add custom candidates if provided
+        if self.router_candidates:
+            payload["router_candidates"] = self.router_candidates
 
-            start_time = datetime.now()
-            response = requests.post(url, headers=headers, json=payload, stream=True)
+        start_time = datetime.now()
+        response = requests.post(url, headers=headers, json=payload, stream=True)
 
-            full_response = ""
-            selected_model = None
-            first_chunk_time = None
+        full_response = ""
+        selected_model = None
+        first_chunk_time = None
 
-            for line in response.iter_lines():
-                if line:
-                    if not first_chunk_time:
-                        first_chunk_time = datetime.now()
+        for line in response.iter_lines():
+            if line:
+                if not first_chunk_time:
+                    first_chunk_time = datetime.now()
 
-                    line_str = line.decode('utf-8')
-                    if line_str.startswith('data: ') and line_str != 'data: [DONE]':
-                        data = json.loads(line_str[6:])
+                line_str = line.decode('utf-8')
+                if line_str.startswith('data: ') and line_str != 'data: [DONE]':
+                    data = json.loads(line_str[6:])
 
-                        # Track which model was selected
-                        if not selected_model and 'model' in data:
-                            selected_model = data['model']
+                    # Track which model was selected
+                    if not selected_model and 'model' in data:
+                        selected_model = data['model']
 
-                        content = data.get('choices', [{}])[0].get('delta', {}).get('content', '')
-                        full_response += content
+                    content = data.get('choices', [{}])[0].get('delta', {}).get('content', '')
+                    full_response += content
 
-            end_time = datetime.now()
-            latency = (end_time - start_time).total_seconds()
-            routing_latency = (first_chunk_time - start_time).total_seconds() if first_chunk_time else 0
+        end_time = datetime.now()
+        latency = (end_time - start_time).total_seconds()
+        routing_latency = (first_chunk_time - start_time).total_seconds() if first_chunk_time else 0
 
-            # Add to conversation history
-            self.conversation_history.append({
-                "role": "assistant",
-                "content": full_response
-            })
+        # Add to conversation history
+        self.conversation_history.append({
+            "role": "assistant",
+            "content": full_response
+        })
 
-            # Log cost
-            estimated_cost = self._estimate_cost(message, full_response, selected_model)
-            self.cost_log.append({
-                "timestamp": start_time.isoformat(),
-                "query": message[:100],
-                "model": selected_model,
-                "routing_method": "smart",
-                "input_tokens": len(message.split()) * 1.3,
-                "output_tokens": len(full_response.split()) * 1.3,
-                "cost": estimated_cost,
-                "latency": latency,
-                "routing_latency": routing_latency
-            })
+        # Log cost
+        estimated_cost = self._estimate_cost(message, full_response, selected_model)
+        self.cost_log.append({
+            "timestamp": start_time.isoformat(),
+            "query": message[:100],
+            "model": selected_model,
+            "routing_method": "smart",
+            "input_tokens": len(message.split()) * 1.3,
+            "output_tokens": len(full_response.split()) * 1.3,
+            "cost": estimated_cost,
+            "latency": latency,
+            "routing_latency": routing_latency
+        })
 
-            return {
-                "response": full_response,
-                "model": selected_model,
-                "latency": latency,
-                "routing_latency": routing_latency,
-                "estimated_cost": estimated_cost
-            }
+        return {
+            "response": full_response,
+            "model": selected_model,
+            "latency": latency,
+            "routing_latency": routing_latency,
+            "estimated_cost": estimated_cost
+        }
 
-        def _estimate_cost(self, input_text: str, output_text: str, model: str) -> float:
-            """Estimate cost based on model pricing."""
-            input_tokens = len(input_text.split()) * 1.3
-            output_tokens = len(output_text.split()) * 1.3
+    def _estimate_cost(self, input_text: str, output_text: str, model: str) -> float:
+        """Estimate cost based on model pricing."""
+        input_tokens = len(input_text.split()) * 1.3
+        output_tokens = len(output_text.split()) * 1.3
 
-            # Simplified pricing table (per 1K tokens)
-            PRICING = {
-                "openai/gpt-4o": {"input": 0.0025, "output": 0.01},
-                "openai/gpt-4o-mini": {"input": 0.00015, "output": 0.0006},
-                "anthropic/claude-sonnet-4-5": {"input": 0.003, "output": 0.015},
-                "anthropic/claude-haiku-4-5": {"input": 0.0008, "output": 0.004},
-                "google/gemini-2.0-flash": {"input": 0.0001, "output": 0.0004},
-            }
+        # Simplified pricing table (per 1K tokens)
+        PRICING = {
+            "openai/gpt-4o": {"input": 0.0025, "output": 0.01},
+            "openai/gpt-4o-mini": {"input": 0.00015, "output": 0.0006},
+            "anthropic/claude-sonnet-4-5": {"input": 0.003, "output": 0.015},
+            "anthropic/claude-haiku-4-5": {"input": 0.0008, "output": 0.004},
+            "google/gemini-2.0-flash": {"input": 0.0001, "output": 0.0004},
+        }
 
-            pricing = PRICING.get(model, PRICING["openai/gpt-4o"])
-            cost = (input_tokens / 1000 * pricing["input"] +
-                    output_tokens / 1000 * pricing["output"])
-            return cost
+        pricing = PRICING.get(model, PRICING["openai/gpt-4o"])
+        cost = (input_tokens / 1000 * pricing["input"] +
+                output_tokens / 1000 * pricing["output"])
+        return cost
 
-        def get_stats(self) -> Dict:
-            """Get conversation statistics."""
-            if not self.cost_log:
-                return {"error": "No queries yet"}
+    def get_stats(self) -> Dict:
+        """Get conversation statistics."""
+        if not self.cost_log:
+            return {"error": "No queries yet"}
 
-            from collections import defaultdict
-            model_counts = defaultdict(int)
-            model_costs = defaultdict(float)
+        from collections import defaultdict
+        model_counts = defaultdict(int)
+        model_costs = defaultdict(float)
 
-            for log in self.cost_log:
-                model_counts[log["model"]] += 1
-                model_costs[log["model"]] += log["cost"]
+        for log in self.cost_log:
+            model_counts[log["model"]] += 1
+            model_costs[log["model"]] += log["cost"]
 
-            return {
-                "total_queries": len(self.cost_log),
-                "total_cost": sum(log["cost"] for log in self.cost_log),
-                "avg_cost_per_query": sum(log["cost"] for log in self.cost_log) / len(self.cost_log),
-                "avg_latency": sum(log["latency"] for log in self.cost_log) / len(self.cost_log),
-                "avg_routing_latency": sum(log["routing_latency"] for log in self.cost_log) / len(self.cost_log),
-                "model_distribution": dict(model_counts),
-                "cost_by_model": dict(model_costs)
-            }
+        return {
+            "total_queries": len(self.cost_log),
+            "total_cost": sum(log["cost"] for log in self.cost_log),
+            "avg_cost_per_query": sum(log["cost"] for log in self.cost_log) / len(self.cost_log),
+            "avg_latency": sum(log["latency"] for log in self.cost_log) / len(self.cost_log),
+            "avg_routing_latency": sum(log["routing_latency"] for log in self.cost_log) / len(self.cost_log),
+            "model_distribution": dict(model_counts),
+            "cost_by_model": dict(model_costs)
+        }
 
 
-    # Test smart routing chatbot
-    if __name__ == "__main__":
-        # Use custom candidates for cost optimization
-        candidates = [
-            "openai/gpt-4o",
-            "openai/gpt-4o-mini",
-            "anthropic/claude-sonnet-4-5",
-            "google/gemini-2.0-flash"
-        ]
+# Test smart routing chatbot
+if __name__ == "__main__":
+    # Use custom candidates for cost optimization
+    candidates = [
+        "openai/gpt-4o",
+        "openai/gpt-4o-mini",
+        "anthropic/claude-sonnet-4-5",
+        "google/gemini-2.0-flash"
+    ]
 
-        chatbot = SmartRoutingChatbot(
-            api_key="YOUR_API_KEY",
-            router_candidates=candidates
-        )
+    chatbot = SmartRoutingChatbot(
+        api_key="YOUR_API_KEY",
+        router_candidates=candidates
+    )
 
-        print("=== Smart Routing Chatbot ===\n")
+    print("=== Smart Routing Chatbot ===\n")
 
-        queries = [
-            "What are your business hours?",
-            "How do I reset my password?",
-            "My server is returning 500 errors after upgrading to version 2.0. The logs show 'Connection timeout' but only for API endpoints.",
-        ]
+    queries = [
+        "What are your business hours?",
+        "How do I reset my password?",
+        "My server is returning 500 errors after upgrading to version 2.0. The logs show 'Connection timeout' but only for API endpoints.",
+    ]
 
-        for query in queries:
-            print(f"User: {query}")
-            result = chatbot.chat(query)
-            print(f"Model: {result['model']}")
-            print(f"Assistant: {result['response'][:100]}...")
-            print(f"Cost: ${result['estimated_cost']:.4f} | Latency: {result['latency']:.2f}s")
-            print(f"Routing overhead: {result['routing_latency']:.2f}s\n")
+    for query in queries:
+        print(f"User: {query}")
+        result = chatbot.chat(query)
+        print(f"Model: {result['model']}")
+        print(f"Assistant: {result['response'][:100]}...")
+        print(f"Cost: ${result['estimated_cost']:.4f} | Latency: {result['latency']:.2f}s")
+        print(f"Routing overhead: {result['routing_latency']:.2f}s\n")
 
-        # Print stats
-        stats = chatbot.get_stats()
-        print("\n=== Smart Routing Statistics ===")
-        print(f"Total queries: {stats['total_queries']}")
-        print(f"Total cost: ${stats['total_cost']:.4f}")
-        print(f"Avg cost per query: ${stats['avg_cost_per_query']:.4f}")
-        print(f"Model distribution: {stats['model_distribution']}")
-        print(f"Cost by model: {stats['cost_by_model']}")
+    # Print stats
+    stats = chatbot.get_stats()
+    print("\n=== Smart Routing Statistics ===")
+    print(f"Total queries: {stats['total_queries']}")
+    print(f"Total cost: ${stats['total_cost']:.4f}")
+    print(f"Avg cost per query: ${stats['avg_cost_per_query']:.4f}")
+    print(f"Model distribution: {stats['model_distribution']}")
+    print(f"Cost by model: {stats['cost_by_model']}")
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 **Expected Output:**
 ```
@@ -422,304 +418,300 @@ Model distribution: {'google/gemini-2.0-flash': 1, 'openai/gpt-4o-mini': 1, 'ope
 
 Create different routing strategies for various use cases:
 
-<CodeBlocks>
-  <CodeBlock title="tiered_routing_chatbot.py">
-    ```python
-    from typing import Dict, List, Optional
-    from enum import Enum
+<CodeGroup>
+```python tiered_routing_chatbot.py
+from typing import Dict, List, Optional
+from enum import Enum
 
-    class CostTier(Enum):
-        """Cost optimization tiers."""
-        BUDGET = "budget"      # Minimize cost
-        BALANCED = "balanced"  # Balance cost and quality
-        PREMIUM = "premium"    # Maximize quality
+class CostTier(Enum):
+    """Cost optimization tiers."""
+    BUDGET = "budget"      # Minimize cost
+    BALANCED = "balanced"  # Balance cost and quality
+    PREMIUM = "premium"    # Maximize quality
 
-    class TieredRoutingChatbot(SmartRoutingChatbot):
-        """Chatbot with cost-tier-based routing strategies."""
+class TieredRoutingChatbot(SmartRoutingChatbot):
+    """Chatbot with cost-tier-based routing strategies."""
 
-        # Define candidate pools for each tier
-        TIER_CANDIDATES = {
-            CostTier.BUDGET: [
-                "openai/gpt-4o-mini",
-                "google/gemini-2.0-flash",
-                "anthropic/claude-haiku-4-5",
-            ],
-            CostTier.BALANCED: [
-                "openai/gpt-4o",
-                "anthropic/claude-sonnet-4-5",
-                "google/gemini-2.0-flash",
-            ],
-            CostTier.PREMIUM: [
-                "anthropic/claude-opus-4-5",
-                "openai/gpt-4o",
-                "google/gemini-2.5-pro",
-            ]
+    # Define candidate pools for each tier
+    TIER_CANDIDATES = {
+        CostTier.BUDGET: [
+            "openai/gpt-4o-mini",
+            "google/gemini-2.0-flash",
+            "anthropic/claude-haiku-4-5",
+        ],
+        CostTier.BALANCED: [
+            "openai/gpt-4o",
+            "anthropic/claude-sonnet-4-5",
+            "google/gemini-2.0-flash",
+        ],
+        CostTier.PREMIUM: [
+            "anthropic/claude-opus-4-5",
+            "openai/gpt-4o",
+            "google/gemini-2.5-pro",
+        ]
+    }
+
+    def __init__(self, api_key: str, cost_tier: CostTier = CostTier.BALANCED):
+        """Initialize with cost tier."""
+        candidates = self.TIER_CANDIDATES[cost_tier]
+        super().__init__(api_key, router_candidates=candidates)
+        self.cost_tier = cost_tier
+
+    @classmethod
+    def classify_query_tier(cls, message: str) -> CostTier:
+        """
+        Classify query into cost tier based on complexity.
+
+        Simple heuristic - you could use ML model for production.
+        """
+        message_lower = message.lower()
+        word_count = len(message.split())
+
+        # Budget tier: Simple, short queries
+        if word_count < 10 and any(keyword in message_lower for keyword in [
+            "hours", "price", "cost", "when", "where", "what is"
+        ]):
+            return CostTier.BUDGET
+
+        # Premium tier: Complex, long queries
+        if word_count > 30 or any(keyword in message_lower for keyword in [
+            "analyze", "comprehensive", "detailed", "troubleshoot", "debug"
+        ]):
+            return CostTier.PREMIUM
+
+        # Balanced tier: Everything else
+        return CostTier.BALANCED
+
+class AdaptiveChatbot:
+    """Chatbot that adapts tier based on query complexity."""
+
+    def __init__(self, api_key: str):
+        self.api_key = api_key
+        self.chatbots = {
+            tier: TieredRoutingChatbot(api_key, tier)
+            for tier in CostTier
+        }
+        self.query_log = []
+
+    def chat(self, message: str, force_tier: Optional[CostTier] = None) -> Dict:
+        """Chat with automatic tier selection."""
+
+        # Classify query or use forced tier
+        tier = force_tier or TieredRoutingChatbot.classify_query_tier(message)
+        chatbot = self.chatbots[tier]
+
+        # Get response
+        result = chatbot.chat(message)
+        result["cost_tier"] = tier.value
+
+        # Log query
+        self.query_log.append({
+            "query": message[:100],
+            "tier": tier.value,
+            "model": result["model"],
+            "cost": result["estimated_cost"]
+        })
+
+        return result
+
+    def get_aggregated_stats(self) -> Dict:
+        """Get stats across all tiers."""
+        all_stats = {}
+        for tier, chatbot in self.chatbots.items():
+            stats = chatbot.get_stats()
+            if "error" not in stats:
+                all_stats[tier.value] = stats
+
+        # Calculate totals
+        total_cost = sum(
+            stats["total_cost"]
+            for stats in all_stats.values()
+        )
+        total_queries = sum(
+            stats["total_queries"]
+            for stats in all_stats.values()
+        )
+
+        return {
+            "by_tier": all_stats,
+            "total_cost": total_cost,
+            "total_queries": total_queries,
+            "avg_cost_per_query": total_cost / total_queries if total_queries > 0 else 0
         }
 
-        def __init__(self, api_key: str, cost_tier: CostTier = CostTier.BALANCED):
-            """Initialize with cost tier."""
-            candidates = self.TIER_CANDIDATES[cost_tier]
-            super().__init__(api_key, router_candidates=candidates)
-            self.cost_tier = cost_tier
 
-        @classmethod
-        def classify_query_tier(cls, message: str) -> CostTier:
-            """
-            Classify query into cost tier based on complexity.
+# Test adaptive chatbot
+if __name__ == "__main__":
+    chatbot = AdaptiveChatbot(api_key="YOUR_API_KEY")
 
-            Simple heuristic - you could use ML model for production.
-            """
-            message_lower = message.lower()
-            word_count = len(message.split())
+    print("=== Adaptive Multi-Tier Chatbot ===\n")
 
-            # Budget tier: Simple, short queries
-            if word_count < 10 and any(keyword in message_lower for keyword in [
-                "hours", "price", "cost", "when", "where", "what is"
-            ]):
-                return CostTier.BUDGET
+    queries = [
+        ("What are your business hours?", None),  # Auto: Budget
+        ("How do I reset my password?", None),  # Auto: Balanced
+        ("Provide a comprehensive analysis of why my distributed system is experiencing cascading failures", None),  # Auto: Premium
+        ("What's 2+2?", CostTier.BUDGET),  # Forced: Budget
+    ]
 
-            # Premium tier: Complex, long queries
-            if word_count > 30 or any(keyword in message_lower for keyword in [
-                "analyze", "comprehensive", "detailed", "troubleshoot", "debug"
-            ]):
-                return CostTier.PREMIUM
+    for query, tier in queries:
+        print(f"User: {query}")
+        result = chatbot.chat(query, force_tier=tier)
+        print(f"Tier: {result['cost_tier']} | Model: {result['model']}")
+        print(f"Cost: ${result['estimated_cost']:.4f}\n")
 
-            # Balanced tier: Everything else
-            return CostTier.BALANCED
-
-    class AdaptiveChatbot:
-        """Chatbot that adapts tier based on query complexity."""
-
-        def __init__(self, api_key: str):
-            self.api_key = api_key
-            self.chatbots = {
-                tier: TieredRoutingChatbot(api_key, tier)
-                for tier in CostTier
-            }
-            self.query_log = []
-
-        def chat(self, message: str, force_tier: Optional[CostTier] = None) -> Dict:
-            """Chat with automatic tier selection."""
-
-            # Classify query or use forced tier
-            tier = force_tier or TieredRoutingChatbot.classify_query_tier(message)
-            chatbot = self.chatbots[tier]
-
-            # Get response
-            result = chatbot.chat(message)
-            result["cost_tier"] = tier.value
-
-            # Log query
-            self.query_log.append({
-                "query": message[:100],
-                "tier": tier.value,
-                "model": result["model"],
-                "cost": result["estimated_cost"]
-            })
-
-            return result
-
-        def get_aggregated_stats(self) -> Dict:
-            """Get stats across all tiers."""
-            all_stats = {}
-            for tier, chatbot in self.chatbots.items():
-                stats = chatbot.get_stats()
-                if "error" not in stats:
-                    all_stats[tier.value] = stats
-
-            # Calculate totals
-            total_cost = sum(
-                stats["total_cost"]
-                for stats in all_stats.values()
-            )
-            total_queries = sum(
-                stats["total_queries"]
-                for stats in all_stats.values()
-            )
-
-            return {
-                "by_tier": all_stats,
-                "total_cost": total_cost,
-                "total_queries": total_queries,
-                "avg_cost_per_query": total_cost / total_queries if total_queries > 0 else 0
-            }
-
-
-    # Test adaptive chatbot
-    if __name__ == "__main__":
-        chatbot = AdaptiveChatbot(api_key="YOUR_API_KEY")
-
-        print("=== Adaptive Multi-Tier Chatbot ===\n")
-
-        queries = [
-            ("What are your business hours?", None),  # Auto: Budget
-            ("How do I reset my password?", None),  # Auto: Balanced
-            ("Provide a comprehensive analysis of why my distributed system is experiencing cascading failures", None),  # Auto: Premium
-            ("What's 2+2?", CostTier.BUDGET),  # Forced: Budget
-        ]
-
-        for query, tier in queries:
-            print(f"User: {query}")
-            result = chatbot.chat(query, force_tier=tier)
-            print(f"Tier: {result['cost_tier']} | Model: {result['model']}")
-            print(f"Cost: ${result['estimated_cost']:.4f}\n")
-
-        # Print aggregated stats
-        stats = chatbot.get_aggregated_stats()
-        print("\n=== Aggregated Statistics ===")
-        print(f"Total cost: ${stats['total_cost']:.4f}")
-        print(f"Total queries: {stats['total_queries']}")
-        print(f"\nBy tier:")
-        for tier, tier_stats in stats['by_tier'].items():
-            print(f"  {tier}: {tier_stats['total_queries']} queries, ${tier_stats['total_cost']:.4f}")
+    # Print aggregated stats
+    stats = chatbot.get_aggregated_stats()
+    print("\n=== Aggregated Statistics ===")
+    print(f"Total cost: ${stats['total_cost']:.4f}")
+    print(f"Total queries: {stats['total_queries']}")
+    print(f"\nBy tier:")
+    for tier, tier_stats in stats['by_tier'].items():
+        print(f"  {tier}: {tier_stats['total_queries']} queries, ${tier_stats['total_cost']:.4f}")
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ## Step 4: Build A/B Testing Framework
 
 Compare smart routing vs. fixed models:
 
-<CodeBlocks>
-  <CodeBlock title="ab_testing.py">
-    ```python
-    import random
-    from typing import Dict, List
-    from dataclasses import dataclass
-    from datetime import datetime
+<CodeGroup>
+```python ab_testing.py
+import random
+from typing import Dict, List
+from dataclasses import dataclass
+from datetime import datetime
 
-    @dataclass
-    class ABTestResult:
-        """Results from A/B test."""
-        variant: str
-        query: str
-        model: str
-        cost: float
-        latency: float
-        quality_score: float  # User rating or automated metric
+@dataclass
+class ABTestResult:
+    """Results from A/B test."""
+    variant: str
+    query: str
+    model: str
+    cost: float
+    latency: float
+    quality_score: float  # User rating or automated metric
 
-    class ABTester:
-        """A/B test smart routing vs. fixed models."""
+class ABTester:
+    """A/B test smart routing vs. fixed models."""
 
-        def __init__(self, api_key: str):
-            self.api_key = api_key
+    def __init__(self, api_key: str):
+        self.api_key = api_key
 
-            # Variant A: Fixed model
-            self.variant_a = BaselineChatbot(api_key, model="openai/gpt-4o")
+        # Variant A: Fixed model
+        self.variant_a = BaselineChatbot(api_key, model="openai/gpt-4o")
 
-            # Variant B: Smart routing
-            self.variant_b = SmartRoutingChatbot(
-                api_key,
-                router_candidates=[
-                    "openai/gpt-4o",
-                    "openai/gpt-4o-mini",
-                    "google/gemini-2.0-flash"
-                ]
-            )
+        # Variant B: Smart routing
+        self.variant_b = SmartRoutingChatbot(
+            api_key,
+            router_candidates=[
+                "openai/gpt-4o",
+                "openai/gpt-4o-mini",
+                "google/gemini-2.0-flash"
+            ]
+        )
 
-            self.results = []
+        self.results = []
 
-        def run_test(
-            self,
-            queries: List[str],
-            split: float = 0.5
-        ) -> Dict:
-            """Run A/B test on queries."""
+    def run_test(
+        self,
+        queries: List[str],
+        split: float = 0.5
+    ) -> Dict:
+        """Run A/B test on queries."""
 
-            for query in queries:
-                # Random assignment
-                variant = "A" if random.random() < split else "B"
-                chatbot = self.variant_a if variant == "A" else self.variant_b
+        for query in queries:
+            # Random assignment
+            variant = "A" if random.random() < split else "B"
+            chatbot = self.variant_a if variant == "A" else self.variant_b
 
-                # Get response
-                result = chatbot.chat(query)
+            # Get response
+            result = chatbot.chat(query)
 
-                # Simulate quality score (in production, get from users or eval model)
-                quality_score = random.uniform(0.7, 1.0)
+            # Simulate quality score (in production, get from users or eval model)
+            quality_score = random.uniform(0.7, 1.0)
 
-                # Record result
-                self.results.append(ABTestResult(
-                    variant=variant,
-                    query=query,
-                    model=result["model"],
-                    cost=result["estimated_cost"],
-                    latency=result["latency"],
-                    quality_score=quality_score
-                ))
+            # Record result
+            self.results.append(ABTestResult(
+                variant=variant,
+                query=query,
+                model=result["model"],
+                cost=result["estimated_cost"],
+                latency=result["latency"],
+                quality_score=quality_score
+            ))
 
-            return self.analyze_results()
+        return self.analyze_results()
 
-        def analyze_results(self) -> Dict:
-            """Analyze A/B test results."""
-            if not self.results:
-                return {"error": "No test results"}
+    def analyze_results(self) -> Dict:
+        """Analyze A/B test results."""
+        if not self.results:
+            return {"error": "No test results"}
 
-            # Split by variant
-            variant_a = [r for r in self.results if r.variant == "A"]
-            variant_b = [r for r in self.results if r.variant == "B"]
+        # Split by variant
+        variant_a = [r for r in self.results if r.variant == "A"]
+        variant_b = [r for r in self.results if r.variant == "B"]
 
-            def analyze_variant(results: List[ABTestResult]) -> Dict:
-                if not results:
-                    return {}
-                return {
-                    "sample_size": len(results),
-                    "avg_cost": sum(r.cost for r in results) / len(results),
-                    "total_cost": sum(r.cost for r in results),
-                    "avg_latency": sum(r.latency for r in results) / len(results),
-                    "avg_quality": sum(r.quality_score for r in results) / len(results),
-                }
-
-            a_stats = analyze_variant(variant_a)
-            b_stats = analyze_variant(variant_b)
-
-            # Calculate improvements
-            cost_savings = ((a_stats["avg_cost"] - b_stats["avg_cost"]) /
-                           a_stats["avg_cost"] * 100) if a_stats else 0
-
-            quality_change = ((b_stats["avg_quality"] - a_stats["avg_quality"]) /
-                             a_stats["avg_quality"] * 100) if a_stats else 0
-
+        def analyze_variant(results: List[ABTestResult]) -> Dict:
+            if not results:
+                return {}
             return {
-                "variant_a": a_stats,
-                "variant_b": b_stats,
-                "cost_savings_pct": cost_savings,
-                "quality_change_pct": quality_change,
-                "recommendation": "B (Smart Routing)" if cost_savings > 10 and quality_change > -5 else "A (Fixed Model)"
+                "sample_size": len(results),
+                "avg_cost": sum(r.cost for r in results) / len(results),
+                "total_cost": sum(r.cost for r in results),
+                "avg_latency": sum(r.latency for r in results) / len(results),
+                "avg_quality": sum(r.quality_score for r in results) / len(results),
             }
 
+        a_stats = analyze_variant(variant_a)
+        b_stats = analyze_variant(variant_b)
 
-    # Run A/B test
-    if __name__ == "__main__":
-        tester = ABTester(api_key="YOUR_API_KEY")
+        # Calculate improvements
+        cost_savings = ((a_stats["avg_cost"] - b_stats["avg_cost"]) /
+                       a_stats["avg_cost"] * 100) if a_stats else 0
 
-        queries = [
-            "What are your hours?",
-            "How do I reset my password?",
-            "Explain the difference between OAuth and JWT",
-            "My app crashes on startup",
-            "What's the pricing?",
-            "Help me debug this complex authentication flow",
-        ]
+        quality_change = ((b_stats["avg_quality"] - a_stats["avg_quality"]) /
+                         a_stats["avg_quality"] * 100) if a_stats else 0
 
-        print("=== Running A/B Test ===\n")
-        results = tester.run_test(queries)
+        return {
+            "variant_a": a_stats,
+            "variant_b": b_stats,
+            "cost_savings_pct": cost_savings,
+            "quality_change_pct": quality_change,
+            "recommendation": "B (Smart Routing)" if cost_savings > 10 and quality_change > -5 else "A (Fixed Model)"
+        }
 
-        print(f"Variant A (Fixed: GPT-4o):")
-        print(f"  Sample size: {results['variant_a']['sample_size']}")
-        print(f"  Avg cost: ${results['variant_a']['avg_cost']:.4f}")
-        print(f"  Avg quality: {results['variant_a']['avg_quality']:.2f}\n")
 
-        print(f"Variant B (Smart Routing):")
-        print(f"  Sample size: {results['variant_b']['sample_size']}")
-        print(f"  Avg cost: ${results['variant_b']['avg_cost']:.4f}")
-        print(f"  Avg quality: {results['variant_b']['avg_quality']:.2f}\n")
+# Run A/B test
+if __name__ == "__main__":
+    tester = ABTester(api_key="YOUR_API_KEY")
 
-        print(f"Cost savings: {results['cost_savings_pct']:.1f}%")
-        print(f"Quality change: {results['quality_change_pct']:.1f}%")
-        print(f"\nRecommendation: {results['recommendation']}")
+    queries = [
+        "What are your hours?",
+        "How do I reset my password?",
+        "Explain the difference between OAuth and JWT",
+        "My app crashes on startup",
+        "What's the pricing?",
+        "Help me debug this complex authentication flow",
+    ]
+
+    print("=== Running A/B Test ===\n")
+    results = tester.run_test(queries)
+
+    print(f"Variant A (Fixed: GPT-4o):")
+    print(f"  Sample size: {results['variant_a']['sample_size']}")
+    print(f"  Avg cost: ${results['variant_a']['avg_cost']:.4f}")
+    print(f"  Avg quality: {results['variant_a']['avg_quality']:.2f}\n")
+
+    print(f"Variant B (Smart Routing):")
+    print(f"  Sample size: {results['variant_b']['sample_size']}")
+    print(f"  Avg cost: ${results['variant_b']['avg_cost']:.4f}")
+    print(f"  Avg quality: {results['variant_b']['avg_quality']:.2f}\n")
+
+    print(f"Cost savings: {results['cost_savings_pct']:.1f}%")
+    print(f"Quality change: {results['quality_change_pct']:.1f}%")
+    print(f"\nRecommendation: {results['recommendation']}")
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 **Expected Results:**
 ```
@@ -741,117 +733,115 @@ Recommendation: B (Smart Routing)
 
 ### Monitoring and Alerting
 
-<CodeBlocks>
-  <CodeBlock title="production_monitor.py">
-    ```python
-    import logging
-    from datetime import datetime
-    from typing import Dict, Optional
-    import json
+<CodeGroup>
+```python production_monitor.py
+import logging
+from datetime import datetime
+from typing import Dict, Optional
+import json
 
-    class ProductionMonitor:
-        """Production monitoring for smart routing."""
+class ProductionMonitor:
+    """Production monitoring for smart routing."""
 
-        def __init__(self, api_key: str, alert_threshold_usd: float = 100.0):
-            self.api_key = api_key
-            self.alert_threshold = alert_threshold_usd
-            self.daily_spend = 0.0
-            self.error_count = 0
-            self.routing_failures = 0
+    def __init__(self, api_key: str, alert_threshold_usd: float = 100.0):
+        self.api_key = api_key
+        self.alert_threshold = alert_threshold_usd
+        self.daily_spend = 0.0
+        self.error_count = 0
+        self.routing_failures = 0
 
-            # Set up logging
-            logging.basicConfig(
-                level=logging.INFO,
-                format='%(asctime)s - %(levelname)s - %(message)s',
-                handlers=[
-                    logging.FileHandler('chatbot.log'),
-                    logging.StreamHandler()
-                ]
+        # Set up logging
+        logging.basicConfig(
+            level=logging.INFO,
+            format='%(asctime)s - %(levelname)s - %(message)s',
+            handlers=[
+                logging.FileHandler('chatbot.log'),
+                logging.StreamHandler()
+            ]
+        )
+        self.logger = logging.getLogger(__name__)
+
+    def log_request(
+        self,
+        query: str,
+        model: str,
+        cost: float,
+        latency: float,
+        error: Optional[str] = None
+    ):
+        """Log request details."""
+
+        self.daily_spend += cost
+
+        log_data = {
+            "timestamp": datetime.now().isoformat(),
+            "query_preview": query[:50],
+            "model": model,
+            "cost": cost,
+            "latency": latency,
+            "daily_spend": self.daily_spend,
+            "error": error
+        }
+
+        if error:
+            self.error_count += 1
+            self.logger.error(f"Request failed: {json.dumps(log_data)}")
+        else:
+            self.logger.info(json.dumps(log_data))
+
+        # Check thresholds
+        self._check_alerts()
+
+    def _check_alerts(self):
+        """Check if alerts should be triggered."""
+
+        # Cost alert
+        if self.daily_spend > self.alert_threshold:
+            self.logger.warning(
+                f"Daily spend (${self.daily_spend:.2f}) exceeded threshold (${self.alert_threshold:.2f})"
             )
-            self.logger = logging.getLogger(__name__)
+            # In production: send email/Slack notification
 
-        def log_request(
-            self,
-            query: str,
-            model: str,
-            cost: float,
-            latency: float,
-            error: Optional[str] = None
-        ):
-            """Log request details."""
+        # Error rate alert
+        if self.error_count > 10:
+            self.logger.critical(f"High error count: {self.error_count}")
+            # In production: page on-call engineer
 
-            self.daily_spend += cost
+# Integrate with chatbot
+class ProductionChatbot(SmartRoutingChatbot):
+    """Production-ready chatbot with monitoring."""
 
-            log_data = {
-                "timestamp": datetime.now().isoformat(),
-                "query_preview": query[:50],
-                "model": model,
-                "cost": cost,
-                "latency": latency,
-                "daily_spend": self.daily_spend,
-                "error": error
-            }
+    def __init__(self, api_key: str, candidates: List[str]):
+        super().__init__(api_key, candidates)
+        self.monitor = ProductionMonitor(api_key, alert_threshold_usd=100.0)
 
-            if error:
-                self.error_count += 1
-                self.logger.error(f"Request failed: {json.dumps(log_data)}")
-            else:
-                self.logger.info(json.dumps(log_data))
+    def chat(self, message: str) -> Dict:
+        """Chat with monitoring."""
+        try:
+            result = super().chat(message)
 
-            # Check thresholds
-            self._check_alerts()
+            # Log successful request
+            self.monitor.log_request(
+                query=message,
+                model=result["model"],
+                cost=result["estimated_cost"],
+                latency=result["latency"]
+            )
 
-        def _check_alerts(self):
-            """Check if alerts should be triggered."""
+            return result
 
-            # Cost alert
-            if self.daily_spend > self.alert_threshold:
-                self.logger.warning(
-                    f"Daily spend (${self.daily_spend:.2f}) exceeded threshold (${self.alert_threshold:.2f})"
-                )
-                # In production: send email/Slack notification
-
-            # Error rate alert
-            if self.error_count > 10:
-                self.logger.critical(f"High error count: {self.error_count}")
-                # In production: page on-call engineer
-
-    # Integrate with chatbot
-    class ProductionChatbot(SmartRoutingChatbot):
-        """Production-ready chatbot with monitoring."""
-
-        def __init__(self, api_key: str, candidates: List[str]):
-            super().__init__(api_key, candidates)
-            self.monitor = ProductionMonitor(api_key, alert_threshold_usd=100.0)
-
-        def chat(self, message: str) -> Dict:
-            """Chat with monitoring."""
-            try:
-                result = super().chat(message)
-
-                # Log successful request
-                self.monitor.log_request(
-                    query=message,
-                    model=result["model"],
-                    cost=result["estimated_cost"],
-                    latency=result["latency"]
-                )
-
-                return result
-
-            except Exception as e:
-                # Log error
-                self.monitor.log_request(
-                    query=message,
-                    model="unknown",
-                    cost=0.0,
-                    latency=0.0,
-                    error=str(e)
-                )
-                raise
+        except Exception as e:
+            # Log error
+            self.monitor.log_request(
+                query=message,
+                model="unknown",
+                cost=0.0,
+                latency=0.0,
+                error=str(e)
+            )
+            raise
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ## Key Takeaways
 

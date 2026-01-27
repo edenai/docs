@@ -17,63 +17,57 @@ POST /v3/upload
 
 ## Upload a File
 
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    import requests
+<CodeGroup>
+```python Python
+import requests
 
-    url = "https://api.edenai.run/v3/upload"
-    headers = {
-        "Authorization": "Bearer YOUR_API_KEY"
-    }
+url = "https://api.edenai.run/v3/upload"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY"
+}
 
-    # Upload file
-    files = {
-        "file": open("document.pdf", "rb")
-    }
+# Upload file
+files = {
+    "file": open("document.pdf", "rb")
+}
     
-    data = {
-        "purpose": "ocr-processing"  # Optional: describe intended use
-    }
+data = {
+    "purpose": "ocr-processing"  # Optional: describe intended use
+}
 
-    response = requests.post(url, headers=headers, files=files, data=data)
-    result = response.json()
+response = requests.post(url, headers=headers, files=files, data=data)
+result = response.json()
 
-    print(f"File ID: {result['file_id']}")
-    print(f"Filename: {result['filename']}")
-    print(f"Size: {result['bytes']} bytes")
-    print(f"Expires at: {result['expires_at']}")
+print(f"File ID: {result['file_id']}")
+print(f"Filename: {result['filename']}")
+print(f"Size: {result['bytes']} bytes")
+print(f"Expires at: {result['expires_at']}")
     ```
-  </CodeBlock>
 
-  <CodeBlock title="cURL">
-    ```bash
-    curl -X POST https://api.edenai.run/v3/upload \
-      -H "Authorization: Bearer YOUR_API_KEY" \
-      -F "file=@document.pdf" \
-      -F "purpose=ocr-processing"
+```bash cURL
+curl -X POST https://api.edenai.run/v3/upload \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -F "file=@document.pdf" \
+  -F "purpose=ocr-processing"
     ```
-  </CodeBlock>
 
-  <CodeBlock title="JavaScript">
-    ```javascript
-    const formData = new FormData();
-    formData.append('file', fileInput.files[0]);
-    formData.append('purpose', 'ocr-processing');
+```javascript JavaScript
+const formData = new FormData();
+formData.append('file', fileInput.files[0]);
+formData.append('purpose', 'ocr-processing');
 
-    const response = await fetch('https://api.edenai.run/v3/upload', {
-      method: 'POST',
-      headers: {
-        'Authorization': 'Bearer YOUR_API_KEY'
-      },
-      body: formData
-    });
+const response = await fetch('https://api.edenai.run/v3/upload', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer YOUR_API_KEY'
+  },
+  body: formData
+});
 
-    const result = await response.json();
-    console.log('File ID:', result.file_id);
+const result = await response.json();
+console.log('File ID:', result.file_id);
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ### Response
 
@@ -92,31 +86,29 @@ POST /v3/upload
 
 Once uploaded, reference the file by its `file_id` in any Universal AI request:
 
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    import requests
-    # Use file in OCR request
-    url = "https://api.edenai.run/v3/universal-ai"
-    headers = {
-        "Authorization": "Bearer YOUR_API_KEY",
-        "Content-Type": "application/json"
-    }
+<CodeGroup>
+```python Python
+import requests
+# Use file in OCR request
+url = "https://api.edenai.run/v3/universal-ai"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
 
-    payload = {
-        "model": "ocr/financial_parser/google",
-        "input": {
-            "file": "550e8400-e29b-41d4-a716-446655440000",
-            "language": "en"
-        }
+payload = {
+    "model": "ocr/financial_parser/google",
+    "input": {
+        "file": "550e8400-e29b-41d4-a716-446655440000",
+        "language": "en"
     }
+}
 
-    response = requests.post(url, headers=headers, json=payload)
-    result = response.json()
-    print(result["output"]["text"])
+response = requests.post(url, headers=headers, json=payload)
+result = response.json()
+print(result["output"]["text"])
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ## Supported File Types
 
@@ -143,86 +135,82 @@ Files are automatically deleted after a retention period:
 
 ## Upload Multiple Files
 
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    import requests
+<CodeGroup>
+```python Python
+import requests
 
-    url = "https://api.edenai.run/v3/upload"
-    headers = {"Authorization": "Bearer YOUR_API_KEY"}
+url = "https://api.edenai.run/v3/upload"
+headers = {"Authorization": "Bearer YOUR_API_KEY"}
 
-    files_to_upload = [
-        "invoice1.pdf",
-        "invoice2.pdf",
-        "invoice3.pdf"
-    ]
+files_to_upload = [
+    "invoice1.pdf",
+    "invoice2.pdf",
+    "invoice3.pdf"
+]
 
-    file_ids = []
+file_ids = []
 
-    for filepath in files_to_upload:
-        files = {"file": open(filepath, "rb")}
-        data = {"purpose": "invoice-processing"}
+for filepath in files_to_upload:
+    files = {"file": open(filepath, "rb")}
+    data = {"purpose": "invoice-processing"}
         
-        response = requests.post(url, headers=headers, files=files, data=data)
-        result = response.json()
+    response = requests.post(url, headers=headers, files=files, data=data)
+    result = response.json()
         
-        file_ids.append({
-            "filename": filepath,
-            "file_id": result["file_id"]
-        })
+    file_ids.append({
+        "filename": filepath,
+        "file_id": result["file_id"]
+    })
         
-        print(f"Uploaded {filepath}: {result['file_id']}")
+    print(f"Uploaded {filepath}: {result['file_id']}")
 
-    # Use file IDs in subsequent requests
-    for item in file_ids:
-        print(f"{item['filename']}: {item['file_id']}")
+# Use file IDs in subsequent requests
+for item in file_ids:
+    print(f"{item['filename']}: {item['file_id']}")
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ## Error Handling
 
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    import requests
-    from requests.exceptions import RequestException
+<CodeGroup>
+```python Python
+import requests
+from requests.exceptions import RequestException
 
-    def safe_upload(filepath):
-        """Upload file with error handling"""
+def safe_upload(filepath):
+    """Upload file with error handling"""
         
-        url = "https://api.edenai.run/v3/upload"
-        headers = {"Authorization": "Bearer YOUR_API_KEY"}
+    url = "https://api.edenai.run/v3/upload"
+    headers = {"Authorization": "Bearer YOUR_API_KEY"}
         
-        try:
-            with open(filepath, "rb") as f:
-                files = {"file": f}
-                response = requests.post(url, headers=headers, files=files)
-                response.raise_for_status()
+    try:
+        with open(filepath, "rb") as f:
+            files = {"file": f}
+            response = requests.post(url, headers=headers, files=files)
+            response.raise_for_status()
                 
-                result = response.json()
-                return {
-                    "success": True,
-                    "file_id": result["file_id"],
-                    "filename": result["filename"]
-                }
+            result = response.json()
+            return {
+                "success": True,
+                "file_id": result["file_id"],
+                "filename": result["filename"]
+            }
                 
-        except FileNotFoundError:
-            return {"success": False, "error": "File not found"}
-        except RequestException as e:
-            return {"success": False, "error": str(e)}
-        except Exception as e:
-            return {"success": False, "error": f"Unexpected error: {str(e)}"}
+    except FileNotFoundError:
+        return {"success": False, "error": "File not found"}
+    except RequestException as e:
+        return {"success": False, "error": str(e)}
+    except Exception as e:
+        return {"success": False, "error": f"Unexpected error: {str(e)}"}
 
-    # Usage
-    result = safe_upload("document.pdf")
-    if result["success"]:
-        print(f"Uploaded: {result['file_id']}")
-    else:
-        print(f"Error: {result['error']}")
+# Usage
+result = safe_upload("document.pdf")
+if result["success"]:
+    print(f"Uploaded: {result['file_id']}")
+else:
+    print(f"Error: {result['error']}")
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ## Best Practices
 

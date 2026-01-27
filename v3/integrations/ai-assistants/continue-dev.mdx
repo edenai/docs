@@ -43,50 +43,48 @@ In VS Code or JetBrains:
 
 Replace the configuration with:
 
-<CodeBlocks>
-  <CodeBlock title="~/.continue/config.json">
-    ```json
+<CodeGroup>
+```json ~/.continue/config.json
+{
+  "models": [
     {
-      "models": [
-        {
-          "title": "Claude 3.5 Sonnet",
-          "provider": "openai",
-          "model": "anthropic/claude-3-5-sonnet-20241022",
-          "apiKey": "YOUR_EDEN_AI_API_KEY",
-          "apiBase": "https://api.edenai.run/v3/llm"
-        },
-        {
-          "title": "GPT-4",
-          "provider": "openai",
-          "model": "openai/gpt-4",
-          "apiKey": "YOUR_EDEN_AI_API_KEY",
-          "apiBase": "https://api.edenai.run/v3/llm"
-        },
-        {
-          "title": "Gemini Pro",
-          "provider": "openai",
-          "model": "google/gemini-pro",
-          "apiKey": "YOUR_EDEN_AI_API_KEY",
-          "apiBase": "https://api.edenai.run/v3/llm"
-        }
-      ],
-      "tabAutocompleteModel": {
-        "title": "GPT-3.5 Turbo",
-        "provider": "openai",
-        "model": "openai/gpt-3.5-turbo",
-        "apiKey": "YOUR_EDEN_AI_API_KEY",
-        "apiBase": "https://api.edenai.run/v3/llm"
-      },
-      "embeddingsProvider": {
-        "provider": "openai",
-        "model": "openai/text-embedding-3-small",
-        "apiKey": "YOUR_EDEN_AI_API_KEY",
-        "apiBase": "https://api.edenai.run/v3/llm"
-      }
+      "title": "Claude 3.5 Sonnet",
+      "provider": "openai",
+      "model": "anthropic/claude-3-5-sonnet-20241022",
+      "apiKey": "YOUR_EDEN_AI_API_KEY",
+      "apiBase": "https://api.edenai.run/v3/llm"
+    },
+    {
+      "title": "GPT-4",
+      "provider": "openai",
+      "model": "openai/gpt-4",
+      "apiKey": "YOUR_EDEN_AI_API_KEY",
+      "apiBase": "https://api.edenai.run/v3/llm"
+    },
+    {
+      "title": "Gemini Pro",
+      "provider": "openai",
+      "model": "google/gemini-pro",
+      "apiKey": "YOUR_EDEN_AI_API_KEY",
+      "apiBase": "https://api.edenai.run/v3/llm"
     }
+  ],
+  "tabAutocompleteModel": {
+    "title": "GPT-3.5 Turbo",
+    "provider": "openai",
+    "model": "openai/gpt-3.5-turbo",
+    "apiKey": "YOUR_EDEN_AI_API_KEY",
+    "apiBase": "https://api.edenai.run/v3/llm"
+  },
+  "embeddingsProvider": {
+    "provider": "openai",
+    "model": "openai/text-embedding-3-small",
+    "apiKey": "YOUR_EDEN_AI_API_KEY",
+    "apiBase": "https://api.edenai.run/v3/llm"
+  }
+}
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ### Step 3: Save and Reload
 
@@ -99,51 +97,49 @@ You can add any model from Eden AI's catalog:
 
 ### Chat Models
 
-<CodeBlocks>
-  <CodeBlock title="config.json">
-    ```json
+<CodeGroup>
+```json config.json
+{
+  "models": [
     {
-      "models": [
-        {
-          "title": "Claude 3.5 Sonnet",
-          "provider": "openai",
-          "model": "anthropic/claude-3-5-sonnet-20241022",
-          "apiKey": "YOUR_EDEN_AI_API_KEY",
-          "apiBase": "https://api.edenai.run/v3/llm"
-        },
-        {
-          "title": "Claude 3 Opus",
-          "provider": "openai",
-          "model": "anthropic/claude-3-opus-20240229",
-          "apiKey": "YOUR_EDEN_AI_API_KEY",
-          "apiBase": "https://api.edenai.run/v3/llm"
-        },
-        {
-          "title": "GPT-4 Turbo",
-          "provider": "openai",
-          "model": "openai/gpt-4-turbo",
-          "apiKey": "YOUR_EDEN_AI_API_KEY",
-          "apiBase": "https://api.edenai.run/v3/llm"
-        },
-        {
-          "title": "Gemini 1.5 Pro",
-          "provider": "openai",
-          "model": "google/gemini-1.5-pro",
-          "apiKey": "YOUR_EDEN_AI_API_KEY",
-          "apiBase": "https://api.edenai.run/v3/llm"
-        },
-        {
-          "title": "Command R+",
-          "provider": "openai",
-          "model": "cohere/command-r-plus",
-          "apiKey": "YOUR_EDEN_AI_API_KEY",
-          "apiBase": "https://api.edenai.run/v3/llm"
-        }
-      ]
+      "title": "Claude 3.5 Sonnet",
+      "provider": "openai",
+      "model": "anthropic/claude-3-5-sonnet-20241022",
+      "apiKey": "YOUR_EDEN_AI_API_KEY",
+      "apiBase": "https://api.edenai.run/v3/llm"
+    },
+    {
+      "title": "Claude 3 Opus",
+      "provider": "openai",
+      "model": "anthropic/claude-3-opus-20240229",
+      "apiKey": "YOUR_EDEN_AI_API_KEY",
+      "apiBase": "https://api.edenai.run/v3/llm"
+    },
+    {
+      "title": "GPT-4 Turbo",
+      "provider": "openai",
+      "model": "openai/gpt-4-turbo",
+      "apiKey": "YOUR_EDEN_AI_API_KEY",
+      "apiBase": "https://api.edenai.run/v3/llm"
+    },
+    {
+      "title": "Gemini 1.5 Pro",
+      "provider": "openai",
+      "model": "google/gemini-1.5-pro",
+      "apiKey": "YOUR_EDEN_AI_API_KEY",
+      "apiBase": "https://api.edenai.run/v3/llm"
+    },
+    {
+      "title": "Command R+",
+      "provider": "openai",
+      "model": "cohere/command-r-plus",
+      "apiKey": "YOUR_EDEN_AI_API_KEY",
+      "apiBase": "https://api.edenai.run/v3/llm"
     }
+  ]
+}
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ## Features
 
@@ -184,21 +180,19 @@ Continue provides intelligent code completion:
 
 Configure fast models for autocomplete:
 
-<CodeBlocks>
-  <CodeBlock title="config.json">
-    ```json
-    {
-      "tabAutocompleteModel": {
-        "title": "Fast Autocomplete",
-        "provider": "openai",
-        "model": "openai/gpt-3.5-turbo",
-        "apiKey": "YOUR_EDEN_AI_API_KEY",
-        "apiBase": "https://api.edenai.run/v3/llm"
-      }
-    }
+<CodeGroup>
+```json config.json
+{
+  "tabAutocompleteModel": {
+    "title": "Fast Autocomplete",
+    "provider": "openai",
+    "model": "openai/gpt-3.5-turbo",
+    "apiKey": "YOUR_EDEN_AI_API_KEY",
+    "apiBase": "https://api.edenai.run/v3/llm"
+  }
+}
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ### Slash Commands
 
@@ -216,98 +210,90 @@ Use slash commands for common tasks:
 
 Add codebase context for better responses:
 
-<CodeBlocks>
-  <CodeBlock title="config.json">
-    ```json
+<CodeGroup>
+```json config.json
+{
+  "models": [...],
+  "contextProviders": [
     {
-      "models": [...],
-      "contextProviders": [
-        {
-          "name": "code",
-          "params": {}
-        },
-        {
-          "name": "docs",
-          "params": {
-            "startUrl": "https://docs.edenai.co"
-          }
-        },
-        {
-          "name": "folder",
-          "params": {
-            "folder": "src"
-          }
-        }
-      ]
+      "name": "code",
+      "params": {}
+    },
+    {
+      "name": "docs",
+      "params": {
+        "startUrl": "https://docs.edenai.co"
+      }
+    },
+    {
+      "name": "folder",
+      "params": {
+        "folder": "src"
+      }
     }
+  ]
+}
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ### Model-Specific Settings
 
 Configure temperature and other parameters per model:
 
-<CodeBlocks>
-  <CodeBlock title="config.json">
-    ```json
+<CodeGroup>
+```json config.json
+{
+  "models": [
     {
-      "models": [
-        {
-          "title": "Claude 3.5 Sonnet (Creative)",
-          "provider": "openai",
-          "model": "anthropic/claude-3-5-sonnet-20241022",
-          "apiKey": "YOUR_EDEN_AI_API_KEY",
-          "apiBase": "https://api.edenai.run/v3/llm",
-          "completionOptions": {
-            "temperature": 0.9,
-            "maxTokens": 2000
-          }
-        },
-        {
-          "title": "Claude 3.5 Sonnet (Precise)",
-          "provider": "openai",
-          "model": "anthropic/claude-3-5-sonnet-20241022",
-          "apiKey": "YOUR_EDEN_AI_API_KEY",
-          "apiBase": "https://api.edenai.run/v3/llm",
-          "completionOptions": {
-            "temperature": 0.1,
-            "maxTokens": 1000
-          }
-        }
-      ]
+      "title": "Claude 3.5 Sonnet (Creative)",
+      "provider": "openai",
+      "model": "anthropic/claude-3-5-sonnet-20241022",
+      "apiKey": "YOUR_EDEN_AI_API_KEY",
+      "apiBase": "https://api.edenai.run/v3/llm",
+      "completionOptions": {
+        "temperature": 0.9,
+        "maxTokens": 2000
+      }
+    },
+    {
+      "title": "Claude 3.5 Sonnet (Precise)",
+      "provider": "openai",
+      "model": "anthropic/claude-3-5-sonnet-20241022",
+      "apiKey": "YOUR_EDEN_AI_API_KEY",
+      "apiBase": "https://api.edenai.run/v3/llm",
+      "completionOptions": {
+        "temperature": 0.1,
+        "maxTokens": 1000
+      }
     }
+  ]
+}
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ### Environment Variables
 
 Use environment variables for API keys:
 
-<CodeBlocks>
-  <CodeBlock title="config.json">
-    ```json
+<CodeGroup>
+```json config.json
+{
+  "models": [
     {
-      "models": [
-        {
-          "title": "Claude 3.5 Sonnet",
-          "provider": "openai",
-          "model": "anthropic/claude-3-5-sonnet-20241022",
-          "apiKey": "${EDEN_AI_API_KEY}",
-          "apiBase": "https://api.edenai.run/v3/llm"
-        }
-      ]
+      "title": "Claude 3.5 Sonnet",
+      "provider": "openai",
+      "model": "anthropic/claude-3-5-sonnet-20241022",
+      "apiKey": "${EDEN_AI_API_KEY}",
+      "apiBase": "https://api.edenai.run/v3/llm"
     }
+  ]
+}
     ```
-  </CodeBlock>
 
-  <CodeBlock title="~/.bashrc or ~/.zshrc">
-    ```bash
-    export EDEN_AI_API_KEY="your_api_key_here"
+```bash ~/.bashrc or ~/.zshrc
+export EDEN_AI_API_KEY="your_api_key_here"
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ## Use Cases
 

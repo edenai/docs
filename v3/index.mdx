@@ -38,41 +38,37 @@ POST /v3/universal-ai
 
 **Example Request:**
 
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    import requests
+<CodeGroup>
+```python Python
+import requests
 
-    url = "https://api.edenai.run/v3/universal-ai"
-    headers = {
-        "Authorization": "Bearer YOUR_API_KEY",
-        "Content-Type": "application/json"
+url = "https://api.edenai.run/v3/universal-ai"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+payload = {
+    "model": "text/ai_detection/openai/gpt-4",
+    "input": {
+        "text": "This is a sample text to analyze"
     }
+}
 
-    payload = {
-        "model": "text/ai_detection/openai/gpt-4",
-        "input": {
-            "text": "This is a sample text to analyze"
-        }
-    }
-
-    response = requests.post(url, headers=headers, json=payload)
-    print(response.json())
+response = requests.post(url, headers=headers, json=payload)
+print(response.json())
     ```
-  </CodeBlock>
 
-  <CodeBlock title="cURL">
-    ```bash
-    curl -X POST https://api.edenai.run/v3/universal-ai \
-      -H "Authorization: Bearer YOUR_API_KEY" \
-      -H "Content-Type: application/json" \
-      -d '{
-        "model": "text/ai_detection/openai/gpt-4",
-        "input": {"text": "Sample text"}
-      }'
+```bash cURL
+curl -X POST https://api.edenai.run/v3/universal-ai \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "text/ai_detection/openai/gpt-4",
+    "input": {"text": "Sample text"}
+  }'
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ### 2. OpenAI-Compatible LLM
 
@@ -84,34 +80,32 @@ POST /v3/llm/chat/completions
 
 **Drop-in replacement for OpenAI API:**
 
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    import requests
+<CodeGroup>
+```python Python
+import requests
 
-    url = "https://api.edenai.run/v3/llm/chat/completions"
-    headers = {
-        "Authorization": "Bearer YOUR_API_KEY",
-        "Content-Type": "application/json"
-    }
+url = "https://api.edenai.run/v3/llm/chat/completions"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
 
-    payload = {
-        "model": "openai/gpt-4",
-        "messages": [
-            {"role": "user", "content": "Hello!"}
-        ],
-        "stream": true
-    }
+payload = {
+    "model": "openai/gpt-4",
+    "messages": [
+        {"role": "user", "content": "Hello!"}
+    ],
+    "stream": true
+}
 
-    # Streaming response with SSE
-    response = requests.post(url, headers=headers, json=payload, stream=True)
+# Streaming response with SSE
+response = requests.post(url, headers=headers, json=payload, stream=True)
 
-    for line in response.iter_lines():
-        if line:
-            print(line.decode('utf-8'))
+for line in response.iter_lines():
+    if line:
+        print(line.decode('utf-8'))
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ### 3. File Upload & Management
 
@@ -123,36 +117,34 @@ POST /v3/upload
 
 **Upload once, use everywhere:**
 
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    import requests
+<CodeGroup>
+```python Python
+import requests
 
-    # Upload file
-    url = "https://api.edenai.run/v3/upload"
-    headers = {"Authorization": "Bearer YOUR_API_KEY"}
+# Upload file
+url = "https://api.edenai.run/v3/upload"
+headers = {"Authorization": "Bearer YOUR_API_KEY"}
 
-    files = {"file": open("document.pdf", "rb")}
-    data = {"purpose": "ocr-processing"}
+files = {"file": open("document.pdf", "rb")}
+data = {"purpose": "ocr-processing"}
 
-    response = requests.post(url, headers=headers, files=files, data=data)
-    file_id = response.json()["file_id"]
+response = requests.post(url, headers=headers, files=files, data=data)
+file_id = response.json()["file_id"]
 
-    # Use file in OCR request
-    ocr_response = requests.post(
-        "https://api.edenai.run/v3/universal-ai",
-        headers={
-            "Authorization": "Bearer YOUR_API_KEY",
-            "Content-Type": "application/json"
-        },
-        json={
-            "model": "ocr/financial_parser/google",
-            "input": {"file": file_id}
-        }
-    )
+# Use file in OCR request
+ocr_response = requests.post(
+    "https://api.edenai.run/v3/universal-ai",
+    headers={
+        "Authorization": "Bearer YOUR_API_KEY",
+        "Content-Type": "application/json"
+    },
+    json={
+        "model": "ocr/financial_parser/google",
+        "input": {"file": file_id}
+    }
+)
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ### 4. API Discovery
 
@@ -164,21 +156,19 @@ GET /v3/info/{feature}
 GET /v3/info/{feature}/{subfeature}
 ```
 
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    import requests
+<CodeGroup>
+```python Python
+import requests
 
-    # List all features
-    response = requests.get(
-        "https://api.edenai.run/v3/info"
-    )
+# List all features
+response = requests.get(
+    "https://api.edenai.run/v3/info"
+)
 
-    features = response.json()
-    print(features)  # {"text": [...], "ocr": [...], "image": [...]}
+features = response.json()
+print(features)  # {"text": [...], "ocr": [...], "image": [...]}
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ## V3 vs V2: Key Differences
 

@@ -23,66 +23,58 @@ Claude Code can be configured to use custom API endpoints through environment va
 
 Set environment variables before running Claude Code:
 
-<CodeBlocks>
-  <CodeBlock title="bash">
-    ```bash
-    # Set Eden AI as the API endpoint
-    export ANTHROPIC_API_KEY="YOUR_EDEN_AI_API_KEY"
-    export ANTHROPIC_BASE_URL="https://api.edenai.run/v3/llm"
+<CodeGroup>
+```bash bash
+# Set Eden AI as the API endpoint
+export ANTHROPIC_API_KEY="YOUR_EDEN_AI_API_KEY"
+export ANTHROPIC_BASE_URL="https://api.edenai.run/v3/llm"
 
-    # Run Claude Code
-    claude-code
+# Run Claude Code
+claude-code
     ```
-  </CodeBlock>
 
-  <CodeBlock title="PowerShell">
-    ```powershell
-    # Windows PowerShell
-    $env:ANTHROPIC_API_KEY="YOUR_EDEN_AI_API_KEY"
-    $env:ANTHROPIC_BASE_URL="https://api.edenai.run/v3/llm"
+```powershell PowerShell
+# Windows PowerShell
+$env:ANTHROPIC_API_KEY="YOUR_EDEN_AI_API_KEY"
+$env:ANTHROPIC_BASE_URL="https://api.edenai.run/v3/llm"
 
-    claude-code
+claude-code
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ### Option 2: Configuration File
 
 Create or edit the Claude Code configuration file:
 
-<CodeBlocks>
-  <CodeBlock title="~/.config/claude-code/config.json">
-    ```json
-    {
-      "api_key": "YOUR_EDEN_AI_API_KEY",
-      "base_url": "https://api.edenai.run/v3/llm",
-      "model": "anthropic/claude-3-5-sonnet-20241022"
-    }
+<CodeGroup>
+```json ~/.config/claude-code/config.json
+{
+  "api_key": "YOUR_EDEN_AI_API_KEY",
+  "base_url": "https://api.edenai.run/v3/llm",
+  "model": "anthropic/claude-3-5-sonnet-20241022"
+}
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ## Using Different Models
 
 With Eden AI, you can use models from different providers:
 
-<CodeBlocks>
-  <CodeBlock title="bash">
-    ```bash
-    # Use Claude 3.5 Sonnet (default)
-    export ANTHROPIC_MODEL="anthropic/claude-3-5-sonnet-20241022"
-    claude-code
+<CodeGroup>
+```bash bash
+# Use Claude 3.5 Sonnet (default)
+export ANTHROPIC_MODEL="anthropic/claude-3-5-sonnet-20241022"
+claude-code
 
-    # Use GPT-4
-    export ANTHROPIC_MODEL="openai/gpt-4"
-    claude-code
+# Use GPT-4
+export ANTHROPIC_MODEL="openai/gpt-4"
+claude-code
 
-    # Use Gemini Pro
-    export ANTHROPIC_MODEL="google/gemini-pro"
-    claude-code
+# Use Gemini Pro
+export ANTHROPIC_MODEL="google/gemini-pro"
+claude-code
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ## Model Format
 
@@ -107,16 +99,14 @@ When using Eden AI with Claude Code, use the `provider/model` format:
 
 Make the configuration permanent by adding to your shell profile:
 
-<CodeBlocks>
-  <CodeBlock title="~/.bashrc or ~/.zshrc">
-    ```bash
-    # Eden AI configuration for Claude Code
-    export ANTHROPIC_API_KEY="YOUR_EDEN_AI_API_KEY"
-    export ANTHROPIC_BASE_URL="https://api.edenai.run/v3/llm"
-    export ANTHROPIC_MODEL="anthropic/claude-3-5-sonnet-20241022"
+<CodeGroup>
+```bash ~/.bashrc or ~/.zshrc
+# Eden AI configuration for Claude Code
+export ANTHROPIC_API_KEY="YOUR_EDEN_AI_API_KEY"
+export ANTHROPIC_BASE_URL="https://api.edenai.run/v3/llm"
+export ANTHROPIC_MODEL="anthropic/claude-3-5-sonnet-20241022"
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 Reload your shell:
 
@@ -128,33 +118,31 @@ source ~/.bashrc  # or ~/.zshrc
 
 Create a script to easily switch between models:
 
-<CodeBlocks>
-  <CodeBlock title="switch-model.sh">
-    ```bash
-    #!/bin/bash
+<CodeGroup>
+```bash switch-model.sh
+#!/bin/bash
 
-    case "$1" in
-      claude)
-        export ANTHROPIC_MODEL="anthropic/claude-3-5-sonnet-20241022"
-        echo "Switched to Claude 3.5 Sonnet"
-        ;;
-      gpt4)
-        export ANTHROPIC_MODEL="openai/gpt-4"
-        echo "Switched to GPT-4"
-        ;;
-      gemini)
-        export ANTHROPIC_MODEL="google/gemini-pro"
-        echo "Switched to Gemini Pro"
-        ;;
-      *)
-        echo "Usage: source switch-model.sh [claude|gpt4|gemini]"
-        ;;
-    esac
+case "$1" in
+  claude)
+    export ANTHROPIC_MODEL="anthropic/claude-3-5-sonnet-20241022"
+    echo "Switched to Claude 3.5 Sonnet"
+    ;;
+  gpt4)
+    export ANTHROPIC_MODEL="openai/gpt-4"
+    echo "Switched to GPT-4"
+    ;;
+  gemini)
+    export ANTHROPIC_MODEL="google/gemini-pro"
+    echo "Switched to Gemini Pro"
+    ;;
+  *)
+    echo "Usage: source switch-model.sh [claude|gpt4|gemini]"
+    ;;
+esac
 
-    claude-code
+claude-code
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 Usage:
 
@@ -205,36 +193,32 @@ claude-code "Add docstrings to all functions" < mymodule.py
 
 If you need to pass custom headers (e.g., for analytics):
 
-<CodeBlocks>
-  <CodeBlock title="config.json">
-    ```json
-    {
-      "api_key": "YOUR_EDEN_AI_API_KEY",
-      "base_url": "https://api.edenai.run/v3/llm",
-      "model": "anthropic/claude-3-5-sonnet-20241022",
-      "headers": {
-        "X-Custom-Header": "value"
-      }
-    }
+<CodeGroup>
+```json config.json
+{
+  "api_key": "YOUR_EDEN_AI_API_KEY",
+  "base_url": "https://api.edenai.run/v3/llm",
+  "model": "anthropic/claude-3-5-sonnet-20241022",
+  "headers": {
+    "X-Custom-Header": "value"
+  }
+}
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ### Timeout Configuration
 
 Adjust timeouts for longer requests:
 
-<CodeBlocks>
-  <CodeBlock title="config.json">
-    ```json
-    {
-      "api_key": "YOUR_EDEN_AI_API_KEY",
-      "base_url": "https://api.edenai.run/v3/llm",
-      "timeout": 120000
-    }
+<CodeGroup>
+```json config.json
+{
+  "api_key": "YOUR_EDEN_AI_API_KEY",
+  "base_url": "https://api.edenai.run/v3/llm",
+  "timeout": 120000
+}
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ## Troubleshooting
 
@@ -314,27 +298,25 @@ Regularly check your Eden AI dashboard to track spending and optimize model sele
 
 Use Claude Code in Git hooks for automated code review:
 
-<CodeBlocks>
-  <CodeBlock title=".git/hooks/pre-commit">
-    ```bash
-    #!/bin/bash
+<CodeGroup>
+```bash .git/hooks/pre-commit
+#!/bin/bash
 
-    # Export Eden AI configuration
-    export ANTHROPIC_API_KEY="YOUR_EDEN_AI_API_KEY"
-    export ANTHROPIC_BASE_URL="https://api.edenai.run/v3/llm"
+# Export Eden AI configuration
+export ANTHROPIC_API_KEY="YOUR_EDEN_AI_API_KEY"
+export ANTHROPIC_BASE_URL="https://api.edenai.run/v3/llm"
 
-    # Get changed files
-    changed_files=$(git diff --cached --name-only --diff-filter=ACM | grep '\.py$')
+# Get changed files
+changed_files=$(git diff --cached --name-only --diff-filter=ACM | grep '\.py$')
 
-    if [ -n "$changed_files" ]; then
-      echo "Reviewing changed Python files..."
-      for file in $changed_files; do
-        claude-code "Quick security review" < "$file"
-      done
-    fi
+if [ -n "$changed_files" ]; then
+  echo "Reviewing changed Python files..."
+  for file in $changed_files; do
+    claude-code "Quick security review" < "$file"
+  done
+fi
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ## Next Steps
 

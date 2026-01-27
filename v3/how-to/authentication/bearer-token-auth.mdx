@@ -25,158 +25,146 @@ Authorization: Bearer YOUR_API_KEY
 
 ### cURL
 
-<CodeBlocks>
-  <CodeBlock title="cURL">
-    ```bash
-    curl -X POST https://api.edenai.run/v3/llm/chat/completions \
-      -H "Authorization: Bearer eyJhbG...xxxxxxxxxxxxxxxxxxxxxxxx" \
-      -H "Content-Type: application/json" \
-      -d '{
+<CodeGroup>
+```bash cURL
+curl -X POST https://api.edenai.run/v3/llm/chat/completions \
+  -H "Authorization: Bearer eyJhbG...xxxxxxxxxxxxxxxxxxxxxxxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-4",
+    "messages": [{"role": "user", "content": "Hello!"}]
+  }'
+    ```
+
+```python Python (requests)
+import requests
+
+API_KEY = "eyJhbG...xxxxxxxxxxxxxxxxxxxxxxxx"
+
+headers = {
+    "Authorization": f"Bearer {API_KEY}",
+    "Content-Type": "application/json"
+}
+
+response = requests.post(
+    "https://api.edenai.run/v3/llm/chat/completions",
+    headers=headers,
+    json={
         "model": "openai/gpt-4",
         "messages": [{"role": "user", "content": "Hello!"}]
-      }'
-    ```
-  </CodeBlock>
-
-  <CodeBlock title="Python (requests)">
-    ```python
-    import requests
-
-    API_KEY = "eyJhbG...xxxxxxxxxxxxxxxxxxxxxxxx"
-
-    headers = {
-        "Authorization": f"Bearer {API_KEY}",
-        "Content-Type": "application/json"
     }
+)
 
-    response = requests.post(
-        "https://api.edenai.run/v3/llm/chat/completions",
-        headers=headers,
-        json={
-            "model": "openai/gpt-4",
-            "messages": [{"role": "user", "content": "Hello!"}]
-        }
-    )
-
-    print(response.json())
+print(response.json())
     ```
-  </CodeBlock>
 
-  <CodeBlock title="Python (with environment variable)">
-    ```python
-    import os
-    import requests
+```python Python (with environment variable)
+import os
+import requests
 
-    # Load from environment variable
-    API_KEY = os.getenv("EDENAI_API_KEY")
+# Load from environment variable
+API_KEY = os.getenv("EDENAI_API_KEY")
 
-    headers = {
-        "Authorization": f"Bearer {API_KEY}",
-        "Content-Type": "application/json"
+headers = {
+    "Authorization": f"Bearer {API_KEY}",
+    "Content-Type": "application/json"
+}
+
+response = requests.post(
+    "https://api.edenai.run/v3/llm/chat/completions",
+    headers=headers,
+    json={
+        "model": "openai/gpt-4",
+        "messages": [{"role": "user", "content": "Hello!"}]
     }
+)
 
-    response = requests.post(
-        "https://api.edenai.run/v3/llm/chat/completions",
-        headers=headers,
-        json={
-            "model": "openai/gpt-4",
-            "messages": [{"role": "user", "content": "Hello!"}]
-        }
-    )
-
-    result = response.json()
+result = response.json()
     ```
-  </CodeBlock>
 
-  <CodeBlock title="JavaScript (fetch)">
-    ```javascript
-    const API_KEY = 'sk_xxxxxxxxxxxxxxxxxxxxxxxx';
+```javascript JavaScript (fetch)
+const API_KEY = 'sk_xxxxxxxxxxxxxxxxxxxxxxxx';
 
-    const headers = {
+const headers = {
+  'Authorization': `Bearer ${API_KEY}`,
+  'Content-Type': 'application/json'
+};
+
+const response = await fetch('https://api.edenai.run/v3/llm/chat/completions', {
+  method: 'POST',
+  headers: headers,
+  body: JSON.stringify({
+    model: 'openai/gpt-4',
+    messages: [{role: 'user', content: 'Hello!'}]
+  })
+});
+
+const result = await response.json();
+console.log(result);
+    ```
+
+```javascript JavaScript (axios)
+const axios = require('axios');
+
+const API_KEY = 'sk_xxxxxxxxxxxxxxxxxxxxxxxx';
+
+const response = await axios.post(
+  'https://api.edenai.run/v3/llm/chat/completions',
+  {
+    model: 'openai/gpt-4',
+    messages: [{role: 'user', content: 'Hello!'}]
+  },
+  {
+    headers: {
       'Authorization': `Bearer ${API_KEY}`,
       'Content-Type': 'application/json'
-    };
-
-    const response = await fetch('https://api.edenai.run/v3/llm/chat/completions', {
-      method: 'POST',
-      headers: headers,
-      body: JSON.stringify({
-        model: 'openai/gpt-4',
-        messages: [{role: 'user', content: 'Hello!'}]
-      })
-    });
-
-    const result = await response.json();
-    console.log(result);
-    ```
-  </CodeBlock>
-
-  <CodeBlock title="JavaScript (axios)">
-    ```javascript
-    const axios = require('axios');
-
-    const API_KEY = 'sk_xxxxxxxxxxxxxxxxxxxxxxxx';
-
-    const response = await axios.post(
-      'https://api.edenai.run/v3/llm/chat/completions',
-      {
-        model: 'openai/gpt-4',
-        messages: [{role: 'user', content: 'Hello!'}]
-      },
-      {
-        headers: {
-          'Authorization': `Bearer ${API_KEY}`,
-          'Content-Type': 'application/json'
-        }
-      }
-    );
-
-    console.log(response.data);
-    ```
-  </CodeBlock>
-
-  <CodeBlock title="Go">
-    ```go
-    package main
-
-    import (
-        "bytes"
-        "encoding/json"
-        "fmt"
-        "io"
-        "net/http"
-    )
-
-    func main() {
-        apiKey := "eyJhbG...xxxxxxxxxxxxxxxxxxxxxxxx"
-        url := "https://api.edenai.run/v3/llm/chat/completions"
-
-        payload := map[string]interface{}{
-            "model": "openai/gpt-4",
-            "messages": []map[string]string{
-                {"role": "user", "content": "Hello!"},
-            },
-        }
-
-        jsonData, _ := json.Marshal(payload)
-
-        req, _ := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
-        req.Header.Set("Authorization", "Bearer "+apiKey)
-        req.Header.Set("Content-Type", "application/json")
-
-        client := &http.Client{}
-        resp, err := client.Do(req)
-        if err != nil {
-            panic(err)
-        }
-        defer resp.Body.Close()
-
-        body, _ := io.ReadAll(resp.Body)
-        fmt.Println(string(body))
     }
+  }
+);
+
+console.log(response.data);
     ```
-  </CodeBlock>
-</CodeBlocks>
+
+```go Go
+package main
+
+import (
+    "bytes"
+    "encoding/json"
+    "fmt"
+    "io"
+    "net/http"
+)
+
+func main() {
+    apiKey := "eyJhbG...xxxxxxxxxxxxxxxxxxxxxxxx"
+    url := "https://api.edenai.run/v3/llm/chat/completions"
+
+    payload := map[string]interface{}{
+        "model": "openai/gpt-4",
+        "messages": []map[string]string{
+            {"role": "user", "content": "Hello!"},
+        },
+    }
+
+    jsonData, _ := json.Marshal(payload)
+
+    req, _ := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+    req.Header.Set("Authorization", "Bearer "+apiKey)
+    req.Header.Set("Content-Type", "application/json")
+
+    client := &http.Client{}
+    resp, err := client.Do(req)
+    if err != nil {
+        panic(err)
+    }
+    defer resp.Body.Close()
+
+    body, _ := io.ReadAll(resp.Body)
+    fmt.Println(string(body))
+}
+    ```
+</CodeGroup>
 
 ## Best Practices
 
@@ -184,45 +172,39 @@ Authorization: Bearer YOUR_API_KEY
 
 Never hardcode API tokens in your source code. Use environment variables or secret management systems:
 
-<CodeBlocks>
-  <CodeBlock title="Python (.env file)">
-    ```python
-    # .env file
-    EDENAI_API_KEY=sk_xxxxxxxxxxxxxxxxxxxxxxxx
+<CodeGroup>
+```python Python (.env file)
+# .env file
+EDENAI_API_KEY=sk_xxxxxxxxxxxxxxxxxxxxxxxx
 
-    # Python code
-    from dotenv import load_dotenv
-    import os
+# Python code
+from dotenv import load_dotenv
+import os
 
-    load_dotenv()
-    API_KEY = os.getenv("EDENAI_API_KEY")
+load_dotenv()
+API_KEY = os.getenv("EDENAI_API_KEY")
     ```
-  </CodeBlock>
 
-  <CodeBlock title="JavaScript (.env file)">
-    ```javascript
-    // .env file
-    EDENAI_API_KEY=sk_xxxxxxxxxxxxxxxxxxxxxxxx
+```javascript JavaScript (.env file)
+// .env file
+EDENAI_API_KEY=sk_xxxxxxxxxxxxxxxxxxxxxxxx
 
-    // JavaScript code
-    require('dotenv').config();
-    const API_KEY = process.env.EDENAI_API_KEY;
+// JavaScript code
+require('dotenv').config();
+const API_KEY = process.env.EDENAI_API_KEY;
     ```
-  </CodeBlock>
 
-  <CodeBlock title="Bash (export)">
-    ```bash
-    # Set environment variable
-    export EDENAI_API_KEY="eyJhbG...xxxxxxxxxxxxxxxxxxxxxxxx"
+```bash Bash (export)
+# Set environment variable
+export EDENAI_API_KEY="eyJhbG...xxxxxxxxxxxxxxxxxxxxxxxx"
 
-    # Use in cURL
-    curl -X POST https://api.edenai.run/v3/llm/chat/completions \
-      -H "Authorization: Bearer $EDENAI_API_KEY" \
-      -H "Content-Type: application/json" \
-      -d '{"model": "openai/gpt-4", "messages": [{"role": "user", "content": "Hello!"}]}'
+# Use in cURL
+curl -X POST https://api.edenai.run/v3/llm/chat/completions \
+  -H "Authorization: Bearer $EDENAI_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "openai/gpt-4", "messages": [{"role": "user", "content": "Hello!"}]}'
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ### Add to .gitignore
 
@@ -256,15 +238,13 @@ Create separate API keys for development, staging, and production environments t
 
 **Cause:** Invalid or missing API token
 
-<CodeBlocks>
-  <CodeBlock title="Error Response">
-    ```json
-    {
-      "detail": "Invalid authentication credentials"
-    }
+<CodeGroup>
+```json Error Response
+{
+  "detail": "Invalid authentication credentials"
+}
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 **Solutions:**
 - Verify your token is correct
@@ -276,15 +256,13 @@ Create separate API keys for development, staging, and production environments t
 
 **Cause:** Insufficient credits in your account
 
-<CodeBlocks>
-  <CodeBlock title="Error Response">
-    ```json
-    {
-      "detail": "Insufficient credits"
-    }
+<CodeGroup>
+```json Error Response
+{
+  "detail": "Insufficient credits"
+}
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 **Solutions:**
 - Add credits to your account in the dashboard
@@ -295,104 +273,96 @@ Create separate API keys for development, staging, and production environments t
 
 Test your authentication with a simple request:
 
-<CodeBlocks>
-  <CodeBlock title="cURL">
-    ```bash
-    curl -X POST https://api.edenai.run/v3/llm/chat/completions \
-      -H "Authorization: Bearer YOUR_API_KEY" \
-      -H "Content-Type: application/json" \
-      -d '{"model": "openai/gpt-4", "messages": [{"role": "user", "content": "Test"}]}'
+<CodeGroup>
+```bash cURL
+curl -X POST https://api.edenai.run/v3/llm/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "openai/gpt-4", "messages": [{"role": "user", "content": "Test"}]}'
     ```
-  </CodeBlock>
 
-  <CodeBlock title="Python">
-    ```python
-    import requests
+```python Python
+import requests
 
-    headers = {
-        "Authorization": f"Bearer {API_KEY}",
-        "Content-Type": "application/json"
+headers = {
+    "Authorization": f"Bearer {API_KEY}",
+    "Content-Type": "application/json"
+}
+response = requests.post(
+    "https://api.edenai.run/v3/llm/chat/completions",
+    headers=headers,
+    json={
+        "model": "openai/gpt-4",
+        "messages": [{"role": "user", "content": "Test"}]
     }
-    response = requests.post(
-        "https://api.edenai.run/v3/llm/chat/completions",
-        headers=headers,
-        json={
-            "model": "openai/gpt-4",
-            "messages": [{"role": "user", "content": "Test"}]
-        }
-    )
+)
 
-    if response.status_code == 200:
-        print("Authentication successful!")
-        print(response.json())
-    else:
-        print(f"Authentication failed: {response.status_code}")
-        print(response.json())
+if response.status_code == 200:
+    print("Authentication successful!")
+    print(response.json())
+else:
+    print(f"Authentication failed: {response.status_code}")
+    print(response.json())
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ## Using Client Libraries
 
 If you're using an HTTP client library, most support automatic header management:
 
-<CodeBlocks>
-  <CodeBlock title="Python (requests Session)">
-    ```python
-    import requests
+<CodeGroup>
+```python Python (requests Session)
+import requests
 
-    # Create session with persistent headers
-    session = requests.Session()
-    session.headers.update({
-        "Authorization": f"Bearer {API_KEY}",
-        "Content-Type": "application/json"
-    })
+# Create session with persistent headers
+session = requests.Session()
+session.headers.update({
+    "Authorization": f"Bearer {API_KEY}",
+    "Content-Type": "application/json"
+})
 
-    # All requests use the same headers
-    response1 = session.post(
-        "https://api.edenai.run/v3/llm/chat/completions",
-        json={
-            "model": "openai/gpt-4",
-            "messages": [{"role": "user", "content": "First message"}]
-        }
-    )
+# All requests use the same headers
+response1 = session.post(
+    "https://api.edenai.run/v3/llm/chat/completions",
+    json={
+        "model": "openai/gpt-4",
+        "messages": [{"role": "user", "content": "First message"}]
+    }
+)
 
-    response2 = session.post(
-        "https://api.edenai.run/v3/llm/chat/completions",
-        json={
-            "model": "anthropic/claude-3-sonnet",
-            "messages": [{"role": "user", "content": "Second message"}]
-        }
-    )
+response2 = session.post(
+    "https://api.edenai.run/v3/llm/chat/completions",
+    json={
+        "model": "anthropic/claude-3-sonnet",
+        "messages": [{"role": "user", "content": "Second message"}]
+    }
+)
     ```
-  </CodeBlock>
 
-  <CodeBlock title="JavaScript (axios instance)">
-    ```javascript
-    const axios = require('axios');
+```javascript JavaScript (axios instance)
+const axios = require('axios');
 
-    // Create axios instance with default config
-    const edenai = axios.create({
-      baseURL: 'https://api.edenai.run/v3',
-      headers: {
-        'Authorization': `Bearer ${API_KEY}`,
-        'Content-Type': 'application/json'
-      }
-    });
+// Create axios instance with default config
+const edenai = axios.create({
+  baseURL: 'https://api.edenai.run/v3',
+  headers: {
+    'Authorization': `Bearer ${API_KEY}`,
+    'Content-Type': 'application/json'
+  }
+});
 
-    // All requests use the same config
-    const response1 = await edenai.post('/llm/chat/completions', {
-      model: 'openai/gpt-4',
-      messages: [{role: 'user', content: 'First message'}]
-    });
+// All requests use the same config
+const response1 = await edenai.post('/llm/chat/completions', {
+  model: 'openai/gpt-4',
+  messages: [{role: 'user', content: 'First message'}]
+});
 
-    const response2 = await edenai.post('/llm/chat/completions', {
-      model: 'anthropic/claude-3-sonnet',
-      messages: [{role: 'user', content: 'Second message'}]
-    });
+const response2 = await edenai.post('/llm/chat/completions', {
+  model: 'anthropic/claude-3-sonnet',
+  messages: [{role: 'user', content: 'Second message'}]
+});
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ## Next Steps
 

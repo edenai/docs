@@ -15,131 +15,123 @@ Extract text and structured data from documents using the Universal AI endpoint.
 
 Extract text from documents:
 
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    import requests
+<CodeGroup>
+```python Python
+import requests
 
-    # Step 1: Upload the file
-    upload_url = "https://api.edenai.run/v3/upload"
-    upload_headers = {"Authorization": "Bearer YOUR_API_KEY"}
+# Step 1: Upload the file
+upload_url = "https://api.edenai.run/v3/upload"
+upload_headers = {"Authorization": "Bearer YOUR_API_KEY"}
     
-    files = {"file": open("document.pdf", "rb")}
-    upload_response = requests.post(upload_url, headers=upload_headers, files=files)
-    file_id = upload_response.json()["file_id"]
+files = {"file": open("document.pdf", "rb")}
+upload_response = requests.post(upload_url, headers=upload_headers, files=files)
+file_id = upload_response.json()["file_id"]
 
-    # Step 2: Process with OCR
-    url = "https://api.edenai.run/v3/universal-ai"
-    headers = {
-        "Authorization": "Bearer YOUR_API_KEY",
-        "Content-Type": "application/json"
+# Step 2: Process with OCR
+url = "https://api.edenai.run/v3/universal-ai"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+payload = {
+    "model": "ocr/financial_parser/google",
+    "input": {
+        "file": file_id,
+        "language": "en"
     }
+}
 
-    payload = {
-        "model": "ocr/financial_parser/google",
-        "input": {
-            "file": file_id,
-            "language": "en"
-        }
-    }
+response = requests.post(url, headers=headers, json=payload)
+result = response.json()
 
-    response = requests.post(url, headers=headers, json=payload)
-    result = response.json()
-
-    print(result["output"]["text"])
+print(result["output"]["text"])
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ## Identity Document Parsing
 
 Extract structured data from IDs and passports:
 
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    import requests
-    # Upload ID document
-    files = {"file": open("passport.jpg", "rb")}
-    upload_response = requests.post(upload_url, headers=upload_headers, files=files)
-    file_id = upload_response.json()["file_id"]
+<CodeGroup>
+```python Python
+import requests
+# Upload ID document
+files = {"file": open("passport.jpg", "rb")}
+upload_response = requests.post(upload_url, headers=upload_headers, files=files)
+file_id = upload_response.json()["file_id"]
 
-    # Parse identity document
-    payload = {
-        "model": "ocr/identity_parser/amazon",
-        "input": {
-            "file": file_id
-        }
+# Parse identity document
+payload = {
+    "model": "ocr/identity_parser/amazon",
+    "input": {
+        "file": file_id
     }
+}
 
-    response = requests.post(url, headers=headers, json=payload)
-    result = response.json()
+response = requests.post(url, headers=headers, json=payload)
+result = response.json()
 
-    identity = result["output"]
-    print(f"Name: {identity.get('given_names')} {identity.get('last_name')}")
-    print(f"Document Number: {identity.get('document_id')}")
-    print(f"Expiry Date: {identity.get('expire_date')}")
+identity = result["output"]
+print(f"Name: {identity.get('given_names')} {identity.get('last_name')}")
+print(f"Document Number: {identity.get('document_id')}")
+print(f"Expiry Date: {identity.get('expire_date')}")
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ## Invoice Parsing
 
 Extract structured invoice data:
 
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    import requests
-    # Upload invoice
-    files = {"file": open("invoice.pdf", "rb")}
-    upload_response = requests.post(upload_url, headers=upload_headers, files=files)
-    file_id = upload_response.json()["file_id"]
+<CodeGroup>
+```python Python
+import requests
+# Upload invoice
+files = {"file": open("invoice.pdf", "rb")}
+upload_response = requests.post(upload_url, headers=upload_headers, files=files)
+file_id = upload_response.json()["file_id"]
 
-    # Parse invoice
-    payload = {
-        "model": "ocr/invoice_parser/microsoft",
-        "input": {
-            "file": file_id
-        }
+# Parse invoice
+payload = {
+    "model": "ocr/invoice_parser/microsoft",
+    "input": {
+        "file": file_id
     }
+}
 
-    response = requests.post(url, headers=headers, json=payload)
-    result = response.json()
+response = requests.post(url, headers=headers, json=payload)
+result = response.json()
 
-    invoice = result["output"]
-    print(f"Invoice Number: {invoice.get('invoice_number')}")
-    print(f"Total: {invoice.get('invoice_total')}")
-    print(f"Date: {invoice.get('date')}")
+invoice = result["output"]
+print(f"Invoice Number: {invoice.get('invoice_number')}")
+print(f"Total: {invoice.get('invoice_total')}")
+print(f"Date: {invoice.get('date')}")
     
-    for item in invoice.get("items", []):
-        print(f"  - {item['description']}: ${item['amount']}")
+for item in invoice.get("items", []):
+    print(f"  - {item['description']}: ${item['amount']}")
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ## Using File URLs
 
 Instead of uploading, you can provide file URLs:
 
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    import requests
-    payload = {
-        "model": "ocr/financial_parser/affinda",
-        "input": {
-            "file": "https://example.com/document.jpg",
-            "language": "en"
-        }
+<CodeGroup>
+```python Python
+import requests
+payload = {
+    "model": "ocr/financial_parser/affinda",
+    "input": {
+        "file": "https://example.com/document.jpg",
+        "language": "en"
     }
+}
 
-    response = requests.post(url, headers=headers, json=payload)
-    result = response.json()
-    print(result["output"]["text"])
+response = requests.post(url, headers=headers, json=payload)
+result = response.json()
+print(result["output"]["text"])
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ## Next Steps
 

@@ -24,19 +24,17 @@ Configure Open WebUI (formerly Ollama WebUI) to use Eden AI for accessing 200+ A
 
 Run Open WebUI with a single command:
 
-<CodeBlocks>
-  <CodeBlock title="bash">
-    ```bash
-    docker run -d \
-      --name open-webui \
-      -p 3000:8080 \
-      -v open-webui:/app/backend/data \
-      -e OPENAI_API_BASE_URL=https://api.edenai.run/v3/llm \
-      -e OPENAI_API_KEY=YOUR_EDEN_AI_API_KEY \
-      ghcr.io/open-webui/open-webui:main
+<CodeGroup>
+```bash bash
+docker run -d \
+  --name open-webui \
+  -p 3000:8080 \
+  -v open-webui:/app/backend/data \
+  -e OPENAI_API_BASE_URL=https://api.edenai.run/v3/llm \
+  -e OPENAI_API_KEY=YOUR_EDEN_AI_API_KEY \
+  ghcr.io/open-webui/open-webui:main
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 Access Open WebUI at `http://localhost:3000`
 
@@ -44,50 +42,44 @@ Access Open WebUI at `http://localhost:3000`
 
 Create a `docker-compose.yml` file:
 
-<CodeBlocks>
-  <CodeBlock title="docker-compose.yml">
-    ```yaml
-    version: '3.8'
+<CodeGroup>
+```yaml docker-compose.yml
+version: '3.8'
 
-    services:
-      open-webui:
-        image: ghcr.io/open-webui/open-webui:main
-        container_name: open-webui
-        ports:
-          - "3000:8080"
-        environment:
-          - OPENAI_API_BASE_URL=https://api.edenai.run/v3/llm
-          - OPENAI_API_KEY=${EDEN_AI_API_KEY}
-          - WEBUI_SECRET_KEY=${WEBUI_SECRET_KEY}
-        volumes:
-          - open-webui:/app/backend/data
-        restart: unless-stopped
-
+services:
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: open-webui
+    ports:
+      - "3000:8080"
+    environment:
+      - OPENAI_API_BASE_URL=https://api.edenai.run/v3/llm
+      - OPENAI_API_KEY=${EDEN_AI_API_KEY}
+      - WEBUI_SECRET_KEY=${WEBUI_SECRET_KEY}
     volumes:
-      open-webui:
+      - open-webui:/app/backend/data
+    restart: unless-stopped
+
+volumes:
+  open-webui:
     ```
-  </CodeBlock>
 
-  <CodeBlock title=".env">
-    ```bash
-    EDEN_AI_API_KEY=your_eden_ai_api_key_here
-    WEBUI_SECRET_KEY=your_random_secret_key_here
+```bash .env
+EDEN_AI_API_KEY=your_eden_ai_api_key_here
+WEBUI_SECRET_KEY=your_random_secret_key_here
     ```
-  </CodeBlock>
 
-  <CodeBlock title="bash">
-    ```bash
-    # Start Open WebUI
-    docker compose up -d
+```bash bash
+# Start Open WebUI
+docker compose up -d
 
-    # View logs
-    docker compose logs -f
+# View logs
+docker compose logs -f
 
-    # Stop
-    docker compose down
+# Stop
+docker compose down
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ## Configuration
 
@@ -126,35 +118,33 @@ In the Open WebUI interface:
 
 Configure Open WebUI with environment variables:
 
-<CodeBlocks>
-  <CodeBlock title=".env">
-    ```bash
-    # Eden AI Configuration
-    OPENAI_API_BASE_URL=https://api.edenai.run/v3/llm
-    OPENAI_API_KEY=your_eden_ai_api_key
+<CodeGroup>
+```bash .env
+# Eden AI Configuration
+OPENAI_API_BASE_URL=https://api.edenai.run/v3/llm
+OPENAI_API_KEY=your_eden_ai_api_key
 
-    # Application Settings
-    WEBUI_SECRET_KEY=your_secret_key_here
-    WEBUI_NAME=Eden AI Chat
-    DATA_DIR=/app/backend/data
+# Application Settings
+WEBUI_SECRET_KEY=your_secret_key_here
+WEBUI_NAME=Eden AI Chat
+DATA_DIR=/app/backend/data
 
-    # Authentication
-    ENABLE_SIGNUP=true
-    DEFAULT_USER_ROLE=user
+# Authentication
+ENABLE_SIGNUP=true
+DEFAULT_USER_ROLE=user
 
-    # Optional: RAG Settings
-    ENABLE_RAG_WEB_SEARCH=true
-    RAG_EMBEDDING_MODEL=text-embedding-3-small
-    RAG_TOP_K=5
-    CHUNK_SIZE=1500
-    CHUNK_OVERLAP=100
+# Optional: RAG Settings
+ENABLE_RAG_WEB_SEARCH=true
+RAG_EMBEDDING_MODEL=text-embedding-3-small
+RAG_TOP_K=5
+CHUNK_SIZE=1500
+CHUNK_OVERLAP=100
 
-    # Optional: Image Generation
-    ENABLE_IMAGE_GENERATION=true
-    IMAGE_GENERATION_MODEL=dall-e-3
+# Optional: Image Generation
+ENABLE_IMAGE_GENERATION=true
+IMAGE_GENERATION_MODEL=dall-e-3
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ## Features
 
@@ -169,23 +159,21 @@ Configure Open WebUI with environment variables:
 
 Upload documents for context-aware conversations:
 
-<CodeBlocks>
-  <CodeBlock title="docker-compose.yml">
-    ```yaml
-    services:
-      open-webui:
-        image: ghcr.io/open-webui/open-webui:main
-        environment:
-          - OPENAI_API_BASE_URL=https://api.edenai.run/v3/llm
-          - OPENAI_API_KEY=${EDEN_AI_API_KEY}
-          # Enable RAG
-          - ENABLE_RAG_WEB_SEARCH=true
-          - RAG_EMBEDDING_MODEL=openai/text-embedding-3-small
-          - RAG_EMBEDDING_ENGINE=openai
-          - RAG_EMBEDDING_OPENAI_BATCH_SIZE=1
+<CodeGroup>
+```yaml docker-compose.yml
+services:
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    environment:
+      - OPENAI_API_BASE_URL=https://api.edenai.run/v3/llm
+      - OPENAI_API_KEY=${EDEN_AI_API_KEY}
+      # Enable RAG
+      - ENABLE_RAG_WEB_SEARCH=true
+      - RAG_EMBEDDING_MODEL=openai/text-embedding-3-small
+      - RAG_EMBEDDING_ENGINE=openai
+      - RAG_EMBEDDING_OPENAI_BATCH_SIZE=1
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 **Usage:**
 1. Click the **+** icon in chat
@@ -197,19 +185,17 @@ Upload documents for context-aware conversations:
 
 Generate images using DALL-E or other providers:
 
-<CodeBlocks>
-  <CodeBlock title=".env">
-    ```bash
-    # Enable image generation
-    ENABLE_IMAGE_GENERATION=true
-    IMAGE_GENERATION_MODEL=openai/dall-e-3
-    IMAGE_GENERATION_ENGINE=openai
+<CodeGroup>
+```bash .env
+# Enable image generation
+ENABLE_IMAGE_GENERATION=true
+IMAGE_GENERATION_MODEL=openai/dall-e-3
+IMAGE_GENERATION_ENGINE=openai
 
-    # Use Eden AI endpoint
-    AUTOMATIC1111_BASE_URL=https://api.edenai.run/v3
+# Use Eden AI endpoint
+AUTOMATIC1111_BASE_URL=https://api.edenai.run/v3
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 **Usage:**
 Type `/imagine` followed by your prompt in the chat.
@@ -218,29 +204,25 @@ Type `/imagine` followed by your prompt in the chat.
 
 Enable web search for up-to-date information:
 
-<CodeBlocks>
-  <CodeBlock title=".env">
-    ```bash
-    ENABLE_RAG_WEB_SEARCH=true
-    RAG_WEB_SEARCH_ENGINE=searxng
-    SEARXNG_QUERY_URL=https://searx.be/search?q=<query>
+<CodeGroup>
+```bash .env
+ENABLE_RAG_WEB_SEARCH=true
+RAG_WEB_SEARCH_ENGINE=searxng
+SEARXNG_QUERY_URL=https://searx.be/search?q=<query>
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ### Voice Input
 
 Enable voice-to-text:
 
-<CodeBlocks>
-  <CodeBlock title=".env">
-    ```bash
-    ENABLE_AUDIO=true
-    AUDIO_STT_ENGINE=openai
-    AUDIO_STT_MODEL=whisper-1
+<CodeGroup>
+```bash .env
+ENABLE_AUDIO=true
+AUDIO_STT_ENGINE=openai
+AUDIO_STT_MODEL=whisper-1
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ## Advanced Configuration
 
@@ -248,108 +230,100 @@ Enable voice-to-text:
 
 Configure multiple providers:
 
-<CodeBlocks>
-  <CodeBlock title="docker-compose.yml">
-    ```yaml
-    services:
-      open-webui:
-        image: ghcr.io/open-webui/open-webui:main
-        environment:
-          # Eden AI as primary
-          - OPENAI_API_BASE_URL=https://api.edenai.run/v3/llm
-          - OPENAI_API_KEY=${EDEN_AI_API_KEY}
+<CodeGroup>
+```yaml docker-compose.yml
+services:
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    environment:
+      # Eden AI as primary
+      - OPENAI_API_BASE_URL=https://api.edenai.run/v3/llm
+      - OPENAI_API_KEY=${EDEN_AI_API_KEY}
 
-          # Additional endpoints (optional)
-          - OPENAI_API_BASE_URLS=https://api.edenai.run/v3/llm,https://api.openai.com/v1
-          - OPENAI_API_KEYS=${EDEN_AI_API_KEY},${OPENAI_API_KEY}
+      # Additional endpoints (optional)
+      - OPENAI_API_BASE_URLS=https://api.edenai.run/v3/llm,https://api.openai.com/v1
+      - OPENAI_API_KEYS=${EDEN_AI_API_KEY},${OPENAI_API_KEY}
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ### Custom Model Metadata
 
 Define model capabilities and pricing:
 
-<CodeBlocks>
-  <CodeBlock title="models.json">
-    ```json
+<CodeGroup>
+```json models.json
+{
+  "models": [
     {
-      "models": [
-        {
-          "id": "anthropic/claude-3-5-sonnet-20241022",
-          "name": "Claude 3.5 Sonnet",
-          "owned_by": "anthropic",
-          "created": 1729900800,
-          "object": "model",
-          "info": {
-            "description": "Most intelligent Claude model",
-            "capabilities": {
-              "vision": true,
-              "function_calling": true
-            }
-          }
-        },
-        {
-          "id": "openai/gpt-4o",
-          "name": "GPT-4o",
-          "owned_by": "openai",
-          "created": 1715300000,
-          "object": "model",
-          "info": {
-            "description": "GPT-4 with vision",
-            "capabilities": {
-              "vision": true,
-              "function_calling": true
-            }
-          }
+      "id": "anthropic/claude-3-5-sonnet-20241022",
+      "name": "Claude 3.5 Sonnet",
+      "owned_by": "anthropic",
+      "created": 1729900800,
+      "object": "model",
+      "info": {
+        "description": "Most intelligent Claude model",
+        "capabilities": {
+          "vision": true,
+          "function_calling": true
         }
-      ]
+      }
+    },
+    {
+      "id": "openai/gpt-4o",
+      "name": "GPT-4o",
+      "owned_by": "openai",
+      "created": 1715300000,
+      "object": "model",
+      "info": {
+        "description": "GPT-4 with vision",
+        "capabilities": {
+          "vision": true,
+          "function_calling": true
+        }
+      }
     }
+  ]
+}
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ### User Permissions
 
 Configure role-based access:
 
-<CodeBlocks>
-  <CodeBlock title=".env">
-    ```bash
-    # User registration
-    ENABLE_SIGNUP=true
-    DEFAULT_USER_ROLE=user
+<CodeGroup>
+```bash .env
+# User registration
+ENABLE_SIGNUP=true
+DEFAULT_USER_ROLE=user
 
-    # Admin settings
-    ADMIN_EMAIL=admin@example.com
+# Admin settings
+ADMIN_EMAIL=admin@example.com
 
-    # Model access control
-    ENABLE_MODEL_FILTER=true
-    MODEL_FILTER_LIST=anthropic/claude-3-5-sonnet-20241022,openai/gpt-4
+# Model access control
+ENABLE_MODEL_FILTER=true
+MODEL_FILTER_LIST=anthropic/claude-3-5-sonnet-20241022,openai/gpt-4
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ### Persistent Storage
 
 Configure data persistence:
 
-<CodeBlocks>
-  <CodeBlock title="docker-compose.yml">
-    ```yaml
-    services:
-      open-webui:
-        image: ghcr.io/open-webui/open-webui:main
-        volumes:
-          # Data persistence
-          - ./data:/app/backend/data
-          # Custom models
-          - ./models.json:/app/backend/models.json:ro
-          # User uploads
-          - ./uploads:/app/backend/uploads
+<CodeGroup>
+```yaml docker-compose.yml
+services:
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    volumes:
+      # Data persistence
+      - ./data:/app/backend/data
+      # Custom models
+      - ./models.json:/app/backend/models.json:ro
+      # User uploads
+      - ./uploads:/app/backend/uploads
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ## Security
 
@@ -357,146 +331,136 @@ Configure data persistence:
 
 Enable and configure authentication:
 
-<CodeBlocks>
-  <CodeBlock title=".env">
-    ```bash
-    # Require login
-    WEBUI_AUTH=true
+<CodeGroup>
+```bash .env
+# Require login
+WEBUI_AUTH=true
 
-    # Session settings
-    WEBUI_SECRET_KEY=generate_strong_random_key_here
-    SESSION_TIMEOUT=3600
+# Session settings
+WEBUI_SECRET_KEY=generate_strong_random_key_here
+SESSION_TIMEOUT=3600
 
-    # OAuth (optional)
-    ENABLE_OAUTH_SIGNUP=true
-    OAUTH_CLIENT_ID=your_client_id
-    OAUTH_CLIENT_SECRET=your_client_secret
-    OAUTH_PROVIDER_NAME=Google
+# OAuth (optional)
+ENABLE_OAUTH_SIGNUP=true
+OAUTH_CLIENT_ID=your_client_id
+OAUTH_CLIENT_SECRET=your_client_secret
+OAUTH_PROVIDER_NAME=Google
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ### HTTPS Setup
 
 Use a reverse proxy for HTTPS:
 
-<CodeBlocks>
-  <CodeBlock title="nginx.conf">
-    ```nginx
-    server {
-      listen 443 ssl http2;
-      server_name chat.yourdomain.com;
+<CodeGroup>
+```nginx nginx.conf
+server {
+  listen 443 ssl http2;
+  server_name chat.yourdomain.com;
 
-      ssl_certificate /etc/ssl/certs/cert.pem;
-      ssl_certificate_key /etc/ssl/private/key.pem;
+  ssl_certificate /etc/ssl/certs/cert.pem;
+  ssl_certificate_key /etc/ssl/private/key.pem;
 
-      location / {
-        proxy_pass http://localhost:3000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+  location / {
+    proxy_pass http://localhost:3000;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
 
-        # WebSocket support
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-      }
-    }
+    # WebSocket support
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+  }
+}
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ### Rate Limiting
 
 Protect your API key:
 
-<CodeBlocks>
-  <CodeBlock title=".env">
-    ```bash
-    # Rate limiting
-    ENABLE_RATE_LIMIT=true
-    RATE_LIMIT_REQUESTS=60
-    RATE_LIMIT_WINDOW=60
+<CodeGroup>
+```bash .env
+# Rate limiting
+ENABLE_RATE_LIMIT=true
+RATE_LIMIT_REQUESTS=60
+RATE_LIMIT_WINDOW=60
 
-    # Per-user limits
-    USER_PERMISSIONS_CHAT_DAILY_LIMIT=100
+# Per-user limits
+USER_PERMISSIONS_CHAT_DAILY_LIMIT=100
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ## Production Deployment
 
 ### Full Production Stack
 
-<CodeBlocks>
-  <CodeBlock title="docker-compose.prod.yml">
-    ```yaml
-    version: '3.8'
+<CodeGroup>
+```yaml docker-compose.prod.yml
+version: '3.8'
 
-    services:
-      open-webui:
-        image: ghcr.io/open-webui/open-webui:main
-        container_name: open-webui
-        restart: always
-        ports:
-          - "127.0.0.1:3000:8080"
-        environment:
-          - OPENAI_API_BASE_URL=https://api.edenai.run/v3/llm
-          - OPENAI_API_KEY=${EDEN_AI_API_KEY}
-          - WEBUI_SECRET_KEY=${WEBUI_SECRET_KEY}
-          - ENABLE_SIGNUP=false
-          - DEFAULT_USER_ROLE=user
-          - WEBUI_AUTH=true
-        volumes:
-          - ./data:/app/backend/data
-          - ./uploads:/app/backend/uploads
-        healthcheck:
-          test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-          interval: 30s
-          timeout: 10s
-          retries: 3
+services:
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: open-webui
+    restart: always
+    ports:
+      - "127.0.0.1:3000:8080"
+    environment:
+      - OPENAI_API_BASE_URL=https://api.edenai.run/v3/llm
+      - OPENAI_API_KEY=${EDEN_AI_API_KEY}
+      - WEBUI_SECRET_KEY=${WEBUI_SECRET_KEY}
+      - ENABLE_SIGNUP=false
+      - DEFAULT_USER_ROLE=user
+      - WEBUI_AUTH=true
+    volumes:
+      - ./data:/app/backend/data
+      - ./uploads:/app/backend/uploads
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
-      nginx:
-        image: nginx:alpine
-        container_name: nginx-proxy
-        restart: always
-        ports:
-          - "80:80"
-          - "443:443"
-        volumes:
-          - ./nginx.conf:/etc/nginx/nginx.conf:ro
-          - ./ssl:/etc/ssl:ro
-        depends_on:
-          - open-webui
+  nginx:
+    image: nginx:alpine
+    container_name: nginx-proxy
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/ssl:ro
+    depends_on:
+      - open-webui
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ### Backup Strategy
 
 Backup your data regularly:
 
-<CodeBlocks>
-  <CodeBlock title="backup.sh">
-    ```bash
-    #!/bin/bash
+<CodeGroup>
+```bash backup.sh
+#!/bin/bash
 
-    # Backup directory
-    BACKUP_DIR="./backups/$(date +%Y%m%d_%H%M%S)"
-    mkdir -p "$BACKUP_DIR"
+# Backup directory
+BACKUP_DIR="./backups/$(date +%Y%m%d_%H%M%S)"
+mkdir -p "$BACKUP_DIR"
 
-    # Backup data
-    docker compose exec open-webui tar czf /tmp/backup.tar.gz /app/backend/data
-    docker cp open-webui:/tmp/backup.tar.gz "$BACKUP_DIR/"
+# Backup data
+docker compose exec open-webui tar czf /tmp/backup.tar.gz /app/backend/data
+docker cp open-webui:/tmp/backup.tar.gz "$BACKUP_DIR/"
 
-    # Backup database (if using external DB)
-    # docker compose exec postgres pg_dump -U user dbname > "$BACKUP_DIR/db.sql"
+# Backup database (if using external DB)
+# docker compose exec postgres pg_dump -U user dbname > "$BACKUP_DIR/db.sql"
 
-    echo "Backup completed: $BACKUP_DIR"
+echo "Backup completed: $BACKUP_DIR"
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ## Troubleshooting
 
@@ -594,33 +558,29 @@ If document upload fails:
 
 Configure cheaper models for embeddings:
 
-<CodeBlocks>
-  <CodeBlock title=".env">
-    ```bash
-    # Use smaller embedding model
-    RAG_EMBEDDING_MODEL=text-embedding-3-small
+<CodeGroup>
+```bash .env
+# Use smaller embedding model
+RAG_EMBEDDING_MODEL=text-embedding-3-small
 
-    # Use GPT-3.5 for simple tasks
-    DEFAULT_MODEL=openai/gpt-3.5-turbo
+# Use GPT-3.5 for simple tasks
+DEFAULT_MODEL=openai/gpt-3.5-turbo
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ### 2. Limit Token Usage
 
 Set maximum tokens:
 
-<CodeBlocks>
-  <CodeBlock title=".env">
-    ```bash
-    # Limit response length
-    MAX_TOKENS=1000
+<CodeGroup>
+```bash .env
+# Limit response length
+MAX_TOKENS=1000
 
-    # Limit context
-    MAX_CONTEXT_LENGTH=4000
+# Limit context
+MAX_CONTEXT_LENGTH=4000
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ### 3. Monitor Usage
 

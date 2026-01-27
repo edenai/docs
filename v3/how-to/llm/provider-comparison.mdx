@@ -66,29 +66,27 @@ This guide helps you choose the right provider for your multimodal use cases by 
 - Text: $0.01 per 1K tokens (input), $0.03 per 1K tokens (output)
 
 **Example:**
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    payload = {
-        "model": "openai/gpt-4o",
-        "messages": [
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": "Analyze this image"},
-                    {
-                        "type": "image_url",
-                        "image_url": {"url": "https://example.com/image.jpg"}
-                    }
-                ]
-            }
-        ],
-        "stream": True,
-        "max_tokens": 500
-    }
+<CodeGroup>
+```python Python
+payload = {
+    "model": "openai/gpt-4o",
+    "messages": [
+        {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": "Analyze this image"},
+                {
+                    "type": "image_url",
+                    "image_url": {"url": "https://example.com/image.jpg"}
+                }
+            ]
+        }
+    ],
+    "stream": True,
+    "max_tokens": 500
+}
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ---
 
@@ -127,32 +125,30 @@ This guide helps you choose the right provider for your multimodal use cases by 
 - Opus: $0.015 per image + text tokens
 
 **Example:**
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    payload = {
-        "model": "anthropic/claude-3-5-sonnet-20241022",
-        "messages": [
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": "Provide detailed analysis of this chart with insights"
-                    },
-                    {
-                        "type": "image_url",
-                        "image_url": {"url": "https://example.com/chart.png"}
-                    }
-                ]
-            }
-        ],
-        "stream": True,
-        "temperature": 0.3
-    }
+<CodeGroup>
+```python Python
+payload = {
+    "model": "anthropic/claude-3-5-sonnet-20241022",
+    "messages": [
+        {
+            "role": "user",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Provide detailed analysis of this chart with insights"
+                },
+                {
+                    "type": "image_url",
+                    "image_url": {"url": "https://example.com/chart.png"}
+                }
+            ]
+        }
+    ],
+    "stream": True,
+    "temperature": 0.3
+}
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ---
 
@@ -188,33 +184,31 @@ This guide helps you choose the right provider for your multimodal use cases by 
 - Pro: Medium cost, ~$0.004 per image
 
 **Example:**
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    # Process a 200-page PDF
-    payload = {
-        "model": "google/gemini-1.5-pro",
-        "messages": [
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": "Summarize this entire document and extract key findings"
-                    },
-                    {
-                        "type": "file",
-                        "file": {"file_id": "large_document_uuid"}
-                    }
-                ]
-            }
-        ],
-        "stream": True,
-        "max_tokens": 2000
-    }
+<CodeGroup>
+```python Python
+# Process a 200-page PDF
+payload = {
+    "model": "google/gemini-1.5-pro",
+    "messages": [
+        {
+            "role": "user",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Summarize this entire document and extract key findings"
+                },
+                {
+                    "type": "file",
+                    "file": {"file_id": "large_document_uuid"}
+                }
+            ]
+        }
+    ],
+    "stream": True,
+    "max_tokens": 2000
+}
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ---
 
@@ -248,28 +242,26 @@ This guide helps you choose the right provider for your multimodal use cases by 
 - Low cost, competitive with Flash
 
 **Example:**
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    payload = {
-        "model": "mistral/pixtral-12b",
-        "messages": [
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": "What objects are in this image?"},
-                    {
-                        "type": "image_url",
-                        "image_url": {"url": "https://example.com/photo.jpg"}
-                    }
-                ]
-            }
-        ],
-        "stream": True
-    }
+<CodeGroup>
+```python Python
+payload = {
+    "model": "mistral/pixtral-12b",
+    "messages": [
+        {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": "What objects are in this image?"},
+                {
+                    "type": "image_url",
+                    "image_url": {"url": "https://example.com/photo.jpg"}
+                }
+            ]
+        }
+    ],
+    "stream": True
+}
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ## Use Case Recommendations
 
@@ -386,59 +378,55 @@ This guide helps you choose the right provider for your multimodal use cases by 
 
 ### Optimize Input Size
 
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    from PIL import Image
-    import io
+<CodeGroup>
+```python Python
+from PIL import Image
+import io
 
-    def optimize_image(image_path, max_size_mb=5):
-        """Resize image to fit under size limit."""
-        img = Image.open(image_path)
+def optimize_image(image_path, max_size_mb=5):
+    """Resize image to fit under size limit."""
+    img = Image.open(image_path)
 
-        # Calculate target size
-        current_size = os.path.getsize(image_path) / (1024 * 1024)
-        if current_size <= max_size_mb:
-            return image_path
+    # Calculate target size
+    current_size = os.path.getsize(image_path) / (1024 * 1024)
+    if current_size <= max_size_mb:
+        return image_path
 
-        # Reduce quality
-        output = io.BytesIO()
-        quality = int(85 * (max_size_mb / current_size))
-        img.save(output, format='JPEG', quality=quality, optimize=True)
+    # Reduce quality
+    output = io.BytesIO()
+    quality = int(85 * (max_size_mb / current_size))
+    img.save(output, format='JPEG', quality=quality, optimize=True)
 
-        return output.getvalue()
+    return output.getvalue()
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ### Batch Processing
 
 Process multiple items in fewer requests:
 
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    # Instead of multiple requests
-    # Send all images in one request (if provider supports)
+<CodeGroup>
+```python Python
+# Instead of multiple requests
+# Send all images in one request (if provider supports)
 
-    payload = {
-        "model": "google/gemini-1.5-pro",
-        "messages": [
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": "Analyze all these images"},
-                ] + [
-                    {"type": "image_url", "image_url": {"url": url}}
-                    for url in image_urls
-                ]
-            }
-        ],
-        "stream": True
-    }
+payload = {
+    "model": "google/gemini-1.5-pro",
+    "messages": [
+        {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": "Analyze all these images"},
+            ] + [
+                {"type": "image_url", "image_url": {"url": url}}
+                for url in image_urls
+            ]
+        }
+    ],
+    "stream": True
+}
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ## Performance Benchmarks
 
@@ -492,34 +480,32 @@ Does your use case involve:
 
 Check current provider status:
 
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    import requests
+<CodeGroup>
+```python Python
+import requests
 
-    def check_provider_availability():
-        """Check which providers are currently available."""
-        url = "https://api.edenai.run/v3/llm/models"
-        headers = {"Authorization": "Bearer YOUR_API_KEY"}
+def check_provider_availability():
+    """Check which providers are currently available."""
+    url = "https://api.edenai.run/v3/llm/models"
+    headers = {"Authorization": "Bearer YOUR_API_KEY"}
 
-        response = requests.get(url, headers=headers)
-        models = response.json()
+    response = requests.get(url, headers=headers)
+    models = response.json()
 
-        multimodal_models = [
-            model for model in models.get("data", [])
-            if any(cap in model.get("capabilities", [])
-                   for cap in ["vision", "image", "file"])
-        ]
+    multimodal_models = [
+        model for model in models.get("data", [])
+        if any(cap in model.get("capabilities", [])
+               for cap in ["vision", "image", "file"])
+    ]
 
-        return multimodal_models
+    return multimodal_models
 
-    # Usage
-    available = check_provider_availability()
-    for model in available:
-        print(f"{model['id']}: {model.get('capabilities', [])}")
+# Usage
+available = check_provider_availability()
+for model in available:
+    print(f"{model['id']}: {model.get('capabilities', [])}")
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ## Next Steps
 

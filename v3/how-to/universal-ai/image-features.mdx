@@ -18,152 +18,142 @@ Process and analyze images using the Universal AI endpoint.
 
 Generate images from text descriptions:
 
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    import requests
+<CodeGroup>
+```python Python
+import requests
 
-    url = "https://api.edenai.run/v3/universal-ai"
-    headers = {
-        "Authorization": "Bearer YOUR_API_KEY",
-        "Content-Type": "application/json"
+url = "https://api.edenai.run/v3/universal-ai"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+payload = {
+    "model": "image/generation/openai/dall-e-3",
+    "input": {
+        "text": "A serene mountain landscape at sunset with a crystal clear lake",
+        "resolution": "1024x1024",
+        "num_images": 1
     }
+}
 
-    payload = {
-        "model": "image/generation/openai/dall-e-3",
-        "input": {
-            "text": "A serene mountain landscape at sunset with a crystal clear lake",
-            "resolution": "1024x1024",
-            "num_images": 1
-        }
-    }
+response = requests.post(url, headers=headers, json=payload)
+result = response.json()
 
-    response = requests.post(url, headers=headers, json=payload)
-    result = response.json()
-
-    image_url = result["output"]["items"][0]["image_url"]
-    print(f"Generated image: {image_url}")
+image_url = result["output"]["items"][0]["image_url"]
+print(f"Generated image: {image_url}")
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ## Object Detection
 
 Detect and identify objects in images:
 
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    import requests
-    # Upload image
-    upload_url = "https://api.edenai.run/v3/upload"
-    upload_headers = {"Authorization": "Bearer YOUR_API_KEY"}
+<CodeGroup>
+```python Python
+import requests
+# Upload image
+upload_url = "https://api.edenai.run/v3/upload"
+upload_headers = {"Authorization": "Bearer YOUR_API_KEY"}
     
-    files = {"file": open("photo.jpg", "rb")}
-    upload_response = requests.post(upload_url, headers=upload_headers, files=files)
-    file_id = upload_response.json()["file_id"]
+files = {"file": open("photo.jpg", "rb")}
+upload_response = requests.post(upload_url, headers=upload_headers, files=files)
+file_id = upload_response.json()["file_id"]
 
-    # Detect objects
-    payload = {
-        "model": "image/object_detection/google",
-        "input": {
-            "file": file_id
-        }
+# Detect objects
+payload = {
+    "model": "image/object_detection/google",
+    "input": {
+        "file": file_id
     }
+}
 
-    response = requests.post(url, headers=headers, json=payload)
-    result = response.json()
+response = requests.post(url, headers=headers, json=payload)
+result = response.json()
 
-    for obj in result["output"]["items"]:
-        print(f"Object: {obj['label']} (confidence: {obj['confidence']})")
+for obj in result["output"]["items"]:
+    print(f"Object: {obj['label']} (confidence: {obj['confidence']})")
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ## Face Detection
 
 Detect faces and facial attributes:
 
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    import requests
-    # Upload image
-    files = {"file": open("people.jpg", "rb")}
-    upload_response = requests.post(upload_url, headers=upload_headers, files=files)
-    file_id = upload_response.json()["file_id"]
+<CodeGroup>
+```python Python
+import requests
+# Upload image
+files = {"file": open("people.jpg", "rb")}
+upload_response = requests.post(upload_url, headers=upload_headers, files=files)
+file_id = upload_response.json()["file_id"]
 
-    # Detect faces
-    payload = {
-        "model": "image/face_detection/amazon",
-        "input": {
-            "file": file_id
-        }
+# Detect faces
+payload = {
+    "model": "image/face_detection/amazon",
+    "input": {
+        "file": file_id
     }
+}
 
-    response = requests.post(url, headers=headers, json=payload)
-    result = response.json()
+response = requests.post(url, headers=headers, json=payload)
+result = response.json()
 
-    for face in result["output"]["items"]:
-        print(f"Face detected at: {face['bounding_box']}")
-        print(f"  Age: {face.get('age')}")
-        print(f"  Gender: {face.get('gender')}")
-        print(f"  Emotions: {face.get('emotions')}")
+for face in result["output"]["items"]:
+    print(f"Face detected at: {face['bounding_box']}")
+    print(f"  Age: {face.get('age')}")
+    print(f"  Gender: {face.get('gender')}")
+    print(f"  Emotions: {face.get('emotions')}")
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ## Background Removal
 
 Remove backgrounds from images:
 
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    import requests
-    # Upload image
-    files = {"file": open("product.jpg", "rb")}
-    upload_response = requests.post(upload_url, headers=upload_headers, files=files)
-    file_id = upload_response.json()["file_id"]
+<CodeGroup>
+```python Python
+import requests
+# Upload image
+files = {"file": open("product.jpg", "rb")}
+upload_response = requests.post(upload_url, headers=upload_headers, files=files)
+file_id = upload_response.json()["file_id"]
 
-    # Remove background
-    payload = {
-        "model": "image/background_removal/photoroom",
-        "input": {
-            "file": file_id
-        }
+# Remove background
+payload = {
+    "model": "image/background_removal/photoroom",
+    "input": {
+        "file": file_id
     }
+}
 
-    response = requests.post(url, headers=headers, json=payload)
-    result = response.json()
+response = requests.post(url, headers=headers, json=payload)
+result = response.json()
 
-    # Download the result
-    processed_url = result["output"]["image_url"]
-    print(f"Background removed image: {processed_url}")
+# Download the result
+processed_url = result["output"]["image_url"]
+print(f"Background removed image: {processed_url}")
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ## Using Image URLs
 
 You can also provide image URLs instead of uploading:
 
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    import requests
-    payload = {
-        "model": "image/object_detection/google",
-        "input": {
-            "file": "https://example.com/image.jpg"
-        }
+<CodeGroup>
+```python Python
+import requests
+payload = {
+    "model": "image/object_detection/google",
+    "input": {
+        "file": "https://example.com/image.jpg"
     }
+}
 
-    response = requests.post(url, headers=headers, json=payload)
-    result = response.json()
+response = requests.post(url, headers=headers, json=payload)
+result = response.json()
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ## Next Steps
 

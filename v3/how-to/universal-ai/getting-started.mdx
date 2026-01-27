@@ -32,42 +32,38 @@ feature/subfeature/provider[/model]
 
 ## Basic Request
 
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    import requests
+<CodeGroup>
+```python Python
+import requests
 
-    url = "https://api.edenai.run/v3/universal-ai"
-    headers = {
-        "Authorization": "Bearer YOUR_API_KEY",
-        "Content-Type": "application/json"
+url = "https://api.edenai.run/v3/universal-ai"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+payload = {
+    "model": "text/moderation/openai",
+    "input": {
+        "text": "This is sample text to moderate"
     }
+}
 
-    payload = {
-        "model": "text/moderation/openai",
-        "input": {
-            "text": "This is sample text to moderate"
-        }
-    }
-
-    response = requests.post(url, headers=headers, json=payload)
-    result = response.json()
-    print(result)
+response = requests.post(url, headers=headers, json=payload)
+result = response.json()
+print(result)
     ```
-  </CodeBlock>
 
-  <CodeBlock title="cURL">
-    ```bash
-    curl -X POST https://api.edenai.run/v3/universal-ai \
-      -H "Authorization: Bearer YOUR_API_KEY" \
-      -H "Content-Type: application/json" \
-      -d '{
-        "model": "text/moderation/openai",
-        "input": {"text": "Sample text"}
-      }'
+```bash cURL
+curl -X POST https://api.edenai.run/v3/universal-ai \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "text/moderation/openai",
+    "input": {"text": "Sample text"}
+  }'
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ## Response Format
 
@@ -127,68 +123,62 @@ The `input` field varies based on the feature:
 
 ### Text Moderation
 
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    import requests
-    payload = {
-        "model": "text/moderation/openai",
-        "input": {"text": "Content to moderate"}
-    }
+<CodeGroup>
+```python Python
+import requests
+payload = {
+    "model": "text/moderation/openai",
+    "input": {"text": "Content to moderate"}
+}
     
-    response = requests.post(url, headers=headers, json=payload)
-    result = response.json()
+response = requests.post(url, headers=headers, json=payload)
+result = response.json()
     
-    if result["output"]["nsfw_likelihood"] > 3:
-        print("Content flagged as inappropriate")
+if result["output"]["nsfw_likelihood"] > 3:
+    print("Content flagged as inappropriate")
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ### AI Content Detection
 
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    import requests
-    payload = {
-        "model": "text/ai_detection/winstonai",
-        "input": {"text": "Text to check"}
-    }
+<CodeGroup>
+```python Python
+import requests
+payload = {
+    "model": "text/ai_detection/winstonai",
+    "input": {"text": "Text to check"}
+}
     
-    response = requests.post(url, headers=headers, json=payload)
+response = requests.post(url, headers=headers, json=payload)
     
-    if response.json()["output"]["is_ai_generated"]:
-        print("Text appears to be AI-generated")
+if response.json()["output"]["is_ai_generated"]:
+    print("Text appears to be AI-generated")
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ### OCR Text Extraction
 
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    import requests
-    # First upload the file
-    upload_response = requests.post(
-        "https://api.edenai.run/v3/upload",
-        headers={"Authorization": f"Bearer {API_KEY}"},
-        files={"file": open("document.pdf", "rb")}
-    )
-    file_id = upload_response.json()["file_id"]
+<CodeGroup>
+```python Python
+import requests
+# First upload the file
+upload_response = requests.post(
+    "https://api.edenai.run/v3/upload",
+    headers={"Authorization": f"Bearer {API_KEY}"},
+    files={"file": open("document.pdf", "rb")}
+)
+file_id = upload_response.json()["file_id"]
 
-    # Then use it in Universal AI
-    payload = {
-        "model": "ocr/financial_parser/google",
-        "input": {"file": file_id}
-    }
+# Then use it in Universal AI
+payload = {
+    "model": "ocr/financial_parser/google",
+    "input": {"file": file_id}
+}
     
-    response = requests.post(url, headers=headers, json=payload)
-    extracted_text = response.json()["output"]["text"]
+response = requests.post(url, headers=headers, json=payload)
+extracted_text = response.json()["output"]["text"]
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ## Next Steps
 

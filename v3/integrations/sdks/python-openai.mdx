@@ -10,51 +10,45 @@ The OpenAI Python SDK is fully compatible with Eden AI's V3 API. Simply point th
 
 Install the OpenAI Python SDK:
 
-<CodeBlocks>
-  <CodeBlock title="pip">
-    ```bash
-    pip install openai
+<CodeGroup>
+```bash pip
+pip install openai
     ```
-  </CodeBlock>
 
-  <CodeBlock title="poetry">
-    ```bash
-    poetry add openai
+```bash poetry
+poetry add openai
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ## Quick Start
 
 Configure the OpenAI client to use Eden AI:
 
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    from openai import OpenAI
+<CodeGroup>
+```python Python
+from openai import OpenAI
 
-    # Initialize client with Eden AI endpoint
-    client = OpenAI(
-        api_key="YOUR_EDEN_AI_API_KEY",  # Get from https://app.edenai.run
-        base_url="https://api.edenai.run/v3/llm"
-    )
+# Initialize client with Eden AI endpoint
+client = OpenAI(
+    api_key="YOUR_EDEN_AI_API_KEY",  # Get from https://app.edenai.run
+    base_url="https://api.edenai.run/v3/llm"
+)
 
-    # Use streaming (mandatory in V3)
-    stream = client.chat.completions.create(
-        model="openai/gpt-4",
-        messages=[
-            {"role": "user", "content": "Hello! How are you?"}
-        ],
-        stream=True
-    )
+# Use streaming (mandatory in V3)
+stream = client.chat.completions.create(
+    model="openai/gpt-4",
+    messages=[
+        {"role": "user", "content": "Hello! How are you?"}
+    ],
+    stream=True
+)
 
-    # Print the response
-    for chunk in stream:
-        if chunk.choices[0].delta.content:
-            print(chunk.choices[0].delta.content, end='')
+# Print the response
+for chunk in stream:
+    if chunk.choices[0].delta.content:
+        print(chunk.choices[0].delta.content, end='')
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ## Available Models
 
@@ -89,342 +83,322 @@ Access models from multiple providers using the `provider/model` format:
 
 Build conversational applications with message history:
 
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    from openai import OpenAI
+<CodeGroup>
+```python Python
+from openai import OpenAI
 
+client = OpenAI(
+    api_key="YOUR_EDEN_AI_API_KEY",
+    base_url="https://api.edenai.run/v3/llm"
+)
+
+messages = [
+    {"role": "system", "content": "You are a helpful assistant."},
+    {"role": "user", "content": "What is the capital of France?"}
+]
+
+# First interaction
+stream = client.chat.completions.create(
+    model="anthropic/claude-3-5-sonnet-20241022",
+    messages=messages,
+    stream=True
+)
+
+assistant_response = ""
+for chunk in stream:
+    if chunk.choices[0].delta.content:
+        content = chunk.choices[0].delta.content
+        print(content, end='')
+        assistant_response += content
+
+# Add assistant response to history
+messages.append({"role": "assistant", "content": assistant_response})
+
+# Continue conversation
+messages.append({"role": "user", "content": "What's the population?"})
+
+stream = client.chat.completions.create(
+    model="anthropic/claude-3-5-sonnet-20241022",
+    messages=messages,
+    stream=True
+)
+
+for chunk in stream:
+    if chunk.choices[0].delta.content:
+        print(chunk.choices[0].delta.content, end='')
+    ```
+</CodeGroup>
+
+## Advanced Parameters
+
+Control model behavior with standard OpenAI parameters:
+
+<CodeGroup>
+```python Python
+from openai import OpenAI
+
+client = OpenAI(
+    api_key="YOUR_EDEN_AI_API_KEY",
+    base_url="https://api.edenai.run/v3/llm"
+)
+
+stream = client.chat.completions.create(
+    model="openai/gpt-4",
+    messages=[
+        {"role": "user", "content": "Write a creative story about AI."}
+    ],
+    temperature=0.9,           # Higher = more creative (0-2)
+    max_tokens=500,            # Limit response length
+    top_p=1.0,                 # Nucleus sampling
+    frequency_penalty=0.0,     # Penalize repetition (-2 to 2)
+    presence_penalty=0.0,      # Penalize topic repetition (-2 to 2)
+    stream=True
+)
+
+for chunk in stream:
+    if chunk.choices[0].delta.content:
+        print(chunk.choices[0].delta.content, end='')
+    ```
+</CodeGroup>
+
+## Vision Capabilities
+
+Send images to vision-capable models:
+
+<CodeGroup>
+```python Python
+from openai import OpenAI
+
+client = OpenAI(
+    api_key="YOUR_EDEN_AI_API_KEY",
+    base_url="https://api.edenai.run/v3/llm"
+)
+
+# First, upload the image to get a file_id
+import requests
+
+upload_response = requests.post(
+    "https://api.edenai.run/v3/upload",
+    headers={"Authorization": f"Bearer YOUR_EDEN_AI_API_KEY"},
+    files={"file": open("image.jpg", "rb")}
+)
+file_id = upload_response.json()["file_id"]
+
+# Use the file_id in a chat message
+stream = client.chat.completions.create(
+    model="openai/gpt-4o",
+    messages=[
+        {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": "What's in this image?"},
+                {"type": "file", "file": {"file_id": file_id}}
+            ]
+        }
+    ],
+    stream=True
+)
+
+for chunk in stream:
+    if chunk.choices[0].delta.content:
+        print(chunk.choices[0].delta.content, end='')
+    ```
+</CodeGroup>
+
+## Async Support
+
+Use async/await for concurrent requests:
+
+<CodeGroup>
+```python Python
+from openai import AsyncOpenAI
+import asyncio
+
+async def main():
+    client = AsyncOpenAI(
+        api_key="YOUR_EDEN_AI_API_KEY",
+        base_url="https://api.edenai.run/v3/llm"
+    )
+
+    stream = await client.chat.completions.create(
+        model="openai/gpt-4",
+        messages=[
+            {"role": "user", "content": "Hello!"}
+        ],
+        stream=True
+    )
+
+    async for chunk in stream:
+        if chunk.choices[0].delta.content:
+            print(chunk.choices[0].delta.content, end='')
+
+asyncio.run(main())
+    ```
+</CodeGroup>
+
+## Error Handling
+
+Handle API errors gracefully:
+
+<CodeGroup>
+```python Python
+from openai import OpenAI, OpenAIError
+import openai
+
+client = OpenAI(
+    api_key="YOUR_EDEN_AI_API_KEY",
+    base_url="https://api.edenai.run/v3/llm"
+)
+
+try:
+    stream = client.chat.completions.create(
+        model="openai/gpt-4",
+        messages=[{"role": "user", "content": "Hello!"}],
+        stream=True
+    )
+
+    for chunk in stream:
+        if chunk.choices[0].delta.content:
+            print(chunk.choices[0].delta.content, end='')
+
+except openai.AuthenticationError as e:
+    print(f"Authentication failed: {e}")
+except openai.RateLimitError as e:
+    print(f"Rate limit exceeded: {e}")
+except openai.APIError as e:
+    print(f"API error: {e}")
+except Exception as e:
+    print(f"Unexpected error: {e}")
+    ```
+</CodeGroup>
+
+## Complete Example
+
+A full example with conversation management:
+
+<CodeGroup>
+```python Python
+from openai import OpenAI
+import sys
+
+def chat_with_ai():
     client = OpenAI(
         api_key="YOUR_EDEN_AI_API_KEY",
         base_url="https://api.edenai.run/v3/llm"
     )
 
     messages = [
-        {"role": "system", "content": "You are a helpful assistant."},
-        {"role": "user", "content": "What is the capital of France?"}
+        {"role": "system", "content": "You are a helpful assistant."}
     ]
 
-    # First interaction
-    stream = client.chat.completions.create(
-        model="anthropic/claude-3-5-sonnet-20241022",
-        messages=messages,
-        stream=True
-    )
+    print("Chat with AI (type 'quit' to exit)")
+    print("-" * 50)
 
-    assistant_response = ""
-    for chunk in stream:
-        if chunk.choices[0].delta.content:
-            content = chunk.choices[0].delta.content
-            print(content, end='')
-            assistant_response += content
+    while True:
+        # Get user input
+        user_input = input("\nYou: ").strip()
 
-    # Add assistant response to history
-    messages.append({"role": "assistant", "content": assistant_response})
+        if user_input.lower() == 'quit':
+            break
 
-    # Continue conversation
-    messages.append({"role": "user", "content": "What's the population?"})
+        if not user_input:
+            continue
 
-    stream = client.chat.completions.create(
-        model="anthropic/claude-3-5-sonnet-20241022",
-        messages=messages,
-        stream=True
-    )
+        # Add user message
+        messages.append({"role": "user", "content": user_input})
 
-    for chunk in stream:
-        if chunk.choices[0].delta.content:
-            print(chunk.choices[0].delta.content, end='')
-    ```
-  </CodeBlock>
-</CodeBlocks>
-
-## Advanced Parameters
-
-Control model behavior with standard OpenAI parameters:
-
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    from openai import OpenAI
-
-    client = OpenAI(
-        api_key="YOUR_EDEN_AI_API_KEY",
-        base_url="https://api.edenai.run/v3/llm"
-    )
-
-    stream = client.chat.completions.create(
-        model="openai/gpt-4",
-        messages=[
-            {"role": "user", "content": "Write a creative story about AI."}
-        ],
-        temperature=0.9,           # Higher = more creative (0-2)
-        max_tokens=500,            # Limit response length
-        top_p=1.0,                 # Nucleus sampling
-        frequency_penalty=0.0,     # Penalize repetition (-2 to 2)
-        presence_penalty=0.0,      # Penalize topic repetition (-2 to 2)
-        stream=True
-    )
-
-    for chunk in stream:
-        if chunk.choices[0].delta.content:
-            print(chunk.choices[0].delta.content, end='')
-    ```
-  </CodeBlock>
-</CodeBlocks>
-
-## Vision Capabilities
-
-Send images to vision-capable models:
-
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    from openai import OpenAI
-
-    client = OpenAI(
-        api_key="YOUR_EDEN_AI_API_KEY",
-        base_url="https://api.edenai.run/v3/llm"
-    )
-
-    # First, upload the image to get a file_id
-    import requests
-
-    upload_response = requests.post(
-        "https://api.edenai.run/v3/upload",
-        headers={"Authorization": f"Bearer YOUR_EDEN_AI_API_KEY"},
-        files={"file": open("image.jpg", "rb")}
-    )
-    file_id = upload_response.json()["file_id"]
-
-    # Use the file_id in a chat message
-    stream = client.chat.completions.create(
-        model="openai/gpt-4o",
-        messages=[
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": "What's in this image?"},
-                    {"type": "file", "file": {"file_id": file_id}}
-                ]
-            }
-        ],
-        stream=True
-    )
-
-    for chunk in stream:
-        if chunk.choices[0].delta.content:
-            print(chunk.choices[0].delta.content, end='')
-    ```
-  </CodeBlock>
-</CodeBlocks>
-
-## Async Support
-
-Use async/await for concurrent requests:
-
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    from openai import AsyncOpenAI
-    import asyncio
-
-    async def main():
-        client = AsyncOpenAI(
-            api_key="YOUR_EDEN_AI_API_KEY",
-            base_url="https://api.edenai.run/v3/llm"
-        )
-
-        stream = await client.chat.completions.create(
-            model="openai/gpt-4",
-            messages=[
-                {"role": "user", "content": "Hello!"}
-            ],
-            stream=True
-        )
-
-        async for chunk in stream:
-            if chunk.choices[0].delta.content:
-                print(chunk.choices[0].delta.content, end='')
-
-    asyncio.run(main())
-    ```
-  </CodeBlock>
-</CodeBlocks>
-
-## Error Handling
-
-Handle API errors gracefully:
-
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    from openai import OpenAI, OpenAIError
-    import openai
-
-    client = OpenAI(
-        api_key="YOUR_EDEN_AI_API_KEY",
-        base_url="https://api.edenai.run/v3/llm"
-    )
-
-    try:
+        # Get AI response
+        print("\nAssistant: ", end='')
         stream = client.chat.completions.create(
-            model="openai/gpt-4",
-            messages=[{"role": "user", "content": "Hello!"}],
+            model="anthropic/claude-3-5-sonnet-20241022",
+            messages=messages,
+            temperature=0.7,
             stream=True
         )
 
+        assistant_response = ""
         for chunk in stream:
             if chunk.choices[0].delta.content:
-                print(chunk.choices[0].delta.content, end='')
+                content = chunk.choices[0].delta.content
+                print(content, end='', flush=True)
+                assistant_response += content
 
-    except openai.AuthenticationError as e:
-        print(f"Authentication failed: {e}")
-    except openai.RateLimitError as e:
-        print(f"Rate limit exceeded: {e}")
-    except openai.APIError as e:
-        print(f"API error: {e}")
-    except Exception as e:
-        print(f"Unexpected error: {e}")
+        print()  # New line after response
+
+        # Add assistant response to history
+        messages.append({"role": "assistant", "content": assistant_response})
+
+if __name__ == "__main__":
+    chat_with_ai()
     ```
-  </CodeBlock>
-</CodeBlocks>
-
-## Complete Example
-
-A full example with conversation management:
-
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    from openai import OpenAI
-    import sys
-
-    def chat_with_ai():
-        client = OpenAI(
-            api_key="YOUR_EDEN_AI_API_KEY",
-            base_url="https://api.edenai.run/v3/llm"
-        )
-
-        messages = [
-            {"role": "system", "content": "You are a helpful assistant."}
-        ]
-
-        print("Chat with AI (type 'quit' to exit)")
-        print("-" * 50)
-
-        while True:
-            # Get user input
-            user_input = input("\nYou: ").strip()
-
-            if user_input.lower() == 'quit':
-                break
-
-            if not user_input:
-                continue
-
-            # Add user message
-            messages.append({"role": "user", "content": user_input})
-
-            # Get AI response
-            print("\nAssistant: ", end='')
-            stream = client.chat.completions.create(
-                model="anthropic/claude-3-5-sonnet-20241022",
-                messages=messages,
-                temperature=0.7,
-                stream=True
-            )
-
-            assistant_response = ""
-            for chunk in stream:
-                if chunk.choices[0].delta.content:
-                    content = chunk.choices[0].delta.content
-                    print(content, end='', flush=True)
-                    assistant_response += content
-
-            print()  # New line after response
-
-            # Add assistant response to history
-            messages.append({"role": "assistant", "content": assistant_response})
-
-    if __name__ == "__main__":
-        chat_with_ai()
-    ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ## List Available Models
 
 Discover available models programmatically:
 
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    import requests
+<CodeGroup>
+```python Python
+import requests
 
-    response = requests.get(
-        "https://api.edenai.run/v3/llm/models",
-        headers={"Authorization": "Bearer YOUR_EDEN_AI_API_KEY"}
-    )
+response = requests.get(
+    "https://api.edenai.run/v3/llm/models",
+    headers={"Authorization": "Bearer YOUR_EDEN_AI_API_KEY"}
+)
 
-    models = response.json()
+models = response.json()
 
-    # Print models by provider
-    providers = {}
-    for model in models["data"]:
-        provider = model["owned_by"]
-        if provider not in providers:
-            providers[provider] = []
-        providers[provider].append(model["id"])
+# Print models by provider
+providers = {}
+for model in models["data"]:
+    provider = model["owned_by"]
+    if provider not in providers:
+        providers[provider] = []
+    providers[provider].append(model["id"])
 
-    for provider, model_list in providers.items():
-        print(f"\n{provider}:")
-        for model_id in model_list:
-            print(f"  - {model_id}")
+for provider, model_list in providers.items():
+    print(f"\n{provider}:")
+    for model_id in model_list:
+        print(f"  - {model_id}")
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ## Environment Variables
 
 Store your API key securely using environment variables:
 
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    import os
-    from openai import OpenAI
+<CodeGroup>
+```python Python
+import os
+from openai import OpenAI
 
-    client = OpenAI(
-        api_key=os.getenv("EDEN_AI_API_KEY"),
-        base_url="https://api.edenai.run/v3/llm"
-    )
+client = OpenAI(
+    api_key=os.getenv("EDEN_AI_API_KEY"),
+    base_url="https://api.edenai.run/v3/llm"
+)
     ```
-  </CodeBlock>
 
-  <CodeBlock title=".env">
-    ```bash
-    EDEN_AI_API_KEY=your_api_key_here
+```bash .env
+EDEN_AI_API_KEY=your_api_key_here
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 Use with `python-dotenv`:
 
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    from dotenv import load_dotenv
-    import os
-    from openai import OpenAI
+<CodeGroup>
+```python Python
+from dotenv import load_dotenv
+import os
+from openai import OpenAI
 
-    load_dotenv()
+load_dotenv()
 
-    client = OpenAI(
-        api_key=os.getenv("EDEN_AI_API_KEY"),
-        base_url="https://api.edenai.run/v3/llm"
-    )
+client = OpenAI(
+    api_key=os.getenv("EDEN_AI_API_KEY"),
+    base_url="https://api.edenai.run/v3/llm"
+)
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ## Troubleshooting
 
@@ -440,35 +414,33 @@ headers = {"Authorization": f"Bearer {api_key}"}
 
 If you hit rate limits, implement exponential backoff:
 
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    import time
-    from openai import OpenAI, RateLimitError
+<CodeGroup>
+```python Python
+import time
+from openai import OpenAI, RateLimitError
 
-    client = OpenAI(
-        api_key="YOUR_EDEN_AI_API_KEY",
-        base_url="https://api.edenai.run/v3/llm"
-    )
+client = OpenAI(
+    api_key="YOUR_EDEN_AI_API_KEY",
+    base_url="https://api.edenai.run/v3/llm"
+)
 
-    def create_completion_with_retry(messages, max_retries=3):
-        for attempt in range(max_retries):
-            try:
-                return client.chat.completions.create(
-                    model="openai/gpt-4",
-                    messages=messages,
-                    stream=True
-                )
-            except RateLimitError:
-                if attempt < max_retries - 1:
-                    wait_time = 2 ** attempt  # Exponential backoff
-                    print(f"Rate limited. Waiting {wait_time}s...")
-                    time.sleep(wait_time)
-                else:
-                    raise
+def create_completion_with_retry(messages, max_retries=3):
+    for attempt in range(max_retries):
+        try:
+            return client.chat.completions.create(
+                model="openai/gpt-4",
+                messages=messages,
+                stream=True
+            )
+        except RateLimitError:
+            if attempt < max_retries - 1:
+                wait_time = 2 ** attempt  # Exponential backoff
+                print(f"Rate limited. Waiting {wait_time}s...")
+                time.sleep(wait_time)
+            else:
+                raise
     ```
-  </CodeBlock>
-</CodeBlocks>
+</CodeGroup>
 
 ### Streaming Issues
 

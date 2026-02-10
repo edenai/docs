@@ -49,9 +49,9 @@ headers = {
 }
 
 payload = {
-    "model": "text/ai_detection/sapling",
+    "model": "text/moderation/google",
     "input": {
-        "text": "This is a sample text to analyze"
+        "text": "This is a sample text to moderate"
     }
 }
 
@@ -64,8 +64,8 @@ curl -X POST https://api.edenai.run/v3/universal-ai \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "text/ai_detection/sapling",
-    "input": {"text": "Sample text"}
+    "model": "text/moderation/google",
+    "input": {"text": "Sample text to moderate"}
   }'
     ```
 </CodeGroup>
@@ -190,7 +190,7 @@ feature/subfeature/provider[/model]
 ```
 
 **Examples:**
-- `text/ai_detection/sapling`
+- `text/moderation/google`
 - `ocr/financial_parser/google`
 - `image/generation/openai/dall-e-3`
 - `translation/document_translation/deepl`
@@ -307,11 +307,16 @@ All V3 responses follow a consistent structure:
 {
   "status": "success",
   "cost": 0.001,
-  "provider": "openai",
+  "provider": "google",
   "feature": "text",
-  "subfeature": "ai_detection",
+  "subfeature": "moderation",
   "output": {
-    // Feature-specific output
+    "nsfw_likelihood": 1,
+    "items": [
+      {"label": "Toxic", "likelihood": 1, "category": "Toxic", "subcategory": "Toxic", "likelihood_score": 0.0908},
+      {"label": "Violent", "likelihood": 1, "category": "Violence", "subcategory": "Violence", "likelihood_score": 0.0120}
+    ],
+    "nsfw_likelihood_score": 0.0120
   }
 }
 ```

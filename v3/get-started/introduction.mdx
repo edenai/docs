@@ -27,7 +27,7 @@ feature/subfeature/provider[/model]
 ```
 
 **Examples:**
-- `text/ai_detection/openai/gpt-4`
+- `text/moderation/google`
 - `ocr/financial_parser/google`
 - `image/generation/openai/dall-e-3`
 - `openai/gpt-4` (for LLM endpoints)
@@ -95,7 +95,7 @@ const response = await fetch('https://api.edenai.run/v3/universal-ai', {
 
 ## Your First API Call: Universal AI
 
-The Universal AI endpoint handles all non-LLM features through a single endpoint. Let's analyze some text:
+The Universal AI endpoint handles all non-LLM features through a single endpoint. Let's moderate some text:
 
 <CodeGroup>
 ```bash cURL
@@ -103,9 +103,9 @@ curl -X POST https://api.edenai.run/v3/universal-ai \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "text/ai_detection/openai/gpt-4",
+    "model": "text/moderation/google",
     "input": {
-      "text": "This is a sample text to check if it was AI-generated."
+      "text": "This is a sample text to moderate for harmful content."
     }
   }'
     ```
@@ -119,9 +119,9 @@ headers = {
     "Content-Type": "application/json"
 }
 payload = {
-    "model": "text/ai_detection/openai/gpt-4",
+    "model": "text/moderation/google",
     "input": {
-        "text": "This is a sample text to check if it was AI-generated."
+        "text": "This is a sample text to moderate for harmful content."
     }
 }
 
@@ -137,9 +137,9 @@ const headers = {
   'Content-Type': 'application/json'
 };
 const payload = {
-  model: 'text/ai_detection/openai/gpt-4',
+  model: 'text/moderation/google',
   input: {
-    text: 'This is a sample text to check if it was AI-generated.'
+    text: 'This is a sample text to moderate for harmful content.'
   }
 };
 
@@ -162,12 +162,17 @@ All V3 responses follow a consistent structure:
 {
   "status": "success",
   "cost": 0.0001,
-  "provider": "openai",
+  "provider": "google",
   "feature": "text",
-  "subfeature": "ai_detection",
+  "subfeature": "moderation",
   "output": {
-    "ai_score": 0.85,
-    "is_ai_generated": true
+    "nsfw_likelihood": 1,
+    "items": [
+      {"label": "Toxic", "likelihood": 1, "category": "Toxic", "subcategory": "Toxic", "likelihood_score": 0.0908},
+      {"label": "Violent", "likelihood": 1, "category": "Violence", "subcategory": "Violence", "likelihood_score": 0.0120},
+      {"label": "Sexual", "likelihood": 1, "category": "Sexual", "subcategory": "Sexual", "likelihood_score": 0.0045}
+    ],
+    "nsfw_likelihood_score": 0.0908
   }
 }
 ```
@@ -322,14 +327,14 @@ feature/subfeature/provider[/model]
 | Component | Description | Example |
 |-----------|-------------|---------|
 | `feature` | Category of AI capability | `text`, `ocr`, `image`, `translation` |
-| `subfeature` | Specific functionality | `ai_detection`, `moderation`, `ocr`, `generation` |
+| `subfeature` | Specific functionality | `moderation`, `ai_detection`, `ocr`, `generation` |
 | `provider` | AI provider | `openai`, `google`, `amazon`, `anthropic` |
 | `model` | Specific model (optional) | `gpt-4`, `claude-3-5-sonnet`, `gemini-pro` |
 
 ### Examples
 
 **Text Analysis:**
-- `text/ai_detection/openai/gpt-4` - Detect AI-generated text with GPT-4
+- `text/moderation/google` - Content moderation with Google
 - `text/moderation/openai` - Content moderation with OpenAI's default model
 - `text/embeddings/cohere/embed-english-v3.0` - Generate embeddings with Cohere
 
@@ -362,11 +367,11 @@ response = requests.get(
 )
 features = response.json()
 print(features)
-# Output: {"text": ["ai_detection", "moderation", ...], "ocr": [...], ...}
+# Output: {"text": ["moderation", "ai_detection", ...], "ocr": [...], ...}
 
 # Get details about a specific feature
 response = requests.get(
-    "https://api.edenai.run/v3/info/text/ai_detection"
+    "https://api.edenai.run/v3/info/text/moderation"
 )
 feature_info = response.json()
 print(feature_info["providers"])  # List of available providers
@@ -378,7 +383,7 @@ print(feature_info["output_schema"])  # Response format
 # List all features
 curl https://api.edenai.run/v3/info 
 # Get feature details
-curl https://api.edenai.run/v3/info/text/ai_detection 
+curl https://api.edenai.run/v3/info/text/moderation
     ```
 </CodeGroup>
 

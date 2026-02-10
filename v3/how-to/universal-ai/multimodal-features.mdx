@@ -386,7 +386,7 @@ async def analyze_text_parallel(text):
     analyses = [
         {"name": "sentiment", "model": "text/sentiment_analysis/openai"},
         {"name": "moderation", "model": "text/moderation/openai"},
-        {"name": "ai_detection", "model": "text/ai_detection/openai/gpt-4"},
+        {"name": "moderation_google", "model": "text/moderation/google"},
         {"name": "entities", "model": "text/named_entity_recognition/openai"}
     ]
 
@@ -420,7 +420,7 @@ results = asyncio.run(analyze_text_parallel(
 
 print("Sentiment:", results["sentiment"]["sentiment"])
 print("Moderation:", results["moderation"])
-print("AI Detection:", results["ai_detection"]["is_ai_generated"])
+print("Moderation (Google):", results["moderation_google"]["nsfw_likelihood"])
 print("Entities:", results["entities"])
     ```
 </CodeGroup>
@@ -442,30 +442,26 @@ def smart_content_workflow(text):
         "Content-Type": "application/json"
     }
 
-    # Step 1: Check if AI-generated
-    ai_detection_payload = {
-        "model": "text/ai_detection/openai/gpt-4",
+    # Step 1: Moderate content
+    moderation_payload = {
+        "model": "text/moderation/google",
         "input": {"text": text}
     }
-    ai_response = requests.post(url, headers=headers, json=ai_detection_payload)
-    is_ai = ai_response.json()["output"]["is_ai_generated"]
+    mod_response = requests.post(url, headers=headers, json=moderation_payload)
+    mod_output = mod_response.json()["output"]
+    is_flagged = mod_output["nsfw_likelihood"] >= 3
 
-    workflow_result = {"is_ai": is_ai}
+    workflow_result = {"is_flagged": is_flagged, "moderation": mod_output}
 
-    if is_ai:
-        # AI content → Check for plagiarism
-        print("AI content detected, checking plagiarism...")
+    if is_flagged:
+        # Flagged content → Log for review
+        print("Content flagged, logging for review...")
 
-        plagiarism_payload = {
-            "model": "text/plagiarism_detection/copyleaks",
-            "input": {"text": text}
-        }
-        plagiarism_response = requests.post(url, headers=headers, json=plagiarism_payload)
-        workflow_result["plagiarism"] = plagiarism_response.json()["output"]
+        workflow_result["action"] = "review"
 
     else:
-        # Human content → Run sentiment analysis
-        print("Human content detected, analyzing sentiment...")
+        # Safe content → Run sentiment analysis
+        print("Content is safe, analyzing sentiment...")
 
         sentiment_payload = {
             "model": "text/sentiment_analysis/openai",
@@ -473,14 +469,6 @@ def smart_content_workflow(text):
         }
         sentiment_response = requests.post(url, headers=headers, json=sentiment_payload)
         workflow_result["sentiment"] = sentiment_response.json()["output"]
-
-    # Always moderate
-    moderation_payload = {
-        "model": "text/moderation/openai",
-        "input": {"text": text}
-    }
-    moderation_response = requests.post(url, headers=headers, json=moderation_payload)
-    workflow_result["moderation"] = moderation_response.json()["output"]
 
     return workflow_result
 
@@ -600,20 +588,21 @@ def process_product_workflow(image_path, description):
     sentiment_response = requests.post(url, headers=headers, json=sentiment_payload)
     sentiment = sentiment_response.json()["output"]
 
-    # 4. Check description for AI generation
-    ai_detection_payload = {
-        "model": "text/ai_detection/openai/gpt-4",
+    # 4. Moderate description text
+    text_moderation_payload = {
+        "model": "text/moderation/google",
         "input": {"text": description}
     }
-    ai_response = requests.post(url, headers=headers, json=ai_detection_payload)
-    is_ai_generated = ai_response.json()["output"]["is_ai_generated"]
+    text_mod_response = requests.post(url, headers=headers, json=text_moderation_payload)
+    text_mod_output = text_mod_response.json()["output"]
+    description_safe = text_mod_output["nsfw_likelihood"] < 3
 
     return {
         "image_safe": is_safe,
         "detected_objects": [obj["label"] for obj in detected_objects],
         "description_sentiment": sentiment["sentiment"],
-        "description_ai_generated": is_ai_generated,
-        "approved": is_safe and sentiment["sentiment"] in ["Positive", "Neutral"]
+        "description_safe": description_safe,
+        "approved": is_safe and description_safe and sentiment["sentiment"] in ["Positive", "Neutral"]
     }
 
 # Usage
@@ -657,13 +646,13 @@ def comprehensive_moderation_workflow(content_type, file_path=None, text=None):
         response = requests.post(url, headers=headers, json=text_mod_payload)
         moderation_results["text_moderation"] = response.json()["output"]
 
-        # AI detection
-        ai_payload = {
-            "model": "text/ai_detection/openai/gpt-4",
+        # Additional moderation with Google
+        google_mod_payload = {
+            "model": "text/moderation/google",
             "input": {"text": text}
         }
-        response = requests.post(url, headers=headers, json=ai_payload)
-        moderation_results["ai_detection"] = response.json()["output"]
+        response = requests.post(url, headers=headers, json=google_mod_payload)
+        moderation_results["moderation_google"] = response.json()["output"]
 
     elif content_type == "image":
         # Upload image

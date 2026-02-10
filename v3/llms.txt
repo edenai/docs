@@ -347,7 +347,7 @@ The model string encodes feature, subfeature, provider, and optionally a specifi
 ```
 
 **Examples:**
-- `text/ai_detection/openai`
+- `text/moderation/google`
 - `text/embeddings/openai/text-embedding-3-large`
 - `ocr/ocr/google`
 - `image/generation/openai/dall-e-3`
@@ -376,9 +376,9 @@ The model string encodes feature, subfeature, provider, and optionally a specifi
 {
   "status": "success",
   "cost": "0.001",
-  "provider": "openai",
+  "provider": "google",
   "feature": "text",
-  "subfeature": "ai_detection",
+  "subfeature": "moderation",
   "output": {
     // Feature-specific output
   },
@@ -392,9 +392,9 @@ The model string encodes feature, subfeature, provider, and optionally a specifi
 {
   "status": "fail",
   "cost": "0.001",
-  "provider": "openai",
+  "provider": "google",
   "feature": "text",
-  "subfeature": "ai_detection",
+  "subfeature": "moderation",
   "output": null,
   "error": {
     "message": "Provider error details",
@@ -407,15 +407,15 @@ The model string encodes feature, subfeature, provider, and optionally a specifi
 
 ### Text Features
 
-#### AI Detection
-Detect if text is AI-generated.
+#### Content Moderation (Google)
+Moderate content for harmful material using Google.
 
 **Request:**
 ```json
 {
-  "model": "text/ai_detection/openai",
+  "model": "text/moderation/google",
   "input": {
-    "text": "This is the text to analyze for AI generation."
+    "text": "This is the text to moderate for harmful content."
   }
 }
 ```
@@ -425,13 +425,17 @@ Detect if text is AI-generated.
 {
   "status": "success",
   "cost": "0.001",
-  "provider": "openai",
+  "provider": "google",
   "feature": "text",
-  "subfeature": "ai_detection",
+  "subfeature": "moderation",
   "output": {
-    "ai_score": 0.85,
-    "is_ai_generated": true,
-    "confidence": "high"
+    "nsfw_likelihood": 1,
+    "items": [
+      {"label": "Toxic", "likelihood": 1, "category": "Toxic", "subcategory": "Toxic", "likelihood_score": 0.0908},
+      {"label": "Violent", "likelihood": 1, "category": "Violence", "subcategory": "Violence", "likelihood_score": 0.0120},
+      {"label": "Sexual", "likelihood": 1, "category": "Sexual", "subcategory": "Sexual", "likelihood_score": 0.0045}
+    ],
+    "nsfw_likelihood_score": 0.0908
   }
 }
 ```

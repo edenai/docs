@@ -25,7 +25,7 @@ feature/subfeature/provider[/model]
 ```
 
 **Examples:**
-- `text/ai_detection/winstonai`
+- `text/moderation/google`
 - `ocr/financial_parser/google`
 - `image/generation/openai/dall-e-3`
 - `translation/document_translation/deepl`
@@ -90,9 +90,9 @@ The `input` field varies based on the feature:
 
 ```json
 {
-  "model": "text/ai_detection/winstonai",
+  "model": "text/moderation/google",
   "input": {
-    "text": "Text to analyze"
+    "text": "Text to moderate"
   }
 }
 ```
@@ -136,23 +136,6 @@ result = response.json()
     
 if result["output"]["nsfw_likelihood"] > 3:
     print("Content flagged as inappropriate")
-    ```
-</CodeGroup>
-
-### AI Content Detection
-
-<CodeGroup>
-```python Python
-import requests
-payload = {
-    "model": "text/ai_detection/winstonai",
-    "input": {"text": "Text to check"}
-}
-    
-response = requests.post(url, headers=headers, json=payload)
-    
-if response.json()["output"]["is_ai_generated"]:
-    print("Text appears to be AI-generated")
     ```
 </CodeGroup>
 

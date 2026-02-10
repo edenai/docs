@@ -68,12 +68,12 @@ Retrieve complete information about a specific feature:
 <CodeGroup>
 ```python Python
 import requests
-# Get details about AI detection
-url = "https://api.edenai.run/v3/info/text/ai_detection"
+# Get details about content moderation
+url = "https://api.edenai.run/v3/info/text/moderation"
 response = requests.get(url, headers=headers)
 feature_info = response.json()
 
-print("Feature: text/ai_detection")
+print("Feature: text/moderation")
 print(f"\nAvailable providers: {feature_info['providers']}")
 print(f"\nInput schema:")
 print(feature_info['input_schema'])
@@ -87,15 +87,15 @@ print(feature_info['output_schema'])
 ```json
 {
   "feature": "text",
-  "subfeature": "ai_detection",
+  "subfeature": "moderation",
   "providers": [
     {
-      "name": "openai",
-      "models": ["gpt-4", "gpt-3.5-turbo"]
+      "name": "google",
+      "models": []
     },
     {
-      "name": "anthropic",
-      "models": ["claude-3-5-sonnet-20241022"]
+      "name": "openai",
+      "models": []
     }
   ],
   "input_schema": {
@@ -103,7 +103,7 @@ print(feature_info['output_schema'])
     "properties": {
       "text": {
         "type": "string",
-        "description": "Text to analyze for AI generation"
+        "description": "Text to moderate for harmful content"
       }
     },
     "required": ["text"]
@@ -111,8 +111,9 @@ print(feature_info['output_schema'])
   "output_schema": {
     "type": "object",
     "properties": {
-      "is_ai_generated": {"type": "boolean"},
-      "ai_score": {"type": "number"}
+      "nsfw_likelihood": {"type": "integer"},
+      "items": {"type": "array"},
+      "nsfw_likelihood_score": {"type": "number"}
     }
   }
 }
@@ -205,7 +206,7 @@ def validate_model_string(model_string):
         return {"valid": False, "error": str(e)}
 
 # Usage
-result = validate_model_string("text/ai_detection/openai/gpt-4")
+result = validate_model_string("text/moderation/google")
 if result["valid"]:
     print("Model string is valid!")
 else:
@@ -304,7 +305,7 @@ class APIDiscoveryCache:
 
 # Usage
 cache = APIDiscoveryCache()
-info = cache.get_feature_info("text", "ai_detection")
+info = cache.get_feature_info("text", "moderation")
     ```
 </CodeGroup>
 

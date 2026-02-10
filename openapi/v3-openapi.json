@@ -217,7 +217,7 @@
                     "Universal-ai"
                 ],
                 "summary": "Universal Ai",
-                "description": "Universal AI endpoint for all non-LLM AI features.\n\nModel format: feature/subfeature/provider[/model]\n\nRequest body:\n- model: Model string in format feature/subfeature/provider[/model]\n- input: Feature-specific input parameters\n- provider_params: Optional provider-specific parameters\n- show_original_response: Include raw provider response (default: false)\n\nExample:\n```json\n{\n    \"model\": \"text/ai_detection/openai/gpt-4\",\n    \"input\": {\"text\": \"Analyze this text\"}\n}\n```\n\nResponse:\n```json\n{\n    \"status\": \"success\",\n    \"cost\": \"0.001\",\n    \"provider\": \"openai\",\n    \"feature\": \"text\",\n    \"subfeature\": \"ai_detection\",\n    \"output\": {...},\n    \"error\": null\n}\n```",
+                "description": "Universal AI endpoint for all non-LLM AI features.\n\nModel format: feature/subfeature/provider[/model]\n\nRequest body:\n- model: Model string in format feature/subfeature/provider[/model]\n- input: Feature-specific input parameters\n- provider_params: Optional provider-specific parameters\n- show_original_response: Include raw provider response (default: false)\n\nExample:\n```json\n{\n    \"model\": \"text/moderation/google\",\n    \"input\": {\"text\": \"Content to moderate\"}\n}\n```\n\nResponse:\n```json\n{\n    \"status\": \"success\",\n    \"cost\": \"0.001\",\n    \"provider\": \"google\",\n    \"feature\": \"text\",\n    \"subfeature\": \"moderation\",\n    \"output\": {...},\n    \"error\": null\n}\n```",
                 "operationId": "universal_ai_v3_universal_ai_post",
                 "requestBody": {
                     "content": {
@@ -1458,7 +1458,7 @@
                         "title": "Model",
                         "description": "Model in format: feature/subfeature/provider[/model]",
                         "examples": [
-                            "text/ai_detection/openai/gpt-4",
+                            "text/moderation/google",
                             "ocr/ocr/amazon",
                             "image/generation/google/imagen-3"
                         ]
@@ -1480,10 +1480,10 @@
                         "additionalProperties": true,
                         "type": "object",
                         "title": "Input",
-                        "description": "Feature-specific input parameters. Required fields depend on the feature/subfeature specified in provider. Examples:\n- text/ai_detection: {'text': 'content to analyze'}\n- text/embeddings: {'texts': ['text1', 'text2']}\n- ocr/ocr: {'file_id': 'abc123', 'language': 'en'}\n- image/generation: {'text': 'prompt', 'resolution': '1024x1024'}\n- translation/document_translation: {'file_id': 'abc123', 'target_language': 'fr'}",
+                        "description": "Feature-specific input parameters. Required fields depend on the feature/subfeature specified in provider. Examples:\n- text/moderation: {'text': 'content to moderate'}\n- text/embeddings: {'texts': ['text1', 'text2']}\n- ocr/ocr: {'file_id': 'abc123', 'language': 'en'}\n- image/generation: {'text': 'prompt', 'resolution': '1024x1024'}\n- translation/document_translation: {'file_id': 'abc123', 'target_language': 'fr'}",
                         "examples": [
                             {
-                                "text": "Analyze this text for AI detection"
+                                "text": "Content to moderate for harmful material"
                             },
                             {
                                 "dimensions": 512,
@@ -1518,7 +1518,7 @@
                     "input"
                 ],
                 "title": "UniversalAIBody",
-                "description": "Universal AI request body.\n\nModel format: feature/subfeature/provider[/model]\n\nExamples:\n    - text/ai_detection/openai/gpt-4\n    - ocr/ocr/amazon\n    - image/generation/google/imagen-3\n\nThe `input` dict contains feature-specific parameters that are\nvalidated at runtime based on the parsed feature/subfeature."
+                "description": "Universal AI request body.\n\nModel format: feature/subfeature/provider[/model]\n\nExamples:\n    - text/moderation/google\n    - ocr/ocr/amazon\n    - image/generation/google/imagen-3\n\nThe `input` dict contains feature-specific parameters that are\nvalidated at runtime based on the parsed feature/subfeature."
             },
             "UniversalAIResponse": {
                 "properties": {

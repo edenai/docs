@@ -32,6 +32,7 @@ docker run -d \
   -v open-webui:/app/backend/data \
   -e OPENAI_API_BASE_URL=https://api.edenai.run/v3/llm \
   -e OPENAI_API_KEY=YOUR_EDEN_AI_API_KEY \
+  -e WEBUI_AUTH=False `# Disable authentication for single-user setup` \
   ghcr.io/open-webui/open-webui:main
     ```
 </CodeGroup>

@@ -8,6 +8,7 @@
     "href": "https://edenai.co"
   },
   "favicon": "/images/favicon.png",
+  "ask": "Ask AI",
   "colors": {
     "primary": "#5386b2",
     "light": "#7ba3ca",

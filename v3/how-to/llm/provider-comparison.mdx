@@ -20,7 +20,7 @@ This guide helps you choose the right provider for your multimodal use cases by 
 | Provider | Models | JPEG | PNG | WebP | GIF | Max Size | Base64 | URLs | Upload |
 |----------|--------|------|-----|------|-----|----------|--------|------|--------|
 | **OpenAI** | gpt-4o, gpt-4-turbo | ✓ | ✓ | ✓ | ✓ | 20 MB | ✓ | ✓ | ✓ |
-| **Anthropic** | claude-3-opus, claude-3-5-sonnet | ✓ | ✓ | ✓ | ✓ | 5 MB | ✓ | ✓ | ✓ |
+| **Anthropic** | claude-opus-4-5, claude-sonnet-4-5 | ✓ | ✓ | ✓ | ✓ | 5 MB | ✓ | ✓ | ✓ |
 | **Google** | gemini-1.5-pro, gemini-1.5-flash | ✓ | ✓ | ✓ | ✓ | 20 MB | ✓ | ✓ | ✓ |
 | **Mistral** | pixtral-12b | ✓ | ✓ | ✓ | - | 10 MB | ✓ | ✓ | ✓ |
 
@@ -29,7 +29,7 @@ This guide helps you choose the right provider for your multimodal use cases by 
 | Provider | Models | PDF | DOCX | TXT | Max Size | Max Pages | Best For |
 |----------|--------|-----|------|-----|----------|-----------|----------|
 | **OpenAI** | gpt-4o, gpt-4-turbo | ✓ | ✓ | ✓ | 512 MB | ~1000 | Structured extraction |
-| **Anthropic** | claude-3-opus, claude-3-5-sonnet | ✓ | ✓ | ✓ | 10 MB | ~200 | Deep analysis |
+| **Anthropic** | claude-opus-4-5, claude-sonnet-4-5 | ✓ | ✓ | ✓ | 10 MB | ~200 | Deep analysis |
 | **Google** | gemini-1.5-pro, gemini-1.5-flash | ✓ | ✓ | ✓ | 2 GB | ~10000 | Large documents |
 | **Mistral** | pixtral-12b | - | - | ✓ | - | - | Text only |
 
@@ -82,7 +82,6 @@ payload = {
             ]
         }
     ],
-    "stream": True,
     "max_tokens": 500
 }
     ```
@@ -93,9 +92,9 @@ payload = {
 ### Anthropic (Claude 3)
 
 **Models:**
-- `anthropic/claude-3-5-sonnet-20241022` (Recommended)
-- `anthropic/claude-3-opus-20240229` (Highest quality)
-- `anthropic/claude-3-sonnet-20240229`
+- `anthropic/claude-sonnet-4-5` (Recommended)
+- `anthropic/claude-opus-4-5` (Highest quality)
+- `anthropic/claude-sonnet-4-5`
 
 **Strengths:**
 - Superior reasoning about visual content
@@ -128,7 +127,7 @@ payload = {
 <CodeGroup>
 ```python Python
 payload = {
-    "model": "anthropic/claude-3-5-sonnet-20241022",
+    "model": "anthropic/claude-sonnet-4-5",
     "messages": [
         {
             "role": "user",
@@ -144,7 +143,6 @@ payload = {
             ]
         }
     ],
-    "stream": True,
     "temperature": 0.3
 }
     ```
@@ -204,7 +202,6 @@ payload = {
             ]
         }
     ],
-    "stream": True,
     "max_tokens": 2000
 }
     ```
@@ -257,8 +254,7 @@ payload = {
                 }
             ]
         }
-    ],
-    "stream": True
+    ]
 }
     ```
 </CodeGroup>
@@ -373,7 +369,7 @@ payload = {
 **Complex reasoning (legal docs, deep analysis):**
 ```python
 # Use Claude Opus
-"model": "anthropic/claude-3-opus-20240229"  # Best quality
+"model": "anthropic/claude-opus-4-5"  # Best quality
 ```
 
 ### Optimize Input Size
@@ -422,8 +418,7 @@ payload = {
                 for url in image_urls
             ]
         }
-    ],
-    "stream": True
+    ]
 }
     ```
 </CodeGroup>
@@ -435,7 +430,7 @@ payload = {
 | Provider | Model | Small Image (1MB) | Large Image (10MB) |
 |----------|-------|-------------------|-------------------|
 | OpenAI | gpt-4o | ~1.5s | ~2.5s |
-| Anthropic | claude-3-5-sonnet | ~2.0s | ~3.5s |
+| Anthropic | claude-sonnet-4-5 | ~2.0s | ~3.5s |
 | Google | gemini-1.5-flash | ~1.0s | ~2.0s |
 | Google | gemini-1.5-pro | ~2.0s | ~3.0s |
 | Mistral | pixtral-12b | ~1.5s | ~2.5s |
@@ -445,7 +440,7 @@ payload = {
 | Provider | Model | 10-page PDF | 100-page PDF |
 |----------|-------|-------------|--------------|
 | OpenAI | gpt-4o | ~5s | ~30s |
-| Anthropic | claude-3-opus | ~8s | Not recommended |
+| Anthropic | claude-opus-4-5 | ~8s | Not recommended |
 | Google | gemini-1.5-pro | ~6s | ~45s |
 
 *Times are approximate and vary based on content complexity and network conditions.*

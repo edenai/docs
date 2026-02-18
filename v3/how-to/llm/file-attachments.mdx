@@ -74,19 +74,12 @@ payload = {
                 }
             ]
         }
-    ],
-    "stream": True
+    ]
 }
 
-response = requests.post(llm_url, headers=llm_headers, json=payload, stream=True)
-
-for line in response.iter_lines():
-    if line:
-        line_str = line.decode('utf-8')
-        if line_str.startswith('data: '):
-            data = line_str[6:]
-            if data != '[DONE]':
-                print(data)
+response = requests.post(llm_url, headers=llm_headers, json=payload)
+result = response.json()
+print(result["choices"][0]["message"]["content"])
     ```
 
 ```javascript JavaScript
@@ -117,8 +110,7 @@ const payload = {
         {type: 'file', file: {file_id: file_id}}
       ]
     }
-  ],
-  stream: true
+  ]
 };
 
 const response = await fetch(llmUrl, {
@@ -130,14 +122,8 @@ const response = await fetch(llmUrl, {
   body: JSON.stringify(payload)
 });
 
-const reader = response.body.getReader();
-const decoder = new TextDecoder();
-
-while (true) {
-  const {done, value} = await reader.read();
-  if (done) break;
-  console.log(decoder.decode(value));
-}
+const result = await response.json();
+console.log(result.choices[0].message.content);
     ```
 </CodeGroup>
 
@@ -156,7 +142,7 @@ headers = {
 }
 
 payload = {
-    "model": "anthropic/claude-3-5-sonnet-20241022",
+    "model": "anthropic/claude-sonnet-4-5",
     "messages": [
         {
             "role": "user",
@@ -173,15 +159,12 @@ payload = {
                 }
             ]
         }
-    ],
-    "stream": True
+    ]
 }
 
-response = requests.post(url, headers=headers, json=payload, stream=True)
-
-for line in response.iter_lines():
-    if line:
-        print(line.decode('utf-8'))
+response = requests.post(url, headers=headers, json=payload)
+result = response.json()
+print(result["choices"][0]["message"]["content"])
     ```
 </CodeGroup>
 
@@ -223,11 +206,12 @@ payload = {
                 }
             ]
         }
-    ],
-    "stream": True
+    ]
 }
 
-response = requests.post(url, headers=headers, json=payload, stream=True)
+response = requests.post(url, headers=headers, json=payload)
+result = response.json()
+print(result["choices"][0]["message"]["content"])
     ```
 </CodeGroup>
 
@@ -257,7 +241,7 @@ headers = {
 }
 
 payload = {
-    "model": "anthropic/claude-3-5-sonnet-20241022",
+    "model": "anthropic/claude-sonnet-4-5",
     "messages": [
         {
             "role": "user",
@@ -278,19 +262,12 @@ payload = {
             ]
         }
     ],
-    "stream": True,
     "max_tokens": 1500
 }
 
-response = requests.post(url, headers=headers, json=payload, stream=True)
-
-for line in response.iter_lines():
-    if line:
-        line_str = line.decode('utf-8')
-        if line_str.startswith('data: '):
-            data = line_str[6:]
-            if data != '[DONE]':
-                print(data)
+response = requests.post(url, headers=headers, json=payload)
+result = response.json()
+print(result["choices"][0]["message"]["content"])
     ```
 </CodeGroup>
 
@@ -335,24 +312,13 @@ for question in questions:
                 ]
             }
         ],
-        "stream": True,
         "temperature": 0.2  # Low for factual answers
     }
 
     print(f"\nQuestion: {question}")
-    response = requests.post(url, headers=headers, json=payload, stream=True)
-
-    answer = ""
-    for line in response.iter_lines():
-        if line:
-            line_str = line.decode('utf-8')
-            if line_str.startswith('data: '):
-                data = line_str[6:]
-                if data != '[DONE]':
-                    import json
-                    chunk = json.loads(data)
-                    content = chunk.get('choices', [{}])[0].get('delta', {}).get('content', '')
-                    answer += content
+    response = requests.post(url, headers=headers, json=payload)
+    result = response.json()
+    answer = result["choices"][0]["message"]["content"]
 
     print(f"Answer: {answer}\n")
     ```
@@ -409,22 +375,12 @@ payload = {
             ]
         }
     ],
-    "stream": True,
     "temperature": 0.1  # Very low for accurate extraction
 }
 
-response = requests.post(url, headers=headers, json=payload, stream=True)
-
-extracted_data = ""
-for line in response.iter_lines():
-    if line:
-        line_str = line.decode('utf-8')
-        if line_str.startswith('data: '):
-            data = line_str[6:]
-            if data != '[DONE]':
-                chunk = json.loads(data)
-                content = chunk.get('choices', [{}])[0].get('delta', {}).get('content', '')
-                extracted_data += content
+response = requests.post(url, headers=headers, json=payload)
+result = response.json()
+extracted_data = result["choices"][0]["message"]["content"]
 
 # Parse extracted JSON
 invoice_data = json.loads(extracted_data)
@@ -456,7 +412,7 @@ headers = {
 }
 
 payload = {
-    "model": "anthropic/claude-3-opus-20240229",
+    "model": "anthropic/claude-opus-4-5",
     "messages": [
         {
             "role": "user",
@@ -480,16 +436,13 @@ payload = {
             ]
         }
     ],
-    "stream": True,
     "max_tokens": 2000,
     "temperature": 0.3
 }
 
-response = requests.post(url, headers=headers, json=payload, stream=True)
-
-for line in response.iter_lines():
-    if line:
-        print(line.decode('utf-8'))
+response = requests.post(url, headers=headers, json=payload)
+result = response.json()
+print(result["choices"][0]["message"]["content"])
     ```
 </CodeGroup>
 
@@ -538,15 +491,12 @@ payload = {
             ]
         }
     ],
-    "stream": True,
     "max_tokens": 1500
 }
 
-response = requests.post(url, headers=headers, json=payload, stream=True)
-
-for line in response.iter_lines():
-    if line:
-        print(line.decode('utf-8'))
+response = requests.post(url, headers=headers, json=payload)
+result = response.json()
+print(result["choices"][0]["message"]["content"])
     ```
 </CodeGroup>
 
@@ -583,7 +533,7 @@ for line in response.iter_lines():
 
 **Example:**
 ```python
-"model": "anthropic/claude-3-5-sonnet-20241022"
+"model": "anthropic/claude-sonnet-4-5"
 ```
 
 ### Google (Gemini 1.5)
@@ -631,11 +581,11 @@ for question in questions:
                     {"type": "file", "file": {"file_id": file_id}}
                 ]
             }
-        ],
-        "stream": True
+        ]
     }
-    response = requests.post(url, headers=headers, json=payload, stream=True)
-    # Process response
+    response = requests.post(url, headers=headers, json=payload)
+    result = response.json()
+    print(result["choices"][0]["message"]["content"])
     ```
 </CodeGroup>
 
@@ -761,11 +711,12 @@ payload = {
             ]
         }
     ],
-    "stream": True,
     "max_tokens": 2000
 }
 
-response = requests.post(url, headers=headers, json=payload, stream=True)
+response = requests.post(url, headers=headers, json=payload)
+result = response.json()
+print(result["choices"][0]["message"]["content"])
     ```
 </CodeGroup>
 
@@ -806,21 +757,12 @@ messages = [
 response = requests.post(
     url,
     headers=headers,
-    json={"model": "anthropic/claude-3-5-sonnet-20241022", "messages": messages, "stream": True}
+    json={"model": "anthropic/claude-sonnet-4-5", "messages": messages}
 )
 
 # Collect assistant's response
-assistant_response = ""
-for line in response.iter_lines():
-    if line:
-        line_str = line.decode('utf-8')
-        if line_str.startswith('data: '):
-            data = line_str[6:]
-            if data != '[DONE]':
-                import json
-                chunk = json.loads(data)
-                content = chunk.get('choices', [{}])[0].get('delta', {}).get('content', '')
-                assistant_response += content
+result = response.json()
+assistant_response = result["choices"][0]["message"]["content"]
 
 # Add to history
 messages.append({"role": "assistant", "content": assistant_response})
@@ -835,8 +777,10 @@ messages.append({
 response = requests.post(
     url,
     headers=headers,
-    json={"model": "anthropic/claude-3-5-sonnet-20241022", "messages": messages, "stream": True}
+    json={"model": "anthropic/claude-sonnet-4-5", "messages": messages}
 )
+result = response.json()
+print(result["choices"][0]["message"]["content"])
     ```
 </CodeGroup>
 
@@ -920,15 +864,13 @@ def process_document_safe(file_path, prompt):
                             {"type": "file", "file": {"file_id": file_id}}
                         ]
                     }
-                ],
-                "stream": True
+                ]
             },
-            timeout=120,
-            stream=True
+            timeout=120
         )
         llm_response.raise_for_status()
 
-        return llm_response
+        return llm_response.json()
 
     except requests.exceptions.Timeout:
         print("Request timeout. Try with a smaller file or simpler prompt.")

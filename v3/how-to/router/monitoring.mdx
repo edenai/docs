@@ -7,6 +7,7 @@ Learn how to track, analyze, and optimize router performance in production appli
 Effective monitoring is essential for understanding how smart routing behaves in production. This guide covers tracking routing decisions, analyzing performance metrics, and optimizing based on real usage data.
 
 **What you'll learn:**
+
 - Tracking routing decisions and model selection
 - Measuring routing latency and overhead
 - Analyzing cost patterns
@@ -28,7 +29,7 @@ from datetime import datetime
 from typing import Optional
 
 class RouterMonitor:
-    """Simple router monitoring with tracking."""
+"""Simple router monitoring with tracking."""
 
     def __init__(self, api_key: str):
         self.api_key = api_key
@@ -52,8 +53,7 @@ class RouterMonitor:
 
         payload = {
             "model": "@edenai",
-            "messages": [{"role": "user", "content": message}],
-            "stream": True
+            "messages": [{"role": "user", "content": message}]
         }
 
         if candidates:
@@ -62,37 +62,18 @@ class RouterMonitor:
         response = requests.post(
             self.url,
             headers=headers,
-            json=payload,
-            stream=True
+            json=payload
         )
-
-        full_response = ""
-        selected_model = None
-        first_chunk_time = None
-
-        for line in response.iter_lines():
-            if line:
-                if not first_chunk_time:
-                    first_chunk_time = datetime.now()
-
-                line_str = line.decode('utf-8')
-                if line_str.startswith('data: ') and line_str != 'data: [DONE]':
-                    data = json.loads(line_str[6:])
-
-                    if not selected_model and 'model' in data:
-                        selected_model = data['model']
-
-                    content = data.get('choices', [{}])[0].get('delta', {}).get('content', '')
-                    full_response += content
 
         end_time = datetime.now()
+        data = response.json()
+
+        selected_model = data.get('model')
+        full_response = data.get('choices', [{}])[0].get('message', {}).get('content', '')
 
         # Calculate latencies
-        routing_latency = (
-            (first_chunk_time - start_time).total_seconds() * 1000
-            if first_chunk_time else None
-        )
         total_latency = (end_time - start_time).total_seconds() * 1000
+        routing_latency = total_latency  # For non-streaming, routing latency equals total latency
 
         # Log routing decision
         log_entry = {
@@ -156,30 +137,34 @@ class RouterMonitor:
         print(f"Average total latency: {avg_total_latency:.0f}ms")
 
 # Usage
+
 monitor = RouterMonitor("YOUR_API_KEY")
 
 # Make several requests
+
 queries = [
-    "What is Python?",
-    "Explain machine learning",
-    "Write a haiku about coding",
-    "What's the capital of France?",
-    "Describe quantum computing"
+"What is Python?",
+"Explain machine learning",
+"Write a haiku about coding",
+"What's the capital of France?",
+"Describe quantum computing"
 ]
 
 for query in queries:
-    result = monitor.chat(
-        query,
-        candidates=["openai/gpt-4o", "anthropic/claude-sonnet-4-5"],
-        metadata={"user_id": "user123", "session": "abc"}
-    )
-    print(f"Q: {query}")
-    print(f"Model: {result['model']}")
-    print(f"Routing latency: {result['metrics']['routing_latency_ms']}ms\n")
+result = monitor.chat(
+query,
+candidates=["openai/gpt-4", "anthropic/claude-sonnet-4-5"],
+metadata={"user_id": "user123", "session": "abc"}
+)
+print(f"Q: {query}")
+print(f"Model: {result['model']}")
+print(f"Routing latency: {result['metrics']['routing_latency_ms']}ms\n")
 
 # Print summary
+
 monitor.print_summary()
-    ```
+```
+
 </CodeGroup>
 
 ## Advanced Monitoring
@@ -198,7 +183,7 @@ from typing import Optional, Dict, List
 import statistics
 
 class RouterAnalytics:
-    """Advanced router monitoring and analytics."""
+"""Advanced router monitoring and analytics."""
 
     def __init__(self, api_key: str):
         self.api_key = api_key
@@ -246,8 +231,7 @@ class RouterAnalytics:
 
         payload = {
             "model": "@edenai",
-            "messages": [{"role": "user", "content": message}],
-            "stream": True
+            "messages": [{"role": "user", "content": message}]
         }
 
         if candidates:
@@ -258,38 +242,19 @@ class RouterAnalytics:
                 self.url,
                 headers=headers,
                 json=payload,
-                stream=True,
                 timeout=30
             )
             response.raise_for_status()
 
-            full_response = ""
-            selected_model = None
-            first_chunk_time = None
-
-            for line in response.iter_lines():
-                if line:
-                    if not first_chunk_time:
-                        first_chunk_time = datetime.now()
-
-                    line_str = line.decode('utf-8')
-                    if line_str.startswith('data: ') and line_str != 'data: [DONE]':
-                        data = json.loads(line_str[6:])
-
-                        if not selected_model and 'model' in data:
-                            selected_model = data['model']
-
-                        content = data.get('choices', [{}])[0].get('delta', {}).get('content', '')
-                        full_response += content
-
             end_time = datetime.now()
+            data = response.json()
+
+            selected_model = data.get('model')
+            full_response = data.get('choices', [{}])[0].get('message', {}).get('content', '')
 
             # Calculate metrics
-            routing_latency = (
-                (first_chunk_time - start_time).total_seconds() * 1000
-                if first_chunk_time else None
-            )
             total_latency = (end_time - start_time).total_seconds() * 1000
+            routing_latency = total_latency  # For non-streaming, routing latency equals total latency
             response_length = len(full_response)
 
             # Log event
@@ -472,31 +437,35 @@ class RouterAnalytics:
         print("\n" + "="*60)
 
 # Usage example
+
 analytics = RouterAnalytics("YOUR_API_KEY")
 
 # Simulate various requests
+
 test_cases = [
-    ("What is Python?", ["openai/gpt-4o", "anthropic/claude-sonnet-4-5"]),
-    ("Explain quantum physics", ["anthropic/claude-opus-4-5", "openai/gpt-4o"]),
-    ("Write a function", ["openai/gpt-4o", "anthropic/claude-sonnet-4-5"]),
-    ("Tell me a joke", ["openai/gpt-4o-mini", "google/gemini-2.0-flash"]),
-    ("Summarize AI trends", None),  # Default routing
+("What is Python?", ["openai/gpt-4", "anthropic/claude-sonnet-4-5"]),
+("Explain quantum physics", ["anthropic/claude-opus-4-5", "openai/gpt-4"]),
+("Write a function", ["openai/gpt-4", "anthropic/claude-sonnet-4-5"]),
+("Tell me a joke", ["openai/gpt-4", "google/gemini-2.0-flash"]),
+("Summarize AI trends", None), # Default routing
 ]
 
 for message, candidates in test_cases:
-    result = analytics.chat(
-        message,
-        candidates=candidates,
-        metadata={"test_case": True}
-    )
-    if result["success"]:
-        print(f"✓ {message[:30]}... → {result['model']}")
-    else:
-        print(f"✗ {message[:30]}... → Error")
+result = analytics.chat(
+message,
+candidates=candidates,
+metadata={"test_case": True}
+)
+if result["success"]:
+print(f"✓ {message[:30]}... → {result['model']}")
+else:
+print(f"✗ {message[:30]}... → Error")
 
 # Print full report
+
 analytics.print_report()
-    ```
+```
+
 </CodeGroup>
 
 ## Cost Tracking
@@ -514,14 +483,14 @@ from typing import Dict, List
 from collections import defaultdict
 
 class RouterCostTracker:
-    """Track routing costs over time."""
+"""Track routing costs over time."""
 
     # Estimated costs per 1K tokens (input + output averaged)
     MODEL_COSTS = {
-        "openai/gpt-4o-mini": 0.0002,
+        "openai/gpt-4-mini": 0.0002,
         "google/gemini-2.0-flash": 0.0002,
-        "anthropic/claude-haiku-4-5": 0.0005,
-        "openai/gpt-4o": 0.003,
+        "openai/gpt-4": 0.0005,
+        "openai/gpt-4": 0.003,
         "anthropic/claude-sonnet-4-5": 0.004,
         "anthropic/claude-opus-4-5": 0.015,
         "google/gemini-2.5-pro": 0.008,
@@ -558,8 +527,7 @@ class RouterCostTracker:
 
         payload = {
             "model": "@edenai",
-            "messages": [{"role": "user", "content": message}],
-            "stream": True
+            "messages": [{"role": "user", "content": message}]
         }
 
         if candidates:
@@ -568,24 +536,12 @@ class RouterCostTracker:
         response = requests.post(
             self.url,
             headers=headers,
-            json=payload,
-            stream=True
+            json=payload
         )
 
-        full_response = ""
-        selected_model = None
-
-        for line in response.iter_lines():
-            if line:
-                line_str = line.decode('utf-8')
-                if line_str.startswith('data: ') and line_str != 'data: [DONE]':
-                    data = json.loads(line_str[6:])
-
-                    if not selected_model and 'model' in data:
-                        selected_model = data['model']
-
-                    content = data.get('choices', [{}])[0].get('delta', {}).get('content', '')
-                    full_response += content
+        data = response.json()
+        selected_model = data.get('model')
+        full_response = data.get('choices', [{}])[0].get('message', {}).get('content', '')
 
         # Calculate cost
         estimated_cost = self.estimate_cost(selected_model, message, full_response)
@@ -673,23 +629,27 @@ class RouterCostTracker:
         print("\n" + "="*60)
 
 # Usage
+
 tracker = RouterCostTracker("YOUR_API_KEY")
 
 # Make requests
+
 queries = [
-    ("What is Python?", ["openai/gpt-4o", "anthropic/claude-sonnet-4-5"]),
-    ("Explain quantum computing in detail", ["anthropic/claude-opus-4-5", "openai/gpt-4o"]),
-    ("Hello", ["openai/gpt-4o-mini", "google/gemini-2.0-flash"]),
+("What is Python?", ["openai/gpt-4", "anthropic/claude-sonnet-4-5"]),
+("Explain quantum computing in detail", ["anthropic/claude-opus-4-5", "openai/gpt-4"]),
+("Hello", ["openai/gpt-4-mini", "google/gemini-2.0-flash"]),
 ]
 
 for message, candidates in queries:
-    result = tracker.chat(message, candidates)
-    print(f"Q: {message}")
-    print(f"Model: {result['model']}, Cost: ${result['cost']:.4f}\n")
+result = tracker.chat(message, candidates)
+print(f"Q: {message}")
+print(f"Model: {result['model']}, Cost: ${result['cost']:.4f}\n")
 
 # Print cost report
+
 tracker.print_cost_report()
-    ```
+```
+
 </CodeGroup>
 
 ## Integration with Monitoring Tools
@@ -706,43 +666,44 @@ import json
 from typing import Optional, List
 
 # Define Prometheus metrics
+
 routing_requests_total = Counter(
-    'eden_ai_routing_requests_total',
-    'Total routing requests',
-    ['model', 'candidate_pool']
+'eden_ai_routing_requests_total',
+'Total routing requests',
+['model', 'candidate_pool']
 )
 
 routing_errors_total = Counter(
-    'eden_ai_routing_errors_total',
-    'Total routing errors',
-    ['error_type']
+'eden_ai_routing_errors_total',
+'Total routing errors',
+['error_type']
 )
 
 routing_latency_seconds = Histogram(
-    'eden_ai_routing_latency_seconds',
-    'Routing decision latency in seconds',
-    ['model']
+'eden_ai_routing_latency_seconds',
+'Routing decision latency in seconds',
+['model']
 )
 
 total_latency_seconds = Histogram(
-    'eden_ai_total_latency_seconds',
-    'Total request latency in seconds',
-    ['model']
+'eden_ai_total_latency_seconds',
+'Total request latency in seconds',
+['model']
 )
 
 response_length_bytes = Histogram(
-    'eden_ai_response_length_bytes',
-    'Response length in bytes',
-    ['model']
+'eden_ai_response_length_bytes',
+'Response length in bytes',
+['model']
 )
 
 active_models = Gauge(
-    'eden_ai_active_models',
-    'Number of different models being used'
+'eden_ai_active_models',
+'Number of different models being used'
 )
 
 class PrometheusRouterMonitor:
-    """Router with Prometheus metrics export."""
+"""Router with Prometheus metrics export."""
 
     def __init__(self, api_key: str):
         self.api_key = api_key
@@ -766,8 +727,7 @@ class PrometheusRouterMonitor:
 
         payload = {
             "model": "@edenai",
-            "messages": [{"role": "user", "content": message}],
-            "stream": True
+            "messages": [{"role": "user", "content": message}]
         }
 
         if candidates:
@@ -781,31 +741,15 @@ class PrometheusRouterMonitor:
                 self.url,
                 headers=headers,
                 json=payload,
-                stream=True,
                 timeout=30
             )
             response.raise_for_status()
 
-            full_response = ""
-            selected_model = None
-            first_chunk_time = None
-
-            for line in response.iter_lines():
-                if line:
-                    if not first_chunk_time:
-                        first_chunk_time = time.time()
-
-                    line_str = line.decode('utf-8')
-                    if line_str.startswith('data: ') and line_str != 'data: [DONE]':
-                        data = json.loads(line_str[6:])
-
-                        if not selected_model and 'model' in data:
-                            selected_model = data['model']
-
-                        content = data.get('choices', [{}])[0].get('delta', {}).get('content', '')
-                        full_response += content
-
             end_time = time.time()
+            data = response.json()
+
+            selected_model = data.get('model')
+            full_response = data.get('choices', [{}])[0].get('message', {}).get('content', '')
 
             # Record metrics
             routing_requests_total.labels(
@@ -813,11 +757,8 @@ class PrometheusRouterMonitor:
                 candidate_pool=pool_key
             ).inc()
 
-            if first_chunk_time:
-                routing_latency = first_chunk_time - start_time
-                routing_latency_seconds.labels(model=selected_model).observe(routing_latency)
-
             total_latency = end_time - start_time
+            routing_latency_seconds.labels(model=selected_model).observe(total_latency)
             total_latency_seconds.labels(model=selected_model).observe(total_latency)
 
             response_length_bytes.labels(model=selected_model).observe(len(full_response))
@@ -847,19 +788,23 @@ class PrometheusRouterMonitor:
         return generate_latest().decode('utf-8')
 
 # Usage
+
 monitor = PrometheusRouterMonitor("YOUR_API_KEY")
 
 # Make some requests
+
 for i in range(10):
-    result = monitor.chat(
-        f"Question {i+1}: Explain AI",
-        candidates=["openai/gpt-4o", "anthropic/claude-sonnet-4-5"]
-    )
+result = monitor.chat(
+f"Question {i+1}: Explain AI",
+candidates=["openai/gpt-4", "anthropic/claude-sonnet-4-5"]
+)
 
 # Export metrics (serve this on /metrics endpoint)
+
 metrics = monitor.export_metrics()
 print(metrics)
-    ```
+```
+
 </CodeGroup>
 
 ### DataDog Integration
@@ -875,13 +820,14 @@ import time
 from typing import Optional, List
 
 # Initialize DataDog
+
 initialize(
-    statsd_host='127.0.0.1',
-    statsd_port=8125
+statsd_host='127.0.0.1',
+statsd_port=8125
 )
 
 class DataDogRouterMonitor:
-    """Router with DataDog metrics."""
+"""Router with DataDog metrics."""
 
     def __init__(self, api_key: str):
         self.api_key = api_key
@@ -904,8 +850,7 @@ class DataDogRouterMonitor:
 
         payload = {
             "model": "@edenai",
-            "messages": [{"role": "user", "content": message}],
-            "stream": True
+            "messages": [{"role": "user", "content": message}]
         }
 
         if candidates:
@@ -925,46 +870,26 @@ class DataDogRouterMonitor:
                 self.url,
                 headers=headers,
                 json=payload,
-                stream=True,
                 timeout=30
             )
             response.raise_for_status()
 
-            full_response = ""
-            selected_model = None
-            first_chunk_time = None
-
-            for line in response.iter_lines():
-                if line:
-                    if not first_chunk_time:
-                        first_chunk_time = time.time()
-
-                    line_str = line.decode('utf-8')
-                    if line_str.startswith('data: ') and line_str != 'data: [DONE]':
-                        data = json.loads(line_str[6:])
-
-                        if not selected_model and 'model' in data:
-                            selected_model = data['model']
-
-                        content = data.get('choices', [{}])[0].get('delta', {}).get('content', '')
-                        full_response += content
-
             end_time = time.time()
+            data = response.json()
+
+            selected_model = data.get('model')
+            full_response = data.get('choices', [{}])[0].get('message', {}).get('content', '')
 
             # Record metrics with model tag
             model_tags = base_tags + [f"model:{selected_model}"]
 
-            # Routing latency
-            if first_chunk_time:
-                routing_latency_ms = (first_chunk_time - start_time) * 1000
-                statsd.histogram(
-                    'eden_ai.routing.latency',
-                    routing_latency_ms,
-                    tags=model_tags
-                )
-
-            # Total latency
+            # Total latency (routing latency equals total for non-streaming)
             total_latency_ms = (end_time - start_time) * 1000
+            statsd.histogram(
+                'eden_ai.routing.latency',
+                total_latency_ms,
+                tags=model_tags
+            )
             statsd.histogram(
                 'eden_ai.routing.total_latency',
                 total_latency_ms,
@@ -1004,14 +929,16 @@ class DataDogRouterMonitor:
             }
 
 # Usage
+
 monitor = DataDogRouterMonitor("YOUR_API_KEY")
 
 result = monitor.chat(
-    "Explain AI",
-    candidates=["openai/gpt-4o", "anthropic/claude-sonnet-4-5"],
-    tags=["env:production", "service:chatbot"]
+"Explain AI",
+candidates=["openai/gpt-4", "anthropic/claude-sonnet-4-5"],
+tags=["env:production", "service:chatbot"]
 )
-    ```
+```
+
 </CodeGroup>
 
 ## Alerting and Notifications
@@ -1030,7 +957,7 @@ from typing import Dict, List, Callable
 from collections import deque
 
 class RouterAlertManager:
-    """Monitor routing and send alerts."""
+"""Monitor routing and send alerts."""
 
     def __init__(
         self,
@@ -1120,8 +1047,7 @@ class RouterAlertManager:
 
         payload = {
             "model": "@edenai",
-            "messages": [{"role": "user", "content": message}],
-            "stream": True
+            "messages": [{"role": "user", "content": message}]
         }
 
         if candidates:
@@ -1134,36 +1060,19 @@ class RouterAlertManager:
                 self.url,
                 headers=headers,
                 json=payload,
-                stream=True,
                 timeout=30
             )
             response.raise_for_status()
 
-            full_response = ""
-            selected_model = None
-            first_chunk_time = None
-
-            for line in response.iter_lines():
-                if line:
-                    if not first_chunk_time:
-                        first_chunk_time = time.time()
-
-                    line_str = line.decode('utf-8')
-                    if line_str.startswith('data: ') and line_str != 'data: [DONE]':
-                        data = json.loads(line_str[6:])
-
-                        if not selected_model and 'model' in data:
-                            selected_model = data['model']
-
-                        content = data.get('choices', [{}])[0].get('delta', {}).get('content', '')
-                        full_response += content
-
             end_time = time.time()
+            data = response.json()
+
+            selected_model = data.get('model')
+            full_response = data.get('choices', [{}])[0].get('message', {}).get('content', '')
 
             # Record metrics
-            if first_chunk_time:
-                latency_ms = (first_chunk_time - start_time) * 1000
-                self.recent_latencies.append(latency_ms)
+            latency_ms = (end_time - start_time) * 1000
+            self.recent_latencies.append(latency_ms)
 
             self.recent_errors.append(0)  # Success
 
@@ -1190,19 +1099,22 @@ class RouterAlertManager:
             }
 
 # Usage
+
 alert_manager = RouterAlertManager(
-    "YOUR_API_KEY",
-    alert_webhook="https://hooks.slack.com/services/YOUR/WEBHOOK/URL"
+"YOUR_API_KEY",
+alert_webhook="https://hooks.slack.com/services/YOUR/WEBHOOK/URL"
 )
 
 # Simulate requests (some will trigger alerts if thresholds are exceeded)
+
 for i in range(50):
-    result = alert_manager.chat(
-        f"Question {i+1}",
-        candidates=["openai/gpt-4o", "anthropic/claude-sonnet-4-5"]
-    )
-    time.sleep(0.1)
-    ```
+result = alert_manager.chat(
+f"Question {i+1}",
+candidates=["openai/gpt-4", "anthropic/claude-sonnet-4-5"]
+)
+time.sleep(0.1)
+```
+
 </CodeGroup>
 
 ## Best Practices
@@ -1210,6 +1122,7 @@ for i in range(50):
 ### Monitoring Checklist
 
 ✅ **Essential Metrics**
+
 - Model selection distribution
 - Routing latency (P50, P95, P99)
 - Error rates and types
@@ -1217,24 +1130,28 @@ for i in range(50):
 - Cost per model and total
 
 ✅ **Performance Monitoring**
+
 - Track latency trends
 - Monitor for latency regressions
 - Alert on high latency (>2s routing time)
 - Compare routed vs. fixed model performance
 
 ✅ **Cost Monitoring**
+
 - Track daily/weekly spending
 - Monitor cost per model
 - Alert on budget thresholds
 - Analyze cost optimization opportunities
 
 ✅ **Error Monitoring**
+
 - Track error rates by pool
 - Monitor routing failures
 - Set up alerts for error spikes
 - Log errors for debugging
 
 ❌ **Avoid**
+
 - Monitoring without actionable alerts
 - Ignoring cost patterns
 - Missing latency regressions

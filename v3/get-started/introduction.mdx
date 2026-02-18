@@ -14,7 +14,7 @@ Eden AI V3 introduces a revolutionary approach to AI API integration with:
 - **OpenAI-Compatible Format** - Drop-in replacement for OpenAI's API
 - **Persistent File Storage** - Upload once, use in multiple requests
 - **Built-in API Discovery** - Explore features and schemas programmatically
-- **Mandatory Streaming** - All LLM responses use Server-Sent Events (SSE)
+- **SSE for Streaming** - When streaming is enabled, LLM responses use Server-Sent Events (SSE). Streaming is optional.
 
 <Note>If you were an user before 2026/01/05, you still have access to the previous version: [https://old-app.edenai.run/](https://old-app.edenai.run/). We'll continue supporting the old version until the end of 2026. It your're looking for the documentation, you can find it [here](https://old-docs.edenai.co)</Note>
 
@@ -179,7 +179,7 @@ All V3 responses follow a consistent structure:
 
 ## Your First LLM Call: OpenAI-Compatible
 
-The LLM endpoint provides OpenAI-compatible chat completions with **mandatory streaming**:
+The LLM endpoint provides OpenAI-compatible chat completions:
 
 <CodeGroup>
 ```python Python
@@ -194,17 +194,13 @@ payload = {
     "model": "openai/gpt-4",
     "messages": [
         {"role": "user", "content": "Hello! How are you?"}
-    ],
-    "stream": True
+    ]
 }
 
-# Stream response with SSE
-response = requests.post(url, headers=headers, json=payload, stream=True)
-
-for line in response.iter_lines():
-    if line:
-        print(line.decode('utf-8'))
-    ```
+response = requests.post(url, headers=headers, json=payload)
+result = response.json()
+print(result["choices"][0]["message"]["content"])
+```
 
 ```bash cURL
 curl -X POST https://api.edenai.run/v3/llm/chat/completions \
@@ -212,10 +208,9 @@ curl -X POST https://api.edenai.run/v3/llm/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
     "model": "openai/gpt-4",
-    "messages": [{"role": "user", "content": "Hello!"}],
-    "stream": true
+    "messages": [{"role": "user", "content": "Hello!"}]
   }'
-    ```
+```
 
 ```javascript JavaScript
 const url = 'https://api.edenai.run/v3/llm/chat/completions';
@@ -225,8 +220,7 @@ const headers = {
 };
 const payload = {
   model: 'openai/gpt-4',
-  messages: [{role: 'user', content: 'Hello!'}],
-  stream: true
+  messages: [{role: 'user', content: 'Hello!'}]
 };
 
 const response = await fetch(url, {
@@ -235,27 +229,28 @@ const response = await fetch(url, {
   body: JSON.stringify(payload)
 });
 
-const reader = response.body.getReader();
-const decoder = new TextDecoder();
-
-while (true) {
-  const {done, value} = await reader.read();
-  if (done) break;
-  console.log(decoder.decode(value));
-}
-    ```
+const result = await response.json();
+console.log(result.choices[0].message.content);
+```
 </CodeGroup>
 
-### Streaming Response Format
+### Response Format
 
-LLM responses use Server-Sent Events (SSE):
+LLM responses follow the OpenAI format:
 
-```
-data: {"id":"chatcmpl-123","object":"chat.completion.chunk","choices":[{"delta":{"content":"Hello"},"index":0}]}
-
-data: {"id":"chatcmpl-123","object":"chat.completion.chunk","choices":[{"delta":{"content":"!"},"index":0}]}
-
-data: [DONE]
+```json
+{
+  "id": "chatcmpl-123",
+  "object": "chat.completion",
+  "choices": [
+    {
+      "message": {"role": "assistant", "content": "Hello! I'm doing well, thank you."},
+      "index": 0,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {"prompt_tokens": 12, "completion_tokens": 10, "total_tokens": 22}
+}
 ```
 
 ## Working with Files
@@ -329,7 +324,7 @@ feature/subfeature/provider[/model]
 | `feature` | Category of AI capability | `text`, `ocr`, `image`, `translation` |
 | `subfeature` | Specific functionality | `moderation`, `ai_detection`, `ocr`, `generation` |
 | `provider` | AI provider | `openai`, `google`, `amazon`, `anthropic` |
-| `model` | Specific model (optional) | `gpt-4`, `claude-3-5-sonnet`, `gemini-pro` |
+| `model` | Specific model (optional) | `gpt-4`, `claude-sonnet-4-5`, `gemini-pro` |
 
 ### Examples
 
@@ -350,7 +345,7 @@ feature/subfeature/provider[/model]
 
 **LLM (simplified format):**
 - `openai/gpt-4` - Chat with GPT-4
-- `anthropic/claude-3-5-sonnet-20241022` - Chat with Claude
+- `anthropic/claude-sonnet-4-5` - Chat with Claude
 - `google/gemini-pro` - Chat with Gemini
 
 ## API Discovery
@@ -423,7 +418,7 @@ V3 uses standard HTTP status codes with detailed error messages:
 | **Endpoints** | Feature-specific (`/v2/text/moderation`) | Universal (`/v3/universal-ai`) + LLM |
 | **Provider Format** | `providers` parameter | Model string (`text/moderation/openai`) |
 | **File Handling** | Per-request uploads | Persistent storage with file IDs |
-| **LLM Streaming** | Optional | Mandatory (always SSE) |
+| **LLM Streaming** | Optional | Optional (SSE when enabled) |
 | **API Discovery** | Documentation only | Built-in `/v3/info` endpoints |
 | **OpenAI Compatibility** | Custom format | Native OpenAI format |
 

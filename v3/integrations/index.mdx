@@ -24,19 +24,20 @@ Most integrations only require two simple changes:
 from openai import OpenAI
 
 client = OpenAI(
-    api_key="YOUR_EDEN_AI_API_KEY",
-    base_url="https://api.edenai.run/v3/llm"
+api_key="YOUR_EDEN_AI_API_KEY",
+base_url="https://api.edenai.run/v3/llm"
 )
 
 # Now use any provider through the OpenAI SDK
-response = client.chat.completions.create(
-    model="anthropic/claude-3-5-sonnet-20241022",
-    messages=[{"role": "user", "content": "Hello!"}],
-    stream=True
-)
-    ```
 
-```typescript TypeScript (OpenAI SDK)
+response = client.chat.completions.create(
+model="anthropic/claude-sonnet-4-5",
+messages=[{"role": "user", "content": "Hello!"}]
+)
+print(response.choices[0].message.content)
+```
+
+````typescript TypeScript (OpenAI SDK)
 import OpenAI from 'openai';
 
 const client = new OpenAI({
@@ -45,11 +46,11 @@ const client = new OpenAI({
 });
 
 // Use any provider
-const stream = await client.chat.completions.create({
+const response = await client.chat.completions.create({
   model: 'openai/gpt-4',
-  messages: [{role: 'user', content: 'Hello!'}],
-  stream: true,
+  messages: [{role: 'user', content: 'Hello!'}]
 });
+console.log(response.choices[0].message.content);
     ```
 </CodeGroup>
 
@@ -122,11 +123,11 @@ Simply change the model parameter to switch providers:
 model="openai/gpt-4"
 
 # Switch to Anthropic
-model="anthropic/claude-3-5-sonnet-20241022"
+model="anthropic/claude-sonnet-4-5"
 
 # Try Google
 model="google/gemini-pro"
-```
+````
 
 ## Beyond LLMs: Universal AI
 
@@ -142,25 +143,28 @@ Eden AI isn't just for chat. The **Universal AI endpoint** gives you access to:
 import requests
 
 # OCR with Google Cloud Vision
+
 response = requests.post(
-    "https://api.edenai.run/v3/universal-ai",
-    headers={"Authorization": "Bearer YOUR_API_KEY"},
-    json={
-        "model": "ocr/financial_parser/google",
-        "input": {"file": "file_id_or_url"}
-    }
+"https://api.edenai.run/v3/universal-ai",
+headers={"Authorization": "Bearer YOUR_API_KEY"},
+json={
+"model": "ocr/financial_parser/google",
+"input": {"file": "file_id_or_url"}
+}
 )
 
 # Image generation with DALL-E 3
+
 response = requests.post(
-    "https://api.edenai.run/v3/universal-ai",
-    headers={"Authorization": "Bearer YOUR_API_KEY"},
-    json={
-        "model": "image/generation/openai/dall-e-3",
-        "input": {"prompt": "A sunset over mountains"}
-    }
+"https://api.edenai.run/v3/universal-ai",
+headers={"Authorization": "Bearer YOUR_API_KEY"},
+json={
+"model": "image/generation/openai/dall-e-3",
+"input": {"prompt": "A sunset over mountains"}
+}
 )
-    ```
+```
+
 </CodeGroup>
 
 ## Need Help?

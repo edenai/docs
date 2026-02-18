@@ -7,6 +7,7 @@ Learn how Eden AI's smart routing system automatically selects the best AI model
 Smart routing is Eden AI's intelligent model selection system that automatically chooses the optimal AI model for your requests. Instead of manually selecting models, you use the special identifier `@edenai` and let the system analyze your request to pick the best provider and model.
 
 **What you'll learn:**
+
 - How smart routing works
 - Basic usage with default models
 - Customizing candidate pools
@@ -37,6 +38,7 @@ Response (includes selected model info)
 ```
 
 **Key components:**
+
 1. **NotDiamond Integration** - Powered by [NotDiamond](https://notdiamond.ai/), an AI routing engine that analyzes request context
 2. **Model Inventory** - Database of available models with capabilities and pricing
 3. **Redis Cache** - Caches available models (1-hour TTL) for performance
@@ -54,37 +56,27 @@ import requests
 
 url = "https://api.edenai.run/v3/llm/chat/completions"
 headers = {
-    "Authorization": "Bearer YOUR_API_KEY",
-    "Content-Type": "application/json"
+"Authorization": "Bearer YOUR_API_KEY",
+"Content-Type": "application/json"
 }
 
 payload = {
-    "model": "@edenai",  # Activates smart routing
-    "messages": [
-        {"role": "user", "content": "Explain machine learning"}
-    ],
-    "stream": True
+"model": "@edenai", # Activates smart routing
+"messages": [
+{"role": "user", "content": "Explain machine learning"}
+]
 }
 
-response = requests.post(url, headers=headers, json=payload, stream=True)
+response = requests.post(url, headers=headers, json=payload)
+data = response.json()
 
-selected_model = None
-for line in response.iter_lines():
-    if line:
-        line_str = line.decode('utf-8')
-        if line_str.startswith('data: ') and line_str != 'data: [DONE]':
-            import json
-            data = json.loads(line_str[6:])
+# Get the selected model
+selected_model = data.get('model')
+print(f"Router selected: {selected_model}")
 
-            # The first chunk contains the selected model
-            if not selected_model and 'model' in data:
-                selected_model = data['model']
-                print(f"Router selected: {selected_model}")
-
-            # Process content
-            content = data.get('choices', [{}])[0].get('delta', {}).get('content', '')
-            if content:
-                print(content, end='', flush=True)
+# Process content
+content = data.get('choices', [{}])[0].get('message', {}).get('content', '')
+print(content)
     ```
 
 ```javascript JavaScript
@@ -98,8 +90,7 @@ const payload = {
   model: '@edenai',  // Activates smart routing
   messages: [
     {role: 'user', content: 'Explain machine learning'}
-  ],
-  stream: true
+  ]
 };
 
 const response = await fetch(url, {
@@ -108,33 +99,15 @@ const response = await fetch(url, {
   body: JSON.stringify(payload)
 });
 
-const reader = response.body.getReader();
-const decoder = new TextDecoder();
-let selectedModel = null;
+const data = await response.json();
 
-while (true) {
-  const {done, value} = await reader.read();
-  if (done) break;
+// Get the selected model
+const selectedModel = data.model;
+console.log(`Router selected: ${selectedModel}`);
 
-  const chunk = decoder.decode(value);
-  const lines = chunk.split('\n');
-
-  for (const line of lines) {
-    if (line.startsWith('data: ') && line !== 'data: [DONE]') {
-      const data = JSON.parse(line.slice(6));
-
-      // Track selected model
-      if (!selectedModel && data.model) {
-        selectedModel = data.model;
-        console.log(`Router selected: ${selectedModel}`);
-      }
-
-      // Process content
-      const content = data.choices?.[0]?.delta?.content || '';
-      if (content) process.stdout.write(content);
-    }
-  }
-}
+// Process content
+const content = data.choices?.[0]?.message?.content || '';
+console.log(content);
     ```
 
 ```bash cURL
@@ -145,15 +118,14 @@ curl -X POST https://api.edenai.run/v3/llm/chat/completions \
     "model": "@edenai",
     "messages": [
       {"role": "user", "content": "Explain machine learning"}
-    ],
-    "stream": true
+    ]
   }'
     ```
 </CodeGroup>
 
 **Response includes selected model:**
 ```json
-data: {"id":"...","model":"openai/gpt-4o","choices":[{"delta":{"content":"Machine"},...}],...}
+{"id":"...","model":"openai/gpt-4o","choices":[{"message":{"content":"Machine learning is..."},...}],...}
 ```
 
 ### Custom Candidate Pool
@@ -166,31 +138,33 @@ import requests
 
 url = "https://api.edenai.run/v3/llm/chat/completions"
 headers = {
-    "Authorization": "Bearer YOUR_API_KEY",
-    "Content-Type": "application/json"
+"Authorization": "Bearer YOUR_API_KEY",
+"Content-Type": "application/json"
 }
 
 payload = {
-    "model": "@edenai",
-    # Only choose from these models
-    "router_candidates": [
-        "openai/gpt-4o",
-        "anthropic/claude-sonnet-4-5",
-        "google/gemini-2.0-flash"
-    ],
-    "messages": [
-        {"role": "user", "content": "Write a Python function to sort a list"}
-    ],
-    "stream": True
+"model": "@edenai", # Only choose from these models
+"router_candidates": [
+"openai/gpt-4o",
+"anthropic/claude-sonnet-4-5",
+"google/gemini-2.0-flash"
+],
+"messages": [
+{"role": "user", "content": "Write a Python function to sort a list"}
+]
 }
 
-response = requests.post(url, headers=headers, json=payload, stream=True)
+response = requests.post(url, headers=headers, json=payload)
+data = response.json()
 
-# Process response...
-for line in response.iter_lines():
-    if line:
-        print(line.decode('utf-8'))
-    ```
+# Get the selected model
+selected_model = data.get('model')
+print(f"Router selected: {selected_model}")
+
+# Process content
+content = data.get('choices', [{}])[0].get('message', {}).get('content', '')
+print(content)
+```
 
 ```javascript JavaScript
 const payload = {
@@ -203,8 +177,7 @@ const payload = {
   ],
   messages: [
     {role: 'user', content: 'Write a Python function to sort a list'}
-  ],
-  stream: true
+  ]
 };
 
 const response = await fetch(url, {
@@ -213,7 +186,15 @@ const response = await fetch(url, {
   body: JSON.stringify(payload)
 });
 
-// Process response...
+const data = await response.json();
+
+// Get the selected model
+const selectedModel = data.model;
+console.log(`Router selected: ${selectedModel}`);
+
+// Process content
+const content = data.choices?.[0]?.message?.content || '';
+console.log(content);
     ```
 </CodeGroup>
 
@@ -227,9 +208,11 @@ const response = await fetch(url, {
 
 Models are specified in the format:
 
-```
+````
+
 provider/model
-```
+
+````
 
 **Examples:**
 - `openai/gpt-4o`
@@ -288,22 +271,15 @@ client = OpenAI(
 )
 
 # Default routing
-stream = client.chat.completions.create(
+response = client.chat.completions.create(
     model="@edenai",
     messages=[
         {"role": "user", "content": "Explain neural networks"}
-    ],
-    stream=True
+    ]
 )
 
-selected_model = None
-for chunk in stream:
-    if not selected_model and chunk.model:
-        selected_model = chunk.model
-        print(f"\nRouter selected: {selected_model}\n")
-
-    if chunk.choices[0].delta.content:
-        print(chunk.choices[0].delta.content, end="", flush=True)
+print(f"Router selected: {response.model}")
+print(response.choices[0].message.content)
     ```
 
 ```python Python (OpenAI SDK with candidates)
@@ -315,12 +291,11 @@ client = OpenAI(
 )
 
 # Custom candidates via extra_body
-stream = client.chat.completions.create(
+response = client.chat.completions.create(
     model="@edenai",
     messages=[
         {"role": "user", "content": "Write a haiku about coding"}
     ],
-    stream=True,
     extra_body={
         "router_candidates": [
             "openai/gpt-4o",
@@ -329,9 +304,8 @@ stream = client.chat.completions.create(
     }
 )
 
-for chunk in stream:
-    if chunk.choices[0].delta.content:
-        print(chunk.choices[0].delta.content, end="", flush=True)
+print(f"Router selected: {response.model}")
+print(response.choices[0].message.content)
     ```
 
 ```typescript TypeScript (OpenAI SDK)
@@ -343,12 +317,11 @@ const client = new OpenAI({
 });
 
 // Custom candidates
-const stream = await client.chat.completions.create({
+const response = await client.chat.completions.create({
   model: '@edenai',
   messages: [
     {role: 'user', content: 'Write a haiku about coding'}
   ],
-  stream: true,
   // @ts-ignore - extra_body not in types
   extra_body: {
     router_candidates: [
@@ -358,10 +331,8 @@ const stream = await client.chat.completions.create({
   }
 });
 
-for await (const chunk of stream) {
-  const content = chunk.choices[0]?.delta?.content || '';
-  process.stdout.write(content);
-}
+console.log(`Router selected: ${response.model}`);
+console.log(response.choices[0]?.message?.content || '');
     ```
 </CodeGroup>
 
@@ -394,16 +365,20 @@ Smart routing introduces a small overhead:
 | **Subsequent tokens** | No overhead | Normal streaming after first token |
 
 **Example timeline:**
-```
+````
+
 Request sent → [300ms routing] → [500ms first token] → [streaming...]
 Total to first token: ~800ms
+
 ```
 
 **Compare with fixed model:**
 ```
+
 Request sent → [500ms first token] → [streaming...]
 Total to first token: ~500ms
-```
+
+````
 
 **Optimization tips:**
 - Use custom candidates (3-5 models) to reduce routing time
@@ -428,8 +403,7 @@ def chat_with_router(message: str):
 
     payload = {
         "model": "@edenai",
-        "messages": [{"role": "user", "content": message}],
-        "stream": True
+        "messages": [{"role": "user", "content": message}]
     }
 
     try:
@@ -437,24 +411,14 @@ def chat_with_router(message: str):
             url,
             headers=headers,
             json=payload,
-            stream=True,
             timeout=30  # Set timeout
         )
         response.raise_for_status()
 
-        full_response = ""
-        for line in response.iter_lines():
-            if line:
-                line_str = line.decode('utf-8')
-                if line_str.startswith('data: '):
-                    data_str = line_str[6:]
-                    if data_str != '[DONE]':
-                        import json
-                        data = json.loads(data_str)
-                        content = data.get('choices', [{}])[0].get('delta', {}).get('content', '')
-                        full_response += content
+        data = response.json()
+        content = data.get('choices', [{}])[0].get('message', {}).get('content', '')
 
-        return {"success": True, "response": full_response}
+        return {"success": True, "response": content}
 
     except requests.exceptions.Timeout:
         return {"success": False, "error": "Routing timed out"}
@@ -535,7 +499,7 @@ else:
 | `router_candidates` | string[] | No | List of models to choose from (default: all models) |
 | `messages` | object[] | Yes | Conversation messages (used for routing context) |
 | `tools` | object[] | No | Function definitions (considered in routing) |
-| `stream` | boolean | Yes | Must be `true` for V3 |
+| `stream` | boolean | No | Set to `true` for streaming responses |
 
 ### Response Fields
 
@@ -547,12 +511,13 @@ The selected model is returned in the response:
   "model": "openai/gpt-4o",  // Selected model
   "choices": [...]
 }
-```
+````
 
 ### Supported Features
 
 Smart routing works with all V3 LLM features:
-- ✅ Streaming (mandatory)
+
+- ✅ Streaming
 - ✅ Function calling / Tools
 - ✅ Vision / Multimodal
 - ✅ Multi-turn conversations

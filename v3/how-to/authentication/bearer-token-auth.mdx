@@ -333,7 +333,7 @@ response1 = session.post(
 response2 = session.post(
     "https://api.edenai.run/v3/llm/chat/completions",
     json={
-        "model": "anthropic/claude-3-sonnet",
+        "model": "anthropic/claude-sonnet-4-5",
         "messages": [{"role": "user", "content": "Second message"}]
     }
 )
@@ -358,7 +358,7 @@ const response1 = await edenai.post('/llm/chat/completions', {
 });
 
 const response2 = await edenai.post('/llm/chat/completions', {
-  model: 'anthropic/claude-3-sonnet',
+  model: 'anthropic/claude-sonnet-4-5',
   messages: [{role: 'user', content: 'Second message'}]
 });
     ```

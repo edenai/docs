@@ -30,10 +30,11 @@ export ANTHROPIC_API_KEY="YOUR_EDEN_AI_API_KEY"
 export ANTHROPIC_BASE_URL="https://api.edenai.run/v3/llm"
 
 # Run Claude Code
-claude-code
-    ```
 
-```powershell PowerShell
+claude-code
+```
+
+````powershell PowerShell
 # Windows PowerShell
 $env:ANTHROPIC_API_KEY="YOUR_EDEN_AI_API_KEY"
 $env:ANTHROPIC_BASE_URL="https://api.edenai.run/v3/llm"
@@ -51,7 +52,7 @@ Create or edit the Claude Code configuration file:
 {
   "api_key": "YOUR_EDEN_AI_API_KEY",
   "base_url": "https://api.edenai.run/v3/llm",
-  "model": "anthropic/claude-3-5-sonnet-20241022"
+  "model": "anthropic/claude-sonnet-4-5"
 }
     ```
 </CodeGroup>
@@ -63,7 +64,7 @@ With Eden AI, you can use models from different providers:
 <CodeGroup>
 ```bash bash
 # Use Claude 3.5 Sonnet (default)
-export ANTHROPIC_MODEL="anthropic/claude-3-5-sonnet-20241022"
+export ANTHROPIC_MODEL="anthropic/claude-sonnet-4-5"
 claude-code
 
 # Use GPT-4
@@ -81,10 +82,9 @@ claude-code
 When using Eden AI with Claude Code, use the `provider/model` format:
 
 ### Anthropic Models
-- `anthropic/claude-3-5-sonnet-20241022` (recommended)
-- `anthropic/claude-3-opus-20240229`
-- `anthropic/claude-3-sonnet-20240229`
-- `anthropic/claude-3-haiku-20240307`
+- `anthropic/claude-sonnet-4-5` (recommended)
+- `anthropic/claude-opus-4-5`
+- `anthropic/claude-haiku-4-5`
 
 ### OpenAI Models
 - `openai/gpt-4`
@@ -104,7 +104,7 @@ Make the configuration permanent by adding to your shell profile:
 # Eden AI configuration for Claude Code
 export ANTHROPIC_API_KEY="YOUR_EDEN_AI_API_KEY"
 export ANTHROPIC_BASE_URL="https://api.edenai.run/v3/llm"
-export ANTHROPIC_MODEL="anthropic/claude-3-5-sonnet-20241022"
+export ANTHROPIC_MODEL="anthropic/claude-sonnet-4-5"
     ```
 </CodeGroup>
 
@@ -112,7 +112,7 @@ Reload your shell:
 
 ```bash
 source ~/.bashrc  # or ~/.zshrc
-```
+````
 
 ## Custom Model Switching Script
 
@@ -123,25 +123,26 @@ Create a script to easily switch between models:
 #!/bin/bash
 
 case "$1" in
-  claude)
-    export ANTHROPIC_MODEL="anthropic/claude-3-5-sonnet-20241022"
-    echo "Switched to Claude 3.5 Sonnet"
-    ;;
-  gpt4)
-    export ANTHROPIC_MODEL="openai/gpt-4"
-    echo "Switched to GPT-4"
-    ;;
-  gemini)
-    export ANTHROPIC_MODEL="google/gemini-pro"
-    echo "Switched to Gemini Pro"
-    ;;
-  *)
-    echo "Usage: source switch-model.sh [claude|gpt4|gemini]"
-    ;;
+claude)
+export ANTHROPIC_MODEL="anthropic/claude-sonnet-4-5"
+echo "Switched to Claude 3.5 Sonnet"
+;;
+gpt4)
+export ANTHROPIC_MODEL="openai/gpt-4"
+echo "Switched to GPT-4"
+;;
+gemini)
+export ANTHROPIC_MODEL="google/gemini-pro"
+echo "Switched to Gemini Pro"
+;;
+\*)
+echo "Usage: source switch-model.sh [claude|gpt4|gemini]"
+;;
 esac
 
 claude-code
-    ```
+```
+
 </CodeGroup>
 
 Usage:
@@ -198,7 +199,7 @@ If you need to pass custom headers (e.g., for analytics):
 {
   "api_key": "YOUR_EDEN_AI_API_KEY",
   "base_url": "https://api.edenai.run/v3/llm",
-  "model": "anthropic/claude-3-5-sonnet-20241022",
+  "model": "anthropic/claude-sonnet-4-5",
   "headers": {
     "X-Custom-Header": "value"
   }
@@ -236,7 +237,7 @@ curl -X POST https://api.edenai.run/v3/llm/chat/completions \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "anthropic/claude-3-5-sonnet-20241022",
+    "model": "anthropic/claude-sonnet-4-5",
     "messages": [{"role": "user", "content": "test"}],
     "stream": true
   }'
@@ -248,10 +249,10 @@ Ensure you're using the correct model format:
 
 ```bash
 # Correct
-anthropic/claude-3-5-sonnet-20241022
+anthropic/claude-sonnet-4-5
 
 # Incorrect
-claude-3-5-sonnet-20241022
+claude-sonnet-4-5
 ```
 
 ### Connection Issues
@@ -278,9 +279,9 @@ curl https://api.edenai.run/v3/cost-management/usage \
 
 Choose models based on task complexity:
 
-- **Simple tasks**: `anthropic/claude-3-haiku-20240307` (fast, cost-effective)
-- **Complex reasoning**: `anthropic/claude-3-5-sonnet-20241022` (best balance)
-- **Maximum capability**: `anthropic/claude-3-opus-20240229` (most powerful)
+- **Simple tasks**: `anthropic/claude-haiku-4-5` (fast, cost-effective)
+- **Complex reasoning**: `anthropic/claude-sonnet-4-5` (best balance)
+- **Maximum capability**: `anthropic/claude-opus-4-5` (most powerful)
 
 ### 2. Leverage Multiple Providers
 
@@ -303,19 +304,22 @@ Use Claude Code in Git hooks for automated code review:
 #!/bin/bash
 
 # Export Eden AI configuration
+
 export ANTHROPIC_API_KEY="YOUR_EDEN_AI_API_KEY"
 export ANTHROPIC_BASE_URL="https://api.edenai.run/v3/llm"
 
 # Get changed files
+
 changed_files=$(git diff --cached --name-only --diff-filter=ACM | grep '\.py$')
 
 if [ -n "$changed_files" ]; then
-  echo "Reviewing changed Python files..."
-  for file in $changed_files; do
+echo "Reviewing changed Python files..."
+for file in $changed_files; do
     claude-code "Quick security review" < "$file"
-  done
+done
 fi
-    ```
+```
+
 </CodeGroup>
 
 ## Next Steps

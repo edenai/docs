@@ -15,7 +15,7 @@ Install LangChain and required dependencies:
 pip install langchain langchain-openai
     ```
 
-```bash TypeScript
+````bash TypeScript
 npm install langchain @langchain/openai
     ```
 </CodeGroup>
@@ -31,10 +31,9 @@ from langchain.schema import HumanMessage, SystemMessage
 
 # Initialize with Eden AI endpoint
 llm = ChatOpenAI(
-    model="anthropic/claude-3-5-sonnet-20241022",
+    model="openai/gpt-4",
     api_key="YOUR_EDEN_AI_API_KEY",
-    base_url="https://api.edenai.run/v3/llm",
-    streaming=True
+    base_url="https://api.edenai.run/v3/llm"
 )
 
 # Create messages
@@ -57,12 +56,11 @@ import { ChatOpenAI } from "@langchain/openai";
 import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 
 const llm = new ChatOpenAI({
-  modelName: "anthropic/claude-3-5-sonnet-20241022",
+  modelName: "openai/gpt-4",
   openAIApiKey: "YOUR_EDEN_AI_API_KEY",
   configuration: {
     baseURL: "https://api.edenai.run/v3/llm",
   },
-  streaming: true,
 });
 
 const messages = [
@@ -83,15 +81,16 @@ Access any model from Eden AI:
 ```python Python
 from langchain_openai import ChatOpenAI
 
-# Claude 3.5 Sonnet
-claude = ChatOpenAI(
-    model="anthropic/claude-3-5-sonnet-20241022",
+# GPT-4
+gpt4 = ChatOpenAI(
+    model="openai/gpt-4",
     api_key="YOUR_EDEN_AI_API_KEY",
     base_url="https://api.edenai.run/v3/llm"
 )
 
-# GPT-4
-gpt4 = ChatOpenAI(
+
+# Claude Haiku
+claude_haiku = ChatOpenAI(
     model="openai/gpt-4",
     api_key="YOUR_EDEN_AI_API_KEY",
     base_url="https://api.edenai.run/v3/llm"
@@ -106,9 +105,9 @@ gemini = ChatOpenAI(
     ```
 </CodeGroup>
 
-## Streaming Responses
+## Simple Responses
 
-Handle streaming for real-time responses:
+Get responses from the model:
 
 <CodeGroup>
 ```python Python
@@ -118,15 +117,14 @@ from langchain.schema import HumanMessage
 llm = ChatOpenAI(
     model="openai/gpt-4",
     api_key="YOUR_EDEN_AI_API_KEY",
-    base_url="https://api.edenai.run/v3/llm",
-    streaming=True
+    base_url="https://api.edenai.run/v3/llm"
 )
 
 messages = [HumanMessage(content="Write a short story about AI.")]
 
-# Stream response
-for chunk in llm.stream(messages):
-    print(chunk.content, end='', flush=True)
+# Get response
+response = llm.invoke(messages)
+print(response.content)
     ```
 
 ```typescript TypeScript
@@ -139,18 +137,14 @@ const llm = new ChatOpenAI({
   configuration: {
     baseURL: "https://api.edenai.run/v3/llm",
   },
-  streaming: true,
 });
 
 const messages = [
   new HumanMessage("Write a short story about AI.")
 ];
 
-const stream = await llm.stream(messages);
-
-for await (const chunk of stream) {
-  process.stdout.write(chunk.content);
-}
+const response = await llm.invoke(messages);
+console.log(response.content);
     ```
 </CodeGroup>
 
@@ -164,7 +158,7 @@ from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 
 llm = ChatOpenAI(
-    model="anthropic/claude-3-5-sonnet-20241022",
+    model="openai/gpt-4",
     api_key="YOUR_EDEN_AI_API_KEY",
     base_url="https://api.edenai.run/v3/llm"
 )
@@ -241,7 +235,7 @@ from langchain.document_loaders import TextLoader
 
 # Initialize LLM with Eden AI
 llm = ChatOpenAI(
-    model="anthropic/claude-3-5-sonnet-20241022",
+    model="openai/gpt-4",
     api_key="YOUR_EDEN_AI_API_KEY",
     base_url="https://api.edenai.run/v3/llm"
 )
@@ -358,7 +352,7 @@ from langchain.chains import ConversationChain
 from langchain.memory import ConversationBufferMemory
 
 llm = ChatOpenAI(
-    model="anthropic/claude-3-5-sonnet-20241022",
+    model="openai/gpt-4",
     api_key="YOUR_EDEN_AI_API_KEY",
     base_url="https://api.edenai.run/v3/llm"
 )
@@ -475,7 +469,7 @@ import asyncio
 
 async def compare_providers(question: str):
     providers = [
-        ("Claude", "anthropic/claude-3-5-sonnet-20241022"),
+        ("Claude", "anthropic/claude-sonnet-4-5"),
         ("GPT-4", "openai/gpt-4"),
         ("Gemini", "google/gemini-pro")
     ]
@@ -518,7 +512,7 @@ from langchain_openai import ChatOpenAI
 load_dotenv()
 
 llm = ChatOpenAI(
-    model="anthropic/claude-3-5-sonnet-20241022",
+    model="openai/gpt-4",
     api_key=os.getenv("EDEN_AI_API_KEY"),
     base_url="https://api.edenai.run/v3/llm"
 )
@@ -530,19 +524,10 @@ llm = ChatOpenAI(
 ### 1. Choose the Right Model
 
 Select models based on your use case:
-- **Complex reasoning**: `anthropic/claude-3-5-sonnet-20241022`
-- **Fast responses**: `openai/gpt-3.5-turbo`
-- **Cost-effective**: `anthropic/claude-3-haiku-20240307`
+- **Complex reasoning**: `openai/gpt-5.2`
+- **Fast and cost-effective**: `anthropic/claude-haiku-4-5`
 
-### 2. Use Streaming
-
-Enable streaming for better UX:
-
-```python
-llm = ChatOpenAI(..., streaming=True)
-```
-
-### 3. Implement Error Handling
+### 2. Implement Error Handling
 
 Wrap API calls in try-except blocks:
 
@@ -551,9 +536,9 @@ try:
     response = llm.invoke(messages)
 except Exception as e:
     print(f"Error: {e}")
-```
+````
 
-### 4. Cache Results
+### 3. Cache Results
 
 Use LangChain's caching to avoid redundant API calls:
 

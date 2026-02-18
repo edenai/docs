@@ -7,11 +7,12 @@ Build conversational AI applications using Eden AI's OpenAI-compatible chat comp
 Eden AI V3 provides full OpenAI API compatibility with multi-provider support. The endpoint follows OpenAI's exact format, making it a drop-in replacement.
 
 **Endpoint:**
+
 ```
 POST /v3/llm/chat/completions
 ```
 
-**Important:** V3 uses **mandatory streaming** via Server-Sent Events (SSE). All responses are streamed.
+**Note:** Streaming is optional. When enabled, responses are delivered via Server-Sent Events (SSE). See [Streaming Responses](./streaming) for streaming examples.
 
 ## Model Format
 
@@ -22,8 +23,9 @@ provider/model
 ```
 
 **Examples:**
+
 - `openai/gpt-4`
-- `anthropic/claude-3-5-sonnet-20241022`
+- `anthropic/claude-sonnet-4-5`
 - `google/gemini-pro`
 - `cohere/command-r-plus`
 
@@ -43,21 +45,13 @@ payload = {
     "model": "openai/gpt-4",
     "messages": [
         {"role": "user", "content": "Hello! How are you?"}
-    ],
-    "stream": True
+    ]
 }
 
-# Streaming response
-response = requests.post(url, headers=headers, json=payload, stream=True)
-
-for line in response.iter_lines():
-    if line:
-        line_str = line.decode('utf-8')
-        if line_str.startswith('data: '):
-            data = line_str[6:]  # Remove 'data: ' prefix
-            if data != '[DONE]':
-                print(data)
-    ```
+response = requests.post(url, headers=headers, json=payload)
+result = response.json()
+print(result["choices"][0]["message"]["content"])
+```
 
 ```javascript JavaScript
 const url = 'https://api.edenai.run/v3/llm/chat/completions';
@@ -68,8 +62,7 @@ const headers = {
 
 const payload = {
   model: 'openai/gpt-4',
-  messages: [{role: 'user', content: 'Hello!'}],
-  stream: true
+  messages: [{role: 'user', content: 'Hello!'}]
 };
 
 const response = await fetch(url, {
@@ -78,17 +71,9 @@ const response = await fetch(url, {
   body: JSON.stringify(payload)
 });
 
-const reader = response.body.getReader();
-const decoder = new TextDecoder();
-
-while (true) {
-  const {done, value} = await reader.read();
-  if (done) break;
-      
-  const chunk = decoder.decode(value);
-  console.log(chunk);
-}
-    ```
+const result = await response.json();
+console.log(result.choices[0].message.content);
+```
 
 ```bash cURL
 curl -X POST https://api.edenai.run/v3/llm/chat/completions \
@@ -96,10 +81,9 @@ curl -X POST https://api.edenai.run/v3/llm/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
     "model": "openai/gpt-4",
-    "messages": [{"role": "user", "content": "Hello!"}],
-    "stream": true
+    "messages": [{"role": "user", "content": "Hello!"}]
   }'
-    ```
+```
 </CodeGroup>
 
 ## Multi-Turn Conversations
@@ -109,26 +93,26 @@ Build conversations with message history:
 <CodeGroup>
 ```python Python
 import requests
+
+url = "https://api.edenai.run/v3/llm/chat/completions"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
 payload = {
-    "model": "anthropic/claude-3-5-sonnet-20241022",
+    "model": "anthropic/claude-sonnet-4-5",
     "messages": [
         {"role": "user", "content": "What is the capital of France?"},
         {"role": "assistant", "content": "The capital of France is Paris."},
         {"role": "user", "content": "What's the population?"}
-    ],
-    "stream": True
+    ]
 }
 
-response = requests.post(url, headers=headers, json=payload, stream=True)
-
-for line in response.iter_lines():
-    if line:
-        line_str = line.decode('utf-8')
-        if line_str.startswith('data: '):
-            data = line_str[6:]
-            if data != '[DONE]':
-                print(data)
-    ```
+response = requests.post(url, headers=headers, json=payload)
+result = response.json()
+print(result["choices"][0]["message"]["content"])
+```
 </CodeGroup>
 
 ## System Messages
@@ -138,6 +122,13 @@ Guide the model's behavior with system messages:
 <CodeGroup>
 ```python Python
 import requests
+
+url = "https://api.edenai.run/v3/llm/chat/completions"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
 payload = {
     "model": "openai/gpt-4",
     "messages": [
@@ -149,12 +140,13 @@ payload = {
             "role": "user",
             "content": "Tell me about artificial intelligence."
         }
-    ],
-    "stream": True
+    ]
 }
 
-response = requests.post(url, headers=headers, json=payload, stream=True)
-    ```
+response = requests.post(url, headers=headers, json=payload)
+result = response.json()
+print(result["choices"][0]["message"]["content"])
+```
 </CodeGroup>
 
 ## Temperature and Parameters
@@ -164,19 +156,26 @@ Control response creativity and behavior:
 <CodeGroup>
 ```python Python
 import requests
+
+url = "https://api.edenai.run/v3/llm/chat/completions"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
 payload = {
     "model": "openai/gpt-4",
     "messages": [
         {"role": "user", "content": "Write a creative story about a robot."}
     ],
     "temperature": 0.9,  # Higher = more creative (0-2)
-    "max_tokens": 500,   # Limit response length
-    "top_p": 1.0,        # Nucleus sampling
-    "stream": True
+    "max_tokens": 500    # Limit response length
 }
 
-response = requests.post(url, headers=headers, json=payload, stream=True)
-    ```
+response = requests.post(url, headers=headers, json=payload)
+result = response.json()
+print(result["choices"][0]["message"]["content"])
+```
 </CodeGroup>
 
 ## Available Parameters
@@ -185,27 +184,39 @@ response = requests.post(url, headers=headers, json=payload, stream=True)
 |-----------|------|---------|-------------|
 | `model` | string | Required | Model string (e.g., `openai/gpt-4`) |
 | `messages` | array | Required | Conversation messages |
-| `stream` | boolean | true | Enable streaming (mandatory in V3) |
+| `stream` | boolean | false | Enable streaming (uses SSE when true) |
 | `temperature` | float | 1.0 | Randomness (0-2) |
 | `max_tokens` | integer | - | Maximum response tokens |
 | `top_p` | float | 1.0 | Nucleus sampling threshold |
 | `frequency_penalty` | float | 0.0 | Penalize repeated tokens (-2 to 2) |
 | `presence_penalty` | float | 0.0 | Penalize topic repetition (-2 to 2) |
 
-## Response Format (Streaming)
+## Response Format
 
-Server-Sent Events format:
+Standard JSON response:
 
-```
-data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1677652288,"model":"gpt-4","choices":[{"index":0,"delta":{"role":"assistant"},"finish_reason":null}]}
-
-data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1677652288,"model":"gpt-4","choices":[{"index":0,"delta":{"content":"Hello"},"finish_reason":null}]}
-
-data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1677652288,"model":"gpt-4","choices":[{"index":0,"delta":{"content":"!"},"finish_reason":null}]}
-
-data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1677652288,"model":"gpt-4","choices":[{"index":0,"delta":{},"finish_reason":"stop"}]}
-
-data: [DONE]
+```json
+{
+  "id": "chatcmpl-123",
+  "object": "chat.completion",
+  "created": 1677652288,
+  "model": "gpt-4",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Hello! I'm doing well, thank you for asking."
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 12,
+    "completion_tokens": 15,
+    "total_tokens": 27
+  }
+}
 ```
 
 ## Available Models
@@ -216,9 +227,9 @@ data: [DONE]
 - `openai/gpt-3.5-turbo`
 
 ### Anthropic
-- `anthropic/claude-3-5-sonnet-20241022`
-- `anthropic/claude-3-opus-20240229`
-- `anthropic/claude-3-sonnet-20240229`
+- `anthropic/claude-sonnet-4-5`
+- `anthropic/claude-opus-4-5`
+- `anthropic/claude-sonnet-4-5`
 
 ### Google
 - `google/gemini-pro`
@@ -247,20 +258,17 @@ client = OpenAI(
 )
 
 # Use any provider through OpenAI SDK
-stream = client.chat.completions.create(
-    model="anthropic/claude-3-5-sonnet-20241022",
-    messages=[{"role": "user", "content": "Hello!"}],
-    stream=True
+response = client.chat.completions.create(
+    model="anthropic/claude-sonnet-4-5",
+    messages=[{"role": "user", "content": "Hello!"}]
 )
 
-for chunk in stream:
-    if chunk.choices[0].delta.content:
-        print(chunk.choices[0].delta.content, end='')
-    ```
+print(response.choices[0].message.content)
+```
 </CodeGroup>
 
 ## Next Steps
 
-- [Streaming Responses](./streaming) - Handle Server-Sent Events
+- [Streaming Responses](./streaming) - Handle Server-Sent Events for real-time output
 - [File Attachments](./file-attachments) - Send images and documents
 - [Working with Media Files](./working-with-media) - Send images and files to LLMs

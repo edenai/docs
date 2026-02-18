@@ -1,6 +1,7 @@
 ---
 icon: "question"
 ---
+
 # Frequently Asked Questions
 
 Common questions about Eden AI V3 API.
@@ -10,6 +11,7 @@ Common questions about Eden AI V3 API.
 ### What is Eden AI V3?
 
 Eden AI V3 is a unified AI API platform that provides:
+
 - **Universal AI Endpoint** - Single endpoint for all non-LLM features (text, OCR, image, translation)
 - **OpenAI-Compatible LLM** - Drop-in replacement for OpenAI's chat completions API
 - **Multi-Provider Support** - Access 50+ AI providers through one interface
@@ -20,6 +22,7 @@ Eden AI V3 is a unified AI API platform that provides:
 Choose based on your use case:
 
 **Use `/v3/llm/chat/completions` for:**
+
 - Conversational AI and chatbots
 - Text generation and completion
 - Vision/multimodal AI (analyzing images with LLMs)
@@ -27,6 +30,7 @@ Choose based on your use case:
 - Any use case requiring OpenAI-compatible format
 
 **Use `/v3/universal-ai` for:**
+
 - Text analysis (sentiment, moderation, AI detection)
 - OCR and document parsing
 - Image generation and analysis
@@ -40,23 +44,27 @@ See [Getting Started](./introduction) for detailed endpoint comparison.
 V3 uses a **model string** to specify what feature and provider to use:
 
 **Universal AI format:**
+
 ```
 feature/subfeature/provider[/model]
 ```
 
 Examples:
+
 - `text/moderation/openai`
 - `ocr/financial_parser/google`
 - `image/generation/openai/dall-e-3`
 
 **LLM format (simplified):**
+
 ```
 provider/model
 ```
 
 Examples:
+
 - `openai/gpt-4`
-- `anthropic/claude-3-5-sonnet-20241022`
+- `anthropic/claude-sonnet-4-5`
 - `google/gemini-pro`
 
 See [Universal AI Getting Started](../how-to/universal-ai/getting-started) and [Chat Completions](../how-to/llm/chat-completions) for details.
@@ -75,6 +83,7 @@ See [Authentication Guide](../how-to/authentication/bearer-token-auth) for detai
 ### Can I use my own provider API keys?
 
 Yes! You can bypass Eden AI billing by providing your own provider API keys. This is useful for:
+
 - Using existing provider credits
 - Testing specific provider features
 - Cost optimization
@@ -84,11 +93,13 @@ Contact support or check your dashboard for instructions on adding custom provid
 ### What are the rate limits?
 
 Rate limits vary by:
+
 - Your account tier
 - Provider being used
 - Specific feature
 
 Default limits are displayed in your dashboard. Rate limit headers are included in API responses:
+
 - `X-RateLimit-Limit` - Total requests allowed
 - `X-RateLimit-Remaining` - Requests remaining
 - `X-RateLimit-Reset` - Time when limit resets
@@ -98,6 +109,7 @@ When rate limited, you'll receive a `429 Too Many Requests` response.
 ### How much does it cost?
 
 Pricing is **pay-as-you-go** based on:
+
 - Provider used
 - Feature/model called
 - Volume of data processed
@@ -121,6 +133,7 @@ See [Monitor Usage and Costs](../how-to/cost-management/monitor-usage) for track
 V3 supports three methods:
 
 **1. File Upload (recommended for reuse):**
+
 ```python
 # Upload once
 response = requests.post(
@@ -135,6 +148,7 @@ payload = {"model": "ocr/financial_parser/google", "input": {"file": file_id}}
 ```
 
 **2. File URL:**
+
 ```python
 payload = {
     "model": "ocr/financial_parser/google",
@@ -143,6 +157,7 @@ payload = {
 ```
 
 **3. Base64 (inline):**
+
 ```python
 payload = {
     "model": "text/moderation/openai",
@@ -155,6 +170,7 @@ See [Upload Files](../how-to/upload/upload-files) for detailed guide.
 ### How long are uploaded files stored?
 
 Files uploaded to `/v3/upload` are stored for **7 days** by default. After expiration:
+
 - Files are automatically deleted
 - File IDs become invalid
 - You'll need to re-upload
@@ -175,42 +191,46 @@ The `expires_at` timestamp is included in upload responses:
 
 Limits vary by feature and provider:
 
-| Feature Type | Typical Limit | Notes |
-|--------------|---------------|-------|
-| OCR | 100 MB | Some providers support larger files |
-| Image Analysis | 20 MB | JPEG, PNG, WebP, GIF |
-| LLM Vision | 20 MB | Provider-dependent |
-| Document Translation | 50 MB | PDF, DOCX, TXT |
+| Feature Type         | Typical Limit | Notes                               |
+| -------------------- | ------------- | ----------------------------------- |
+| OCR                  | 100 MB        | Some providers support larger files |
+| Image Analysis       | 20 MB         | JPEG, PNG, WebP, GIF                |
+| LLM Vision           | 20 MB         | Provider-dependent                  |
+| Document Translation | 50 MB         | PDF, DOCX, TXT                      |
 
 Exceeding limits returns a `413 Payload Too Large` error with specific limit information.
 
 ### Which file formats are supported?
 
 **Images:**
+
 - JPEG, PNG, WebP, GIF
 - TIFF (OCR only)
 
 **Documents:**
+
 - PDF
 - DOCX, DOC
 - TXT, RTF
 
 **Audio:**
+
 - MP3, WAV (provider-dependent)
 
 Format support varies by provider. Check provider-specific documentation or use the [API Discovery](../how-to/discovery/explore-api) endpoint for details.
 
 ## LLM Features
 
-### Why is streaming mandatory in V3?
+### How does streaming work in V3?
 
-All LLM responses in V3 use **Server-Sent Events (SSE)** streaming to:
-- Reduce perceived latency
-- Provide real-time token generation
-- Match OpenAI's API behavior
-- Enable better UX for chat applications
+Streaming is optional in V3. When you enable streaming (`stream: true`), LLM responses use **Server-Sent Events (SSE)** to provide:
 
-Even when `stream: false` is sent, responses are streamed. See [Streaming Responses](../how-to/llm/streaming) for implementation guide.
+- Reduced perceived latency
+- Real-time token generation
+- OpenAI-compatible API behavior
+- Better UX for chat applications
+
+You can also use V3 without streaming by setting `stream: false`. See [Streaming Responses](../how-to/llm/streaming) for implementation guide.
 
 ### How do I send images to LLMs?
 
@@ -237,6 +257,7 @@ payload = {
 ```
 
 Supports:
+
 - Image URLs
 - Base64 data URLs (`data:image/jpeg;base64,...`)
 - Uploaded file UUIDs
@@ -245,12 +266,12 @@ See [Working with Media Files](../how-to/llm/working-with-media) for complete gu
 
 ### Which providers support vision/multimodal?
 
-| Provider | Models | Image Support | File Support |
-|----------|--------|---------------|--------------|
-| OpenAI | gpt-4o, gpt-4-turbo | ✓ | ✓ |
-| Anthropic | claude-3-opus, claude-3-5-sonnet | ✓ | ✓ |
-| Google | gemini-1.5-pro, gemini-1.5-flash | ✓ | ✓ |
-| Mistral | pixtral-12b | ✓ | - |
+| Provider  | Models                           | Image Support | File Support |
+| --------- | -------------------------------- | ------------- | ------------ |
+| OpenAI    | gpt-4o, gpt-4-turbo              | ✓             | ✓            |
+| Anthropic | claude-opus-4-5, claude-sonnet-4-5 | ✓             | ✓            |
+| Google    | gemini-1.5-pro, gemini-1.5-flash | ✓             | ✓            |
+| Mistral   | pixtral-12b                      | ✓             | -            |
 
 See [Vision Capabilities](../how-to/llm/vision-capabilities) for provider comparison.
 
@@ -276,6 +297,7 @@ payload = {
 ```
 
 Tool calling support varies by provider:
+
 - ✓ OpenAI (all GPT-4+ models)
 - ✓ Anthropic (Claude 3+)
 - ✓ Google (Gemini 1.5+)
@@ -348,7 +370,7 @@ result = call_with_fallback(
 
 ### I've been an Eden AI user for some time. Is the previous version going to disappear?
 
-Not yet. We'll continue supporting the previous version until the end of 2026. You can 
+Not yet. We'll continue supporting the previous version until the end of 2026. You can
 find everything here [https://old-app.edenai.run](https://old-app.edenai.run)
 
 Also, you can find the documentation [here](https://old-docs.edenai.co)
@@ -360,6 +382,7 @@ Also, you can find the documentation [here](https://old-docs.edenai.co)
 **Cause:** Invalid or missing API token
 
 **Solutions:**
+
 - Verify token is correct
 - Check `Authorization` header format: `Bearer YOUR_API_KEY`
 - Ensure token hasn't been revoked
@@ -378,6 +401,7 @@ headers = {
 **Cause:** Account has insufficient credits
 
 **Solutions:**
+
 - Add credits in dashboard
 - Check current balance
 - Review cost per request in responses
@@ -387,6 +411,7 @@ headers = {
 **Cause:** Invalid endpoint or model string
 
 **Solutions:**
+
 - Verify endpoint URL is correct
 - Check model string format matches pattern
 - Use `/v3/info` to discover available features
@@ -405,6 +430,7 @@ headers = {
 **Cause:** Invalid request body or parameters
 
 **Common issues:**
+
 - Missing required fields
 - Invalid parameter types
 - File format not supported
@@ -429,6 +455,7 @@ headers = {
 **Cause:** Rate limit exceeded
 
 **Solutions:**
+
 - Implement exponential backoff
 - Check `X-RateLimit-Reset` header
 - Upgrade account tier for higher limits
@@ -455,18 +482,6 @@ def call_with_retry(url, payload, max_retries=3):
 
 **Cause:** Model string doesn't match expected pattern
 
-**For Universal AI:** Must be `feature/subfeature/provider[/model]`
-
-```python
-# Wrong
-"text-moderation-openai"  # ❌
-"openai/text/moderation"  # ❌
-
-# Correct
-"text/moderation/openai"  # ✓
-"text/moderation/openai/gpt-4"  # ✓
-```
-
 **For LLM:** Must be `provider/model`
 
 ```python
@@ -483,6 +498,7 @@ def call_with_retry(url, payload, max_retries=3):
 **Cause:** Upstream provider experiencing issues
 
 **Solutions:**
+
 - Check [Eden AI Status Page](https://app-edenai.instatus.com/)
 - Try alternative provider for same feature
 - Implement retry logic with exponential backoff

@@ -80,9 +80,9 @@ provider/model_name
 - `openai/gpt-4-turbo`
 - `openai/gpt-4o`
 - `openai/gpt-4o-mini`
-- `anthropic/claude-3-opus`
-- `anthropic/claude-3-sonnet`
-- `anthropic/claude-3-5-sonnet`
+- `anthropic/claude-opus-4-5`
+- `anthropic/claude-sonnet-4-5`
+- `anthropic/claude-haiku-4-5`
 - `google/gemini-pro`
 - `google/gemini-1.5-pro`
 - `cohere/command-r-plus`
@@ -209,7 +209,7 @@ curl -X POST https://api.edenai.run/v3/llm/chat/completions \
 **With system message:**
 ```json
 {
-  "model": "anthropic/claude-3-sonnet",
+  "model": "anthropic/claude-sonnet-4-5",
   "messages": [
     {
       "role": "system",
@@ -262,7 +262,7 @@ curl -X POST https://api.edenai.run/v3/llm/chat/completions \
 **Document analysis with uploaded file:**
 ```json
 {
-  "model": "anthropic/claude-3-opus",
+  "model": "anthropic/claude-opus-4-5",
   "messages": [
     {
       "role": "user",
@@ -311,10 +311,9 @@ List all available LLM models.
     {
       "provider": "anthropic",
       "models": [
-        "claude-3-opus",
-        "claude-3-sonnet",
-        "claude-3-haiku",
-        "claude-3-5-sonnet"
+        "claude-opus-4-5",
+        "claude-sonnet-4-5",
+        "claude-haiku-4-5"
       ]
     },
     {
@@ -1994,7 +1993,7 @@ response = requests.post(
     f"{BASE_URL}/llm/chat/completions",
     headers={"Authorization": f"Bearer {API_KEY}"},
     json={
-        "model": "anthropic/claude-3-sonnet",
+        "model": "anthropic/claude-sonnet-4-5",
         "messages": [
             {
                 "role": "user",

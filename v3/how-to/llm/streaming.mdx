@@ -4,7 +4,7 @@ Learn how to handle streaming responses from the V3 LLM endpoint using Server-Se
 
 ## Overview
 
-V3 requires **mandatory streaming** for all LLM responses. All chat completions are delivered via Server-Sent Events (SSE), providing real-time token-by-token output.
+When streaming is enabled in V3, LLM responses are delivered via Server-Sent Events (SSE), providing real-time token-by-token output. Streaming is optional - you can also use V3 with non-streaming requests.
 
 **Benefits:**
 - Immediate response feedback
@@ -152,7 +152,7 @@ client = OpenAI(
 )
 
 stream = client.chat.completions.create(
-    model="anthropic/claude-3-5-sonnet-20241022",
+    model="anthropic/claude-sonnet-4-5",
     messages=[{"role": "user", "content": "Tell me a short story"}],
     stream=True
 )

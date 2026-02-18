@@ -24,20 +24,19 @@ Most integrations only require two simple changes:
 from openai import OpenAI
 
 client = OpenAI(
-api_key="YOUR_EDEN_AI_API_KEY",
-base_url="https://api.edenai.run/v3/llm"
+    api_key="YOUR_EDEN_AI_API_KEY",
+    base_url="https://api.edenai.run/v3/llm"
 )
 
 # Now use any provider through the OpenAI SDK
-
 response = client.chat.completions.create(
-model="anthropic/claude-sonnet-4-5",
-messages=[{"role": "user", "content": "Hello!"}]
+    model="anthropic/claude-sonnet-4-5",
+    messages=[{"role": "user", "content": "Hello!"}]
 )
 print(response.choices[0].message.content)
 ```
 
-````typescript TypeScript (OpenAI SDK)
+```typescript TypeScript (OpenAI SDK)
 import OpenAI from 'openai';
 
 const client = new OpenAI({
@@ -51,7 +50,7 @@ const response = await client.chat.completions.create({
   messages: [{role: 'user', content: 'Hello!'}]
 });
 console.log(response.choices[0].message.content);
-    ```
+```
 </CodeGroup>
 
 ## Integration Categories
@@ -127,7 +126,7 @@ model="anthropic/claude-sonnet-4-5"
 
 # Try Google
 model="google/gemini-pro"
-````
+```
 
 ## Beyond LLMs: Universal AI
 

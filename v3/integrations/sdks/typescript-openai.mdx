@@ -13,15 +13,15 @@ Install the OpenAI SDK for Node.js:
 <CodeGroup>
 ```bash npm
 npm install openai
-    ```
+```
 
 ```bash yarn
 yarn add openai
-    ```
+```
 
 ```bash pnpm
 pnpm add openai
-    ```
+```
 </CodeGroup>
 
 ## Quick Start
@@ -53,7 +53,7 @@ async function main() {
 }
 
 main();
-    ```
+```
 
 ```javascript JavaScript (ESM)
 import OpenAI from 'openai';
@@ -75,7 +75,7 @@ for await (const chunk of stream) {
     process.stdout.write(content);
   }
 }
-    ```
+```
 
 ```javascript JavaScript (CommonJS)
 const OpenAI = require('openai');
@@ -101,7 +101,7 @@ async function main() {
 }
 
 main();
-    ```
+```
 </CodeGroup>
 
 ## Available Models
@@ -184,7 +184,7 @@ async function chat() {
 }
 
 chat();
-    ```
+```
 </CodeGroup>
 
 ## Advanced Parameters
@@ -219,7 +219,7 @@ for await (const chunk of stream) {
     process.stdout.write(content);
   }
 }
-    ```
+```
 </CodeGroup>
 
 ## Vision Capabilities
@@ -280,7 +280,7 @@ async function analyzeImage() {
 }
 
 analyzeImage();
-    ```
+```
 </CodeGroup>
 
 ## Error Handling
@@ -328,7 +328,7 @@ async function safeChat() {
 }
 
 safeChat();
-    ```
+```
 </CodeGroup>
 
 ## Express.js Integration
@@ -380,7 +380,7 @@ app.post('/api/chat', async (req, res) => {
 app.listen(3000, () => {
   console.log('Server running on http://localhost:3000');
 });
-    ```
+```
 </CodeGroup>
 
 ## React Integration
@@ -474,7 +474,7 @@ export function ChatComponent() {
     </div>
   );
 }
-    ```
+```
 </CodeGroup>
 
 ## Environment Variables
@@ -484,7 +484,7 @@ Use `.env` files for configuration:
 <CodeGroup>
 ```bash .env
 EDEN_AI_API_KEY=your_api_key_here
-    ```
+```
 
 ```typescript TypeScript
 import 'dotenv/config';
@@ -494,7 +494,7 @@ const client = new OpenAI({
   apiKey: process.env.EDEN_AI_API_KEY!,
   baseURL: 'https://api.edenai.run/v3/llm',
 });
-    ```
+```
 </CodeGroup>
 
 ## Complete Chat CLI Example
@@ -575,7 +575,7 @@ async function main() {
 }
 
 main();
-    ```
+```
 </CodeGroup>
 
 ## List Available Models
@@ -615,7 +615,7 @@ async function listModels() {
 }
 
 listModels();
-    ```
+```
 </CodeGroup>
 
 ## Next Steps

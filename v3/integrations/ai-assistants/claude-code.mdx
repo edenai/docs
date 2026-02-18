@@ -30,17 +30,16 @@ export ANTHROPIC_API_KEY="YOUR_EDEN_AI_API_KEY"
 export ANTHROPIC_BASE_URL="https://api.edenai.run/v3/llm"
 
 # Run Claude Code
-
 claude-code
 ```
 
-````powershell PowerShell
+```powershell PowerShell
 # Windows PowerShell
 $env:ANTHROPIC_API_KEY="YOUR_EDEN_AI_API_KEY"
 $env:ANTHROPIC_BASE_URL="https://api.edenai.run/v3/llm"
 
 claude-code
-    ```
+```
 </CodeGroup>
 
 ### Option 2: Configuration File
@@ -54,7 +53,7 @@ Create or edit the Claude Code configuration file:
   "base_url": "https://api.edenai.run/v3/llm",
   "model": "anthropic/claude-sonnet-4-5"
 }
-    ```
+```
 </CodeGroup>
 
 ## Using Different Models
@@ -74,7 +73,7 @@ claude-code
 # Use Gemini Pro
 export ANTHROPIC_MODEL="google/gemini-pro"
 claude-code
-    ```
+```
 </CodeGroup>
 
 ## Model Format
@@ -105,14 +104,14 @@ Make the configuration permanent by adding to your shell profile:
 export ANTHROPIC_API_KEY="YOUR_EDEN_AI_API_KEY"
 export ANTHROPIC_BASE_URL="https://api.edenai.run/v3/llm"
 export ANTHROPIC_MODEL="anthropic/claude-sonnet-4-5"
-    ```
+```
 </CodeGroup>
 
 Reload your shell:
 
 ```bash
 source ~/.bashrc  # or ~/.zshrc
-````
+```
 
 ## Custom Model Switching Script
 
@@ -123,26 +122,25 @@ Create a script to easily switch between models:
 #!/bin/bash
 
 case "$1" in
-claude)
-export ANTHROPIC_MODEL="anthropic/claude-sonnet-4-5"
-echo "Switched to Claude 3.5 Sonnet"
-;;
-gpt4)
-export ANTHROPIC_MODEL="openai/gpt-4"
-echo "Switched to GPT-4"
-;;
-gemini)
-export ANTHROPIC_MODEL="google/gemini-pro"
-echo "Switched to Gemini Pro"
-;;
-\*)
-echo "Usage: source switch-model.sh [claude|gpt4|gemini]"
-;;
+  claude)
+    export ANTHROPIC_MODEL="anthropic/claude-sonnet-4-5"
+    echo "Switched to Claude 3.5 Sonnet"
+    ;;
+  gpt4)
+    export ANTHROPIC_MODEL="openai/gpt-4"
+    echo "Switched to GPT-4"
+    ;;
+  gemini)
+    export ANTHROPIC_MODEL="google/gemini-pro"
+    echo "Switched to Gemini Pro"
+    ;;
+  *)
+    echo "Usage: source switch-model.sh [claude|gpt4|gemini]"
+    ;;
 esac
 
 claude-code
 ```
-
 </CodeGroup>
 
 Usage:
@@ -204,7 +202,7 @@ If you need to pass custom headers (e.g., for analytics):
     "X-Custom-Header": "value"
   }
 }
-    ```
+```
 </CodeGroup>
 
 ### Timeout Configuration
@@ -218,7 +216,7 @@ Adjust timeouts for longer requests:
   "base_url": "https://api.edenai.run/v3/llm",
   "timeout": 120000
 }
-    ```
+```
 </CodeGroup>
 
 ## Troubleshooting
@@ -304,22 +302,19 @@ Use Claude Code in Git hooks for automated code review:
 #!/bin/bash
 
 # Export Eden AI configuration
-
 export ANTHROPIC_API_KEY="YOUR_EDEN_AI_API_KEY"
 export ANTHROPIC_BASE_URL="https://api.edenai.run/v3/llm"
 
 # Get changed files
-
 changed_files=$(git diff --cached --name-only --diff-filter=ACM | grep '\.py$')
 
 if [ -n "$changed_files" ]; then
-echo "Reviewing changed Python files..."
-for file in $changed_files; do
+  echo "Reviewing changed Python files..."
+  for file in $changed_files; do
     claude-code "Quick security review" < "$file"
-done
+  done
 fi
 ```
-
 </CodeGroup>
 
 ## Next Steps

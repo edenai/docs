@@ -13,11 +13,12 @@ Install the OpenAI Python SDK:
 <CodeGroup>
 ```bash pip
 pip install openai
-    ```
+```
 
-````bash poetry
+```bash poetry
 poetry add openai
-    ```
+```
+
 </CodeGroup>
 
 ## Quick Start
@@ -29,22 +30,26 @@ Configure the OpenAI client to use Eden AI:
 from openai import OpenAI
 
 # Initialize client with Eden AI endpoint
+
 client = OpenAI(
-    api_key="YOUR_EDEN_AI_API_KEY",  # Get from https://app.edenai.run
-    base_url="https://api.edenai.run/v3/llm"
+api_key="YOUR_EDEN_AI_API_KEY", # Get from https://app.edenai.run
+base_url="https://api.edenai.run/v3/llm"
 )
 
 # Make a request
+
 response = client.chat.completions.create(
-    model="openai/gpt-4",
-    messages=[
-        {"role": "user", "content": "Hello! How are you?"}
-    ]
+model="openai/gpt-4",
+messages=[
+{"role": "user", "content": "Hello! How are you?"}
+]
 )
 
 # Print the response
+
 print(response.choices[0].message.content)
-    ```
+
+```
 </CodeGroup>
 
 ## Available Models
@@ -115,7 +120,8 @@ response = client.chat.completions.create(
 )
 
 print(response.choices[0].message.content)
-    ```
+```
+
 </CodeGroup>
 
 ## Advanced Parameters
@@ -127,24 +133,25 @@ Control model behavior with standard OpenAI parameters:
 from openai import OpenAI
 
 client = OpenAI(
-    api_key="YOUR_EDEN_AI_API_KEY",
-    base_url="https://api.edenai.run/v3/llm"
+api_key="YOUR_EDEN_AI_API_KEY",
+base_url="https://api.edenai.run/v3/llm"
 )
 
 response = client.chat.completions.create(
-    model="openai/gpt-4",
-    messages=[
-        {"role": "user", "content": "Write a creative story about AI."}
-    ],
-    temperature=0.9,           # Higher = more creative (0-2)
-    max_tokens=500,            # Limit response length
-    top_p=1.0,                 # Nucleus sampling
-    frequency_penalty=0.0,     # Penalize repetition (-2 to 2)
-    presence_penalty=0.0       # Penalize topic repetition (-2 to 2)
+model="openai/gpt-4",
+messages=[
+{"role": "user", "content": "Write a creative story about AI."}
+],
+temperature=0.9, # Higher = more creative (0-2)
+max_tokens=500, # Limit response length
+top_p=1.0, # Nucleus sampling
+frequency_penalty=0.0, # Penalize repetition (-2 to 2)
+presence_penalty=0.0 # Penalize topic repetition (-2 to 2)
 )
 
 print(response.choices[0].message.content)
-    ```
+
+```
 </CodeGroup>
 
 ## Vision Capabilities
@@ -185,7 +192,8 @@ response = client.chat.completions.create(
 )
 
 print(response.choices[0].message.content)
-    ```
+```
+
 </CodeGroup>
 
 ## Async Support
@@ -198,10 +206,10 @@ from openai import AsyncOpenAI
 import asyncio
 
 async def main():
-    client = AsyncOpenAI(
-        api_key="YOUR_EDEN_AI_API_KEY",
-        base_url="https://api.edenai.run/v3/llm"
-    )
+client = AsyncOpenAI(
+api_key="YOUR_EDEN_AI_API_KEY",
+base_url="https://api.edenai.run/v3/llm"
+)
 
     response = await client.chat.completions.create(
         model="openai/gpt-4",
@@ -213,7 +221,8 @@ async def main():
     print(response.choices[0].message.content)
 
 asyncio.run(main())
-    ```
+
+```
 </CodeGroup>
 
 ## Error Handling
@@ -246,7 +255,8 @@ except openai.APIError as e:
     print(f"API error: {e}")
 except Exception as e:
     print(f"Unexpected error: {e}")
-    ```
+```
+
 </CodeGroup>
 
 ## Complete Example
@@ -259,10 +269,10 @@ from openai import OpenAI
 import sys
 
 def chat_with_ai():
-    client = OpenAI(
-        api_key="YOUR_EDEN_AI_API_KEY",
-        base_url="https://api.edenai.run/v3/llm"
-    )
+client = OpenAI(
+api_key="YOUR_EDEN_AI_API_KEY",
+base_url="https://api.edenai.run/v3/llm"
+)
 
     messages = [
         {"role": "system", "content": "You are a helpful assistant."}
@@ -297,9 +307,10 @@ def chat_with_ai():
         # Add assistant response to history
         messages.append({"role": "assistant", "content": assistant_response})
 
-if __name__ == "__main__":
-    chat_with_ai()
-    ```
+if **name** == "**main**":
+chat_with_ai()
+
+```
 </CodeGroup>
 
 ## List Available Models
@@ -329,7 +340,8 @@ for provider, model_list in providers.items():
     print(f"\n{provider}:")
     for model_id in model_list:
         print(f"  - {model_id}")
-    ```
+```
+
 </CodeGroup>
 
 ## Environment Variables
@@ -342,14 +354,16 @@ import os
 from openai import OpenAI
 
 client = OpenAI(
-    api_key=os.getenv("EDEN_AI_API_KEY"),
-    base_url="https://api.edenai.run/v3/llm"
+api_key=os.getenv("EDEN_AI_API_KEY"),
+base_url="https://api.edenai.run/v3/llm"
 )
-    ```
+
+```
 
 ```bash .env
 EDEN_AI_API_KEY=your_api_key_here
-    ```
+```
+
 </CodeGroup>
 
 Use with `python-dotenv`:
@@ -363,10 +377,11 @@ from openai import OpenAI
 load_dotenv()
 
 client = OpenAI(
-    api_key=os.getenv("EDEN_AI_API_KEY"),
-    base_url="https://api.edenai.run/v3/llm"
+api_key=os.getenv("EDEN_AI_API_KEY"),
+base_url="https://api.edenai.run/v3/llm"
 )
-    ```
+
+```
 </CodeGroup>
 
 ## Troubleshooting
@@ -377,7 +392,7 @@ Ensure your API key is correct and has the `Bearer` prefix when using raw reques
 
 ```python
 headers = {"Authorization": f"Bearer {api_key}"}
-````
+```
 
 ### Rate Limiting
 
@@ -407,8 +422,8 @@ print(f"Rate limited. Waiting {wait_time}s...")
 time.sleep(wait_time)
 else:
 raise
-```
 
+```
 </CodeGroup>
 
 
@@ -417,3 +432,4 @@ raise
 - [Vision Capabilities](../../how-to/llm/vision-capabilities) - Working with images
 - [File Attachments](../../how-to/llm/file-attachments) - Uploading files
 - [Provider Comparison](../../how-to/llm/provider-comparison) - Choosing the right model
+```

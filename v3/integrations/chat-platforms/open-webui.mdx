@@ -34,7 +34,7 @@ docker run -d \
   -e OPENAI_API_KEY=YOUR_EDEN_AI_API_KEY \
   -e WEBUI_AUTH=False `# Disable authentication for single-user setup` \
   ghcr.io/open-webui/open-webui:main
-    ```
+```
 </CodeGroup>
 
 Access Open WebUI at `http://localhost:3000`
@@ -63,12 +63,12 @@ services:
 
 volumes:
   open-webui:
-    ```
+```
 
 ```bash .env
 EDEN_AI_API_KEY=your_eden_ai_api_key_here
 WEBUI_SECRET_KEY=your_random_secret_key_here
-    ```
+```
 
 ```bash bash
 # Start Open WebUI
@@ -79,7 +79,7 @@ docker compose logs -f
 
 # Stop
 docker compose down
-    ```
+```
 </CodeGroup>
 
 ## Configuration
@@ -100,7 +100,7 @@ In the Open WebUI interface:
 
 <CodeBlocks>
   <CodeBlock title="Models to Add">
-    ```
+```
     anthropic/claude-sonnet-4-5
     anthropic/claude-opus-4-5
     anthropic/claude-haiku-4-5
@@ -111,7 +111,7 @@ In the Open WebUI interface:
     google/gemini-pro
     google/gemini-1.5-pro
     cohere/command-r-plus
-    ```
+```
   </CodeBlock>
 </CodeBlocks>
 
@@ -144,7 +144,7 @@ CHUNK_OVERLAP=100
 # Optional: Image Generation
 ENABLE_IMAGE_GENERATION=true
 IMAGE_GENERATION_MODEL=dall-e-3
-    ```
+```
 </CodeGroup>
 
 ## Features
@@ -173,7 +173,7 @@ services:
       - RAG_EMBEDDING_MODEL=openai/text-embedding-3-small
       - RAG_EMBEDDING_ENGINE=openai
       - RAG_EMBEDDING_OPENAI_BATCH_SIZE=1
-    ```
+```
 </CodeGroup>
 
 **Usage:**
@@ -195,7 +195,7 @@ IMAGE_GENERATION_ENGINE=openai
 
 # Use Eden AI endpoint
 AUTOMATIC1111_BASE_URL=https://api.edenai.run/v3
-    ```
+```
 </CodeGroup>
 
 **Usage:**
@@ -210,7 +210,7 @@ Enable web search for up-to-date information:
 ENABLE_RAG_WEB_SEARCH=true
 RAG_WEB_SEARCH_ENGINE=searxng
 SEARXNG_QUERY_URL=https://searx.be/search?q=<query>
-    ```
+```
 </CodeGroup>
 
 ### Voice Input
@@ -222,7 +222,7 @@ Enable voice-to-text:
 ENABLE_AUDIO=true
 AUDIO_STT_ENGINE=openai
 AUDIO_STT_MODEL=whisper-1
-    ```
+```
 </CodeGroup>
 
 ## Advanced Configuration
@@ -244,7 +244,7 @@ services:
       # Additional endpoints (optional)
       - OPENAI_API_BASE_URLS=https://api.edenai.run/v3/llm,https://api.openai.com/v1
       - OPENAI_API_KEYS=${EDEN_AI_API_KEY},${OPENAI_API_KEY}
-    ```
+```
 </CodeGroup>
 
 ### Custom Model Metadata
@@ -285,7 +285,7 @@ Define model capabilities and pricing:
     }
   ]
 }
-    ```
+```
 </CodeGroup>
 
 ### User Permissions
@@ -304,7 +304,7 @@ ADMIN_EMAIL=admin@example.com
 # Model access control
 ENABLE_MODEL_FILTER=true
 MODEL_FILTER_LIST=anthropic/claude-sonnet-4-5,openai/gpt-4
-    ```
+```
 </CodeGroup>
 
 ### Persistent Storage
@@ -323,7 +323,7 @@ services:
       - ./models.json:/app/backend/models.json:ro
       # User uploads
       - ./uploads:/app/backend/uploads
-    ```
+```
 </CodeGroup>
 
 ## Security
@@ -346,7 +346,7 @@ ENABLE_OAUTH_SIGNUP=true
 OAUTH_CLIENT_ID=your_client_id
 OAUTH_CLIENT_SECRET=your_client_secret
 OAUTH_PROVIDER_NAME=Google
-    ```
+```
 </CodeGroup>
 
 ### HTTPS Setup
@@ -375,7 +375,7 @@ server {
     proxy_set_header Connection "upgrade";
   }
 }
-    ```
+```
 </CodeGroup>
 
 ### Rate Limiting
@@ -391,7 +391,7 @@ RATE_LIMIT_WINDOW=60
 
 # Per-user limits
 USER_PERMISSIONS_CHAT_DAILY_LIMIT=100
-    ```
+```
 </CodeGroup>
 
 ## Production Deployment
@@ -437,7 +437,7 @@ services:
       - ./ssl:/etc/ssl:ro
     depends_on:
       - open-webui
-    ```
+```
 </CodeGroup>
 
 ### Backup Strategy
@@ -460,7 +460,7 @@ docker cp open-webui:/tmp/backup.tar.gz "$BACKUP_DIR/"
 # docker compose exec postgres pg_dump -U user dbname > "$BACKUP_DIR/db.sql"
 
 echo "Backup completed: $BACKUP_DIR"
-    ```
+```
 </CodeGroup>
 
 ## Troubleshooting
@@ -566,7 +566,7 @@ RAG_EMBEDDING_MODEL=text-embedding-3-small
 
 # Use GPT-3.5 for simple tasks
 DEFAULT_MODEL=openai/gpt-3.5-turbo
-    ```
+```
 </CodeGroup>
 
 ### 2. Limit Token Usage
@@ -580,7 +580,7 @@ MAX_TOKENS=1000
 
 # Limit context
 MAX_CONTEXT_LENGTH=4000
-    ```
+```
 </CodeGroup>
 
 ### 3. Monitor Usage

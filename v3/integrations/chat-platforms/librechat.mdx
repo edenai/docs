@@ -34,7 +34,7 @@ cp .env.example .env
 
 # Start LibreChat
 docker compose up -d
-    ```
+```
 </CodeGroup>
 
 ### Option 2: Manual Installation
@@ -54,7 +54,7 @@ cp .env.example .env
 # Build and start
 npm run build
 npm run backend
-    ```
+```
 </CodeGroup>
 
 ## Configuration
@@ -85,7 +85,7 @@ MONGO_URI=mongodb://127.0.0.1:27017/LibreChat
 SESSION_SECRET=your_random_secret_here
 JWT_SECRET=your_jwt_secret_here
 JWT_REFRESH_SECRET=your_refresh_secret_here
-    ```
+```
 </CodeGroup>
 
 ### Step 2: Configure librechat.yaml
@@ -118,7 +118,7 @@ endpoints:
       summaryModel: "openai/gpt-3.5-turbo"
       forcePrompt: false
       modelDisplayLabel: "Eden AI"
-    ```
+```
 </CodeGroup>
 
 ### Step 3: Start LibreChat
@@ -130,7 +130,7 @@ docker compose up -d
 
 # Without Docker
 npm run backend
-    ```
+```
 </CodeGroup>
 
 Access LibreChat at `http://localhost:3080`
@@ -174,7 +174,7 @@ endpoints:
           - "google/gemini-1.5-pro"
           - "google/gemini-1.5-flash"
       modelDisplayLabel: "Google (Eden AI)"
-    ```
+```
 </CodeGroup>
 
 ## Features
@@ -217,7 +217,7 @@ endpoints:
               - "image/webp"
               - "image/gif"
       modelDisplayLabel: "Vision Models"
-    ```
+```
 </CodeGroup>
 
 ### Preset Prompts
@@ -251,7 +251,7 @@ endpoints:
           model: "google/gemini-1.5-pro"
           temperature: 0.3
           system_message: "You are a data analyst. Provide clear, data-driven insights."
-    ```
+```
 </CodeGroup>
 
 ## Advanced Configuration
@@ -282,7 +282,7 @@ endpoints:
         - "temperature"
         - "max_tokens"
         - "top_p"
-    ```
+```
 </CodeGroup>
 
 ### User Authentication
@@ -303,7 +303,7 @@ EMAIL_PASSWORD=your-app-password
 GOOGLE_CLIENT_ID=your-google-client-id
 GOOGLE_CLIENT_SECRET=your-google-client-secret
 GOOGLE_CALLBACK_URL=http://localhost:3080/oauth/google/callback
-    ```
+```
 </CodeGroup>
 
 ### Rate Limiting
@@ -324,7 +324,7 @@ rateLimits:
     ipWindowInMinutes: 60
     userMax: 5
     userWindowInMinutes: 60
-    ```
+```
 </CodeGroup>
 
 ### Conversation History
@@ -338,7 +338,7 @@ MONGO_URI=mongodb://127.0.0.1:27017/LibreChat
 
 # Or use MongoDB Atlas (cloud)
 # MONGO_URI=mongodb+srv://username:password@cluster.mongodb.net/LibreChat
-    ```
+```
 
 ```yaml docker-compose.yml
 services:
@@ -350,7 +350,7 @@ services:
       - ./data-node:/data/db
     ports:
       - 27017:27017
-    ```
+```
 </CodeGroup>
 
 ## Docker Deployment
@@ -387,7 +387,7 @@ services:
       - ./data-node:/data/db
     ports:
       - 27017:27017
-    ```
+```
 </CodeGroup>
 
 ### Deploy to Production
@@ -405,7 +405,7 @@ docker compose logs -f api
 
 # Check status
 docker compose ps
-    ```
+```
 </CodeGroup>
 
 ## Troubleshooting
@@ -491,11 +491,11 @@ Never commit API keys to version control:
 
 <CodeBlocks>
   <CodeBlock title=".gitignore">
-    ```
+```
     .env
     .env.local
     .env.production
-    ```
+```
   </CodeBlock>
 </CodeBlocks>
 
@@ -507,7 +507,7 @@ Never commit API keys to version control:
 NODE_ENV=production
 ALLOW_REGISTRATION=false
 SESSION_SECRET=strong_random_secret_here
-    ```
+```
 </CodeGroup>
 
 ### 3. Enable HTTPS
@@ -532,7 +532,7 @@ server {
     proxy_cache_bypass $http_upgrade;
   }
 }
-    ```
+```
 </CodeGroup>
 
 ### 4. Implement Rate Limiting
@@ -548,7 +548,7 @@ rateLimits:
   conversationsImport:
     ipMax: 5
     ipWindowInMinutes: 60
-    ```
+```
 </CodeGroup>
 
 ## Cost Optimization
@@ -566,7 +566,7 @@ endpoints:
       titleModel: "openai/gpt-3.5-turbo"
       # Use Claude Haiku for summaries (fast & cheap)
       summaryModel: "anthropic/claude-haiku-4-5"
-    ```
+```
 </CodeGroup>
 
 ### 2. Monitor Usage
@@ -586,7 +586,7 @@ endpoints:
     - name: "Eden AI"
       default:
         max_tokens: 1000  # Limit response length
-    ```
+```
 </CodeGroup>
 
 ## Example Use Cases

@@ -2,6 +2,12 @@
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
   "name": "Eden AI Documentation",
+  "integrations": {
+    "hotjar": {
+      "hjid": "6654925",
+      "hjsv": "6"
+    }
+  },
   "logo": {
     "light": "/logo/light.svg",
     "dark": "/logo/dark.svg",

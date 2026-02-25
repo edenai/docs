@@ -135,6 +135,8 @@ V3 supports three methods:
 **1. File Upload (recommended for reuse):**
 
 ```python
+import requests
+
 # Upload once
 response = requests.post(
     "https://api.edenai.run/v3/upload",
@@ -310,6 +312,8 @@ Tool calling support varies by provider:
 Use the built-in API discovery endpoints:
 
 ```python
+import requests
+
 # List all features
 response = requests.get(
     "https://api.edenai.run/v3/info",
@@ -464,6 +468,9 @@ headers = {
 
 ```python
 import time
+import requests
+
+headers = {"Authorization": "Bearer YOUR_API_KEY"}
 
 def call_with_retry(url, payload, max_retries=3):
     for attempt in range(max_retries):

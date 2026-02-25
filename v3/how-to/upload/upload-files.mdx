@@ -219,6 +219,13 @@ else:
 Upload once, use in multiple requests:
 
 ```python
+import requests
+
+upload_url = "https://api.edenai.run/v3/upload"
+universal_ai_url = "https://api.edenai.run/v3/universal-ai"
+headers = {"Authorization": "Bearer YOUR_API_KEY"}
+files = {"file": open("document.pdf", "rb")}
+
 # Upload file once
 upload_response = requests.post(upload_url, headers=headers, files=files)
 file_id = upload_response.json()["file_id"]
@@ -243,12 +250,17 @@ for model in features:
 Keep track of uploaded files:
 
 ```python
+import requests
+
+upload_url = "https://api.edenai.run/v3/upload"
+headers = {"Authorization": "Bearer YOUR_API_KEY"}
+
 uploaded_files = {}
 
 def upload_and_track(filepath, purpose=None):
     files = {"file": open(filepath, "rb")}
     data = {"purpose": purpose} if purpose else {}
-    
+
     response = requests.post(upload_url, headers=headers, files=files, data=data)
     result = response.json()
     
@@ -268,13 +280,18 @@ def upload_and_track(filepath, purpose=None):
 For large files, show upload progress:
 
 ```python
+import os
+import requests
 from tqdm import tqdm
+
+upload_url = "https://api.edenai.run/v3/upload"
+headers = {"Authorization": "Bearer YOUR_API_KEY"}
 
 def upload_with_progress(filepath):
     """Upload file with progress bar"""
-    
+
     file_size = os.path.getsize(filepath)
-    
+
     with open(filepath, 'rb') as f:
         with tqdm(total=file_size, unit='B', unit_scale=True) as pbar:
             files = {'file': f}
@@ -284,7 +301,7 @@ def upload_with_progress(filepath):
                 files=files
             )
             pbar.update(file_size)
-    
+
     return response.json()
 ```
 

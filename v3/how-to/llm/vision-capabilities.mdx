@@ -546,6 +546,8 @@ with open("image.jpg", "rb") as f:
 For reusable images:
 
 ```python
+import requests
+
 # Upload first
 upload_response = requests.post(
     "https://api.edenai.run/v3/upload",

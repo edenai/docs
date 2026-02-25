@@ -334,6 +334,7 @@ See [Explore the API](../how-to/discovery/explore-api) for details.
 
 Not directly in V3's simplified model string format. However, you can implement fallback logic in your application:
 
+{/* skip-test */}
 ```python
 def call_with_fallback(primary_model, fallback_model, input_data):
     try:
@@ -421,6 +422,7 @@ headers = {
 - Use `/v3/info` to discover available features
 - Ensure provider supports requested feature
 
+{/* skip-test */}
 ```python
 # Wrong
 "model": "openai/text-moderation"  # ❌ Invalid format

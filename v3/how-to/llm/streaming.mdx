@@ -208,6 +208,19 @@ Each JSON chunk follows OpenAI's format:
 ```python Python
 import json
 import requests
+
+url = "https://api.edenai.run/v3/llm/chat/completions"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+payload = {
+    "model": "openai/gpt-4",
+    "messages": [{"role": "user", "content": "Tell me a short story"}],
+    "stream": True
+}
+
+response = requests.post(url, headers=headers, json=payload, stream=True)
 for line in response.iter_lines():
     if line:
         line_str = line.decode('utf-8')
@@ -245,6 +258,17 @@ Handle connection errors and timeouts:
 import requests
 from requests.exceptions import Timeout, ConnectionError
 
+url = "https://api.edenai.run/v3/llm/chat/completions"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+payload = {
+    "model": "openai/gpt-4",
+    "messages": [{"role": "user", "content": "Tell me a short story"}],
+    "stream": True
+}
+
 try:
     response = requests.post(
         url,
@@ -279,6 +303,19 @@ Buffer tokens for smoother UI updates:
 import json
 import time
 import requests
+
+url = "https://api.edenai.run/v3/llm/chat/completions"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+payload = {
+    "model": "openai/gpt-4",
+    "messages": [{"role": "user", "content": "Tell me a short story"}],
+    "stream": True
+}
+
+response = requests.post(url, headers=headers, json=payload, stream=True)
 
 buffer = ""
 last_update = time.time()

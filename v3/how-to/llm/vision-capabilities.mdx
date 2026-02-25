@@ -105,6 +105,13 @@ console.log(result);
 <CodeGroup>
 ```python Python
 import requests
+
+url = "https://api.edenai.run/v3/llm/chat/completions"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
 payload = {
     "model": "anthropic/claude-sonnet-4-5",
     "messages": [
@@ -185,6 +192,13 @@ Identify objects, brands, and entities:
 <CodeGroup>
 ```python Python
 import requests
+
+url = "https://api.edenai.run/v3/llm/chat/completions"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
 payload = {
     "model": "openai/gpt-4o",
     "messages": [
@@ -267,6 +281,13 @@ Debug UI issues or analyze interfaces:
 <CodeGroup>
 ```python Python
 import requests
+
+url = "https://api.edenai.run/v3/llm/chat/completions"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
 payload = {
     "model": "openai/gpt-4o",
     "messages": [

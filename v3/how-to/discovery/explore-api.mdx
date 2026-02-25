@@ -24,6 +24,7 @@ Get a complete list of available features:
 import requests
 
 url = "https://api.edenai.run/v3/info"
+headers = {"Authorization": "Bearer YOUR_API_KEY"}
 
 response = requests.get(url, headers=headers)
 features = response.json()

@@ -173,7 +173,7 @@
             "groups": [
               {
                 "group": "AI Features",
-                "openapi": "openapi/v3-openapi.json"
+                "openapi": "https://api.edenai.run/v3/docs/openapi.json"
               },
               {
                 "group": "Cost Management",

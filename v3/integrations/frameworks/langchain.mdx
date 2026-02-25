@@ -451,9 +451,9 @@ from pydantic import BaseModel, Field
 # Define output schema
 
 class Person(BaseModel):
-name: str = Field(description="Person's name")
-age: int = Field(description="Person's age")
-occupation: str = Field(description="Person's occupation")
+    name: str = Field(description="Person's name")
+    age: int = Field(description="Person's age")
+    occupation: str = Field(description="Person's occupation")
 
 llm = ChatOpenAI(
 model="openai/gpt-4",

@@ -206,10 +206,10 @@ from openai import AsyncOpenAI
 import asyncio
 
 async def main():
-client = AsyncOpenAI(
-api_key="YOUR_EDEN_AI_API_KEY",
-base_url="https://api.edenai.run/v3/llm"
-)
+    client = AsyncOpenAI(
+        api_key="YOUR_EDEN_AI_API_KEY",
+        base_url="https://api.edenai.run/v3/llm"
+    )
 
     response = await client.chat.completions.create(
         model="openai/gpt-4",
@@ -269,10 +269,10 @@ from openai import OpenAI
 import sys
 
 def chat_with_ai():
-client = OpenAI(
-api_key="YOUR_EDEN_AI_API_KEY",
-base_url="https://api.edenai.run/v3/llm"
-)
+    client = OpenAI(
+        api_key="YOUR_EDEN_AI_API_KEY",
+        base_url="https://api.edenai.run/v3/llm"
+    )
 
     messages = [
         {"role": "system", "content": "You are a helpful assistant."}
@@ -307,8 +307,8 @@ base_url="https://api.edenai.run/v3/llm"
         # Add assistant response to history
         messages.append({"role": "assistant", "content": assistant_response})
 
-if **name** == "**main**":
-chat_with_ai()
+if __name__ == "__main__":
+    chat_with_ai()
 
 ```
 </CodeGroup>
@@ -404,24 +404,24 @@ import time
 from openai import OpenAI, RateLimitError
 
 client = OpenAI(
-api_key="YOUR_EDEN_AI_API_KEY",
-base_url="https://api.edenai.run/v3/llm"
+    api_key="YOUR_EDEN_AI_API_KEY",
+    base_url="https://api.edenai.run/v3/llm"
 )
 
 def create_completion_with_retry(messages, max_retries=3):
-for attempt in range(max_retries):
-try:
-return client.chat.completions.create(
-model="openai/gpt-4",
-messages=messages
-)
-except RateLimitError:
-if attempt < max_retries - 1:
-wait_time = 2 \*\* attempt # Exponential backoff
-print(f"Rate limited. Waiting {wait_time}s...")
-time.sleep(wait_time)
-else:
-raise
+    for attempt in range(max_retries):
+        try:
+            return client.chat.completions.create(
+                model="openai/gpt-4",
+                messages=messages
+            )
+        except RateLimitError:
+            if attempt < max_retries - 1:
+                wait_time = 2 ** attempt  # Exponential backoff
+                print(f"Rate limited. Waiting {wait_time}s...")
+                time.sleep(wait_time)
+            else:
+                raise
 
 ```
 </CodeGroup>

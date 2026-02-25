@@ -177,11 +177,11 @@
               },
               {
                 "group": "Cost Management",
-                "openapi": "openapi/v3-cost-management.json"
+                "openapi": "https://api.edenai.run/v2/info/splitted-schema/cost_management/"
               },
               {
                 "group": "User Management",
-                "openapi": "openapi/v3-user.json"
+                "openapi": "https://api.edenai.run/v2/info/splitted-schema/user/"
               }
             ]
           }

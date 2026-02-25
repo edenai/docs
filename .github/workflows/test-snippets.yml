@@ -1,0 +1,33 @@
+name: Test Documentation Snippets
+
+on:
+  pull_request:
+    paths:
+      - 'v3/**/*.mdx'
+      - 'tests/**'
+
+jobs:
+  syntax:
+    name: Syntax Validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r tests/requirements.txt
+      - run: pytest tests/test_snippets_syntax.py -v
+
+  execute:
+    name: Execution Tests
+    needs: syntax
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r tests/requirements.txt
+      - run: pytest tests/test_snippets_execute.py -v
+        env:
+          EDEN_AI_API_KEY: ${{ secrets.EDEN_AI_SANDBOX_TOKEN }}

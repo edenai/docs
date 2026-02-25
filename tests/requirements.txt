@@ -1,0 +1,8 @@
+pytest
+requests
+openai
+langchain
+langchain-openai
+pydantic
+python-dotenv
+aiohttp

@@ -1,0 +1,10 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Generated test modules
+tests/generated/
+
+# Environment config
+.env

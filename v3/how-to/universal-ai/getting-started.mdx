@@ -126,6 +126,13 @@ The `input` field varies based on the feature:
 <CodeGroup>
 ```python Python
 import requests
+
+url = "https://api.edenai.run/v3/universal-ai"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
 payload = {
     "model": "text/moderation/openai",
     "input": {"text": "Content to moderate"}
@@ -144,10 +151,17 @@ if result["output"]["nsfw_likelihood"] > 3:
 <CodeGroup>
 ```python Python
 import requests
+
+url = "https://api.edenai.run/v3/universal-ai"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
 # First upload the file
 upload_response = requests.post(
     "https://api.edenai.run/v3/upload",
-    headers={"Authorization": f"Bearer {API_KEY}"},
+    headers={"Authorization": "Bearer YOUR_API_KEY"},
     files={"file": open("document.pdf", "rb")}
 )
 file_id = upload_response.json()["file_id"]

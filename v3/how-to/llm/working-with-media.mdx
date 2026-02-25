@@ -141,6 +141,12 @@ For inline images or when URLs aren't available:
 import base64
 import requests
 
+url = "https://api.edenai.run/v3/llm/chat/completions"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
 # Read and encode image
 with open("image.jpg", "rb") as f:
     image_data = base64.b64encode(f.read()).decode('utf-8')
@@ -313,6 +319,12 @@ For inline document processing:
 import base64
 import requests
 
+url = "https://api.edenai.run/v3/llm/chat/completions"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
 # Read and encode PDF
 with open("invoice.pdf", "rb") as f:
     pdf_data = base64.b64encode(f.read()).decode('utf-8')
@@ -350,6 +362,13 @@ Send multiple images in a single message:
 <CodeGroup>
 ```python Python
 import requests
+
+url = "https://api.edenai.run/v3/llm/chat/completions"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
 payload = {
     "model": "openai/gpt-4o",
     "messages": [

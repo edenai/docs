@@ -564,6 +564,13 @@ Files uploaded to `/v3/upload` persist for 7 days:
 <CodeGroup>
 ```python Python
 import requests
+
+url = "https://api.edenai.run/v3/llm/chat/completions"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
 # Upload once
 upload_response = requests.post(
     "https://api.edenai.run/v3/upload",
@@ -573,6 +580,7 @@ upload_response = requests.post(
 file_id = upload_response.json()["file_id"]
 
 # Use in multiple requests over the next 7 days
+questions = ["Summarize the key findings", "What are the recommendations?"]
 for question in questions:
     payload = {
         "model": "openai/gpt-4o",

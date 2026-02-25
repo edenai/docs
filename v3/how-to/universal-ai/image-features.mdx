@@ -52,6 +52,13 @@ Detect and identify objects in images:
 <CodeGroup>
 ```python Python
 import requests
+
+url = "https://api.edenai.run/v3/universal-ai"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
 # Upload image
 upload_url = "https://api.edenai.run/v3/upload"
 upload_headers = {"Authorization": "Bearer YOUR_API_KEY"}
@@ -83,6 +90,15 @@ Detect faces and facial attributes:
 <CodeGroup>
 ```python Python
 import requests
+
+url = "https://api.edenai.run/v3/universal-ai"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+upload_url = "https://api.edenai.run/v3/upload"
+upload_headers = {"Authorization": "Bearer YOUR_API_KEY"}
+
 # Upload image
 files = {"file": open("people.jpg", "rb")}
 upload_response = requests.post(upload_url, headers=upload_headers, files=files)
@@ -114,6 +130,15 @@ Remove backgrounds from images:
 <CodeGroup>
 ```python Python
 import requests
+
+url = "https://api.edenai.run/v3/universal-ai"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+upload_url = "https://api.edenai.run/v3/upload"
+upload_headers = {"Authorization": "Bearer YOUR_API_KEY"}
+
 # Upload image
 files = {"file": open("product.jpg", "rb")}
 upload_response = requests.post(upload_url, headers=upload_headers, files=files)
@@ -143,6 +168,13 @@ You can also provide image URLs instead of uploading:
 <CodeGroup>
 ```python Python
 import requests
+
+url = "https://api.edenai.run/v3/universal-ai"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
 payload = {
     "model": "image/object_detection/google",
     "input": {

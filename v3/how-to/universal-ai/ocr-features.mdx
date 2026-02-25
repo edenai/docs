@@ -56,6 +56,15 @@ Extract structured data from IDs and passports:
 <CodeGroup>
 ```python Python
 import requests
+
+url = "https://api.edenai.run/v3/universal-ai"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+upload_url = "https://api.edenai.run/v3/upload"
+upload_headers = {"Authorization": "Bearer YOUR_API_KEY"}
+
 # Upload ID document
 files = {"file": open("passport.jpg", "rb")}
 upload_response = requests.post(upload_url, headers=upload_headers, files=files)
@@ -86,6 +95,15 @@ Extract structured invoice data:
 <CodeGroup>
 ```python Python
 import requests
+
+url = "https://api.edenai.run/v3/universal-ai"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+upload_url = "https://api.edenai.run/v3/upload"
+upload_headers = {"Authorization": "Bearer YOUR_API_KEY"}
+
 # Upload invoice
 files = {"file": open("invoice.pdf", "rb")}
 upload_response = requests.post(upload_url, headers=upload_headers, files=files)
@@ -106,7 +124,7 @@ invoice = result["output"]
 print(f"Invoice Number: {invoice.get('invoice_number')}")
 print(f"Total: {invoice.get('invoice_total')}")
 print(f"Date: {invoice.get('date')}")
-    
+
 for item in invoice.get("items", []):
     print(f"  - {item['description']}: ${item['amount']}")
     ```
@@ -119,6 +137,13 @@ Instead of uploading, you can provide file URLs:
 <CodeGroup>
 ```python Python
 import requests
+
+url = "https://api.edenai.run/v3/universal-ai"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
 payload = {
     "model": "ocr/financial_parser/affinda",
     "input": {

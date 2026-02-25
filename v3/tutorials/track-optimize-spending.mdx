@@ -556,122 +556,122 @@ Add automated alerts when approaching budget limits:
 
 <CodeGroup>
 ```python budget_alerts.py
-    import smtplib
-    from email.mime.text import MIMEText
-    from email.mime.multipart import MIMEMultipart
-    from datetime import datetime, timedelta
-    from cost_monitor import EdenAICostMonitor
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from datetime import datetime, timedelta
+from cost_monitor import EdenAICostMonitor
 
-    class BudgetAlertSystem:
-        """Monitor budgets and send alerts"""
+class BudgetAlertSystem:
+    """Monitor budgets and send alerts"""
 
-        def __init__(
-            self,
-            monitor: EdenAICostMonitor,
-            monthly_budget: float,
-            alert_thresholds: list = [0.5, 0.75, 0.9],
-            email_config: dict = None
-        ):
-            """
-            Initialize budget alert system.
+    def __init__(
+        self,
+        monitor: EdenAICostMonitor,
+        monthly_budget: float,
+        alert_thresholds: list = [0.5, 0.75, 0.9],
+        email_config: dict = None
+    ):
+        """
+        Initialize budget alert system.
 
-            Args:
-                monitor: EdenAICostMonitor instance
-                monthly_budget: Monthly budget limit in dollars
-                alert_thresholds: List of budget percentage thresholds (0.0-1.0)
-                email_config: Email configuration dict with smtp_server, smtp_port,
-                             from_email, to_emails, password
-            """
-            self.monitor = monitor
-            self.monthly_budget = monthly_budget
-            self.alert_thresholds = sorted(alert_thresholds)
-            self.email_config = email_config
-            self.triggered_alerts = set()
+        Args:
+            monitor: EdenAICostMonitor instance
+            monthly_budget: Monthly budget limit in dollars
+            alert_thresholds: List of budget percentage thresholds (0.0-1.0)
+            email_config: Email configuration dict with smtp_server, smtp_port,
+                         from_email, to_emails, password
+        """
+        self.monitor = monitor
+        self.monthly_budget = monthly_budget
+        self.alert_thresholds = sorted(alert_thresholds)
+        self.email_config = email_config
+        self.triggered_alerts = set()
 
-        def check_budget(self) -> dict:
-            """
-            Check current month's spending against budget.
+    def check_budget(self) -> dict:
+        """
+        Check current month's spending against budget.
 
-            Returns:
-                Dict with budget status information
-            """
-            # Get current month's date range
-            today = datetime.now()
-            first_day = today.replace(day=1).strftime("%Y-%m-%d")
-            current_day = today.strftime("%Y-%m-%d")
+        Returns:
+            Dict with budget status information
+        """
+        # Get current month's date range
+        today = datetime.now()
+        first_day = today.replace(day=1).strftime("%Y-%m-%d")
+        current_day = today.strftime("%Y-%m-%d")
 
-            # Calculate spending
-            month_spending = self.monitor.get_date_range_cost(first_day, current_day)
-            remaining = self.monthly_budget - month_spending
-            percentage_used = (month_spending / self.monthly_budget) * 100
+        # Calculate spending
+        month_spending = self.monitor.get_date_range_cost(first_day, current_day)
+        remaining = self.monthly_budget - month_spending
+        percentage_used = (month_spending / self.monthly_budget) * 100
 
-            # Project month-end spending
-            days_elapsed = today.day
-            days_in_month = (today.replace(day=28) + timedelta(days=4)).replace(day=1) - timedelta(days=1)
-            days_in_month = days_in_month.day
+        # Project month-end spending
+        days_elapsed = today.day
+        days_in_month = (today.replace(day=28) + timedelta(days=4)).replace(day=1) - timedelta(days=1)
+        days_in_month = days_in_month.day
 
-            if days_elapsed > 0:
-                daily_average = month_spending / days_elapsed
-                projected_total = daily_average * days_in_month
-            else:
-                projected_total = 0
+        if days_elapsed > 0:
+            daily_average = month_spending / days_elapsed
+            projected_total = daily_average * days_in_month
+        else:
+            projected_total = 0
 
-            return {
-                'budget': self.monthly_budget,
-                'spent': month_spending,
-                'remaining': remaining,
-                'percentage_used': percentage_used,
-                'days_elapsed': days_elapsed,
-                'days_in_month': days_in_month,
-                'projected_total': projected_total,
-                'over_budget': month_spending > self.monthly_budget
-            }
+        return {
+            'budget': self.monthly_budget,
+            'spent': month_spending,
+            'remaining': remaining,
+            'percentage_used': percentage_used,
+            'days_elapsed': days_elapsed,
+            'days_in_month': days_in_month,
+            'projected_total': projected_total,
+            'over_budget': month_spending > self.monthly_budget
+        }
 
-        def send_email_alert(self, subject: str, message: str):
-            """Send email alert"""
-            if not self.email_config:
-                print(f"Email not configured. Alert: {subject}")
-                print(message)
-                return
+    def send_email_alert(self, subject: str, message: str):
+        """Send email alert"""
+        if not self.email_config:
+            print(f"Email not configured. Alert: {subject}")
+            print(message)
+            return
 
-            msg = MIMEMultipart()
-            msg['From'] = self.email_config['from_email']
-            msg['To'] = ', '.join(self.email_config['to_emails'])
-            msg['Subject'] = subject
+        msg = MIMEMultipart()
+        msg['From'] = self.email_config['from_email']
+        msg['To'] = ', '.join(self.email_config['to_emails'])
+        msg['Subject'] = subject
 
-            msg.attach(MIMEText(message, 'plain'))
+        msg.attach(MIMEText(message, 'plain'))
 
-            try:
-                server = smtplib.SMTP(
-                    self.email_config['smtp_server'],
-                    self.email_config['smtp_port']
-                )
-                server.starttls()
-                server.login(
-                    self.email_config['from_email'],
-                    self.email_config['password']
-                )
-                server.send_message(msg)
-                server.quit()
-                print(f"Alert sent: {subject}")
-            except Exception as e:
-                print(f"Failed to send email: {e}")
+        try:
+            server = smtplib.SMTP(
+                self.email_config['smtp_server'],
+                self.email_config['smtp_port']
+            )
+            server.starttls()
+            server.login(
+                self.email_config['from_email'],
+                self.email_config['password']
+            )
+            server.send_message(msg)
+            server.quit()
+            print(f"Alert sent: {subject}")
+        except Exception as e:
+            print(f"Failed to send email: {e}")
 
-        def check_and_alert(self):
-            """Check budget and send alerts if thresholds exceeded"""
-            status = self.check_budget()
+    def check_and_alert(self):
+        """Check budget and send alerts if thresholds exceeded"""
+        status = self.check_budget()
 
-            for threshold in self.alert_thresholds:
-                threshold_pct = threshold * 100
+        for threshold in self.alert_thresholds:
+            threshold_pct = threshold * 100
 
-                if status['percentage_used'] >= threshold_pct:
-                    alert_key = f"{datetime.now().strftime('%Y-%m')}-{threshold_pct}"
+            if status['percentage_used'] >= threshold_pct:
+                alert_key = f"{datetime.now().strftime('%Y-%m')}-{threshold_pct}"
 
-                    if alert_key not in self.triggered_alerts:
-                        self.triggered_alerts.add(alert_key)
+                if alert_key not in self.triggered_alerts:
+                    self.triggered_alerts.add(alert_key)
 
-                        subject = f"⚠️ Budget Alert: {threshold_pct:.0f}% of Monthly Budget Used"
-                        message = f"""
+                    subject = f"⚠️ Budget Alert: {threshold_pct:.0f}% of Monthly Budget Used"
+                    message = f"""
 Eden AI Budget Alert
 
 You have used {status['percentage_used']:.1f}% of your monthly budget.
@@ -687,30 +687,30 @@ Budget Status:
 
 View detailed breakdown in your dashboard.
 """
-                        self.send_email_alert(subject, message)
+                    self.send_email_alert(subject, message)
 
-        def print_budget_status(self):
-            """Print budget status to console"""
-            status = self.check_budget()
+    def print_budget_status(self):
+        """Print budget status to console"""
+        status = self.check_budget()
 
-            print("=" * 60)
-            print("Monthly Budget Status")
-            print("=" * 60)
-            print(f"Budget:           ${status['budget']:>10.2f}")
-            print(f"Spent:            ${status['spent']:>10.2f} ({status['percentage_used']:.1f}%)")
-            print(f"Remaining:        ${status['remaining']:>10.2f}")
-            print(f"Days:             {status['days_elapsed']:>3}/{status['days_in_month']}")
-            print(f"Projected Total:  ${status['projected_total']:>10.2f}")
+        print("=" * 60)
+        print("Monthly Budget Status")
+        print("=" * 60)
+        print(f"Budget:           ${status['budget']:>10.2f}")
+        print(f"Spent:            ${status['spent']:>10.2f} ({status['percentage_used']:.1f}%)")
+        print(f"Remaining:        ${status['remaining']:>10.2f}")
+        print(f"Days:             {status['days_elapsed']:>3}/{status['days_in_month']}")
+        print(f"Projected Total:  ${status['projected_total']:>10.2f}")
 
-            if status['over_budget']:
-                print("\n⚠️  OVER BUDGET!")
-            elif status['projected_total'] > status['budget']:
-                print("\n⚠️  WARNING: Projected to exceed budget")
-            else:
-                print("\n✓ On track")
+        if status['over_budget']:
+            print("\n⚠️  OVER BUDGET!")
+        elif status['projected_total'] > status['budget']:
+            print("\n⚠️  WARNING: Projected to exceed budget")
+        else:
+            print("\n✓ On track")
 
-            print("=" * 60)
-    ```
+        print("=" * 60)
+```
 </CodeGroup>
 
 ## Step 6: Optimize - Identify Most Expensive Operations

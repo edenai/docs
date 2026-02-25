@@ -29,7 +29,7 @@ from datetime import datetime
 from typing import Optional
 
 class RouterMonitor:
-"""Simple router monitoring with tracking."""
+    """Simple router monitoring with tracking."""
 
     def __init__(self, api_key: str):
         self.api_key = api_key
@@ -143,22 +143,22 @@ monitor = RouterMonitor("YOUR_API_KEY")
 # Make several requests
 
 queries = [
-"What is Python?",
-"Explain machine learning",
-"Write a haiku about coding",
-"What's the capital of France?",
-"Describe quantum computing"
+    "What is Python?",
+    "Explain machine learning",
+    "Write a haiku about coding",
+    "What's the capital of France?",
+    "Describe quantum computing"
 ]
 
 for query in queries:
-result = monitor.chat(
-query,
-candidates=["openai/gpt-4", "anthropic/claude-sonnet-4-5"],
-metadata={"user_id": "user123", "session": "abc"}
-)
-print(f"Q: {query}")
-print(f"Model: {result['model']}")
-print(f"Routing latency: {result['metrics']['routing_latency_ms']}ms\n")
+    result = monitor.chat(
+        query,
+        candidates=["openai/gpt-4", "anthropic/claude-sonnet-4-5"],
+        metadata={"user_id": "user123", "session": "abc"}
+    )
+    print(f"Q: {query}")
+    print(f"Model: {result['model']}")
+    print(f"Routing latency: {result['metrics']['routing_latency_ms']}ms\n")
 
 # Print summary
 
@@ -183,7 +183,7 @@ from typing import Optional, Dict, List
 import statistics
 
 class RouterAnalytics:
-"""Advanced router monitoring and analytics."""
+    """Advanced router monitoring and analytics."""
 
     def __init__(self, api_key: str):
         self.api_key = api_key
@@ -443,23 +443,23 @@ analytics = RouterAnalytics("YOUR_API_KEY")
 # Simulate various requests
 
 test_cases = [
-("What is Python?", ["openai/gpt-4", "anthropic/claude-sonnet-4-5"]),
-("Explain quantum physics", ["anthropic/claude-opus-4-5", "openai/gpt-4"]),
-("Write a function", ["openai/gpt-4", "anthropic/claude-sonnet-4-5"]),
-("Tell me a joke", ["openai/gpt-4", "google/gemini-2.0-flash"]),
-("Summarize AI trends", None), # Default routing
+    ("What is Python?", ["openai/gpt-4", "anthropic/claude-sonnet-4-5"]),
+    ("Explain quantum physics", ["anthropic/claude-opus-4-5", "openai/gpt-4"]),
+    ("Write a function", ["openai/gpt-4", "anthropic/claude-sonnet-4-5"]),
+    ("Tell me a joke", ["openai/gpt-4", "google/gemini-2.0-flash"]),
+    ("Summarize AI trends", None),  # Default routing
 ]
 
 for message, candidates in test_cases:
-result = analytics.chat(
-message,
-candidates=candidates,
-metadata={"test_case": True}
-)
-if result["success"]:
-print(f"✓ {message[:30]}... → {result['model']}")
-else:
-print(f"✗ {message[:30]}... → Error")
+    result = analytics.chat(
+        message,
+        candidates=candidates,
+        metadata={"test_case": True}
+    )
+    if result["success"]:
+        print(f"✓ {message[:30]}... → {result['model']}")
+    else:
+        print(f"✗ {message[:30]}... → Error")
 
 # Print full report
 
@@ -483,7 +483,7 @@ from typing import Dict, List
 from collections import defaultdict
 
 class RouterCostTracker:
-"""Track routing costs over time."""
+    """Track routing costs over time."""
 
     # Estimated costs per 1K tokens (input + output averaged)
     MODEL_COSTS = {
@@ -635,15 +635,15 @@ tracker = RouterCostTracker("YOUR_API_KEY")
 # Make requests
 
 queries = [
-("What is Python?", ["openai/gpt-4", "anthropic/claude-sonnet-4-5"]),
-("Explain quantum computing in detail", ["anthropic/claude-opus-4-5", "openai/gpt-4"]),
-("Hello", ["openai/gpt-4-mini", "google/gemini-2.0-flash"]),
+    ("What is Python?", ["openai/gpt-4", "anthropic/claude-sonnet-4-5"]),
+    ("Explain quantum computing in detail", ["anthropic/claude-opus-4-5", "openai/gpt-4"]),
+    ("Hello", ["openai/gpt-4-mini", "google/gemini-2.0-flash"]),
 ]
 
 for message, candidates in queries:
-result = tracker.chat(message, candidates)
-print(f"Q: {message}")
-print(f"Model: {result['model']}, Cost: ${result['cost']:.4f}\n")
+    result = tracker.chat(message, candidates)
+    print(f"Q: {message}")
+    print(f"Model: {result['model']}, Cost: ${result['cost']:.4f}\n")
 
 # Print cost report
 
@@ -668,42 +668,42 @@ from typing import Optional, List
 # Define Prometheus metrics
 
 routing_requests_total = Counter(
-'eden_ai_routing_requests_total',
-'Total routing requests',
-['model', 'candidate_pool']
+    'eden_ai_routing_requests_total',
+    'Total routing requests',
+    ['model', 'candidate_pool']
 )
 
 routing_errors_total = Counter(
-'eden_ai_routing_errors_total',
-'Total routing errors',
-['error_type']
+    'eden_ai_routing_errors_total',
+    'Total routing errors',
+    ['error_type']
 )
 
 routing_latency_seconds = Histogram(
-'eden_ai_routing_latency_seconds',
-'Routing decision latency in seconds',
-['model']
+    'eden_ai_routing_latency_seconds',
+    'Routing decision latency in seconds',
+    ['model']
 )
 
 total_latency_seconds = Histogram(
-'eden_ai_total_latency_seconds',
-'Total request latency in seconds',
-['model']
+    'eden_ai_total_latency_seconds',
+    'Total request latency in seconds',
+    ['model']
 )
 
 response_length_bytes = Histogram(
-'eden_ai_response_length_bytes',
-'Response length in bytes',
-['model']
+    'eden_ai_response_length_bytes',
+    'Response length in bytes',
+    ['model']
 )
 
 active_models = Gauge(
-'eden_ai_active_models',
-'Number of different models being used'
+    'eden_ai_active_models',
+    'Number of different models being used'
 )
 
 class PrometheusRouterMonitor:
-"""Router with Prometheus metrics export."""
+    """Router with Prometheus metrics export."""
 
     def __init__(self, api_key: str):
         self.api_key = api_key
@@ -794,10 +794,10 @@ monitor = PrometheusRouterMonitor("YOUR_API_KEY")
 # Make some requests
 
 for i in range(10):
-result = monitor.chat(
-f"Question {i+1}: Explain AI",
-candidates=["openai/gpt-4", "anthropic/claude-sonnet-4-5"]
-)
+    result = monitor.chat(
+        f"Question {i+1}: Explain AI",
+        candidates=["openai/gpt-4", "anthropic/claude-sonnet-4-5"]
+    )
 
 # Export metrics (serve this on /metrics endpoint)
 
@@ -822,12 +822,12 @@ from typing import Optional, List
 # Initialize DataDog
 
 initialize(
-statsd_host='127.0.0.1',
-statsd_port=8125
+    statsd_host='127.0.0.1',
+    statsd_port=8125
 )
 
 class DataDogRouterMonitor:
-"""Router with DataDog metrics."""
+    """Router with DataDog metrics."""
 
     def __init__(self, api_key: str):
         self.api_key = api_key
@@ -933,9 +933,9 @@ class DataDogRouterMonitor:
 monitor = DataDogRouterMonitor("YOUR_API_KEY")
 
 result = monitor.chat(
-"Explain AI",
-candidates=["openai/gpt-4", "anthropic/claude-sonnet-4-5"],
-tags=["env:production", "service:chatbot"]
+    "Explain AI",
+    candidates=["openai/gpt-4", "anthropic/claude-sonnet-4-5"],
+    tags=["env:production", "service:chatbot"]
 )
 ```
 
@@ -957,7 +957,7 @@ from typing import Dict, List, Callable
 from collections import deque
 
 class RouterAlertManager:
-"""Monitor routing and send alerts."""
+    """Monitor routing and send alerts."""
 
     def __init__(
         self,
@@ -1101,18 +1101,18 @@ class RouterAlertManager:
 # Usage
 
 alert_manager = RouterAlertManager(
-"YOUR_API_KEY",
-alert_webhook="https://hooks.slack.com/services/YOUR/WEBHOOK/URL"
+    "YOUR_API_KEY",
+    alert_webhook="https://hooks.slack.com/services/YOUR/WEBHOOK/URL"
 )
 
 # Simulate requests (some will trigger alerts if thresholds are exceeded)
 
 for i in range(50):
-result = alert_manager.chat(
-f"Question {i+1}",
-candidates=["openai/gpt-4", "anthropic/claude-sonnet-4-5"]
-)
-time.sleep(0.1)
+    result = alert_manager.chat(
+        f"Question {i+1}",
+        candidates=["openai/gpt-4", "anthropic/claude-sonnet-4-5"]
+    )
+    time.sleep(0.1)
 ```
 
 </CodeGroup>

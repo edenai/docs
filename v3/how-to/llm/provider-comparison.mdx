@@ -355,18 +355,21 @@ payload = {
 ### Choose Based on Task Complexity
 
 **Simple tasks (object detection, basic OCR):**
+{/* skip-test */}
 ```python
 # Use Gemini Flash or Mistral
 "model": "google/gemini-1.5-flash"  # Cheapest
 ```
 
 **Medium complexity (chart analysis, multi-image):**
+{/* skip-test */}
 ```python
 # Use GPT-4o or Claude Sonnet
 "model": "openai/gpt-4o"  # Balanced
 ```
 
 **Complex reasoning (legal docs, deep analysis):**
+{/* skip-test */}
 ```python
 # Use Claude Opus
 "model": "anthropic/claude-opus-4-5"  # Best quality

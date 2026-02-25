@@ -128,6 +128,30 @@ When adding new `.mdx` files with Python code snippets:
 3. Run `pytest tests/test_snippets_syntax.py -v` to verify syntax
 4. The extractor auto-discovers new `.mdx` files — no configuration needed
 
+### Skipping Non-Runnable Snippets
+
+Some ` ```python ` blocks are illustrative fragments (e.g., `"model": "openai/gpt-4o"`) rather than valid standalone Python. To exclude a block from testing while preserving syntax highlighting, add an MDX comment before the fence:
+
+```
+{/* skip-test */}
+```python
+"model": "openai/gpt-4o"
+```​
+```
+
+This also works with `<CodeGroup>` blocks — place the comment before the `<CodeGroup>` tag:
+
+```
+{/* skip-test */}
+<CodeGroup>
+```python Python
+# code with known issues...
+```​
+</CodeGroup>
+```
+
+The comment is invisible in rendered docs. The extractor checks the 3 lines preceding each ` ```python ` fence for the marker.
+
 ## Common Failure Patterns
 
 | Pattern | Cause | Fix |

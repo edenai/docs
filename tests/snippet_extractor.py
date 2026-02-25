@@ -15,6 +15,10 @@ CODE_BLOCK_RE = re.compile(
     re.MULTILINE | re.DOTALL,
 )
 
+# MDX comment that marks a code block to be skipped by the test suite.
+# Place {/* skip-test */} before the ```python fence (or before <CodeGroup>).
+_SKIP_COMMENT_RE = re.compile(r"\{/\*\s*skip-test\s*\*/\}")
+
 
 API_KEY_PATTERNS = [
     (
@@ -59,9 +63,14 @@ def extract_python_blocks(mdx_path: Path) -> list[dict]:
     content = mdx_path.read_text()
     blocks = []
     for match in CODE_BLOCK_RE.finditer(content):
+        # Skip blocks preceded by {/* skip-test */} within the last 3 lines
+        preceding = content[: match.start()]
+        recent_lines = preceding.rsplit("\n", 3)[-3:]
+        if any(_SKIP_COMMENT_RE.search(line) for line in recent_lines):
+            continue
         code = match.group(1)
         # Calculate the line number of the code block start
-        line = content[: match.start()].count("\n") + 2  # +2: fence line + first code line
+        line = preceding.count("\n") + 2  # +2: fence line + first code line
         blocks.append({"code": code, "line": line})
     return blocks
 

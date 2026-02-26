@@ -19,19 +19,42 @@ CODE_BLOCK_RE = re.compile(
 # Place {/* skip-test */} before the ```python fence (or before <CodeGroup>).
 _SKIP_COMMENT_RE = re.compile(r"\{/\*\s*skip-test\s*\*/\}")
 
+# ---------------------------------------------------------------------------
+# Token env-var names
+# ---------------------------------------------------------------------------
+_SANDBOX_TOKEN_VAR = "EDEN_AI_SANDBOX_API_TOKEN"
+_PRODUCTION_TOKEN_VAR = "EDEN_AI_PRODUCTION_API_TOKEN"
+
+# MDX source files whose snippets require a production (non-sandbox) API token.
+# These use v2 admin/dashboard endpoints (cost management, token management)
+# that are not supported by sandbox tokens.
+_PRODUCTION_TOKEN_FILES = {
+    "v3/how-to/cost-management/monitor-usage.mdx",
+    "v3/how-to/user-management/manage-tokens.mdx",
+    "v3/tutorials/multi-environment-tokens.mdx",
+    "v3/tutorials/track-optimize-spending.mdx",
+}
+
+
+def _token_var_for(source_mdx: str) -> str:
+    """Return the env-var name for the API token a given file's snippets need."""
+    if source_mdx in _PRODUCTION_TOKEN_FILES:
+        return _PRODUCTION_TOKEN_VAR
+    return _SANDBOX_TOKEN_VAR
+
 
 API_KEY_PATTERNS = [
     (
         re.compile(r'f"Bearer\s+(YOUR_API_KEY|YOUR_EDEN_AI_API_KEY)"'),
-        "f\"Bearer {os.environ['EDEN_AI_API_KEY']}\"",
+        "f\"Bearer {{os.environ['{token_var}']}}\"",
     ),
     (
         re.compile(r'"Bearer\s+(YOUR_API_KEY|YOUR_EDEN_AI_API_KEY)"'),
-        "f\"Bearer {os.environ['EDEN_AI_API_KEY']}\"",
+        "f\"Bearer {{os.environ['{token_var}']}}\"",
     ),
     (
         re.compile(r'"(YOUR_API_KEY|YOUR_EDEN_AI_API_KEY)"'),
-        'os.environ["EDEN_AI_API_KEY"]',
+        'os.environ["{token_var}"]',
     ),
 ]
 
@@ -87,17 +110,18 @@ def extract_python_blocks(mdx_path: Path) -> list[dict]:
     return blocks
 
 
-def replace_api_keys(code: str) -> str:
-    for pattern, replacement in API_KEY_PATTERNS:
+def replace_api_keys(code: str, token_var: str = _SANDBOX_TOKEN_VAR) -> str:
+    for pattern, replacement_template in API_KEY_PATTERNS:
+        replacement = replacement_template.format(token_var=token_var)
         code = pattern.sub(replacement, code)
     # Replace API_KEY = "<any string>" with env-var lookup
     if _API_KEY_STR_ASSIGNMENT_RE.search(code):
         code = _API_KEY_STR_ASSIGNMENT_RE.sub(
-            r'\g<1>API_KEY = os.environ["EDEN_AI_API_KEY"]', code
+            rf'\g<1>API_KEY = os.environ["{token_var}"]', code
         )
     # If code uses bare API_KEY variable but never defines it, prepend a definition
     elif _BARE_API_KEY_RE.search(code) and not _API_KEY_ASSIGNMENT_RE.search(code):
-        code = 'API_KEY = os.environ["EDEN_AI_API_KEY"]\n' + code
+        code = f'API_KEY = os.environ["{token_var}"]\n' + code
     return code
 
 
@@ -137,9 +161,13 @@ def build_module(blocks: list[dict], source_mdx: str) -> tuple[str, list[dict]]:
             - block_indices: list with a single 1-based block number
             - lines: list with the line number from the .mdx
             - has_input: whether the block uses input()
+            - needs_production_token: whether the block needs a production token
     """
     if not blocks:
         return "", []
+
+    token_var = _token_var_for(source_mdx)
+    needs_production_token = token_var == _PRODUCTION_TOKEN_VAR
 
     module_lines = [
         f"# Auto-generated from {source_mdx}",
@@ -155,7 +183,7 @@ def build_module(blocks: list[dict], source_mdx: str) -> tuple[str, list[dict]]:
 
     for i, block in enumerate(blocks):
         func_name = f"block_{i + 1}"
-        code = replace_placeholder_file_id(replace_base_url(replace_api_keys(block["code"])))
+        code = replace_placeholder_file_id(replace_base_url(replace_api_keys(block["code"], token_var)))
         line_num = block["line"]
         has_input = "input(" in code
 
@@ -185,6 +213,7 @@ def build_module(blocks: list[dict], source_mdx: str) -> tuple[str, list[dict]]:
             "block_indices": [i + 1],
             "lines": [line_num],
             "has_input": has_input,
+            "needs_production_token": needs_production_token,
         })
 
     # main() calls all functions in order for standalone execution

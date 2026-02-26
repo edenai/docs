@@ -34,7 +34,7 @@ def _api_base_url() -> str:
 
 
 def _api_headers() -> dict:
-    return {"Authorization": f"Bearer {os.environ['EDEN_AI_API_KEY']}"}
+    return {"Authorization": f"Bearer {os.environ['EDEN_AI_SANDBOX_API_TOKEN']}"}
 
 
 def _list_file_ids() -> set[str]:
@@ -241,7 +241,7 @@ def manage_uploaded_files():
     - Sets _EDEN_TEST_FILE_ID env var for generated modules to use
     - After all tests, deletes every file that wasn't present before
     """
-    if not os.environ.get("EDEN_AI_API_KEY"):
+    if not os.environ.get("EDEN_AI_SANDBOX_API_TOKEN"):
         yield  # no API key — nothing to manage
         return
 

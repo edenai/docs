@@ -1,7 +1,8 @@
 """Execution tests for documentation code snippets.
 
 Imports the generated modules and calls each block function independently.
-Requires EDEN_AI_API_KEY environment variable (sandbox token).
+Requires EDEN_AI_SANDBOX_API_TOKEN environment variable (sandbox token).
+Snippets that hit v2 admin endpoints also need EDEN_AI_PRODUCTION_API_TOKEN.
 """
 
 import importlib
@@ -11,10 +12,10 @@ import pytest
 
 from tests.snippet_extractor import extract_all
 
-# Skip the entire module if no API key is set
+# Skip the entire module if no sandbox token is set
 pytestmark = pytest.mark.skipif(
-    not os.environ.get("EDEN_AI_API_KEY"),
-    reason="EDEN_AI_API_KEY not set — skipping execution tests",
+    not os.environ.get("EDEN_AI_SANDBOX_API_TOKEN"),
+    reason="EDEN_AI_SANDBOX_API_TOKEN not set — skipping execution tests",
 )
 
 # Extract modules once at module level for parametrization
@@ -32,6 +33,7 @@ for _mod in _modules:
                 "block_indices": _bf["block_indices"],
                 "lines": _bf["lines"],
                 "has_input": _bf["has_input"],
+                "needs_production_token": _bf["needs_production_token"],
             }
         )
 
@@ -51,6 +53,10 @@ def test_snippet_executes(test_case, fixtures_dir, monkeypatch):
     module_name = test_case["module_name"]
     func_name = test_case["func_name"]
     has_input = test_case["has_input"]
+    needs_production_token = test_case["needs_production_token"]
+
+    if needs_production_token and not os.environ.get("EDEN_AI_PRODUCTION_API_TOKEN"):
+        pytest.skip("EDEN_AI_PRODUCTION_API_TOKEN not set")
 
     # Change to fixtures directory so open("image.jpg", "rb") works
     monkeypatch.chdir(fixtures_dir)

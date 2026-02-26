@@ -6,3 +6,7 @@ langchain-openai
 pydantic
 python-dotenv
 aiohttp
+PyPDF2
+Pillow
+prometheus_client
+datadog

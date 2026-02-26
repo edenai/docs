@@ -117,6 +117,21 @@ def _minimal_pdf() -> bytes:
     )
 
 
+def _multipage_pdf(num_pages: int = 6) -> bytes:
+    """Valid PDF with multiple blank pages (for PyPDF2 page-extraction tests)."""
+    import io
+    from PyPDF2 import PdfReader, PdfWriter
+
+    reader = PdfReader(io.BytesIO(_minimal_pdf()))
+    writer = PdfWriter()
+    page = reader.pages[0]
+    for _ in range(num_pages):
+        writer.add_page(page)
+    buf = io.BytesIO()
+    writer.write(buf)
+    return buf.getvalue()
+
+
 def _minimal_jpeg() -> bytes:
     """Smallest valid JPEG file (1x1 white pixel)."""
     return bytes([
@@ -152,6 +167,17 @@ def _minimal_jpeg() -> bytes:
         0x7F, 0x50,               # Compressed data (single white pixel)
         0xFF, 0xD9,               # EOI
     ])
+
+
+def _large_jpeg(width: int = 4000, height: int = 3000, quality: int = 95) -> bytes:
+    """Large valid JPEG file (~several MB) using PIL."""
+    import io
+    from PIL import Image
+
+    img = Image.new("RGB", (width, height), color=(100, 149, 237))
+    buf = io.BytesIO()
+    img.save(buf, format="JPEG", quality=quality)
+    return buf.getvalue()
 
 
 def _minimal_png() -> bytes:
@@ -198,17 +224,31 @@ def fixtures_dir(tmp_path_factory):
 
     # PDF files
     pdf_data = _minimal_pdf()
-    for name in ["document.pdf", "invoice.pdf"]:
+    for name in [
+        "document.pdf", "invoice.pdf",
+        "report.pdf", "contract.pdf", "quarterly-report.pdf",
+        "policy-document.pdf", "research-paper.pdf",
+        "doc1.pdf", "doc2.pdf", "doc3.pdf",
+        "invoice1.pdf", "invoice2.pdf", "invoice3.pdf",
+    ]:
         (d / name).write_bytes(pdf_data)
+
+    # Multi-page PDF (for PyPDF2 page-extraction snippets)
+    (d / "large-report.pdf").write_bytes(_multipage_pdf(6))
 
     # JPEG files
     jpeg_data = _minimal_jpeg()
-    for name in ["image.jpg", "photo.jpg", "product.jpg", "people.jpg", "passport.jpg"]:
+    for name in ["image.jpg", "photo.jpg", "product.jpg", "people.jpg", "passport.jpg", "receipt.jpg"]:
         (d / name).write_bytes(jpeg_data)
+    (d / "large-image.jpg").write_bytes(_large_jpeg())
 
     # PNG files
     png_data = _minimal_png()
-    (d / "image.png").write_bytes(png_data)
+    for name in ["image.png", "screenshot.png"]:
+        (d / name).write_bytes(png_data)
+
+    # Python file (for code review examples)
+    (d / "app.py").write_text("def main():\n    print('hello')\n")
 
     # Text file (for LangChain RAG examples)
     (d / "document.txt").write_text(

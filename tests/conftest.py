@@ -3,6 +3,7 @@
 - Generates minimal test fixture files (PDF, JPEG, etc.) at session start
 - Runs the snippet extractor once to produce importable modules
 - Provides shared fixtures for test parametrization
+- Uploads a test file to the API and cleans up all new files after tests
 """
 
 import os
@@ -12,12 +13,87 @@ import zlib
 from pathlib import Path
 
 import pytest
+import requests
 from dotenv import load_dotenv
 
 from tests.snippet_extractor import extract_all, extract_individual_blocks
 
 # Load tests/.env (if present) — CI uses native env vars instead
 load_dotenv(Path(__file__).parent / ".env")
+
+# The placeholder UUID used in documentation snippets
+_PLACEHOLDER_FILE_ID = "550e8400-e29b-41d4-a716-446655440000"
+
+
+# ---------------------------------------------------------------------------
+# Eden AI file management helpers
+# ---------------------------------------------------------------------------
+
+def _api_base_url() -> str:
+    return os.environ.get("EDEN_AI_BASE_URL", "https://api.edenai.run")
+
+
+def _api_headers() -> dict:
+    return {"Authorization": f"Bearer {os.environ['EDEN_AI_API_KEY']}"}
+
+
+def _list_file_ids() -> set[str]:
+    """Return the set of all file IDs currently on the account."""
+    file_ids: set[str] = set()
+    page = 1
+    while True:
+        resp = requests.get(
+            f"{_api_base_url()}/v3/upload",
+            headers=_api_headers(),
+            params={"page": page, "limit": 1000},
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        for item in data["items"]:
+            file_ids.add(item["file_id"])
+        if page >= data["total_pages"]:
+            break
+        page += 1
+    return file_ids
+
+
+def _delete_file_ids(file_ids: set[str]) -> int:
+    """Delete files by ID (batches of 100). Returns total deleted count."""
+    if not file_ids:
+        return 0
+    deleted = 0
+    batch = []
+    for fid in file_ids:
+        batch.append(fid)
+        if len(batch) == 100:
+            resp = requests.post(
+                f"{_api_base_url()}/v3/upload/delete",
+                headers={**_api_headers(), "Content-Type": "application/json"},
+                json={"file_ids": batch},
+            )
+            resp.raise_for_status()
+            deleted += resp.json()["deleted_count"]
+            batch = []
+    if batch:
+        resp = requests.post(
+            f"{_api_base_url()}/v3/upload/delete",
+            headers={**_api_headers(), "Content-Type": "application/json"},
+            json={"file_ids": batch},
+        )
+        resp.raise_for_status()
+        deleted += resp.json()["deleted_count"]
+    return deleted
+
+
+def _upload_test_file(file_bytes: bytes, filename: str) -> str:
+    """Upload a file and return its file_id."""
+    resp = requests.post(
+        f"{_api_base_url()}/v3/upload",
+        headers=_api_headers(),
+        files={"file": (filename, file_bytes)},
+    )
+    resp.raise_for_status()
+    return resp.json()["file_id"]
 
 
 # ---------------------------------------------------------------------------
@@ -154,6 +230,36 @@ def extracted_modules():
 def extracted_blocks():
     """Return individual code blocks for syntax testing."""
     return _get_extracted_blocks()
+
+
+@pytest.fixture(scope="session", autouse=True)
+def manage_uploaded_files():
+    """Upload a test file, track files, and clean up after all tests.
+
+    - Snapshots existing file IDs before tests start
+    - Uploads a minimal PDF so snippets referencing the placeholder UUID work
+    - Sets _EDEN_TEST_FILE_ID env var for generated modules to use
+    - After all tests, deletes every file that wasn't present before
+    """
+    if not os.environ.get("EDEN_AI_API_KEY"):
+        yield  # no API key — nothing to manage
+        return
+
+    # Snapshot file IDs that already exist (we won't delete these)
+    pre_existing = _list_file_ids()
+
+    # Upload a minimal test PDF and expose its ID
+    test_file_id = _upload_test_file(_minimal_pdf(), "test_fixture.pdf")
+    os.environ["_EDEN_TEST_FILE_ID"] = test_file_id
+
+    yield
+
+    # Cleanup: delete every file created during the test session
+    current = _list_file_ids()
+    new_file_ids = current - pre_existing
+    if new_file_ids:
+        deleted = _delete_file_ids(new_file_ids)
+        print(f"\n[conftest] Cleaned up {deleted} uploaded file(s)")
 
 
 def pytest_configure(config):

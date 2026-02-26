@@ -37,11 +37,18 @@ API_KEY_PATTERNS = [
 
 # Matches bare API_KEY usage (not inside a string, not as part of a longer name)
 _BARE_API_KEY_RE = re.compile(r"\bAPI_KEY\b")
-# Matches lines that define API_KEY (e.g. `API_KEY = ...`)
+# Matches lines that define API_KEY with a string literal (e.g. `API_KEY = "eyJhbG..."`)
 _API_KEY_ASSIGNMENT_RE = re.compile(r"^\s*API_KEY\s*=", re.MULTILINE)
+_API_KEY_STR_ASSIGNMENT_RE = re.compile(
+    r'^(\s*)API_KEY\s*=\s*"[^"]*"', re.MULTILINE
+)
 
 # Default production base URL — replaced with env var in generated modules
 _DEFAULT_BASE_URL = "https://api.edenai.run"
+
+# Placeholder file UUID used in documentation examples — replaced at runtime
+# with a real file ID uploaded during test setup (see conftest.py).
+_PLACEHOLDER_FILE_ID = "550e8400-e29b-41d4-a716-446655440000"
 
 # Regex matching "https://api.edenai.run" inside a quoted string.
 # Captures: (prefix_quote)(url)(rest_of_string_and_quote)
@@ -83,10 +90,28 @@ def extract_python_blocks(mdx_path: Path) -> list[dict]:
 def replace_api_keys(code: str) -> str:
     for pattern, replacement in API_KEY_PATTERNS:
         code = pattern.sub(replacement, code)
+    # Replace API_KEY = "<any string>" with env-var lookup
+    if _API_KEY_STR_ASSIGNMENT_RE.search(code):
+        code = _API_KEY_STR_ASSIGNMENT_RE.sub(
+            r'\g<1>API_KEY = os.environ["EDEN_AI_API_KEY"]', code
+        )
     # If code uses bare API_KEY variable but never defines it, prepend a definition
-    if _BARE_API_KEY_RE.search(code) and not _API_KEY_ASSIGNMENT_RE.search(code):
+    elif _BARE_API_KEY_RE.search(code) and not _API_KEY_ASSIGNMENT_RE.search(code):
         code = 'API_KEY = os.environ["EDEN_AI_API_KEY"]\n' + code
     return code
+
+
+def replace_placeholder_file_id(code: str) -> str:
+    """Replace the placeholder file UUID with a runtime env-var lookup.
+
+    The conftest.py fixture uploads a real file and sets _EDEN_TEST_FILE_ID.
+    """
+    if _PLACEHOLDER_FILE_ID not in code:
+        return code
+    return code.replace(
+        f'"{_PLACEHOLDER_FILE_ID}"',
+        '_EDEN_TEST_FILE_ID',
+    )
 
 
 def replace_base_url(code: str) -> str:
@@ -123,13 +148,14 @@ def build_module(blocks: list[dict], source_mdx: str) -> tuple[str, list[dict]]:
         "import os",
         "",
         f'_EDEN_BASE_URL = os.environ.get("EDEN_AI_BASE_URL", "{_DEFAULT_BASE_URL}")',
+        f'_EDEN_TEST_FILE_ID = os.environ.get("_EDEN_TEST_FILE_ID", "{_PLACEHOLDER_FILE_ID}")',
     ]
 
     block_functions = []
 
     for i, block in enumerate(blocks):
         func_name = f"block_{i + 1}"
-        code = replace_base_url(replace_api_keys(block["code"]))
+        code = replace_placeholder_file_id(replace_base_url(replace_api_keys(block["code"])))
         line_num = block["line"]
         has_input = "input(" in code
 

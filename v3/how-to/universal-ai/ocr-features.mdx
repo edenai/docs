@@ -6,10 +6,14 @@ Extract text and structured data from documents using the Universal AI endpoint.
 
 | Subfeature | Model String Pattern | Description |
 |------------|---------------------|-------------|
-| OCR | `ocr/financial_parser/provider` | Extract financial information from images/PDFs |
+| OCR | `ocr/ocr/provider` | Extract printed text into machine-encoded text |
+| OCR Multipage | `ocr/ocr_async/provider` |  Extract printed text from multi-page PDFs asynchronously. |
+| OCR Table | `ocr/ocr_tables_async/provider` | Extract data from document containing table |
+| Financial Parser | `ocr/financial_parser/provider` | Extract financial information from images/PDFs |
 | Identity Parser | `ocr/identity_parser/provider` | Parse ID documents and passports |
 | Invoice Parser | `ocr/invoice_parser/provider` | Extract structured invoice data |
 | Resume Parser | `ocr/resume_parser/provider` | Parse CV and resume data |
+
 
 ## Text Extraction (OCR)
 
@@ -35,7 +39,7 @@ headers = {
 }
 
 payload = {
-    "model": "ocr/financial_parser/google",
+    "model": "ocr/ocr/amazon",
     "input": {
         "file": file_id,
         "language": "en"
@@ -46,7 +50,139 @@ response = requests.post(url, headers=headers, json=payload)
 result = response.json()
 
 print(result["output"]["text"])
-    ```
+```
+</CodeGroup>
+
+## OCR Multipage (Async)
+
+ It allows users to extract text data from PDFs with multiple pages.
+
+<CodeGroup>
+```python Python
+import requests
+import time
+
+# Step 1: Upload the file
+upload_url = "https://api.edenai.run/v3/upload"
+upload_headers = {"Authorization": "Bearer YOUR_API_KEY"}
+    
+files = {"file": open("document.pdf", "rb")}
+upload_response = requests.post(upload_url, headers=upload_headers, files=files)
+file_id = upload_response.json()["file_id"]
+
+# Step 2: Process with OCR Multipage
+url = "https://api.edenai.run/v3/universal-ai/async"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+payload = {
+    "model": "ocr/ocr_async/amazon",
+    "input": {
+        "file": file_id,
+        "language": "en"
+    }
+}
+
+response = requests.post(url, headers=headers, json=payload)
+job = response.json()
+job_id = job["public_id"]
+print(f"Job created: {job_id}")
+
+# Polling
+while True:
+    poll_response = requests.get(
+        f"{url}/{job_id}",
+        headers=headers
+    )
+
+    if poll_response.status_code != 200:
+        print("Polling error:")
+        print(poll_response.status_code)
+        print(poll_response.text)
+        break
+
+    result = poll_response.json()
+    status = result.get("status")
+
+    if status == "success":
+        print("Success")
+        print("Cost:", result.get("cost"))
+        print("Result:",result.get("output"))
+        break
+
+    else:
+        print("Processing...")
+        time.sleep(3)
+
+```
+</CodeGroup>
+
+## OCR Table (Async)
+
+Extract data from document containing table 
+
+<CodeGroup>
+```python Python
+import requests
+import time
+
+# Step 1: Upload the file
+upload_url = "https://api.edenai.run/v3/upload"
+upload_headers = {"Authorization": "Bearer YOUR_API_KEY"}
+    
+files = {"file": open("document.pdf", "rb")}
+upload_response = requests.post(upload_url, headers=upload_headers, files=files)
+file_id = upload_response.json()["file_id"]
+
+# Step 2: Process with OCR Table
+url = "https://api.edenai.run/v3/universal-ai/async"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+payload = {
+    "model": "ocr/ocr_tables_async/amazon",
+    "input": {
+        "file": file_id,
+        "language": "en"
+    }
+}
+
+response = requests.post(url, headers=headers, json=payload)
+job = response.json()
+job_id = job["public_id"]
+print(f"Job created: {job_id}")
+
+# Polling
+while True:
+    poll_response = requests.get(
+        f"{url}/{job_id}",
+        headers=headers
+    )
+
+    if poll_response.status_code != 200:
+        print("Polling error:")
+        print(poll_response.status_code)
+        print(poll_response.text)
+        break
+
+    result = poll_response.json()
+    status = result.get("status")
+
+    if status == "success":
+        print("Success")
+        print("Cost:", result.get("cost"))
+        print("Result:",result.get("output"))
+        break
+
+    else:
+        print("Processing...")
+        time.sleep(3)
+
+```
 </CodeGroup>
 
 ## Identity Document Parsing
@@ -57,11 +193,23 @@ Extract structured data from IDs and passports:
 ```python Python
 import requests
 # Upload ID document
+
+upload_url = "https://api.edenai.run/v3/upload"
+upload_headers = {"Authorization": "Bearer YOUR_API_KEY"}
+
 files = {"file": open("passport.jpg", "rb")}
 upload_response = requests.post(upload_url, headers=upload_headers, files=files)
 file_id = upload_response.json()["file_id"]
 
 # Parse identity document
+
+url = "https://api.edenai.run/v3/universal-ai"
+
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
 payload = {
     "model": "ocr/identity_parser/amazon",
     "input": {
@@ -76,7 +224,7 @@ identity = result["output"]
 print(f"Name: {identity.get('given_names')} {identity.get('last_name')}")
 print(f"Document Number: {identity.get('document_id')}")
 print(f"Expiry Date: {identity.get('expire_date')}")
-    ```
+```
 </CodeGroup>
 
 ## Invoice Parsing
@@ -86,12 +234,25 @@ Extract structured invoice data:
 <CodeGroup>
 ```python Python
 import requests
+
 # Upload invoice
+
+upload_url = "https://api.edenai.run/v3/upload"
+upload_headers = {"Authorization": "Bearer YOUR_API_KEY"}
+
 files = {"file": open("invoice.pdf", "rb")}
 upload_response = requests.post(upload_url, headers=upload_headers, files=files)
 file_id = upload_response.json()["file_id"]
 
 # Parse invoice
+
+url = "https://api.edenai.run/v3/universal-ai"
+
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
 payload = {
     "model": "ocr/invoice_parser/microsoft",
     "input": {
@@ -109,7 +270,7 @@ print(f"Date: {invoice.get('date')}")
     
 for item in invoice.get("items", []):
     print(f"  - {item['description']}: ${item['amount']}")
-    ```
+```
 </CodeGroup>
 
 ## Using File URLs
@@ -119,18 +280,29 @@ Instead of uploading, you can provide file URLs:
 <CodeGroup>
 ```python Python
 import requests
+
+url = "https://api.edenai.run/v3/universal-ai"
+file_url = "my_file_url"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
 payload = {
     "model": "ocr/financial_parser/affinda",
     "input": {
-        "file": "https://example.com/document.jpg",
+        "document_type": "invoice",
+        "file": file_url,
         "language": "en"
-    }
+    },
+    "show_original_response": False
 }
 
 response = requests.post(url, headers=headers, json=payload)
-result = response.json()
-print(result["output"]["text"])
-    ```
+data = response.json()
+print("Output:", data["output"])
+print("Cost:", data["cost"])
+```
 </CodeGroup>
 
 ## Next Steps

@@ -1,8 +1,8 @@
 """Extract Python code snippets from .mdx documentation files.
 
 Parses all v3/**/*.mdx files, extracts Python code blocks in document order,
-and generates importable .py modules with a main() function wrapping the
-concatenated snippets.
+and generates importable .py modules with one function per block for
+independent testing.
 """
 
 import re
@@ -34,6 +34,11 @@ API_KEY_PATTERNS = [
         'os.environ["EDEN_AI_API_KEY"]',
     ),
 ]
+
+# Matches bare API_KEY usage (not inside a string, not as part of a longer name)
+_BARE_API_KEY_RE = re.compile(r"\bAPI_KEY\b")
+# Matches lines that define API_KEY (e.g. `API_KEY = ...`)
+_API_KEY_ASSIGNMENT_RE = re.compile(r"^\s*API_KEY\s*=", re.MULTILINE)
 
 # Default production base URL — replaced with env var in generated modules
 _DEFAULT_BASE_URL = "https://api.edenai.run"
@@ -78,6 +83,9 @@ def extract_python_blocks(mdx_path: Path) -> list[dict]:
 def replace_api_keys(code: str) -> str:
     for pattern, replacement in API_KEY_PATTERNS:
         code = pattern.sub(replacement, code)
+    # If code uses bare API_KEY variable but never defines it, prepend a definition
+    if _BARE_API_KEY_RE.search(code) and not _API_KEY_ASSIGNMENT_RE.search(code):
+        code = 'API_KEY = os.environ["EDEN_AI_API_KEY"]\n' + code
     return code
 
 
@@ -95,17 +103,18 @@ def replace_base_url(code: str) -> str:
     return code
 
 
-def build_module(blocks: list[dict], source_mdx: str) -> tuple[str, bool]:
-    """Build a Python module string from extracted code blocks.
+def build_module(blocks: list[dict], source_mdx: str) -> tuple[str, list[dict]]:
+    """Build a Python module with one function per block.
 
-    Each block is kept in its original order with comment markers showing
-    the source file and line number, mirroring the .mdx structure for
-    easy debugging. Imports are kept inline (not hoisted).
-
-    Returns (module_code, has_input).
+    Returns:
+        (module_code, block_functions) where block_functions is a list of dicts:
+            - func_name: name of the generated function
+            - block_indices: list with a single 1-based block number
+            - lines: list with the line number from the .mdx
+            - has_input: whether the block uses input()
     """
     if not blocks:
-        return "", False
+        return "", []
 
     module_lines = [
         f"# Auto-generated from {source_mdx}",
@@ -114,23 +123,20 @@ def build_module(blocks: list[dict], source_mdx: str) -> tuple[str, bool]:
         "import os",
         "",
         f'_EDEN_BASE_URL = os.environ.get("EDEN_AI_BASE_URL", "{_DEFAULT_BASE_URL}")',
-        "",
-        "",
-        "def main():",
     ]
 
-    has_body = False
-    has_input = False
+    block_functions = []
 
     for i, block in enumerate(blocks):
+        func_name = f"block_{i + 1}"
         code = replace_base_url(replace_api_keys(block["code"]))
         line_num = block["line"]
+        has_input = "input(" in code
 
-        # Check for input() usage
-        if "input(" in code:
-            has_input = True
+        module_lines.append("")
+        module_lines.append("")
+        module_lines.append(f"def {func_name}():")
 
-        # Add block header comment
         module_lines.append("")
         module_lines.append(f"    # {'=' * 70}")
         module_lines.append(
@@ -140,15 +146,27 @@ def build_module(blocks: list[dict], source_mdx: str) -> tuple[str, bool]:
 
         code_text = code.strip("\n")
         if code_text.strip():
-            has_body = True
             for line in code_text.split("\n"):
                 if line.strip() == "":
                     module_lines.append("")
                 else:
                     module_lines.append("    " + line)
+        else:
+            module_lines.append("    pass")
 
-    if not has_body:
-        module_lines.append("    pass")
+        block_functions.append({
+            "func_name": func_name,
+            "block_indices": [i + 1],
+            "lines": [line_num],
+            "has_input": has_input,
+        })
+
+    # main() calls all functions in order for standalone execution
+    module_lines.append("")
+    module_lines.append("")
+    module_lines.append("def main():")
+    for bf in block_functions:
+        module_lines.append(f"    {bf['func_name']}()")
 
     module_lines.append("")
     module_lines.append("")
@@ -156,7 +174,7 @@ def build_module(blocks: list[dict], source_mdx: str) -> tuple[str, bool]:
     module_lines.append("    main()")
     module_lines.append("")
 
-    return "\n".join(module_lines), has_input
+    return "\n".join(module_lines), block_functions
 
 
 def sanitize_filename(mdx_path: Path) -> str:
@@ -183,6 +201,7 @@ def extract_all() -> list[dict]:
         - snippet_count: number of Python code blocks found
         - has_input: whether any snippet uses input()
         - blocks: list of {code, line} dicts for individual syntax checking
+        - block_functions: list of per-function metadata dicts
     """
     GENERATED_DIR.mkdir(parents=True, exist_ok=True)
     init_file = GENERATED_DIR / "__init__.py"
@@ -199,10 +218,12 @@ def extract_all() -> list[dict]:
 
         source_mdx = str(mdx_path.relative_to(DOCS_ROOT))
         module_name = sanitize_filename(mdx_path)
-        module_code, has_input = build_module(blocks, source_mdx)
+        module_code, block_functions = build_module(blocks, source_mdx)
         generated_path = GENERATED_DIR / f"{module_name}.py"
 
         generated_path.write_text(module_code)
+
+        has_input = any(bf["has_input"] for bf in block_functions)
 
         results.append(
             {
@@ -212,6 +233,7 @@ def extract_all() -> list[dict]:
                 "snippet_count": len(blocks),
                 "has_input": has_input,
                 "blocks": blocks,
+                "block_functions": block_functions,
             }
         )
 
@@ -252,6 +274,8 @@ if __name__ == "__main__":
     results = extract_all()
     total_snippets = sum(r["snippet_count"] for r in results)
     print(f"Extracted {total_snippets} Python snippets from {len(results)} .mdx files")
+    print(f"Generated {total_snippets} test functions (1 per block)")
+    print()
     for r in results:
         flag = " [has input()]" if r["has_input"] else ""
-        print(f"  {r['source_mdx']}: {r['snippet_count']} snippets -> {r['module_name']}.py{flag}")
+        print(f"  {r['source_mdx']}: {r['snippet_count']} snippets{flag}")

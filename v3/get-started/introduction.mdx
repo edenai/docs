@@ -360,9 +360,9 @@ import requests
 response = requests.get(
     "https://api.edenai.run/v3/info"
 )
-features = response.json()
-print(features)
-# Output: {"text": ["moderation", "ai_detection", ...], "ocr": [...], ...}
+data = response.json()
+for feature in data["features"]:
+    print(f"{feature['name']}: {[sf['name'] for sf in feature['subfeatures']]}")
 
 # Get details about a specific feature
 response = requests.get(

@@ -23,19 +23,13 @@ Get a complete list of available features:
 import requests
 
 url = "https://api.edenai.run/v3/info"
-headers = {"Authorization": "Bearer YOUR_API_KEY"}
 
-response = requests.get(url, headers=headers)
-features = response.json()
+response = requests.get(url)
+data = response.json()
 
-print(features)
-# Output:
-# {
-#   "text": ["ai_detection", "moderation", "embeddings", ...],
-#   "ocr": ["ocr", "identity_parser", "invoice_parser", ...],
-#   "image": ["generation", "object_detection", ...],
-#   "translation": ["document_translation"]
-# }
+for feature in data["features"]:
+    subfeature_names = [sf["name"] for sf in feature["subfeatures"]]
+    print(f"{feature['name']}: {subfeature_names}")
     ```
 
 ```bash cURL
@@ -50,14 +44,14 @@ Get details about a feature category:
 <CodeGroup>
 ```python Python
 import requests
-# Get all text features
+# Get all text subfeatures
 url = "https://api.edenai.run/v3/info/text"
 response = requests.get(url)
-text_features = response.json()
+text_info = response.json()
 
-print("Available text features:")
-for subfeature in text_features["subfeatures"]:
-    print(f"  - {subfeature}")
+print("Available text subfeatures:")
+for subfeature in text_info["subfeatures"]:
+    print(f"  - {subfeature['name']}: {subfeature['fullname']}")
     ```
 </CodeGroup>
 
@@ -211,27 +205,26 @@ Use discovery to build dynamic feature selection:
 import requests
 def build_feature_menu():
     """Build interactive feature selection menu"""
-        
-    # Get all features
+
+    # Get all features (includes models inline)
     url = "https://api.edenai.run/v3/info"
     response = requests.get(url)
-    all_features = response.json()
-        
+    data = response.json()
+
     menu = {}
-        
-    for feature, subfeatures in all_features.items():
-        menu[feature] = {}
-            
-        for subfeature in subfeatures:
-            # Get providers for each subfeature
-            detail_url = f"https://api.edenai.run/v3/info/{feature}/{subfeature}"
-            detail_response = requests.get(detail_url)
-            detail = detail_response.json()
-                
-            menu[feature][subfeature] = list({
-                m["model"].split("/")[2] for m in detail["models"]
+
+    for feature in data["features"]:
+        feature_name = feature["name"]
+        menu[feature_name] = {}
+
+        for subfeature in feature["subfeatures"]:
+            sf_name = subfeature["name"]
+            # Extract unique providers from model strings
+            providers = list({
+                m["model"].split("/")[2] for m in subfeature["models"]
             })
-        
+            menu[feature_name][sf_name] = providers
+
     return menu
 
 # Build menu

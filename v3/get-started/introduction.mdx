@@ -369,7 +369,7 @@ response = requests.get(
     "https://api.edenai.run/v3/info/text/moderation"
 )
 feature_info = response.json()
-print(feature_info["providers"])  # List of available providers
+print(feature_info["models"])  # Available models with pricing
 print(feature_info["input_schema"])  # Expected input format
 print(feature_info["output_schema"])  # Response format
     ```

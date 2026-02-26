@@ -331,7 +331,6 @@ Extract structured data from documents:
 <CodeGroup>
 ```python Python
 import requests
-import json
 
 # Upload invoice
 upload_response = requests.post(
@@ -382,11 +381,7 @@ response = requests.post(url, headers=headers, json=payload)
 result = response.json()
 extracted_data = result["choices"][0]["message"]["content"]
 
-# Parse extracted JSON
-invoice_data = json.loads(extracted_data)
-print("Invoice Number:", invoice_data["invoice_number"])
-print("Total Amount:", invoice_data["total_amount"])
-print("Line Items:", len(invoice_data["line_items"]))
+print(extracted_data)
     ```
 </CodeGroup>
 

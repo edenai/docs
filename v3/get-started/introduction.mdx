@@ -299,13 +299,14 @@ headers = {
 payload = {
     "model": "ocr/financial_parser/google",
     "input": {
+        "language": "en",
         "file": "550e8400-e29b-41d4-a716-446655440000"
     }
 }
 
 response = requests.post(url, headers=headers, json=payload)
 result = response.json()
-print(result["output"]["text"])
+print(result["output"])
     ```
 </CodeGroup>
 

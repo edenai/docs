@@ -328,6 +328,13 @@ Identify brands and logos:
 <CodeGroup>
 ```python Python
 import requests
+
+url = "https://api.edenai.run/v3/llm/chat/completions"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
 payload = {
     "model": "google/gemini-1.5-pro",
     "messages": [
@@ -411,6 +418,13 @@ Analyze related images together:
 <CodeGroup>
 ```python Python
 import requests
+
+url = "https://api.edenai.run/v3/llm/chat/completions"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
 payload = {
     "model": "anthropic/claude-sonnet-4-5",
     "messages": [

@@ -12,7 +12,7 @@ Install LangChain and required dependencies:
 
 <CodeGroup>
 ```bash Python
-pip install langchain langchain-openai
+pip install "langchain~=1.2" "langchain-openai~=1.1" "langchain-community~=0.4" "langgraph~=1.0"
 ```
 
 ```bash TypeScript
@@ -28,7 +28,7 @@ Use Eden AI with LangChain's OpenAI integration:
 <CodeGroup>
 ```python Python
 from langchain_openai import ChatOpenAI
-from langchain.schema import HumanMessage, SystemMessage
+from langchain_core.messages import HumanMessage, SystemMessage
 
 # Initialize with Eden AI endpoint
 
@@ -103,10 +103,10 @@ api_key="YOUR_EDEN_AI_API_KEY",
 base_url="https://api.edenai.run/v3/llm"
 )
 
-# Gemini Pro
+# Gemini Flash
 
 gemini = ChatOpenAI(
-model="google/gemini-pro",
+model="google/gemini-2.0-flash",
 api_key="YOUR_EDEN_AI_API_KEY",
 base_url="https://api.edenai.run/v3/llm"
 )
@@ -121,7 +121,7 @@ Get responses from the model:
 <CodeGroup>
 ```python Python
 from langchain_openai import ChatOpenAI
-from langchain.schema import HumanMessage
+from langchain_core.messages import HumanMessage
 
 llm = ChatOpenAI(
     model="openai/gpt-4",
@@ -163,7 +163,7 @@ Use LangChain's prompt templates:
 <CodeGroup>
 ```python Python
 from langchain_openai import ChatOpenAI
-from langchain.prompts import ChatPromptTemplate
+from langchain_core.prompts import ChatPromptTemplate
 
 llm = ChatOpenAI(
 model="openai/gpt-4",
@@ -202,8 +202,8 @@ Build complex workflows with chains:
 <CodeGroup>
 ```python Python
 from langchain_openai import ChatOpenAI
-from langchain.prompts import ChatPromptTemplate
-from langchain.schema.output_parser import StrOutputParser
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
 
 llm = ChatOpenAI(
     model="openai/gpt-4",
@@ -240,11 +240,12 @@ Build RAG applications with vector stores:
 
 <CodeGroup>
 ```python Python
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.vectorstores import Chroma
-from langchain.chains import RetrievalQA
-from langchain.document_loaders import TextLoader
+from langchain_openai import ChatOpenAI
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_core.documents import Document
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.runnables import RunnablePassthrough
 
 # Initialize LLM with Eden AI
 
@@ -254,44 +255,42 @@ api_key="YOUR_EDEN_AI_API_KEY",
 base_url="https://api.edenai.run/v3/llm"
 )
 
-# Initialize embeddings (using Eden AI)
+# Create documents (replace with your data source)
 
-embeddings = OpenAIEmbeddings(
-model="text-embedding-3-small",
-api_key="YOUR_EDEN_AI_API_KEY",
-base_url="https://api.edenai.run/v3/llm"
-)
+docs = [Document(page_content="""
+Eden AI provides a unified API for 200+ AI models across providers
+like OpenAI, Google, and Anthropic. It supports text, image, audio,
+and video processing through a single endpoint.
+""")]
 
-# Load and split documents
-
-loader = TextLoader("document.txt")
-documents = loader.load()
+# Split documents into chunks
 
 text_splitter = RecursiveCharacterTextSplitter(
-chunk_size=1000,
-chunk_overlap=200
+chunk_size=200,
+chunk_overlap=50
 )
-splits = text_splitter.split_documents(documents)
+splits = text_splitter.split_documents(docs)
 
-# Create vector store
+# Build RAG chain with LCEL (using splits as context)
 
-vectorstore = Chroma.from_documents(
-documents=splits,
-embedding=embeddings
+def format_docs(docs):
+    return "\n\n".join(doc.page_content for doc in docs)
+
+prompt = ChatPromptTemplate.from_template(
+"Answer the question based on the context:\n\n{context}\n\nQuestion: {question}"
 )
 
-# Create retrieval chain
-
-qa_chain = RetrievalQA.from_chain_type(
-llm=llm,
-chain_type="stuff",
-retriever=vectorstore.as_retriever()
+chain = (
+{"context": lambda _: format_docs(splits), "question": RunnablePassthrough()}
+| prompt
+| llm
+| StrOutputParser()
 )
 
 # Query
 
-result = qa_chain.invoke({"query": "What is this document about?"})
-print(result["result"])
+result = chain.invoke("What does Eden AI do?")
+print(result)
 
 ```
 </CodeGroup>
@@ -303,10 +302,8 @@ Create autonomous agents:
 <CodeGroup>
 ```python Python
 from langchain_openai import ChatOpenAI
-from langchain.agents import AgentExecutor, create_openai_functions_agent
-from langchain.tools import Tool
-from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
-import requests
+from langchain_core.tools import tool
+from langchain.agents import create_agent
 
 # Initialize LLM
 llm = ChatOpenAI(
@@ -317,47 +314,27 @@ llm = ChatOpenAI(
 )
 
 # Define tools
-def search_tool(query: str) -> str:
+@tool
+def search(query: str) -> str:
     """Search for information"""
-    # Implement your search logic
     return f"Search results for: {query}"
 
-def calculator_tool(expression: str) -> str:
+@tool
+def calculator(expression: str) -> str:
     """Calculate mathematical expressions"""
     try:
         return str(eval(expression))
     except Exception as e:
         return f"Error: {str(e)}"
 
-tools = [
-    Tool(
-        name="Search",
-        func=search_tool,
-        description="Useful for searching information"
-    ),
-    Tool(
-        name="Calculator",
-        func=calculator_tool,
-        description="Useful for mathematical calculations"
-    )
-]
-
-# Create agent prompt
-prompt = ChatPromptTemplate.from_messages([
-    ("system", "You are a helpful assistant."),
-    ("human", "{input}"),
-    MessagesPlaceholder(variable_name="agent_scratchpad"),
-])
-
 # Create agent
-agent = create_openai_functions_agent(llm, tools, prompt)
-agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+agent = create_agent(llm, [search, calculator])
 
 # Run agent
-result = agent_executor.invoke({
-    "input": "What is 25 * 4 + 10?"
+result = agent.invoke({
+    "messages": [{"role": "user", "content": "What is 25 * 4 + 10?"}]
 })
-print(result["output"])
+print(result["messages"][-1].content)
 ```
 
 </CodeGroup>
@@ -369,8 +346,9 @@ Add memory to maintain context:
 <CodeGroup>
 ```python Python
 from langchain_openai import ChatOpenAI
-from langchain.chains import ConversationChain
-from langchain.memory import ConversationBufferMemory
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.runnables.history import RunnableWithMessageHistory
+from langchain_core.chat_history import InMemoryChatMessageHistory
 
 llm = ChatOpenAI(
 model="openai/gpt-4",
@@ -378,23 +356,39 @@ api_key="YOUR_EDEN_AI_API_KEY",
 base_url="https://api.edenai.run/v3/llm"
 )
 
-# Create conversation chain with memory
+# Create prompt with history placeholder
+prompt = ChatPromptTemplate.from_messages([
+    ("system", "You are a helpful assistant."),
+    MessagesPlaceholder(variable_name="history"),
+    ("human", "{input}")
+])
 
-conversation = ConversationChain(
-llm=llm,
-memory=ConversationBufferMemory(),
-verbose=True
+chain = prompt | llm
+
+# Store sessions in memory
+sessions = {}
+
+def get_session_history(session_id: str):
+    if session_id not in sessions:
+        sessions[session_id] = InMemoryChatMessageHistory()
+    return sessions[session_id]
+
+# Wrap chain with message history
+with_history = RunnableWithMessageHistory(
+    chain,
+    get_session_history,
+    input_messages_key="input",
+    history_messages_key="history"
 )
 
-# Have a conversation
+# Have a multi-turn conversation
+config = {"configurable": {"session_id": "user-1"}}
 
-response1 = conversation.predict(input="Hi! My name is Alice.")
-print(response1)
+response1 = with_history.invoke({"input": "Hi! My name is Alice."}, config=config)
+print(response1.content)
 
-response2 = conversation.predict(input="What's my name?")
-print(response2)
-
-# Output: Your name is Alice.
+response2 = with_history.invoke({"input": "What's my name?"}, config=config)
+print(response2.content)
 
 ```
 </CodeGroup>
@@ -406,8 +400,8 @@ Use function calling for structured outputs:
 <CodeGroup>
 ```python Python
 from langchain_openai import ChatOpenAI
-from langchain.tools import tool
-from langchain.schema import HumanMessage
+from langchain_core.tools import tool
+from langchain_core.messages import HumanMessage
 
 @tool
 def get_weather(city: str) -> str:
@@ -444,12 +438,12 @@ Parse structured outputs:
 <CodeGroup>
 ```python Python
 from langchain_openai import ChatOpenAI
-from langchain.output_parsers import PydanticOutputParser
-from langchain.prompts import ChatPromptTemplate
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import PydanticOutputParser
+from langchain_core.exceptions import OutputParserException
 from pydantic import BaseModel, Field
 
 # Define output schema
-
 class Person(BaseModel):
     name: str = Field(description="Person's name")
     age: int = Field(description="Person's age")
@@ -461,30 +455,25 @@ api_key="YOUR_EDEN_AI_API_KEY",
 base_url="https://api.edenai.run/v3/llm"
 )
 
-# Create parser
-
 parser = PydanticOutputParser(pydantic_object=Person)
-
-# Create prompt with format instructions
 
 prompt = ChatPromptTemplate.from_template(
 "Extract information about the person.\n{format_instructions}\n{query}"
 )
 
-# Create chain
-
 chain = prompt | llm | parser
 
-# Run
+try:
+    result = chain.invoke({
+        "query": "John Doe is a 35-year-old software engineer.",
+        "format_instructions": parser.get_format_instructions()
+    })
 
-result = chain.invoke({
-"query": "John Doe is a 35-year-old software engineer.",
-"format_instructions": parser.get_format_instructions()
-})
-
-print(f"Name: {result.name}")
-print(f"Age: {result.age}")
-print(f"Occupation: {result.occupation}")
+    print(f"Name: {result.name}")
+    print(f"Age: {result.age}")
+    print(f"Occupation: {result.occupation}")
+except OutputParserException as e:
+    print(f"Parsing failed: {e}")
 
 ```
 </CodeGroup>
@@ -496,14 +485,14 @@ Compare responses from different providers:
 <CodeGroup>
 ```python Python
 from langchain_openai import ChatOpenAI
-from langchain.schema import HumanMessage
+from langchain_core.messages import HumanMessage
 import asyncio
 
 async def compare_providers(question: str):
     providers = [
         ("Claude", "anthropic/claude-sonnet-4-5"),
         ("GPT-4", "openai/gpt-4"),
-        ("Gemini", "google/gemini-pro")
+        ("Gemini", "google/gemini-2.0-flash")
     ]
 
     tasks = []
@@ -579,8 +568,8 @@ except Exception as e:
 Use LangChain's caching to avoid redundant API calls:
 
 ```python
-from langchain.cache import InMemoryCache
-from langchain.globals import set_llm_cache
+from langchain_community.cache import InMemoryCache
+from langchain_core.globals import set_llm_cache
 
 set_llm_cache(InMemoryCache())
 ```

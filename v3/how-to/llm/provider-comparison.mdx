@@ -379,8 +379,9 @@ payload = {
 
 <CodeGroup>
 ```python Python
-from PIL import Image
+import os
 import io
+from PIL import Image
 
 def optimize_image(image_path, max_size_mb=5):
     """Resize image to fit under size limit."""

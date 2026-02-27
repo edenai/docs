@@ -29,6 +29,7 @@ Each line starts with `data: ` followed by JSON or the `[DONE]` marker.
 
 ### Python with requests
 
+{/* skip-test */}
 <CodeGroup>
 ```python Python
 import requests
@@ -142,6 +143,7 @@ while (true) {
 
 ### Python with OpenAI SDK
 
+{/* skip-test */}
 <CodeGroup>
 ```python Python
 from openai import OpenAI
@@ -204,6 +206,7 @@ Each JSON chunk follows OpenAI's format:
 
 ## Handling Different Finish Reasons
 
+{/* skip-test */}
 <CodeGroup>
 ```python Python
 import json
@@ -253,6 +256,7 @@ for line in response.iter_lines():
 
 Handle connection errors and timeouts:
 
+{/* skip-test */}
 <CodeGroup>
 ```python Python
 import requests
@@ -298,6 +302,7 @@ except requests.exceptions.HTTPError as e:
 
 Buffer tokens for smoother UI updates:
 
+{/* skip-test */}
 <CodeGroup>
 ```python Python
 import json

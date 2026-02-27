@@ -3,13 +3,15 @@
 Mintlify Ask AI — Quality Assurance Validation Script
 
 Sends each question from dataset.json to the Mintlify Ask AI API,
-then uses Claude as an LLM-as-judge to score answer quality.
-Optionally runs extracted code snippets against the Eden AI API.
+then uses an OpenAI Agents SDK agent (backed by Eden AI with GPT-4o) as
+an LLM-as-judge to score answer quality and to execute extracted code
+snippets with intelligent error analysis.
 
 Usage:
     python validate.py
     python validate.py --skip-code-exec
     python validate.py --question q1
+    python validate.py --no-agent          # subprocess fallback
 
 Environment variables:
     MINTLIFY_API_KEY   - Mintlify API key (mint_dsc_...)
@@ -17,6 +19,7 @@ Environment variables:
 """
 
 import argparse
+import asyncio
 import json
 import os
 import re
@@ -27,11 +30,16 @@ import textwrap
 from datetime import datetime, timezone
 from pathlib import Path
 
+from agents import Agent, RunConfig, Runner, function_tool
+from agents.models.interface import Model, ModelProvider
+from agents.models.multi_provider import MultiProvider, MultiProviderMap
+from agents.models.openai_chatcompletions import OpenAIChatCompletionsModel
 import httpx
+from openai import AsyncOpenAI
 
-# ---------------------------------------------------------------------------
+# --------------------------
 # Configuration
-# ---------------------------------------------------------------------------
+#---------------------------
 
 MINTLIFY_ASSISTANT_URL = (
     "https://api.mintlify.com/discovery/v2/assistant/{domain}/message"
@@ -41,14 +49,124 @@ EDENAI_LLM_URL = "https://api.edenai.run/v3/llm/chat/completions"
 DATASET_PATH = Path(__file__).parent / "dataset.json"
 REPORT_PATH = Path(__file__).parent / "report.json"
 
-JUDGE_MODEL = "anthropic/claude-sonnet-4-5"
-JUDGE_MAX_TOKENS = 1024
+# Eden AI model name in provider/model format
+EDENAI_MODEL = "openai/gpt-4o"
+# Prefixed for the Agents SDK — "edenai/" routes through our custom provider,
+# which strips the prefix and sends "openai/gpt-4o" to Eden AI intact.
+AGENT_MODEL = f"edenai/{EDENAI_MODEL}"
+
+# ----------------------------------------------------
+# OpenAI Agents SDK setup (Eden AI as LLM provider)
+# ----------------------------------------------------
 
 
-# ---------------------------------------------------------------------------
+class EdenAIProvider(ModelProvider):
+    """Routes requests to Eden AI, preserving the full provider/model string."""
+
+    def __init__(self, client: AsyncOpenAI):
+        self._client = client
+
+    def get_model(self, model_name: str | None) -> Model:
+        return OpenAIChatCompletionsModel(
+            model=model_name or EDENAI_MODEL,
+            openai_client=self._client,
+        )
+
+
+@function_tool
+def execute_python(code: str) -> str:
+    """Execute a Python code snippet and return the output.
+
+    Any EDEN_AI_API_KEY placeholder in the code is replaced with
+    the real key from the environment at execution time.
+    """
+    # Inject real API key only at execution time — never in the prompt
+    eden_key = os.environ.get("EDEN_AI_API_KEY", "")
+    code = code.replace("EDEN_AI_API_KEY", eden_key)
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as tmp:
+        tmp.write(code)
+        tmp_path = tmp.name
+    try:
+        result = subprocess.run(
+            [sys.executable, tmp_path],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        if result.returncode == 0:
+            return f"SUCCESS\nOutput:\n{result.stdout[:1000]}"
+        else:
+            return (
+                f"ERROR (exit code {result.returncode})\n"
+                f"Stderr:\n{result.stderr[:1000]}\n"
+                f"Stdout:\n{result.stdout[:500]}"
+            )
+    except subprocess.TimeoutExpired:
+        return "ERROR: Execution timed out after 30 seconds"
+    finally:
+        os.unlink(tmp_path)
+
+
+code_validator_agent = None
+judge_agent = None
+_run_config = None
+
+
+def setup_agents(api_key: str):
+    """Configure OpenAI Agents SDK client and create agents.
+
+    Registers an "edenai" prefix in the SDK's MultiProvider so that model
+    names like "edenai/openai/gpt-4o" are routed through our EdenAIProvider.
+    The SDK strips the "edenai/" prefix and the provider sends "openai/gpt-4o"
+    to Eden AI intact.
+    """
+    global code_validator_agent, judge_agent, _run_config
+
+    client = AsyncOpenAI(
+        base_url="https://api.edenai.run/v3/llm",
+        api_key=api_key,
+    )
+
+    # Register "edenai" as a custom provider prefix
+    provider_map = MultiProviderMap()
+    provider_map.add_provider("edenai", EdenAIProvider(client))
+    provider = MultiProvider(provider_map=provider_map)
+
+    _run_config = RunConfig(
+        model_provider=provider,
+        tracing_disabled=True,
+    )
+
+    code_validator_agent = Agent(
+        name="code-validator",
+        instructions=(
+            "You validate Python code snippets from AI documentation answers.\n\n"
+            "You MUST use the execute_python tool to run the code. "
+            "Do NOT simulate or guess the output.\n"
+            "The EDEN_AI_API_KEY placeholder is replaced with the real key "
+            "automatically at runtime — pass the code as-is.\n\n"
+            "After execution, return ONLY valid JSON:\n"
+            "{\n"
+            '    "passed": true/false,\n'
+            '    "output": "execution output or error",\n'
+            '    "analysis": "brief explanation of what happened"\n'
+            "}"
+        ),
+        tools=[execute_python],
+        model=AGENT_MODEL,
+    )
+
+    judge_agent = Agent(
+        name="judge",
+        instructions=JUDGE_SYSTEM_PROMPT,
+        model=AGENT_MODEL,
+    )
+
+
+# --------------
 # Helpers
-# ---------------------------------------------------------------------------
-
+# --------------
 
 def load_dataset(path: Path) -> list[dict]:
     with open(path) as f:
@@ -63,9 +181,9 @@ def env_or_die(name: str) -> str:
     return val
 
 
-# ---------------------------------------------------------------------------
+# ------------------------------
 # Mintlify Ask AI interaction
-# ---------------------------------------------------------------------------
+# ------------------------------
 
 
 def mintlify_ask(question: str, api_key: str, domain: str = MINTLIFY_DOMAIN) -> str:
@@ -129,20 +247,32 @@ def _parse_streaming_response(raw: str) -> str:
     return "".join(parts)
 
 
-# ---------------------------------------------------------------------------
-# LLM-as-Judge (Claude via Eden AI)
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------
+# LLM-as-Judge (GPT-4o via Eden AI / OpenAI Agents SDK)
+# --------------------------------------------------------
 
-JUDGE_PROMPT_TEMPLATE = textwrap.dedent("""\
+JUDGE_SYSTEM_PROMPT = textwrap.dedent("""\
     You are an expert evaluator for an AI documentation assistant.
 
-    ## Task
-    Rate the following answer on three dimensions (each 1-5):
+    Rate answers on three dimensions (each 1-5):
+    1. **Accuracy** — Correct information, API endpoints, parameters, auth patterns?
+    2. **Completeness** — Covers key aspects? Includes code examples?
+    3. **Code Correctness** — Syntactically correct snippets using right API patterns?
 
-    1. **Accuracy** — Does the answer contain correct information? Are API endpoints, parameters, and auth patterns correct?
-    2. **Completeness** — Does the answer cover the key aspects the user asked about? Does it include code examples?
-    3. **Code Correctness** — Are the code snippets syntactically correct and using the right API patterns?
+    Respond with ONLY valid JSON (no markdown fences). Use this exact structure:
+    {
+        "accuracy": <1-5>,
+        "completeness": <1-5>,
+        "code_correctness": <1-5>,
+        "overall": <1-5>,
+        "keyword_matches": ["list of expected keywords found in the answer"],
+        "keyword_misses": ["list of expected keywords NOT found"],
+        "issues": ["list of specific problems, if any"],
+        "summary": "One-sentence assessment"
+    }
+""")
 
+JUDGE_USER_TEMPLATE = textwrap.dedent("""\
     ## Question
     {question}
 
@@ -154,31 +284,53 @@ JUDGE_PROMPT_TEMPLATE = textwrap.dedent("""\
 
     ## Actual Answer from the AI Assistant
     {actual_answer}
-
-    ## Instructions
-    Respond with ONLY valid JSON (no markdown fences). Use this exact structure:
-    {{
-        "accuracy": <1-5>,
-        "completeness": <1-5>,
-        "code_correctness": <1-5>,
-        "overall": <1-5>,
-        "keyword_matches": ["list of expected keywords found in the answer"],
-        "keyword_misses": ["list of expected keywords NOT found"],
-        "issues": ["list of specific problems, if any"],
-        "summary": "One-sentence assessment"
-    }}
 """)
 
 
-def llm_judge(
+def _parse_json(text: str) -> dict:
+    """Parse JSON from LLM output, stripping markdown fences if present."""
+    text = text.strip()
+    text = re.sub(r"^```(?:json)?\s*\n?", "", text)
+    text = re.sub(r"\n?\s*```$", "", text)
+    text = text.strip()
+    return json.loads(text)
+
+
+async def llm_judge_agent(
+    question: str,
+    expected_keywords: list[str],
+    expected_code: str,
+    actual_answer: str,
+) -> dict:
+    """Use GPT-4o (via OpenAI Agents SDK + Eden AI) to judge answer quality."""
+    prompt = JUDGE_USER_TEMPLATE.format(
+        question=question,
+        expected_keywords=json.dumps(expected_keywords),
+        expected_code=expected_code,
+        actual_answer=actual_answer,
+    )
+
+    result = await Runner.run(judge_agent, prompt, run_config=_run_config)
+
+    try:
+        return _parse_json(result.final_output)
+    except json.JSONDecodeError as e:
+        raise RuntimeError(
+            f"Judge returned invalid JSON: {e}\n"
+            f"Raw text: {result.final_output[:500]}"
+        )
+
+
+def llm_judge_http(
     question: str,
     expected_keywords: list[str],
     expected_code: str,
     actual_answer: str,
     api_key: str,
 ) -> dict:
-    """Use Claude (via Eden AI) to judge the quality of an answer."""
-    prompt = JUDGE_PROMPT_TEMPLATE.format(
+    """Fallback: judge via direct HTTP to Eden AI (no agent SDK)."""
+    system_msg = JUDGE_SYSTEM_PROMPT
+    user_msg = JUDGE_USER_TEMPLATE.format(
         question=question,
         expected_keywords=json.dumps(expected_keywords),
         expected_code=expected_code,
@@ -189,11 +341,13 @@ def llm_judge(
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
-
     payload = {
-        "model": JUDGE_MODEL,
-        "max_tokens": JUDGE_MAX_TOKENS,
-        "messages": [{"role": "user", "content": prompt}],
+        "model": EDENAI_MODEL,
+        "max_tokens": 1024,
+        "messages": [
+            {"role": "system", "content": system_msg},
+            {"role": "user", "content": user_msg},
+        ],
     }
 
     with httpx.Client(timeout=60) as client:
@@ -204,8 +358,6 @@ def llm_judge(
             )
 
     resp_data = resp.json()
-
-    # Extract content from OpenAI-compatible response
     try:
         result_text = resp_data["choices"][0]["message"]["content"]
     except (KeyError, IndexError, TypeError):
@@ -213,23 +365,17 @@ def llm_judge(
             f"Unexpected Eden AI response structure: {json.dumps(resp_data)[:500]}"
         )
 
-    # Strip markdown fences if the model added them despite instructions
-    result_text = result_text.strip()
-    result_text = re.sub(r"^```(?:json)?\s*\n?", "", result_text)
-    result_text = re.sub(r"\n?\s*```$", "", result_text)
-    result_text = result_text.strip()
-
     try:
-        return json.loads(result_text)
+        return _parse_json(result_text)
     except json.JSONDecodeError as e:
         raise RuntimeError(
             f"Judge returned invalid JSON: {e}\nRaw text: {result_text[:500]}"
         )
 
 
-# ---------------------------------------------------------------------------
+# --------------------------
 # Code execution validation
-# ---------------------------------------------------------------------------
+# --------------------------
 
 
 def extract_python_snippets(answer: str) -> list[str]:
@@ -279,16 +425,57 @@ def run_python_snippet(code: str, eden_api_key: str) -> dict:
         os.unlink(tmp_path)
 
 
-# ---------------------------------------------------------------------------
+async def run_python_snippet_agent(code: str, eden_api_key: str) -> dict:
+    """Use OpenAI Agents SDK to execute and analyze a code snippet."""
+    # Replace placeholder keys with EDEN_AI_API_KEY (not the real value).
+    # The execute_python tool injects the real key at execution time.
+    safe_code = make_code_executable(code, "EDEN_AI_API_KEY")
+
+    prompt = (
+        "Execute this Python snippet using the execute_python tool "
+        "and report results:\n\n"
+        f"```python\n{safe_code}\n```"
+    )
+
+    try:
+        result = await Runner.run(code_validator_agent, prompt, run_config=_run_config)
+    except Exception as e:
+        return {
+            "passed": False,
+            "stdout": "",
+            "stderr": f"Agent error: {e}",
+            "analysis": "",
+        }
+
+    # Parse agent's JSON response (strip markdown fences if present)
+    try:
+        parsed = _parse_json(result.final_output)
+        return {
+            "passed": parsed.get("passed", False),
+            "stdout": parsed.get("output", "")[:500],
+            "stderr": "",
+            "analysis": parsed.get("analysis", ""),
+        }
+    except (json.JSONDecodeError, ValueError, AttributeError):
+        return {
+            "passed": False,
+            "stdout": str(result.final_output)[:500],
+            "stderr": "Agent returned non-JSON response",
+            "analysis": "",
+        }
+
+
+# -----------------------
 # Main validation loop
-# ---------------------------------------------------------------------------
+# -----------------------
 
 
-def validate_one(
+async def validate_one(
     entry: dict,
     mintlify_key: str,
     eden_key: str,
     skip_code_exec: bool,
+    use_agent: bool,
     domain: str = MINTLIFY_DOMAIN,
 ) -> dict:
     """Validate a single Q&A entry. Returns a result dict."""
@@ -313,15 +500,23 @@ def validate_one(
         }
 
     # 2. LLM Judge
-    print("  -> Judging with Claude...")
+    print(f"  -> Judging with GPT-4o ({'agent' if use_agent else 'HTTP'})...")
     try:
-        judge_result = llm_judge(
-            question=question,
-            expected_keywords=entry["expected_answer_contains"],
-            expected_code=entry["expected_code_snippet"],
-            actual_answer=actual_answer,
-            api_key=eden_key,
-        )
+        if use_agent:
+            judge_result = await llm_judge_agent(
+                question=question,
+                expected_keywords=entry["expected_answer_contains"],
+                expected_code=entry["expected_code_snippet"],
+                actual_answer=actual_answer,
+            )
+        else:
+            judge_result = llm_judge_http(
+                question=question,
+                expected_keywords=entry["expected_answer_contains"],
+                expected_code=entry["expected_code_snippet"],
+                actual_answer=actual_answer,
+                api_key=eden_key,
+            )
         print(
             f"  -> Scores: accuracy={judge_result['accuracy']}, "
             f"completeness={judge_result['completeness']}, "
@@ -337,13 +532,19 @@ def validate_one(
     if not skip_code_exec and entry.get("has_executable_code"):
         snippets = extract_python_snippets(actual_answer)
         if snippets:
-            print(f"  -> Running {len(snippets)} code snippet(s)...")
+            mode = "agent" if use_agent else "subprocess"
+            print(f"  -> Running {len(snippets)} code snippet(s) via {mode}...")
             for i, snippet in enumerate(snippets):
-                result = run_python_snippet(snippet, eden_key)
+                if use_agent:
+                    result = await run_python_snippet_agent(snippet, eden_key)
+                else:
+                    result = run_python_snippet(snippet, eden_key)
                 status = "PASS" if result["passed"] else "FAIL"
                 print(f"     snippet {i+1}: {status}")
-                if not result["passed"] and result["stderr"]:
+                if not result["passed"] and result.get("stderr"):
                     print(f"     error: {result['stderr'][:200]}")
+                if result.get("analysis"):
+                    print(f"     analysis: {result['analysis'][:200]}")
                 code_results.append(result)
         else:
             print("  -> No Python snippets found to execute")
@@ -402,7 +603,7 @@ def print_summary(results: list[dict]) -> None:
         print(f"Questions evaluated: {len(ok_results)}/{len(results)}")
 
 
-def main():
+async def async_main():
     parser = argparse.ArgumentParser(description="Validate Mintlify Ask AI quality")
     parser.add_argument(
         "--skip-code-exec",
@@ -426,11 +627,24 @@ def main():
         default=MINTLIFY_DOMAIN,
         help=f"Mintlify docs domain (default: {MINTLIFY_DOMAIN})",
     )
+    parser.add_argument(
+        "--no-agent",
+        action="store_true",
+        help="Use subprocess fallback instead of the OpenAI Agents SDK agent",
+    )
     args = parser.parse_args()
 
     # Load env vars
     mintlify_key = env_or_die("MINTLIFY_API_KEY")
     eden_key = env_or_die("EDEN_AI_API_KEY")
+
+    # Determine whether to use the agent
+    use_agent = not args.no_agent
+    if use_agent:
+        setup_agents(eden_key)
+        print("Agent mode: ON (OpenAI Agents SDK via Eden AI)")
+    else:
+        print("Agent mode: OFF (subprocess fallback)")
 
     # Load dataset
     dataset = load_dataset(Path(args.dataset))
@@ -446,11 +660,12 @@ def main():
     # Run validation
     results = []
     for entry in dataset:
-        result = validate_one(
+        result = await validate_one(
             entry,
             mintlify_key=mintlify_key,
             eden_key=eden_key,
             skip_code_exec=args.skip_code_exec,
+            use_agent=use_agent,
             domain=args.domain,
         )
         results.append(result)
@@ -463,12 +678,17 @@ def main():
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "questions_total": len(dataset),
         "questions_ok": sum(1 for r in results if r["status"] == "ok"),
+        "agent_mode": use_agent,
         "results": results,
     }
     report_path = Path(args.dataset).parent / "report.json"
     with open(report_path, "w") as f:
         json.dump(report, f, indent=2)
     print(f"\nFull report saved to: {report_path}")
+
+
+def main():
+    asyncio.run(async_main())
 
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
 # Mintlify Ask AI — Quality Assurance
 
-Automated validation pipeline for the Eden AI docs "Ask AI" feature. Sends questions to the Mintlify Ask AI API, then uses Claude as an LLM-as-judge to score answer quality. Code snippets extracted from answers are optionally executed against the Eden AI API to verify they work.
+Automated validation pipeline for the Eden AI docs "Ask AI" feature. Sends questions to the Mintlify Ask AI API, then uses **OpenAI Agents SDK** agents (backed by Eden AI with `openai/gpt-4o`) for both LLM-as-judge scoring and intelligent code execution with error analysis.
 
 ## Setup
 
@@ -13,7 +13,7 @@ pip install -r qa/requirements.txt
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `MINTLIFY_API_KEY` | Yes | Mintlify API key (`mint_dsc_...`) from the Mintlify dashboard |
-| `EDEN_AI_API_KEY` | Yes | Eden AI API key — used for the LLM judge, Agent SDK code execution, and running code snippets against Eden AI |
+| `EDEN_AI_API_KEY` | Yes | Eden AI API key — used for the LLM judge and running code snippets against Eden AI |
 
 ```bash
 export MINTLIFY_API_KEY="mint_dsc_..."
@@ -23,7 +23,7 @@ export EDEN_AI_API_KEY="..."
 ## Usage
 
 ```bash
-# Run full validation
+# Run full validation (agent mode — default)
 python qa/validate.py
 
 # Skip code execution tests
@@ -31,7 +31,19 @@ python qa/validate.py --skip-code-exec
 
 # Validate a single question
 python qa/validate.py --question q1
+
+# Use subprocess fallback instead of the agent
+python qa/validate.py --no-agent
 ```
+
+### Agent mode vs subprocess fallback
+
+By default the script uses the **OpenAI Agents SDK** (`openai-agents`) configured with Eden AI as the LLM provider, running `openai/gpt-4o` for everything:
+
+- **Judge agent** — scores answer quality on accuracy, completeness, and code correctness
+- **Code validator agent** — executes Python snippets via a custom `@function_tool`, analyzes errors intelligently (e.g., "failed because `openai` package not installed"), returns structured pass/fail with an `analysis` field
+
+Pass `--no-agent` to fall back to direct HTTP calls for judging and plain subprocess for code execution (useful if Eden AI credits are low or for quick local testing).
 
 ## Output
 

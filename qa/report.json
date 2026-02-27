@@ -1,7 +1,8 @@
 {
-  "timestamp": "2026-02-27T11:52:00.294862+00:00",
-  "questions_total": 1,
-  "questions_ok": 1,
+  "timestamp": "2026-02-27T15:00:11.000186+00:00",
+  "questions_total": 4,
+  "questions_ok": 4,
+  "agent_mode": true,
   "results": [
     {
       "id": "q1",
@@ -9,8 +10,8 @@
       "category": "llm",
       "source_doc": "v3/how-to/llm/chat-completions.mdx",
       "status": "ok",
-      "actual_answer_length": 1076,
-      "actual_answer_preview": "To make a chat completion request with Eden AI, send a POST request to `https://api.edenai.run/v3/llm/chat/completions` with your API key and a model string in `provider/model` format.\n\n**Example (Python):**\n```python\nimport requests\n\nresponse = requests.post(\n    \"https://api.edenai.run/v3/llm/chat",
+      "actual_answer_length": 1092,
+      "actual_answer_preview": "To make a chat completion request with Eden AI, send a POST request to `https://api.edenai.run/v3/llm/chat/completions` with your API key, a model string (e.g., `openai/gpt-4`), and a messages array:\n\n```python\nimport requests\n\nresponse = requests.post(\n    \"https://api.edenai.run/v3/llm/chat/comple",
       "judge": {
         "accuracy": 5,
         "completeness": 5,
@@ -24,13 +25,99 @@
         ],
         "keyword_misses": [],
         "issues": [],
-        "summary": "Excellent answer with accurate API endpoint, correct authentication pattern, complete code example, and helpful additional context about SDK usage and optional parameters."
+        "summary": "The response accurately and completely explains how to make a chat completion request with Eden AI, including correct API usage and code demonstration."
+      },
+      "code_execution": [
+        {
+          "passed": true,
+          "stdout": "Hello! How can I assist you today?",
+          "stderr": "",
+          "analysis": "The code successfully made a POST request to the Eden AI API using the GPT-4 model with the prompt 'Hello!'. The response was correctly parsed to extract and print the message content from the API's response."
+        }
+      ]
+    },
+    {
+      "id": "q2",
+      "question": "How do I extract text from a document using OCR with Eden AI?",
+      "category": "universal-ai",
+      "source_doc": "v3/how-to/universal-ai/ocr-features.mdx",
+      "status": "ok",
+      "actual_answer_length": 1272,
+      "actual_answer_preview": "Eden AI offers two main approaches for OCR text extraction:\n\n**1. Universal AI Endpoint (dedicated OCR)**\nUpload your file, then call the `/v3/universal-ai` endpoint with an OCR model string:\n\n```python\n# Upload file\nupload_response = requests.post(\n    \"https://api.edenai.run/v3/upload\",\n    header",
+      "judge": {
+        "accuracy": 4,
+        "completeness": 4,
+        "code_correctness": 5,
+        "overall": 4,
+        "keyword_matches": [
+          "POST /v3/universal-ai",
+          "ocr/",
+          "file"
+        ],
+        "keyword_misses": [
+          "Authorization: Bearer"
+        ],
+        "issues": [
+          "The Authorization header with 'Bearer' keyword is not explicitly shown in the example code."
+        ],
+        "summary": "The answer is mostly accurate and complete, but it lacks explicit mention of the 'Authorization: Bearer' in the code example."
+      },
+      "code_execution": []
+    },
+    {
+      "id": "q3",
+      "question": "How do I authenticate my API requests to Eden AI?",
+      "category": "authentication",
+      "source_doc": "v3/how-to/authentication/bearer-token-auth.mdx",
+      "status": "ok",
+      "actual_answer_length": 753,
+      "actual_answer_preview": "To authenticate Eden AI API requests, include your API token in the `Authorization` header using the `Bearer` scheme:\n\n```\nAuthorization: Bearer YOUR_API_KEY\n```\n\n**Steps to get your API key:**\n1. Sign up or log in at [app.edenai.run](https://app.edenai.run/)\n2. Navigate to the **API Keys** section\n",
+      "judge": {
+        "accuracy": 5,
+        "completeness": 5,
+        "code_correctness": 5,
+        "overall": 5,
+        "keyword_matches": [
+          "Authorization: Bearer",
+          "API key",
+          "https://app.edenai.run"
+        ],
+        "keyword_misses": [],
+        "issues": [],
+        "summary": "The answer accurately and completely covers how to authenticate API requests to Eden AI, including correct code syntax."
+      },
+      "code_execution": []
+    },
+    {
+      "id": "q4",
+      "question": "How do I stream LLM responses with Eden AI?",
+      "category": "llm-streaming",
+      "source_doc": "v3/how-to/llm/streaming.mdx",
+      "status": "ok",
+      "actual_answer_length": 1367,
+      "actual_answer_preview": "To stream LLM responses with Eden AI, set `\"stream\": true` in your request to `/v3/llm/chat/completions`. Responses are delivered via **Server-Sent Events (SSE)** in OpenAI-compatible format.\n\n**Quick example (Python):**\n```python\npayload = {\n    \"model\": \"openai/gpt-4\",\n    \"messages\": [{\"role\": \"u",
+      "judge": {
+        "accuracy": 5,
+        "completeness": 5,
+        "code_correctness": 5,
+        "overall": 5,
+        "keyword_matches": [
+          "stream",
+          "Server-Sent Events",
+          "data:",
+          "[DONE]",
+          "/v3/llm/chat/completions"
+        ],
+        "keyword_misses": [],
+        "issues": [],
+        "summary": "The answer accurately and completely explains how to stream LLM responses using Eden AI, with correct code examples and API patterns."
       },
       "code_execution": [
         {
           "passed": false,
-          "stdout": "",
-          "stderr": "Agent SDK error: Command failed with exit code 1 (exit code: 1)\nError output: Check stderr output for details\nStderr: no stderr"
+          "stdout": "NameError: name 'requests' is not defined",
+          "stderr": "",
+          "analysis": "The code snippet attempts to use `requests` without importing it, which causes a `NameError` since `requests` is not defined within the code. Additionally, `url` and `headers` are used but not defined, which will lead to further errors if reached."
         }
       ]
     }

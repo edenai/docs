@@ -1,8 +1,12 @@
 pytest
 requests
 openai
-langchain
-langchain-openai
+langchain~=1.2
+langchain-openai~=1.1
+langchain-community~=0.4
+langchain-text-splitters
+langgraph~=1.0
+chromadb
 pydantic
 python-dotenv
 aiohttp

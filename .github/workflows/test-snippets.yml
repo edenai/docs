@@ -12,10 +12,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - run: pip install -r tests/requirements.txt
+      - run: uv pip install -r tests/requirements-lock.txt --system
       - run: pytest tests/test_snippets_syntax.py -v
 
   execute:
@@ -24,10 +25,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - run: pip install -r tests/requirements.txt
+      - run: uv pip install -r tests/requirements-lock.txt --system
       - run: pytest tests/test_snippets_execute.py -v
         env:
           EDEN_AI_SANDBOX_API_TOKEN: ${{ secrets.EDEN_AI_SANDBOX_TOKEN }}

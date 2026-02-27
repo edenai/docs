@@ -268,7 +268,9 @@ def extract_all() -> list[dict]:
     if not init_file.exists():
         init_file.write_text("")
 
-    mdx_files = sorted(DOCS_ROOT.glob("v3/**/*.mdx"))
+    mdx_files = sorted(
+        list(DOCS_ROOT.glob("v3/**/*.mdx")) + list(DOCS_ROOT.glob("*.mdx"))
+    )
     results = []
 
     for mdx_path in mdx_files:
@@ -309,7 +311,9 @@ def extract_individual_blocks() -> list[dict]:
         - line: starting line number in the .mdx file
         - block_index: 0-based index within the file
     """
-    mdx_files = sorted(DOCS_ROOT.glob("v3/**/*.mdx"))
+    mdx_files = sorted(
+        list(DOCS_ROOT.glob("v3/**/*.mdx")) + list(DOCS_ROOT.glob("*.mdx"))
+    )
     results = []
 
     for mdx_path in mdx_files:

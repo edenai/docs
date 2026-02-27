@@ -1,0 +1,38 @@
+{
+  "timestamp": "2026-02-27T11:52:00.294862+00:00",
+  "questions_total": 1,
+  "questions_ok": 1,
+  "results": [
+    {
+      "id": "q1",
+      "question": "How do I make a chat completion request with Eden AI?",
+      "category": "llm",
+      "source_doc": "v3/how-to/llm/chat-completions.mdx",
+      "status": "ok",
+      "actual_answer_length": 1076,
+      "actual_answer_preview": "To make a chat completion request with Eden AI, send a POST request to `https://api.edenai.run/v3/llm/chat/completions` with your API key and a model string in `provider/model` format.\n\n**Example (Python):**\n```python\nimport requests\n\nresponse = requests.post(\n    \"https://api.edenai.run/v3/llm/chat",
+      "judge": {
+        "accuracy": 5,
+        "completeness": 5,
+        "code_correctness": 5,
+        "overall": 5,
+        "keyword_matches": [
+          "POST /v3/llm/chat/completions",
+          "Authorization: Bearer",
+          "model",
+          "messages"
+        ],
+        "keyword_misses": [],
+        "issues": [],
+        "summary": "Excellent answer with accurate API endpoint, correct authentication pattern, complete code example, and helpful additional context about SDK usage and optional parameters."
+      },
+      "code_execution": [
+        {
+          "passed": false,
+          "stdout": "",
+          "stderr": "Agent SDK error: Command failed with exit code 1 (exit code: 1)\nError output: Check stderr output for details\nStderr: no stderr"
+        }
+      ]
+    }
+  ]
+}

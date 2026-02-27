@@ -48,7 +48,7 @@ def _case_id(case: dict) -> str:
 @pytest.mark.parametrize(
     "test_case", _test_cases, ids=[_case_id(c) for c in _test_cases]
 )
-def test_snippet_executes(test_case, fixtures_dir, monkeypatch):
+def test_snippet_executes(test_case, fixtures_dir, monkeypatch, http_recorder):
     """Import and execute a single block function from a generated module."""
     module_name = test_case["module_name"]
     func_name = test_case["func_name"]
@@ -73,4 +73,11 @@ def test_snippet_executes(test_case, fixtures_dir, monkeypatch):
     module = importlib.reload(module)
 
     func = getattr(module, func_name)
-    func()
+    try:
+        func()
+    except Exception as exc:
+        summary = http_recorder.summary()
+        pytest.fail(
+            f"{type(exc).__name__}: {exc}\n\n"
+            f"--- Last HTTP Request/Response ---\n{summary}"
+        )

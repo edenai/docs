@@ -4,11 +4,11 @@ Automated test suite that extracts Python code snippets from `.mdx` documentatio
 
 ## Overview
 
-The docs contain ~242 Python code snippets across ~30 `.mdx` files under `v3/`. This test suite:
+The docs contain ~229 Python code snippets across ~30 `.mdx` files under `v3/`. This test suite:
 
 1. **Extracts** all Python code blocks from `.mdx` files
 2. **Validates syntax** via `ast.parse()` on each individual snippet
-3. **Executes** concatenated per-page snippets against the Eden AI sandbox API
+3. **Executes** each snippet independently against the Eden AI API (sandbox or production token depending on the endpoint)
 
 ## Directory Structure
 
@@ -30,15 +30,14 @@ tests/
 
 1. Globs all `v3/**/*.mdx` files
 2. Extracts fenced Python code blocks (` ```python ... ``` `) using regex
-3. For each page, concatenates all Python snippets in document order into a single module
-4. Wraps the concatenated code in a `def main():` function with an `if __name__` guard
-5. Applies transforms:
-   - Replaces `YOUR_API_KEY` / `YOUR_EDEN_AI_API_KEY` with `os.environ["EDEN_AI_API_KEY"]`
-   - Deduplicates import statements across snippets on the same page
-   - Adds `import os` if not present
-6. Writes to `tests/generated/<module_name>.py`
+3. Wraps each block in its own function (`block_1()`, `block_2()`, etc.) for independent testing
+4. Applies transforms:
+   - Replaces `YOUR_API_KEY` / `YOUR_EDEN_AI_API_KEY` / hardcoded API key strings with `os.environ["EDEN_AI_SANDBOX_API_TOKEN"]` (or `EDEN_AI_PRODUCTION_API_TOKEN` for v2 admin endpoints)
+   - Replaces hardcoded `https://api.edenai.run` with a configurable `_EDEN_BASE_URL`
+   - Adds `import os` at module level
+5. Writes to `tests/generated/<module_name>.py`
 
-The generated files are importable Python modules that can also be run standalone.
+Each generated module also has a `main()` that calls all block functions in order, so modules can be run standalone.
 
 ### Test Fixture Files
 
@@ -63,11 +62,16 @@ No API key required — pure static analysis.
 
 ### Execution Tests
 
-`test_snippets_execute.py` imports the generated modules and calls `main()` in-process. This validates:
+`test_snippets_execute.py` imports each generated module and calls each block function independently. This validates:
 
-- API calls succeed against the sandbox
+- API calls succeed against the sandbox (or production endpoint for v2 admin snippets)
 - Response structures match what the snippet code expects
-- Variable dependencies between snippets on the same page work correctly
+
+**Two token types:**
+- `EDEN_AI_SANDBOX_API_TOKEN` — used for most snippets (AI feature calls return mock responses, no credits consumed)
+- `EDEN_AI_PRODUCTION_API_TOKEN` — used for v2 admin endpoints (cost management, token management); tests are skipped if not set
+
+Each block function is a separate test case, so a failure in one block doesn't prevent other blocks on the same page from running.
 
 For snippets with `input()` calls, `monkeypatch` provides test values automatically.
 
@@ -93,7 +97,13 @@ pytest tests/test_snippets_syntax.py -v
 ### Full Suite (requires sandbox token)
 
 ```bash
-EDEN_AI_API_KEY=<your_sandbox_token> pytest tests/ -v
+EDEN_AI_SANDBOX_API_TOKEN=<your_sandbox_token> pytest tests/ -v
+```
+
+### Including v2 Admin Endpoint Tests
+
+```bash
+EDEN_AI_SANDBOX_API_TOKEN=<sandbox_token> EDEN_AI_PRODUCTION_API_TOKEN=<real_token> pytest tests/ -v
 ```
 
 ### Run Extractor Standalone
@@ -107,7 +117,7 @@ python tests/snippet_extractor.py
 Generated modules are written to `tests/generated/` and can be inspected or run individually:
 
 ```bash
-EDEN_AI_API_KEY=<token> python tests/generated/v3_how_to_universal_ai_text_features.py
+EDEN_AI_SANDBOX_API_TOKEN=<token> python tests/generated/v3_how_to_universal_ai_text_features.py
 ```
 
 ## CI (GitHub Actions)
@@ -115,16 +125,16 @@ EDEN_AI_API_KEY=<token> python tests/generated/v3_how_to_universal_ai_text_featu
 The workflow at `.github/workflows/test-snippets.yml` runs on PRs that touch `v3/**/*.mdx` or `tests/**`:
 
 1. **Syntax job**: runs syntax tests (fast, no secrets needed)
-2. **Execution job**: runs execution tests with `EDEN_AI_SANDBOX_TOKEN` secret
+2. **Execution job**: runs execution tests with `EDEN_AI_SANDBOX_TOKEN` and `EDEN_AI_PRODUCTION_TOKEN` secrets
 
-To set up: add `EDEN_AI_SANDBOX_TOKEN` as a repository secret in GitHub.
+To set up: add `EDEN_AI_SANDBOX_TOKEN` and `EDEN_AI_PRODUCTION_TOKEN` as repository secrets in GitHub.
 
 ## Adding New Documentation
 
 When adding new `.mdx` files with Python code snippets:
 
 1. Ensure Python code blocks use ` ```python ` fencing
-2. First snippet on a page should define `url` and `headers` if later snippets depend on them
+2. Make each snippet self-contained (include its own imports, define `url`, `headers`, etc.)
 3. Run `pytest tests/test_snippets_syntax.py -v` to verify syntax
 4. The extractor auto-discovers new `.mdx` files — no configuration needed
 

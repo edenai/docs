@@ -56,6 +56,11 @@ API_KEY_PATTERNS = [
         re.compile(r'"(YOUR_API_KEY|YOUR_EDEN_AI_API_KEY)"'),
         'os.environ["{token_var}"]',
     ),
+    # os.getenv("EDEN_AI_API_KEY") or os.environ.get("EDEN_AI_API_KEY")
+    (
+        re.compile(r'os\.(?:getenv|environ\.get)\(\s*"EDEN_AI_API_KEY"\s*\)'),
+        'os.environ["{token_var}"]',
+    ),
 ]
 
 # Matches bare API_KEY usage (not inside a string, not as part of a longer name)

@@ -97,6 +97,48 @@ def _upload_test_file(file_bytes: bytes, filename: str) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Custom token management helpers (v2 admin endpoints)
+# ---------------------------------------------------------------------------
+
+def _production_api_headers() -> dict:
+    token = os.environ.get("EDEN_AI_PRODUCTION_API_TOKEN")
+    if not token:
+        return {}
+    return {"Authorization": f"Bearer {token}"}
+
+
+def _list_custom_token_names() -> set[str]:
+    """Return the set of all custom token names currently on the account."""
+    headers = _production_api_headers()
+    if not headers:
+        return set()
+    resp = requests.get(
+        f"{_api_base_url()}/v2/user/custom_token/",
+        headers=headers,
+    )
+    resp.raise_for_status()
+    return {t["name"] for t in resp.json()}
+
+
+def _delete_custom_tokens(names: set[str]) -> int:
+    """Delete custom tokens by name. Returns count of deleted tokens."""
+    if not names:
+        return 0
+    headers = _production_api_headers()
+    if not headers:
+        return 0
+    deleted = 0
+    for name in names:
+        resp = requests.delete(
+            f"{_api_base_url()}/v2/user/custom_token/{name}/",
+            headers=headers,
+        )
+        if resp.status_code == 204:
+            deleted += 1
+    return deleted
+
+
+# ---------------------------------------------------------------------------
 # Minimal valid file generators (no external dependencies)
 # ---------------------------------------------------------------------------
 
@@ -230,6 +272,7 @@ def fixtures_dir(tmp_path_factory):
         "policy-document.pdf", "research-paper.pdf",
         "doc1.pdf", "doc2.pdf", "doc3.pdf",
         "invoice1.pdf", "invoice2.pdf", "invoice3.pdf",
+        "doc.pdf",
     ]:
         (d / name).write_bytes(pdf_data)
 
@@ -238,7 +281,10 @@ def fixtures_dir(tmp_path_factory):
 
     # JPEG files
     jpeg_data = _minimal_jpeg()
-    for name in ["image.jpg", "photo.jpg", "product.jpg", "people.jpg", "passport.jpg", "receipt.jpg"]:
+    for name in [
+        "image.jpg", "photo.jpg", "product.jpg", "people.jpg", "passport.jpg", "receipt.jpg",
+        "user_upload.jpg", "complex_document.jpg", "user_photo.jpg",
+    ]:
         (d / name).write_bytes(jpeg_data)
     (d / "large-image.jpg").write_bytes(_large_jpeg())
 
@@ -300,6 +346,84 @@ def manage_uploaded_files():
     if new_file_ids:
         deleted = _delete_file_ids(new_file_ids)
         print(f"\n[conftest] Cleaned up {deleted} uploaded file(s)")
+
+
+@pytest.fixture(scope="session", autouse=True)
+def manage_custom_tokens():
+    """Snapshot custom token names before tests, clean up new ones after.
+
+    Ensures tokens created by documentation snippets (e.g. manage-tokens.mdx)
+    don't accumulate across test runs.
+    """
+    if not os.environ.get("EDEN_AI_PRODUCTION_API_TOKEN"):
+        yield
+        return
+
+    pre_existing = _list_custom_token_names()
+
+    yield
+
+    current = _list_custom_token_names()
+    new_tokens = current - pre_existing
+    if new_tokens:
+        deleted = _delete_custom_tokens(new_tokens)
+        print(f"\n[conftest] Cleaned up {deleted} custom token(s)")
+
+
+class HttpRecorder:
+    """Records the last HTTP request/response for debugging test failures."""
+
+    def __init__(self):
+        self.last_request: requests.PreparedRequest | None = None
+        self.last_response: requests.Response | None = None
+
+    def summary(self, max_body: int = 2000) -> str:
+        """Format the last recorded request/response for error output."""
+        if self.last_request is None:
+            return "(no HTTP calls recorded)"
+
+        req = self.last_request
+        resp = self.last_response
+
+        lines = [
+            f"{req.method} {req.url}",
+        ]
+
+        # Request body
+        if req.body:
+            body = req.body if isinstance(req.body, str) else repr(req.body)
+            if len(body) > max_body:
+                body = body[:max_body] + f"... ({len(body)} bytes total)"
+            lines.append(f"Request body:\n{body}")
+
+        # Response
+        if resp is not None:
+            lines.append(f"Status: {resp.status_code}")
+            try:
+                text = resp.text
+                if len(text) > max_body:
+                    text = text[:max_body] + f"... ({len(text)} chars total)"
+                lines.append(f"Response body:\n{text}")
+            except Exception:
+                lines.append("Response body: (could not decode)")
+
+        return "\n".join(lines)
+
+
+@pytest.fixture()
+def http_recorder(monkeypatch):
+    """Monkeypatch requests.Session.send to record the last request/response."""
+    recorder = HttpRecorder()
+    original_send = requests.Session.send
+
+    def _recording_send(self, request, **kwargs):
+        recorder.last_request = request
+        response = original_send(self, request, **kwargs)
+        recorder.last_response = response
+        return response
+
+    monkeypatch.setattr(requests.Session, "send", _recording_send)
+    return recorder
 
 
 def pytest_configure(config):

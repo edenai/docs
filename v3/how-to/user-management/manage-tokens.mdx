@@ -70,8 +70,8 @@ response = requests.post(
 )
 
 result = response.json()
-print(f"Token created: {result['token']}")
-print(f"Token name: {result['name']}")
+print(f"Token created: {result['name']}")
+print(f"Token type: {result['token_type']}")
     ```
 
 ```javascript JavaScript
@@ -92,8 +92,8 @@ const response = await fetch(
 );
 
 const result = await response.json();
-console.log(`Token created: ${result.token}`);
-console.log(`Token name: ${result.name}`);
+console.log(`Token created: ${result.name}`);
+console.log(`Token type: ${result.token_type}`);
     ```
 </CodeGroup>
 
@@ -102,15 +102,14 @@ console.log(`Token name: ${result.name}`);
 ```json
 {
   "name": "production-api-token",
-  "token": "eyJhbG...1234567890abcdefghijklmnop",
   "token_type": "api_token",
-  "balance": null,
+  "balance": "50.000000000",
   "active_balance": false,
   "expire_time": null
 }
 ```
 
-**Important:** Save the token value immediately - it's only shown once during creation!
+**Tip:** Use the GET endpoint to retrieve the token value after creation.
 
 ### Create a Token with Credit Limit
 
@@ -202,7 +201,7 @@ response = requests.post(
 )
 
 result = response.json()
-print(f"Sandbox token created: {result['token']}")
+print(f"Sandbox token created: {result['name']}")
     ```
 </CodeGroup>
 
@@ -660,15 +659,15 @@ from datetime import datetime, timedelta
 
 API_KEY = "eyJhbG...xxxxxxxxxxxxxxxxxxxxxxxx"
 
+headers = {
+    "Authorization": f"Bearer {API_KEY}",
+    "Content-Type": "application/json"
+}
+
 def rotate_token(old_token_name: str, new_token_name: str):
     """
     Rotate a token by creating a new one and deleting the old one.
     """
-    headers = {
-        "Authorization": f"Bearer {API_KEY}",
-        "Content-Type": "application/json"
-    }
-
     # Get old token details
     old_response = requests.get(
         f"https://api.edenai.run/v2/user/custom_token/{old_token_name}/",
@@ -692,7 +691,12 @@ def rotate_token(old_token_name: str, new_token_name: str):
         json=new_data
     )
 
-    new_token = new_response.json()
+    # Fetch the new token to get its value
+    token_response = requests.get(
+        f"https://api.edenai.run/v2/user/custom_token/{new_token_name}/",
+        headers=headers
+    )
+    new_token = token_response.json()
 
     print(f"New token created: {new_token['token']}")
     print("Update your application with the new token")
@@ -700,8 +704,15 @@ def rotate_token(old_token_name: str, new_token_name: str):
 
     return new_token
 
+# First create the token we want to rotate
+requests.post(
+    "https://api.edenai.run/v2/user/custom_token/",
+    headers=headers,
+    json={"name": "prod-q1-2026"}
+)
+
 # Rotate quarterly
-rotate_token("prod-q1-2024", "prod-q2-2024")
+rotate_token("prod-q1-2026", "prod-q2-2026")
 ```
 
 ### Monitor Token Usage
@@ -736,9 +747,9 @@ def check_token_health():
 
         # Check expiration
         if token.get('expire_time'):
-            from datetime import datetime
+            from datetime import datetime, timezone
             expiry = datetime.fromisoformat(token['expire_time'].replace('Z', '+00:00'))
-            days_left = (expiry - datetime.now()).days
+            days_left = (expiry - datetime.now(timezone.utc)).days
 
             if days_left < 7:
                 print(f"⚠️  EXPIRES SOON: {days_left} days")

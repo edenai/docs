@@ -1,0 +1,18 @@
+{ // Ensure that tests/generated files are included in the explorer and search results
+  "explorer.excludeGitIgnore": false,
+  "search.useIgnoreFiles": false,
+  "search.exclude": {
+    "**/__pycache__": true,
+    "**/*.pyc": true,
+    "**/*.pyo": true,
+    ".env": true,
+    ".venv": true
+  },
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/*.pyc": true,
+    "**/*.pyo": true,
+    ".env": true,
+    ".venv": true
+  }
+}

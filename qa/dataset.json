@@ -1,0 +1,58 @@
+[
+    {
+        "id": "q1",
+        "question": "How do I make a chat completion request with Eden AI?",
+        "expected_answer_contains": [
+            "POST /v3/llm/chat/completions",
+            "Authorization: Bearer",
+            "model",
+            "messages"
+        ],
+        "expected_code_snippet": "curl -X POST https://api.edenai.run/v3/llm/chat/completions",
+        "source_doc": "v3/how-to/llm/chat-completions.mdx",
+        "category": "llm",
+        "has_executable_code": true
+    },
+    {
+        "id": "q2",
+        "question": "How do I extract text from a document using OCR with Eden AI?",
+        "expected_answer_contains": [
+            "POST /v3/universal-ai",
+            "ocr/",
+            "file",
+            "Authorization: Bearer"
+        ],
+        "expected_code_snippet": "\"model\": \"ocr/financial_parser/google\"",
+        "source_doc": "v3/how-to/universal-ai/ocr-features.mdx",
+        "category": "universal-ai",
+        "has_executable_code": false
+    },
+    {
+        "id": "q3",
+        "question": "How do I authenticate my API requests to Eden AI?",
+        "expected_answer_contains": [
+            "Authorization: Bearer",
+            "API key",
+            "https://app.edenai.run"
+        ],
+        "expected_code_snippet": "\"Authorization\": \"Bearer YOUR_API_KEY\"",
+        "source_doc": "v3/how-to/authentication/bearer-token-auth.mdx",
+        "category": "authentication",
+        "has_executable_code": true
+    },
+    {
+        "id": "q4",
+        "question": "How do I stream LLM responses with Eden AI?",
+        "expected_answer_contains": [
+            "stream",
+            "Server-Sent Events",
+            "data:",
+            "[DONE]",
+            "/v3/llm/chat/completions"
+        ],
+        "expected_code_snippet": "\"stream\": true",
+        "source_doc": "v3/how-to/llm/streaming.mdx",
+        "category": "llm-streaming",
+        "has_executable_code": true
+    }
+]

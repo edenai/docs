@@ -72,7 +72,7 @@ _API_KEY_STR_ASSIGNMENT_RE = re.compile(
 )
 
 # Default production base URL — replaced with env var in generated modules
-_DEFAULT_BASE_URL = "https://api.edenai.run"
+_DEFAULT_BASE_URL = "https://staging-api.edenai.run"
 
 # Placeholder file UUID used in documentation examples — replaced at runtime
 # with a real file ID uploaded during test setup (see conftest.py).

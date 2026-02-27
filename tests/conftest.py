@@ -16,7 +16,7 @@ import pytest
 import requests
 from dotenv import load_dotenv
 
-from tests.snippet_extractor import extract_all, extract_individual_blocks
+from tests.snippet_extractor import extract_all
 
 # Load tests/.env (if present) — CI uses native env vars instead
 load_dotenv(Path(__file__).parent / ".env")
@@ -30,7 +30,7 @@ _PLACEHOLDER_FILE_ID = "550e8400-e29b-41d4-a716-446655440000"
 # ---------------------------------------------------------------------------
 
 def _api_base_url() -> str:
-    return os.environ.get("EDEN_AI_BASE_URL", "https://api.edenai.run")
+    return os.environ.get("EDEN_AI_BASE_URL", "https://staging-api.edenai.run")
 
 
 def _api_headers() -> dict:
@@ -242,7 +242,6 @@ def _minimal_png() -> bytes:
 # ---------------------------------------------------------------------------
 
 _extracted_modules = None
-_extracted_blocks = None
 
 
 def _get_extracted_modules():
@@ -250,13 +249,6 @@ def _get_extracted_modules():
     if _extracted_modules is None:
         _extracted_modules = extract_all()
     return _extracted_modules
-
-
-def _get_extracted_blocks():
-    global _extracted_blocks
-    if _extracted_blocks is None:
-        _extracted_blocks = extract_individual_blocks()
-    return _extracted_blocks
 
 
 @pytest.fixture(scope="session")
@@ -311,11 +303,6 @@ def extracted_modules():
     """Run the snippet extractor and return module metadata."""
     return _get_extracted_modules()
 
-
-@pytest.fixture(scope="session")
-def extracted_blocks():
-    """Return individual code blocks for syntax testing."""
-    return _get_extracted_blocks()
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -428,5 +415,4 @@ def http_recorder(monkeypatch):
 
 def pytest_configure(config):
     """Register custom markers."""
-    config.addinivalue_line("markers", "syntax: syntax-only validation tests")
     config.addinivalue_line("markers", "execute: execution tests requiring API key")

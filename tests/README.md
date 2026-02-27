@@ -1,6 +1,6 @@
 # Documentation Snippet Tests
 
-Automated test suite that extracts Python code snippets from `.mdx` documentation files, validates syntax, lints for missing imports, and executes them against the Eden AI API.
+Automated test suite that extracts Python code snippets from `.mdx` documentation files and executes them against the Eden AI API.
 
 ## Setup
 
@@ -26,28 +26,6 @@ cp tests/.env.example tests/.env
 | `EDEN_AI_BASE_URL` | Optional | Defaults to `https://staging-api.edenai.run` |
 
 ## Running Tests
-
-### Syntax only (no API key needed)
-
-```bash
-pytest tests/test_snippets_syntax.py -v
-```
-
-### Ruff lint only (no API key needed)
-
-Checks for undefined names / missing imports (ruff F821):
-
-```bash
-pytest tests/test_snippets_ruff.py -v
-```
-
-### Execution tests (requires sandbox token)
-
-```bash
-pytest tests/test_snippets_execute.py -v
-```
-
-### Full suite
 
 ```bash
 pytest tests/ -v
@@ -89,7 +67,7 @@ When adding new `.mdx` files with Python code snippets:
 
 1. Use ` ```python ` fencing for code blocks
 2. Make each snippet self-contained (include its own imports, define `url`, `headers`, etc.)
-3. Run `pytest tests/test_snippets_syntax.py tests/test_snippets_ruff.py -v` to verify
+3. Run `pytest tests/ -v` to verify
 4. The extractor auto-discovers new `.mdx` files — no configuration needed
 
 ### Skipping Non-Runnable Snippets
@@ -120,10 +98,9 @@ The comment is invisible in rendered docs. The extractor checks the 3 lines prec
 
 The workflow at `.github/workflows/test-snippets.yml` runs on PRs that touch `v3/**/*.mdx` or `tests/**`:
 
-1. **Syntax job**: runs syntax tests (fast, no secrets needed)
-2. **Execution job**: runs execution tests with `EDEN_AI_SANDBOX_TOKEN` and `EDEN_AI_PRODUCTION_TOKEN` secrets
+1. **Execution job**: runs execution tests with `EDEN_AI_SANDBOX_TOKEN` and `EDEN_AI_PRODUCTION_TOKEN` secrets
 
-Both jobs install from `requirements-lock.txt` for reproducible builds.
+Installs from `requirements-lock.txt` for reproducible builds.
 
 To set up: add `EDEN_AI_SANDBOX_TOKEN` and `EDEN_AI_PRODUCTION_TOKEN` as repository secrets in GitHub.
 

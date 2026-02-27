@@ -18,15 +18,13 @@ api-reference/               # API reference pages
 openapi/                     # OpenAPI spec files
 tests/                       # Automated snippet test suite
   snippet_extractor.py       # Extracts Python snippets from .mdx -> importable .py modules
-  test_snippets_syntax.py    # ast.parse() validation (no API key needed)
-  test_snippets_ruff.py      # Ruff lint tests — detects undefined names (F821)
   test_snippets_execute.py   # In-process execution with sandbox token
   conftest.py                # Fixture generation, file upload/cleanup, custom token cleanup, HTTP recorder
   requirements.txt           # Python dependencies
   requirements-lock.txt      # Pinned dependency versions (used by CI)
   generated/                 # Auto-generated modules (gitignored)
 .github/workflows/
-  test-snippets.yml          # CI: syntax + execution tests on PR
+  test-snippets.yml          # CI: execution tests on PR
 ```
 
 ## Key Conventions
@@ -41,8 +39,7 @@ tests/                       # Automated snippet test suite
 ## Working with Documentation Snippets
 
 - All Python snippets in the docs are automatically tested by the suite in `tests/`
-- Run `pytest tests/test_snippets_syntax.py -v` to check syntax after editing any `.mdx` file
-- Run `pytest tests/test_snippets_ruff.py -v` to check for undefined names (missing imports) via ruff
+- Run `pytest tests/ -v` to run the full test suite after editing any `.mdx` file
 - Run `python tests/snippet_extractor.py` to see extraction results
 - To inspect extracted snippets for a page, read the corresponding file in `tests/generated/` (e.g. `tests/generated/v3_how_to_discovery_explore_api.py` for `v3/how-to/discovery/explore-api.mdx`). Do NOT run the extractor or custom Python scripts — just read the generated file directly.
 - See `tests/README.md` for full details on the test infrastructure

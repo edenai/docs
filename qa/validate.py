@@ -30,7 +30,8 @@ import textwrap
 from datetime import datetime, timezone
 from pathlib import Path
 
-from agents import Agent, RunConfig, Runner, function_tool
+from agents.items import ToolCallItem 
+from agents import Agent, ModelSettings, RunConfig, Runner, function_tool
 from agents.models.interface import Model, ModelProvider
 from agents.models.multi_provider import MultiProvider, MultiProviderMap
 from agents.models.openai_chatcompletions import OpenAIChatCompletionsModel
@@ -92,7 +93,7 @@ def execute_python(code: str) -> str:
             [sys.executable, tmp_path],
             capture_output=True,
             text=True,
-            timeout=30,
+            timeout=60,
         )
         if result.returncode == 0:
             return f"SUCCESS\nOutput:\n{result.stdout[:1000]}"
@@ -103,7 +104,7 @@ def execute_python(code: str) -> str:
                 f"Stdout:\n{result.stdout[:500]}"
             )
     except subprocess.TimeoutExpired:
-        return "ERROR: Execution timed out after 30 seconds"
+        return "ERROR: Execution timed out after 60 seconds"
     finally:
         os.unlink(tmp_path)
 
@@ -155,6 +156,7 @@ def setup_agents(api_key: str):
         ),
         tools=[execute_python],
         model=AGENT_MODEL,
+        model_settings=ModelSettings(tool_choice="required"),
     )
 
     judge_agent = Agent(
@@ -314,11 +316,22 @@ async def llm_judge_agent(
 
     try:
         return _parse_json(result.final_output)
-    except json.JSONDecodeError as e:
-        raise RuntimeError(
-            f"Judge returned invalid JSON: {e}\n"
-            f"Raw text: {result.final_output[:500]}"
+    except json.JSONDecodeError:
+        # Retry: ask the model to fix its own broken JSON
+        fix_prompt = (
+            "Your previous response was not valid JSON. Here is what you returned:\n\n"
+            f"{result.final_output}\n\n"
+            "Please return ONLY the corrected valid JSON with the exact same structure. "
+            "Do not wrap it in markdown fences."
         )
+        retry = await Runner.run(judge_agent, fix_prompt, run_config=_run_config)
+        try:
+            return _parse_json(retry.final_output)
+        except json.JSONDecodeError as e:
+            raise RuntimeError(
+                f"Judge returned invalid JSON after retry: {e}\n"
+                f"Raw text: {retry.final_output[:500]}"
+            )
 
 
 def llm_judge_http(
@@ -367,9 +380,35 @@ def llm_judge_http(
 
     try:
         return _parse_json(result_text)
-    except json.JSONDecodeError as e:
-        raise RuntimeError(
-            f"Judge returned invalid JSON: {e}\nRaw text: {result_text[:500]}"
+    except json.JSONDecodeError:
+        # Retry: ask the model to fix its own broken JSON
+        payload["messages"].append({"role": "assistant", "content": result_text})
+        payload["messages"].append({
+            "role": "user",
+            "content": (
+                "Your previous response was not valid JSON. "
+                "Please return ONLY the corrected valid JSON with the exact same structure. "
+                "Do not wrap it in markdown fences."
+            ),
+        })
+        with httpx.Client(timeout=60) as client:
+            resp = client.post(EDENAI_LLM_URL, headers=headers, json=payload)
+            if resp.status_code != 200:
+                raise RuntimeError(
+                    f"Eden AI LLM returned {resp.status_code} on retry: {resp.text[:500]}"
+                )
+        resp_data = resp.json()
+        try:
+            retry_text = resp_data["choices"][0]["message"]["content"]
+        except (KeyError, IndexError, TypeError):
+            raise RuntimeError(
+                f"Unexpected Eden AI response on retry: {json.dumps(resp_data)[:500]}"
+            )
+        try:
+            return _parse_json(retry_text)
+        except json.JSONDecodeError as e:
+            raise RuntimeError(
+                f"Judge returned invalid JSON after retry: {e}\nRaw text: {retry_text[:500]}"
         )
 
 
@@ -389,11 +428,32 @@ def extract_python_snippets(answer: str) -> list[str]:
 
 
 def make_code_executable(code: str, eden_api_key: str) -> str:
-    """Replace placeholder API keys and cap max_tokens."""
-    code = code.replace("YOUR_API_KEY", eden_api_key)
-    code = code.replace("YOUR_EDEN_AI_API_KEY", eden_api_key)
-    # Cap max_tokens to keep validation cheap
+    """Replace placeholder API keys and cap max_tokens.
+
+    Handles multiple placeholder patterns that Mintlify answers may use:
+    - "YOUR_API_KEY"          (quoted string)
+    - {YOUR_API_KEY}          (f-string interpolation — needs quoting)
+    - 'YOUR_EDEN_AI_API_KEY'  (single-quoted)
+
+    Longer placeholders are processed first to avoid substring collisions.
+    """
+    # Process longer placeholder first: "YOUR_API_KEY" is a substring of
+    # "YOUR_EDEN_AI_API_KEY", so replacing the short one first would corrupt
+    # the longer one.
+    for placeholder in ("YOUR_EDEN_AI_API_KEY", "YOUR_API_KEY"):
+        if placeholder not in code:
+            continue
+        # f-string pattern: {PLACEHOLDER} → define as a variable so the
+        # f-string resolves it at runtime
+        if f"{{{placeholder}}}" in code:
+            code = f'{placeholder} = "{eden_api_key}"\n' + code
+        else:
+            # Quoted pattern: "PLACEHOLDER" or 'PLACEHOLDER' → direct replacement
+            code = code.replace(placeholder, eden_api_key)
+    # Cap max_tokens to keep validation cheap.
+    # Match both JSON style ("max_tokens": 1024) and Python kwarg (max_tokens=1024).
     code = re.sub(r'"max_tokens":\s*\d+', '"max_tokens": 10', code)
+    code = re.sub(r'max_tokens\s*=\s*\d+', 'max_tokens=10', code)
     return code
 
 
@@ -412,7 +472,7 @@ def run_python_snippet(code: str, eden_api_key: str) -> dict:
             [sys.executable, tmp_path],
             capture_output=True,
             text=True,
-            timeout=30,
+            timeout=60,
         )
         return {
             "passed": result.returncode == 0,
@@ -420,7 +480,7 @@ def run_python_snippet(code: str, eden_api_key: str) -> dict:
             "stderr": result.stderr[:500],
         }
     except subprocess.TimeoutExpired:
-        return {"passed": False, "stdout": "", "stderr": "Timeout after 30s"}
+        return {"passed": False, "stdout": "", "stderr": "Timeout after 60s"}
     finally:
         os.unlink(tmp_path)
 
@@ -439,6 +499,7 @@ async def run_python_snippet_agent(code: str, eden_api_key: str) -> dict:
 
     try:
         result = await Runner.run(code_validator_agent, prompt, run_config=_run_config)
+
     except Exception as e:
         return {
             "passed": False,
@@ -446,6 +507,11 @@ async def run_python_snippet_agent(code: str, eden_api_key: str) -> dict:
             "stderr": f"Agent error: {e}",
             "analysis": "",
         }
+    # Enforce that the agent actually called the execute_python tool
+    tool_calls = [item for item in result.new_items if isinstance(item, ToolCallItem)]
+    if not tool_calls:
+        # Agent skipped the tool — fall back to direct subprocess execution
+        return run_python_snippet(code, eden_api_key)
 
     # Parse agent's JSON response (strip markdown fences if present)
     try:

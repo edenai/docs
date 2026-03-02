@@ -38,7 +38,7 @@
         "expected_code_snippet": "\"Authorization\": \"Bearer YOUR_API_KEY\"",
         "source_doc": "v3/how-to/authentication/bearer-token-auth.mdx",
         "category": "authentication",
-        "has_executable_code": true
+        "has_executable_code": false
     },
     {
         "id": "q4",

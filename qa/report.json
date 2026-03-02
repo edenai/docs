@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-02-27T15:00:11.000186+00:00",
+  "timestamp": "2026-03-02T13:00:10.312772+00:00",
   "questions_total": 4,
   "questions_ok": 4,
   "agent_mode": true,
@@ -10,13 +10,13 @@
       "category": "llm",
       "source_doc": "v3/how-to/llm/chat-completions.mdx",
       "status": "ok",
-      "actual_answer_length": 1092,
-      "actual_answer_preview": "To make a chat completion request with Eden AI, send a POST request to `https://api.edenai.run/v3/llm/chat/completions` with your API key, a model string (e.g., `openai/gpt-4`), and a messages array:\n\n```python\nimport requests\n\nresponse = requests.post(\n    \"https://api.edenai.run/v3/llm/chat/comple",
+      "actual_answer_length": 1095,
+      "actual_answer_preview": "To make a chat completion request with Eden AI, send a `POST` request to:\n\n```\nhttps://api.edenai.run/v3/llm/chat/completions\n```\n\nInclude your API key in the `Authorization` header and specify a model using the `provider/model` format (e.g., `openai/gpt-4`). Here's a quick example:\n\n```python\nimpor",
       "judge": {
         "accuracy": 5,
-        "completeness": 5,
+        "completeness": 4,
         "code_correctness": 5,
-        "overall": 5,
+        "overall": 4,
         "keyword_matches": [
           "POST /v3/llm/chat/completions",
           "Authorization: Bearer",
@@ -24,15 +24,17 @@
           "messages"
         ],
         "keyword_misses": [],
-        "issues": [],
-        "summary": "The response accurately and completely explains how to make a chat completion request with Eden AI, including correct API usage and code demonstration."
+        "issues": [
+          "Lack of explanation or example of using more optional parameters like 'temperature', 'max_tokens', 'stream' and 'provider/model' specified in text but not in the function signature."
+        ],
+        "summary": "The provided answer is accurate and contains a correctly implemented code example, but could be enhanced with additional information on optional parameters."
       },
       "code_execution": [
         {
           "passed": true,
           "stdout": "Hello! How can I assist you today?",
           "stderr": "",
-          "analysis": "The code successfully made a POST request to the Eden AI API using the GPT-4 model with the prompt 'Hello!'. The response was correctly parsed to extract and print the message content from the API's response."
+          "analysis": "The code successfully executed an API call to the Eden AI service using the GPT-4 model, and received a response as expected. The response content was printed out correctly."
         }
       ]
     },
@@ -42,25 +44,24 @@
       "category": "universal-ai",
       "source_doc": "v3/how-to/universal-ai/ocr-features.mdx",
       "status": "ok",
-      "actual_answer_length": 1272,
-      "actual_answer_preview": "Eden AI offers two main approaches for OCR text extraction:\n\n**1. Universal AI Endpoint (dedicated OCR)**\nUpload your file, then call the `/v3/universal-ai` endpoint with an OCR model string:\n\n```python\n# Upload file\nupload_response = requests.post(\n    \"https://api.edenai.run/v3/upload\",\n    header",
+      "actual_answer_length": 1398,
+      "actual_answer_preview": "Eden AI offers two main approaches for OCR text extraction:\n\n### 1. Universal AI Endpoint (Structured OCR)\nUpload your file, then use the `/v3/universal-ai` endpoint with an OCR model string like `ocr/financial_parser/google`:\n\n```python\n# Upload file\nupload_response = requests.post(\n    \"https://ap",
       "judge": {
-        "accuracy": 4,
+        "accuracy": 5,
         "completeness": 4,
-        "code_correctness": 5,
+        "code_correctness": 4,
         "overall": 4,
         "keyword_matches": [
           "POST /v3/universal-ai",
           "ocr/",
-          "file"
-        ],
-        "keyword_misses": [
+          "file",
           "Authorization: Bearer"
         ],
+        "keyword_misses": [],
         "issues": [
-          "The Authorization header with 'Bearer' keyword is not explicitly shown in the example code."
+          "Code snippet should explicitly define 'headers' with Authorization Bearer token."
         ],
-        "summary": "The answer is mostly accurate and complete, but it lacks explicit mention of the 'Authorization: Bearer' in the code example."
+        "summary": "The answer is highly accurate and mostly complete, but the code lacks an explicit declaration of the headers."
       },
       "code_execution": []
     },
@@ -70,11 +71,11 @@
       "category": "authentication",
       "source_doc": "v3/how-to/authentication/bearer-token-auth.mdx",
       "status": "ok",
-      "actual_answer_length": 753,
-      "actual_answer_preview": "To authenticate Eden AI API requests, include your API token in the `Authorization` header using the `Bearer` scheme:\n\n```\nAuthorization: Bearer YOUR_API_KEY\n```\n\n**Steps to get your API key:**\n1. Sign up or log in at [app.edenai.run](https://app.edenai.run/)\n2. Navigate to the **API Keys** section\n",
+      "actual_answer_length": 751,
+      "actual_answer_preview": "To authenticate API requests to Eden AI, include your API token in the `Authorization` header using the `Bearer` scheme:\n\n```\nAuthorization: Bearer YOUR_API_KEY\n```\n\n**To get your API key:**\n1. Sign up or log in at [app.edenai.run](https://app.edenai.run/)\n2. Navigate to the **API Keys** section\n3. ",
       "judge": {
         "accuracy": 5,
-        "completeness": 5,
+        "completeness": 4,
         "code_correctness": 5,
         "overall": 5,
         "keyword_matches": [
@@ -83,8 +84,10 @@
           "https://app.edenai.run"
         ],
         "keyword_misses": [],
-        "issues": [],
-        "summary": "The answer accurately and completely covers how to authenticate API requests to Eden AI, including correct code syntax."
+        "issues": [
+          "The URLs in the suggested links are incomplete and may not resolve correctly"
+        ],
+        "summary": "The answer correctly explains how to authenticate with Eden AI, including relevant details and examples, but the documentation links are incomplete."
       },
       "code_execution": []
     },
@@ -94,8 +97,8 @@
       "category": "llm-streaming",
       "source_doc": "v3/how-to/llm/streaming.mdx",
       "status": "ok",
-      "actual_answer_length": 1367,
-      "actual_answer_preview": "To stream LLM responses with Eden AI, set `\"stream\": true` in your request to `/v3/llm/chat/completions`. Responses are delivered via **Server-Sent Events (SSE)** in OpenAI-compatible format.\n\n**Quick example (Python):**\n```python\npayload = {\n    \"model\": \"openai/gpt-4\",\n    \"messages\": [{\"role\": \"u",
+      "actual_answer_length": 1317,
+      "actual_answer_preview": "To stream LLM responses with Eden AI, set `stream: true` in your request to `/v3/llm/chat/completions`. Responses are delivered via **Server-Sent Events (SSE)** in OpenAI-compatible format.\n\n**Python example:**\n```python\nimport requests, json\n\nresponse = requests.post(\n    \"https://api.edenai.run/v3",
       "judge": {
         "accuracy": 5,
         "completeness": 5,
@@ -110,14 +113,14 @@
         ],
         "keyword_misses": [],
         "issues": [],
-        "summary": "The answer accurately and completely explains how to stream LLM responses using Eden AI, with correct code examples and API patterns."
+        "summary": "The answer accurately and completely explains how to stream LLM responses with Eden AI, including correct usage and code patterns."
       },
       "code_execution": [
         {
-          "passed": false,
-          "stdout": "NameError: name 'requests' is not defined",
+          "passed": true,
+          "stdout": "Once upon a time, in a faraway kingdom nestled in a dazzling valley, there was a beautiful princess named Ava. Princess Ava was not your typical princess. She was courageous, adventurous, and had an unquenchable thirst for knowledge. The kingdom's regal beauty was paralleled by the princess\u2019s inner radiance.\n\nPrincess Ava's best friend was a mysterious dragon named Ignatius. Ignatius was known to be the last dragon on Earth, and had a majestic charm that made him loved by everyone in the kingdom",
           "stderr": "",
-          "analysis": "The code snippet attempts to use `requests` without importing it, which causes a `NameError` since `requests` is not defined within the code. Additionally, `url` and `headers` are used but not defined, which will lead to further errors if reached."
+          "analysis": "The Python snippet was executed successfully. It made a POST request to the Eden AI API with a streaming response feature. The code appropriately handled and printed the streamed response, which was a story written by the AI model based on the prompt 'Tell me a story'. The authentication placeholder was successfully replaced with a valid token during execution."
         }
       ]
     }

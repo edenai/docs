@@ -1,9 +1,4 @@
-"""Extract Python code snippets from .mdx documentation files.
-
-Parses all v3/**/*.mdx files, extracts Python code blocks in document order,
-and generates importable .py modules with one function per block for
-independent testing.
-"""
+"""Extract Python code snippets from .mdx documentation files."""
 
 import re
 from pathlib import Path
@@ -29,7 +24,6 @@ _PRODUCTION_TOKEN_FILES = {
 
 
 def _token_var_for(source_mdx: str) -> str:
-    """Return the env-var name for the API token a given file's snippets need."""
     if source_mdx in _PRODUCTION_TOKEN_FILES:
         return _PRODUCTION_TOKEN_VAR
     return _SANDBOX_TOKEN_VAR
@@ -56,19 +50,13 @@ API_KEY_PATTERNS = [
 
 _BARE_API_KEY_RE = re.compile(r"\bAPI_KEY\b")
 _API_KEY_ASSIGNMENT_RE = re.compile(r"^\s*API_KEY\s*=", re.MULTILINE)
-_API_KEY_STR_ASSIGNMENT_RE = re.compile(
-    r'^(\s*)API_KEY\s*=\s*"[^"]*"', re.MULTILINE
-)
+_API_KEY_STR_ASSIGNMENT_RE = re.compile(r'^(\s*)API_KEY\s*=\s*"[^"]*"', re.MULTILINE)
 
 _DEFAULT_BASE_URL = "https://staging-api.edenai.run"
 _PLACEHOLDER_FILE_ID = "550e8400-e29b-41d4-a716-446655440000"
 
-_BASE_URL_IN_PLAIN_STR_RE = re.compile(
-    r"""(?<![f])("https://api\.edenai\.run)"""
-)
-_BASE_URL_IN_FSTR_RE = re.compile(
-    r"""(f"[^"]*?)https://api\.edenai\.run"""
-)
+_BASE_URL_IN_PLAIN_STR_RE = re.compile(r"""(?<![f])("https://api\.edenai\.run)""")
+_BASE_URL_IN_FSTR_RE = re.compile(r"""(f"[^"]*?)https://api\.edenai\.run""")
 
 
 DOCS_ROOT = Path(__file__).resolve().parent.parent
@@ -76,13 +64,7 @@ GENERATED_DIR = Path(__file__).resolve().parent / "generated"
 
 
 def extract_python_blocks(mdx_path: Path) -> list[dict]:
-    """Extract all Python code blocks from an .mdx file.
-
-    Returns a list of dicts with keys:
-        - code: the raw code string
-        - line: the 1-based line number where the block starts in the .mdx
-        - skip: True if the block is preceded by {/* skip-test */}
-    """
+    """Extract all Python code blocks from an .mdx file."""
     content = mdx_path.read_text()
     blocks = []
     for match in CODE_BLOCK_RE.finditer(content):
@@ -117,36 +99,19 @@ def replace_placeholder_file_id(code: str) -> str:
         return code
     return code.replace(
         f'"{_PLACEHOLDER_FILE_ID}"',
-        '_EDEN_TEST_FILE_ID',
+        "_EDEN_TEST_FILE_ID",
     )
 
 
 def replace_base_url(code: str) -> str:
-    """Replace hardcoded https://api.edenai.run with the _EDEN_BASE_URL variable.
-
-    Handles both plain strings and f-strings:
-      "https://api.edenai.run/v3/..."  -> f"{_EDEN_BASE_URL}/v3/..."
-      f"...https://api.edenai.run..."  -> f"...{_EDEN_BASE_URL}..."
-    """
-    # First pass: plain strings (not already f-strings)
+    """Replace hardcoded https://api.edenai.run with the _EDEN_BASE_URL variable."""
     code = _BASE_URL_IN_PLAIN_STR_RE.sub(r'f"{_EDEN_BASE_URL}', code)
-    # Second pass: already f-strings
     code = _BASE_URL_IN_FSTR_RE.sub(r"\g<1>{_EDEN_BASE_URL}", code)
     return code
 
 
 def build_module(blocks: list[dict], source_mdx: str) -> tuple[str, list[dict]]:
-    """Build a Python module with one function per block.
-
-    Returns:
-        (module_code, block_functions) where block_functions is a list of dicts:
-            - func_name: name of the generated function
-            - block_indices: list with a single 1-based block number
-            - lines: list with the line number from the .mdx
-            - has_input: whether the block uses input()
-            - needs_production_token: whether the block needs a production token
-            - skip: whether the block is marked with {/* skip-test */}
-    """
+    """Build a Python module with one function per block."""
     if not blocks:
         return "", []
 
@@ -167,7 +132,9 @@ def build_module(blocks: list[dict], source_mdx: str) -> tuple[str, list[dict]]:
 
     for i, block in enumerate(blocks):
         func_name = f"block_{i + 1}"
-        code = replace_placeholder_file_id(replace_base_url(replace_api_keys(block["code"], token_var)))
+        code = replace_placeholder_file_id(
+            replace_base_url(replace_api_keys(block["code"], token_var))
+        )
         line_num = block["line"]
         has_input = "input(" in code
         is_skip = block.get("skip", False)
@@ -189,14 +156,16 @@ def build_module(blocks: list[dict], source_mdx: str) -> tuple[str, list[dict]]:
             else:
                 module_lines.append("    pass")
 
-        block_functions.append({
-            "func_name": func_name,
-            "block_indices": [i + 1],
-            "lines": [line_num],
-            "has_input": has_input,
-            "needs_production_token": needs_production_token,
-            "skip": block.get("skip", False),
-        })
+        block_functions.append(
+            {
+                "func_name": func_name,
+                "block_indices": [i + 1],
+                "lines": [line_num],
+                "has_input": has_input,
+                "needs_production_token": needs_production_token,
+                "skip": block.get("skip", False),
+            }
+        )
 
     module_lines.append("")
 
@@ -210,7 +179,6 @@ def sanitize_filename(mdx_path: Path) -> str:
     """
     relative = mdx_path.relative_to(DOCS_ROOT)
     name = str(relative).replace("/", "_").replace("-", "_").replace(".mdx", "")
-    # Ensure it's a valid Python identifier
     name = re.sub(r"[^a-zA-Z0-9_]", "_", name)
     if name[0].isdigit():
         name = "_" + name
@@ -221,22 +189,7 @@ _EXTRACT_LOCK = GENERATED_DIR / ".extract.lock"
 
 
 def extract_all() -> list[dict]:
-    """Extract snippets from all .mdx files and write generated modules.
-
-    Under xdist, multiple workers import this module concurrently.  A file
-    lock ensures only one process writes the generated ``.py`` files at a
-    time, preventing races.  Each process still computes its own metadata
-    (cheap) but file I/O is serialised.
-
-    Returns a list of metadata dicts:
-        - source_mdx: relative path to the .mdx file
-        - module_name: Python module name (importable from tests.generated)
-        - generated_path: absolute path to the generated .py file
-        - snippet_count: number of Python code blocks found
-        - has_input: whether any snippet uses input()
-        - blocks: list of {code, line} dicts for individual syntax checking
-        - block_functions: list of per-function metadata dicts
-    """
+    """Extract snippets from all .mdx files and write generated modules."""
     GENERATED_DIR.mkdir(parents=True, exist_ok=True)
     init_file = GENERATED_DIR / "__init__.py"
     if not init_file.exists():

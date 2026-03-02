@@ -1,15 +1,4 @@
-"""Pytest configuration for documentation snippet tests.
-
-- Generates minimal test fixture files (PDF, JPEG, etc.) at session start
-- Uploads a test file to the API and cleans up all new files after tests
-- Provides shared fixtures for test parametrization
-- Appends HTTP request/response details to failures via pytest hook
-
-Setup and teardown of shared API resources (uploaded files, custom tokens)
-run exactly once on the xdist controller process (or the single process when
-running without xdist). Workers receive the shared state via env var
-inheritance and a JSON file in the shared temp directory.
-"""
+"""Pytest configuration for documentation snippet tests."""
 
 import json
 import os
@@ -44,13 +33,7 @@ _SHARED_STATE_FILE = ".eden_test_shared_state.json"
 
 
 def _shared_basetemp(config: pytest.Config) -> Path:
-    """Return the controller's basetemp directory.
-
-    Under xdist, each worker's basetemp is ``<controller_basetemp>/popen-gwN``,
-    so the parent of a worker's basetemp is the controller's basetemp — a
-    directory visible to every process.  Without xdist the basetemp itself is
-    used (single process).
-    """
+    """Return the controller's basetemp directory."""
     basetemp = config._tmp_path_factory.getbasetemp()
     if hasattr(config, "workerinput"):
         return basetemp.parent
@@ -62,20 +45,9 @@ def _shared_state_path(config: pytest.Config) -> Path:
     return _shared_basetemp(config) / _SHARED_STATE_FILE
 
 
-# ---------------------------------------------------------------------------
-# Controller-only hooks: setup before workers spawn, cleanup after they finish
-# ---------------------------------------------------------------------------
-
-
 @pytest.hookimpl(tryfirst=True)
 def pytest_sessionstart(session: pytest.Session) -> None:
-    """Snapshot API resources and upload a test file (controller only).
-
-    Runs before xdist's own ``pytest_sessionstart`` (which uses
-    ``trylast=True``), so this completes before any worker is spawned.
-    Workers inherit ``_EDEN_TEST_FILE_ID`` via the environment and can also
-    read the shared JSON file.
-    """
+    """Snapshot API resources and upload a test file (controller only)."""
     if is_xdist_worker(session):
         return
 
@@ -98,11 +70,7 @@ def pytest_sessionstart(session: pytest.Session) -> None:
 
 @pytest.hookimpl(trylast=True)
 def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
-    """Delete API resources created during the test run (controller only).
-
-    Runs after xdist's own ``pytest_sessionfinish`` (which tears down all
-    worker nodes first), so every worker has finished before cleanup starts.
-    """
+    """Delete API resources created during the test run (controller only)."""
     if is_xdist_worker(session):
         return
 
@@ -136,18 +104,9 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
             print(f"\n[conftest] WARNING: token cleanup failed: {exc}")
 
 
-# ---------------------------------------------------------------------------
-# Worker-side fixture: read shared state written by the controller
-# ---------------------------------------------------------------------------
-
-
 @pytest.fixture(scope="session", autouse=True)
 def _load_shared_state(request):
-    """Set ``_EDEN_TEST_FILE_ID`` from the controller's shared state file.
-
-    Under normal ``popen`` workers the env var is already inherited, but this
-    provides a safety net (e.g. remote xdist workers that don't inherit env).
-    """
+    """Load shared state (e.g. test file ID) from the controller's JSON file."""
     path = _shared_state_path(request.config)
     if path.exists():
         state = json.loads(path.read_text())
@@ -157,12 +116,7 @@ def _load_shared_state(request):
 
 @pytest.fixture(scope="session")
 def fixtures_dir(request):
-    """Create a temp directory with minimal test fixture files.
-
-    Under xdist the directory lives in the shared basetemp so every worker
-    reuses the same files.  A ``filelock`` ensures only the first process to
-    arrive actually writes them.
-    """
+    """Create a temp directory with minimal test fixture files."""
     d = _shared_basetemp(request.config) / "doc_fixtures"
 
     with FileLock(str(d) + ".lock"):
@@ -174,14 +128,21 @@ def fixtures_dir(request):
 
 
 def _populate_fixtures_dir(d: Path) -> None:
-    """Write all fixture files into *d*."""
     pdf_data = minimal_pdf()
     for name in [
-        "document.pdf", "invoice.pdf",
-        "report.pdf", "contract.pdf", "quarterly-report.pdf",
-        "policy-document.pdf", "research-paper.pdf",
-        "doc1.pdf", "doc2.pdf", "doc3.pdf",
-        "invoice1.pdf", "invoice2.pdf", "invoice3.pdf",
+        "document.pdf",
+        "invoice.pdf",
+        "report.pdf",
+        "contract.pdf",
+        "quarterly-report.pdf",
+        "policy-document.pdf",
+        "research-paper.pdf",
+        "doc1.pdf",
+        "doc2.pdf",
+        "doc3.pdf",
+        "invoice1.pdf",
+        "invoice2.pdf",
+        "invoice3.pdf",
         "doc.pdf",
     ]:
         (d / name).write_bytes(pdf_data)
@@ -190,8 +151,15 @@ def _populate_fixtures_dir(d: Path) -> None:
 
     jpeg_data = minimal_jpeg()
     for name in [
-        "image.jpg", "photo.jpg", "product.jpg", "people.jpg", "passport.jpg", "receipt.jpg",
-        "user_upload.jpg", "complex_document.jpg", "user_photo.jpg",
+        "image.jpg",
+        "photo.jpg",
+        "product.jpg",
+        "people.jpg",
+        "passport.jpg",
+        "receipt.jpg",
+        "user_upload.jpg",
+        "complex_document.jpg",
+        "user_photo.jpg",
     ]:
         (d / name).write_bytes(jpeg_data)
     (d / "large-image.jpg").write_bytes(large_jpeg())
@@ -210,14 +178,13 @@ def _populate_fixtures_dir(d: Path) -> None:
 
 
 class HttpRecorder:
-    """Records the last HTTP request/response for debugging test failures."""
+    """Stores the last HTTP request/response for debugging test failures."""
 
     def __init__(self):
         self.last_request: requests.PreparedRequest | None = None
         self.last_response: requests.Response | None = None
 
     def summary(self, max_body: int = 2000) -> str:
-        """Format the last recorded request/response for error output."""
         if self.last_request is None:
             return "(no HTTP calls recorded)"
 
@@ -274,6 +241,4 @@ def pytest_runtest_makereport(item, call):
         if recorder is not None:
             summary = recorder.summary()
             if summary != "(no HTTP calls recorded)":
-                report.sections.append(
-                    ("Last HTTP Request/Response", summary)
-                )
+                report.sections.append(("Last HTTP Request/Response", summary))

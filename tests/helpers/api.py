@@ -4,6 +4,7 @@ import os
 
 import requests
 
+
 def api_base_url() -> str:
     return os.environ.get("EDEN_AI_BASE_URL", "https://staging-api.edenai.run")
 

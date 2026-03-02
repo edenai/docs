@@ -1,9 +1,4 @@
-"""Execution tests for documentation code snippets.
-
-Imports the generated modules and calls each block function independently.
-Requires EDEN_AI_SANDBOX_API_TOKEN environment variable (sandbox token).
-Snippets that hit v2 admin endpoints also need EDEN_AI_PRODUCTION_API_TOKEN.
-"""
+"""Execution tests for documentation code snippets."""
 
 import importlib
 import os
@@ -33,7 +28,6 @@ for _mod in _modules:
 
 
 def _case_id(case: dict) -> str:
-    """Generate a readable test ID: source_mdx::block[1,2,3]"""
     blocks_str = ",".join(str(b) for b in case["block_indices"])
     return f"{case['source_mdx']}::block[{blocks_str}]"
 

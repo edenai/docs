@@ -4,14 +4,22 @@
 - Uploads a test file to the API and cleans up all new files after tests
 - Provides shared fixtures for test parametrization
 - Appends HTTP request/response details to failures via pytest hook
+
+Setup and teardown of shared API resources (uploaded files, custom tokens)
+run exactly once on the xdist controller process (or the single process when
+running without xdist). Workers receive the shared state via env var
+inheritance and a JSON file in the shared temp directory.
 """
 
+import json
 import os
 from pathlib import Path
 
 import pytest
 import requests
 from dotenv import load_dotenv
+from filelock import FileLock
+from xdist.plugin import is_xdist_worker
 
 from tests.helpers.api import (
     delete_custom_tokens,
@@ -32,12 +40,139 @@ load_dotenv(Path(__file__).parent / ".env")
 
 http_recorder_key = pytest.StashKey()
 
+_SHARED_STATE_FILE = ".eden_test_shared_state.json"
+
+
+def _shared_state_path(config: pytest.Config) -> Path:
+    """Return path to the JSON file shared between controller and workers.
+
+    Under xdist, each worker's basetemp is ``<controller_basetemp>/popen-gwN``,
+    so the parent of a worker's basetemp is the controller's basetemp — a
+    directory visible to every process.  Without xdist the basetemp itself is
+    used (single process).
+    """
+    basetemp = config._tmp_path_factory.getbasetemp()
+    if hasattr(config, "workerinput"):
+        return basetemp.parent / _SHARED_STATE_FILE
+    return basetemp / _SHARED_STATE_FILE
+
+
+# ---------------------------------------------------------------------------
+# Controller-only hooks: setup before workers spawn, cleanup after they finish
+# ---------------------------------------------------------------------------
+
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_sessionstart(session: pytest.Session) -> None:
+    """Snapshot API resources and upload a test file (controller only).
+
+    Runs before xdist's own ``pytest_sessionstart`` (which uses
+    ``trylast=True``), so this completes before any worker is spawned.
+    Workers inherit ``_EDEN_TEST_FILE_ID`` via the environment and can also
+    read the shared JSON file.
+    """
+    if is_xdist_worker(session):
+        return
+
+    state: dict = {}
+
+    if os.environ.get("EDEN_AI_SANDBOX_API_TOKEN"):
+        pre_existing_files = list_file_ids()
+        test_file_id = upload_test_file(minimal_pdf(), "test_fixture.pdf")
+        os.environ["_EDEN_TEST_FILE_ID"] = test_file_id
+        state["pre_existing_files"] = sorted(pre_existing_files)
+        state["test_file_id"] = test_file_id
+
+    if os.environ.get("EDEN_AI_PRODUCTION_API_TOKEN"):
+        state["pre_existing_tokens"] = sorted(list_custom_token_names())
+
+    path = _shared_state_path(session.config)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(state))
+
+
+@pytest.hookimpl(trylast=True)
+def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
+    """Delete API resources created during the test run (controller only).
+
+    Runs after xdist's own ``pytest_sessionfinish`` (which tears down all
+    worker nodes first), so every worker has finished before cleanup starts.
+    """
+    if is_xdist_worker(session):
+        return
+
+    path = _shared_state_path(session.config)
+    if not path.exists():
+        return
+
+    state = json.loads(path.read_text())
+    print("\n[conftest] Cleaning up API resources...")
+
+    if "pre_existing_files" in state:
+        pre_existing = set(state["pre_existing_files"])
+        try:
+            current = list_file_ids()
+            new_file_ids = current - pre_existing
+            if new_file_ids:
+                deleted = delete_file_ids(new_file_ids)
+                print(f"\n[conftest] Cleaned up {deleted} uploaded file(s)")
+        except Exception as exc:
+            print(f"\n[conftest] WARNING: file cleanup failed: {exc}")
+
+    if "pre_existing_tokens" in state:
+        pre_existing = set(state["pre_existing_tokens"])
+        try:
+            current = list_custom_token_names()
+            new_tokens = current - pre_existing
+            if new_tokens:
+                deleted = delete_custom_tokens(new_tokens)
+                print(f"\n[conftest] Cleaned up {deleted} custom token(s)")
+        except Exception as exc:
+            print(f"\n[conftest] WARNING: token cleanup failed: {exc}")
+
+
+# ---------------------------------------------------------------------------
+# Worker-side fixture: read shared state written by the controller
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _load_shared_state(request):
+    """Set ``_EDEN_TEST_FILE_ID`` from the controller's shared state file.
+
+    Under normal ``popen`` workers the env var is already inherited, but this
+    provides a safety net (e.g. remote xdist workers that don't inherit env).
+    """
+    path = _shared_state_path(request.config)
+    if path.exists():
+        state = json.loads(path.read_text())
+        if "test_file_id" in state:
+            os.environ.setdefault("_EDEN_TEST_FILE_ID", state["test_file_id"])
+
 
 @pytest.fixture(scope="session")
-def fixtures_dir(tmp_path_factory):
-    """Create a temp directory with minimal test fixture files."""
-    d = tmp_path_factory.mktemp("doc_fixtures")
+def fixtures_dir(request, tmp_path_factory):
+    """Create a temp directory with minimal test fixture files.
 
+    Under xdist the directory lives in the shared basetemp so every worker
+    reuses the same files.  A ``filelock`` ensures only the first process to
+    arrive actually writes them.
+    """
+    basetemp = tmp_path_factory.getbasetemp()
+    # Under xdist workers, go up one level to the controller's basetemp
+    root = basetemp.parent if hasattr(request.config, "workerinput") else basetemp
+    d = root / "doc_fixtures"
+
+    with FileLock(str(d) + ".lock"):
+        if not d.exists():
+            d.mkdir()
+            _populate_fixtures_dir(d)
+
+    return d
+
+
+def _populate_fixtures_dir(d: Path) -> None:
+    """Write all fixture files into *d*."""
     pdf_data = minimal_pdf()
     for name in [
         "document.pdf", "invoice.pdf",
@@ -70,56 +205,6 @@ def fixtures_dir(tmp_path_factory):
         "through a single API. It supports text analysis, image processing, "
         "OCR, and many other AI features."
     )
-
-    return d
-
-
-@pytest.fixture(scope="session", autouse=True)
-def manage_uploaded_files():
-    """Upload a test file, track files, and clean up after all tests.
-
-    - Snapshots existing file IDs before tests start
-    - Uploads a minimal PDF so snippets referencing the placeholder UUID work
-    - Sets _EDEN_TEST_FILE_ID env var for generated modules to use
-    - After all tests, deletes every file that wasn't present before
-    """
-    if not os.environ.get("EDEN_AI_SANDBOX_API_TOKEN"):
-        yield
-        return
-
-    pre_existing = list_file_ids()
-    test_file_id = upload_test_file(minimal_pdf(), "test_fixture.pdf")
-    os.environ["_EDEN_TEST_FILE_ID"] = test_file_id
-
-    yield
-
-    current = list_file_ids()
-    new_file_ids = current - pre_existing
-    if new_file_ids:
-        deleted = delete_file_ids(new_file_ids)
-        print(f"\n[conftest] Cleaned up {deleted} uploaded file(s)")
-
-
-@pytest.fixture(scope="session", autouse=True)
-def manage_custom_tokens():
-    """Snapshot custom token names before tests, clean up new ones after.
-
-    Ensures tokens created by documentation snippets (e.g. manage-tokens.mdx)
-    don't accumulate across test runs.
-    """
-    if not os.environ.get("EDEN_AI_PRODUCTION_API_TOKEN"):
-        yield
-        return
-
-    pre_existing = list_custom_token_names()
-
-    yield
-
-    current = list_custom_token_names()
-    new_tokens = current - pre_existing
-    if new_tokens:
-        deleted = delete_custom_tokens(new_tokens)
-        print(f"\n[conftest] Cleaned up {deleted} custom token(s)")
 
 
 class HttpRecorder:

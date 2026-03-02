@@ -31,6 +31,13 @@ cp tests/.env.example tests/.env
 pytest tests/ -v
 ```
 
+Tests run in parallel by default (via `pytest-xdist`, configured in `pytest.ini` with `-n auto` which matches the CPU count). Override with `-n`:
+
+```bash
+pytest tests/ -v -n 5   # 5 workers
+pytest tests/ -v -n 0   # disable parallelism
+```
+
 ### Tests for a specific doc page
 
 Each `.mdx` file maps to a generated module in `tests/generated/`. The naming convention is path separators become `_` and hyphens become `_`:

@@ -1,5 +1,6 @@
 pytest
 pytest-cov
+pytest-xdist
 requests
 openai
 langchain~=1.2

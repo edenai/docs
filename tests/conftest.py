@@ -43,8 +43,8 @@ http_recorder_key = pytest.StashKey()
 _SHARED_STATE_FILE = ".eden_test_shared_state.json"
 
 
-def _shared_state_path(config: pytest.Config) -> Path:
-    """Return path to the JSON file shared between controller and workers.
+def _shared_basetemp(config: pytest.Config) -> Path:
+    """Return the controller's basetemp directory.
 
     Under xdist, each worker's basetemp is ``<controller_basetemp>/popen-gwN``,
     so the parent of a worker's basetemp is the controller's basetemp — a
@@ -53,8 +53,13 @@ def _shared_state_path(config: pytest.Config) -> Path:
     """
     basetemp = config._tmp_path_factory.getbasetemp()
     if hasattr(config, "workerinput"):
-        return basetemp.parent / _SHARED_STATE_FILE
-    return basetemp / _SHARED_STATE_FILE
+        return basetemp.parent
+    return basetemp
+
+
+def _shared_state_path(config: pytest.Config) -> Path:
+    """Return path to the JSON file shared between controller and workers."""
+    return _shared_basetemp(config) / _SHARED_STATE_FILE
 
 
 # ---------------------------------------------------------------------------
@@ -151,17 +156,14 @@ def _load_shared_state(request):
 
 
 @pytest.fixture(scope="session")
-def fixtures_dir(request, tmp_path_factory):
+def fixtures_dir(request):
     """Create a temp directory with minimal test fixture files.
 
     Under xdist the directory lives in the shared basetemp so every worker
     reuses the same files.  A ``filelock`` ensures only the first process to
     arrive actually writes them.
     """
-    basetemp = tmp_path_factory.getbasetemp()
-    # Under xdist workers, go up one level to the controller's basetemp
-    root = basetemp.parent if hasattr(request.config, "workerinput") else basetemp
-    d = root / "doc_fixtures"
+    d = _shared_basetemp(request.config) / "doc_fixtures"
 
     with FileLock(str(d) + ".lock"):
         if not d.exists():

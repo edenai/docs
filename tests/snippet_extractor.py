@@ -8,6 +8,8 @@ independent testing.
 import re
 from pathlib import Path
 
+from filelock import FileLock
+
 CODE_BLOCK_RE = re.compile(
     r"^```python(?:[ \t]+\S+)?[ \t]*\n(.*?)^\s*```",
     re.MULTILINE | re.DOTALL,
@@ -215,8 +217,16 @@ def sanitize_filename(mdx_path: Path) -> str:
     return name
 
 
+_EXTRACT_LOCK = GENERATED_DIR / ".extract.lock"
+
+
 def extract_all() -> list[dict]:
     """Extract snippets from all .mdx files and write generated modules.
+
+    Under xdist, multiple workers import this module concurrently.  A file
+    lock ensures only one process writes the generated ``.py`` files at a
+    time, preventing races.  Each process still computes its own metadata
+    (cheap) but file I/O is serialised.
 
     Returns a list of metadata dicts:
         - source_mdx: relative path to the .mdx file
@@ -247,7 +257,8 @@ def extract_all() -> list[dict]:
         module_code, block_functions = build_module(blocks, source_mdx)
         generated_path = GENERATED_DIR / f"{module_name}.py"
 
-        generated_path.write_text(module_code)
+        with FileLock(str(_EXTRACT_LOCK)):
+            generated_path.write_text(module_code)
 
         has_input = any(bf["has_input"] for bf in block_functions)
 

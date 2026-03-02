@@ -4,9 +4,6 @@ import os
 
 import requests
 
-PLACEHOLDER_FILE_ID = "550e8400-e29b-41d4-a716-446655440000"
-
-
 def api_base_url() -> str:
     return os.environ.get("EDEN_AI_BASE_URL", "https://staging-api.edenai.run")
 
@@ -40,19 +37,9 @@ def delete_file_ids(file_ids: set[str]) -> int:
     if not file_ids:
         return 0
     deleted = 0
-    batch = []
-    for fid in file_ids:
-        batch.append(fid)
-        if len(batch) == 100:
-            resp = requests.post(
-                f"{api_base_url()}/v3/upload/delete",
-                headers={**api_headers(), "Content-Type": "application/json"},
-                json={"file_ids": batch},
-            )
-            resp.raise_for_status()
-            deleted += resp.json()["deleted_count"]
-            batch = []
-    if batch:
+    ids_list = list(file_ids)
+    for start in range(0, len(ids_list), 100):
+        batch = ids_list[start : start + 100]
         resp = requests.post(
             f"{api_base_url()}/v3/upload/delete",
             headers={**api_headers(), "Content-Type": "application/json"},

@@ -25,14 +25,9 @@ for _mod in _modules:
     for _bf in _mod["block_functions"]:
         _test_cases.append(
             {
+                **_bf,
                 "source_mdx": _mod["source_mdx"],
                 "module_name": _mod["module_name"],
-                "func_name": _bf["func_name"],
-                "block_indices": _bf["block_indices"],
-                "lines": _bf["lines"],
-                "has_input": _bf["has_input"],
-                "needs_production_token": _bf["needs_production_token"],
-                "skip": _bf.get("skip", False),
             }
         )
 
@@ -70,7 +65,6 @@ def test_snippet_executes(test_case, fixtures_dir, monkeypatch, http_recorder, r
 
     full_module = f"tests.generated.{module_name}"
     module = importlib.import_module(full_module)
-    module = importlib.reload(module)
 
     func = getattr(module, func_name)
     func()

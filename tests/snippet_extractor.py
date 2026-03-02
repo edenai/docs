@@ -137,24 +137,14 @@ def build_module(blocks: list[dict], source_mdx: str) -> tuple[str, list[dict]]:
         )
         line_num = block["line"]
         has_input = "input(" in code
-        is_skip = block.get("skip", False)
 
         module_lines.append("")
         module_lines.append("")
         module_lines.append(f"def {func_name}():")
 
-        if is_skip:
-            module_lines.append("    pass")
-        else:
-            code_text = code.strip("\n")
-            if code_text.strip():
-                for line in code_text.split("\n"):
-                    if line.strip() == "":
-                        module_lines.append("")
-                    else:
-                        module_lines.append("    " + line)
-            else:
-                module_lines.append("    pass")
+        code_text = code.strip("\n")
+        for line in code_text.split("\n"):
+            module_lines.append("    " + line)
 
         block_functions.append(
             {

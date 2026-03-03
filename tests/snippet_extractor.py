@@ -91,7 +91,7 @@ def replace_api_keys(code: str, token_var: str = _SANDBOX_TOKEN_VAR) -> str:
 
 
 def replace_placeholder_file_id(code: str) -> str:
-    """Replace the placeholder file UUID with a runtime env-var lookup.
+    """Replace the placeholder file UUID with an inline os.environ.get() call.
 
     The conftest.py fixture uploads a real file and sets _EDEN_TEST_FILE_ID.
     """
@@ -99,7 +99,7 @@ def replace_placeholder_file_id(code: str) -> str:
         return code
     return code.replace(
         f'"{_PLACEHOLDER_FILE_ID}"',
-        "_EDEN_TEST_FILE_ID",
+        f'os.environ.get("_EDEN_TEST_FILE_ID", "{_PLACEHOLDER_FILE_ID}")',
     )
 
 
@@ -125,7 +125,6 @@ def build_module(blocks: list[dict], source_mdx: str) -> tuple[str, list[dict]]:
         "import os",
         "",
         f'_EDEN_BASE_URL = os.environ.get("EDEN_AI_BASE_URL", "{_DEFAULT_BASE_URL}")',
-        f'_EDEN_TEST_FILE_ID = os.environ.get("_EDEN_TEST_FILE_ID", "{_PLACEHOLDER_FILE_ID}")',
     ]
 
     block_functions = []

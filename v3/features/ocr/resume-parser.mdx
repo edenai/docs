@@ -1,0 +1,77 @@
+---
+title: "Resume Parser"
+description: "Resume Parser enables users to extract various information from resumes (curriculum vitae, CV) that could be in a variety of formats and returns structured data (name, job list, education, skills) to "
+icon: "microchip-ai"
+---
+
+# Resume Parser
+
+Resume Parser enables users to extract various information from resumes (curriculum vitae, CV) that could be in a variety of formats and returns structured data (name, job list, education, skills) to automate their processing. (type of files allowed: pdf, jpg, jpeg, png)
+
+## Endpoint
+
+`POST /v3/universal-ai` (sync)
+
+Model string pattern: `ocr/resume_parser/{provider}[/{model}]`
+
+## Input
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| file | file_input | Yes | File ID from /v3/upload or direct file URL |
+
+
+## Output
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| extracted_data | object | Yes |  |
+
+
+## Available Providers
+
+| Provider | Model String | Price |
+|----------|-------------|-------|
+| affinda | `ocr/resume_parser/affinda` | $0.07 per file |
+| extracta | `ocr/resume_parser/extracta` | $0.1 per page |
+| klippa | `ocr/resume_parser/klippa` | $0.1 per file |
+| openai | `ocr/resume_parser/openai` | $0.04 per page |
+| openai (gpt-4o) | `ocr/resume_parser/openai/gpt-4o` | $0.04 per page |
+| senseloaf | `ocr/resume_parser/senseloaf` | $0.045 per file |
+
+
+## Quick Start
+
+
+<CodeGroup>
+```python Python
+import requests
+
+url = "https://api.edenai.run/v3/universal-ai"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+payload = {
+    "model": "ocr/resume_parser/affinda",
+    "input": {
+        "file": "YOUR_FILE_UUID_OR_URL"
+    }
+}
+
+response = requests.post(url, headers=headers, json=payload)
+print(response.json())
+```
+
+```bash cURL
+curl -X POST https://api.edenai.run/v3/universal-ai \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "ocr/resume_parser/affinda",
+    "input": {"file": "YOUR_FILE_UUID_OR_URL"}
+  }'
+```
+</CodeGroup>
+

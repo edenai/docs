@@ -1,0 +1,86 @@
+---
+title: "Financial Parser"
+description: "Financial Parser API is a powerful and versatile tool designed to streamline your financial data extraction process. This cutting-edge API combines Optical Character Recognition (OCR) technology with "
+icon: "microchip-ai"
+---
+
+# Financial Parser
+
+Financial Parser API is a powerful and versatile tool designed to streamline your financial data extraction process. This cutting-edge API combines Optical Character Recognition (OCR) technology with advanced parsing capabilities to seamlessly extract and organize relevant information from invoices and receipts.
+
+## Endpoint
+
+`POST /v3/universal-ai` (sync)
+
+Model string pattern: `ocr/financial_parser/{provider}[/{model}]`
+
+## Input
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| file | file_input | Yes | File ID from /v3/upload or direct file URL |
+| language | string | Yes | Document language code |
+| document_type | enum | No | Specify the type of your document. Can be set to 'auto-detect' for automatic detection if the provider supports it. |
+
+
+## Output
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| extracted_data | array[object] | No | List of parsed financial data objects (per page). |
+
+
+## Available Providers
+
+| Provider | Model String | Price |
+|----------|-------------|-------|
+| affinda | `ocr/financial_parser/affinda` | $0.07 per page |
+| amazon | `ocr/financial_parser/amazon` | $0.01 per page |
+| base64 | `ocr/financial_parser/base64` | $0.25 per page |
+| eagledoc | `ocr/financial_parser/eagledoc` | $0.03 per page |
+| extracta | `ocr/financial_parser/extracta` | $0.1 per page |
+| google | `ocr/financial_parser/google` | $0.01 per page |
+| klippa | `ocr/financial_parser/klippa` | $0.1 per file |
+| microsoft | `ocr/financial_parser/microsoft` | $0.01 per page |
+| mindee | `ocr/financial_parser/mindee` | $0.1 per page |
+| openai | `ocr/financial_parser/openai` | $0.04 per page |
+| openai (gpt-4o) | `ocr/financial_parser/openai/gpt-4o` | $0.04 per page |
+| tabscanner | `ocr/financial_parser/tabscanner` | $0.08 per page |
+| veryfi | `ocr/financial_parser/veryfi` | $0.16 per file |
+
+
+## Quick Start
+
+
+<CodeGroup>
+```python Python
+import requests
+
+url = "https://api.edenai.run/v3/universal-ai"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+payload = {
+    "model": "ocr/financial_parser/affinda",
+    "input": {
+        "file": "YOUR_FILE_UUID_OR_URL"
+    }
+}
+
+response = requests.post(url, headers=headers, json=payload)
+print(response.json())
+```
+
+```bash cURL
+curl -X POST https://api.edenai.run/v3/universal-ai \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "ocr/financial_parser/affinda",
+    "input": {"file": "YOUR_FILE_UUID_OR_URL"}
+  }'
+```
+</CodeGroup>
+

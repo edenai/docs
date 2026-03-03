@@ -1,0 +1,78 @@
+---
+title: "Image Object Detection"
+description: "Object Detection is a computer vision technique that allows users to identify and locate (with bounding boxes) objects in an image. The detected objects can be animals, people, electronics, vehicles e"
+icon: "microchip-ai"
+---
+
+# Image Object Detection
+
+Object Detection is a computer vision technique that allows users to identify and locate (with bounding boxes) objects in an image. The detected objects can be animals, people, electronics, vehicles etc. (type of file allowed: jpg, jpeg, png, tiff)
+
+## Endpoint
+
+`POST /v3/universal-ai` (sync)
+
+Model string pattern: `image/object_detection/{provider}[/{model}]`
+
+## Input
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| file | file_input | Yes | Image file ID from /v3/upload or direct file URL |
+
+
+## Output
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| items | array[object] | No |  |
+
+
+## Available Providers
+
+| Provider | Model String | Price |
+|----------|-------------|-------|
+| amazon | `image/object_detection/amazon` | $1 per 1,000 files |
+| api4ai | `image/object_detection/api4ai` | $0.5 per 1,000 files |
+| clarifai | `image/object_detection/clarifai` | $2 per 1,000 files |
+| clarifai (general-image-detection) | `image/object_detection/clarifai/general-image-detection` | $2 per 1,000 files |
+| google | `image/object_detection/google` | $2.25 per 1,000 files |
+| microsoft | `image/object_detection/microsoft` | $1 per 1,000 files |
+| sentisight | `image/object_detection/sentisight` | $0.75 per 1,000 files |
+
+
+## Quick Start
+
+
+<CodeGroup>
+```python Python
+import requests
+
+url = "https://api.edenai.run/v3/universal-ai"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+payload = {
+    "model": "image/object_detection/amazon",
+    "input": {
+        "file": "YOUR_FILE_UUID_OR_URL"
+    }
+}
+
+response = requests.post(url, headers=headers, json=payload)
+print(response.json())
+```
+
+```bash cURL
+curl -X POST https://api.edenai.run/v3/universal-ai \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "image/object_detection/amazon",
+    "input": {"file": "YOUR_FILE_UUID_OR_URL"}
+  }'
+```
+</CodeGroup>
+

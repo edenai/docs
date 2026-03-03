@@ -446,7 +446,7 @@ test_cases = [
     ("What is Python?", ["openai/gpt-4", "anthropic/claude-sonnet-4-5"]),
     ("Explain quantum physics", ["anthropic/claude-opus-4-5", "openai/gpt-4"]),
     ("Write a function", ["openai/gpt-4", "anthropic/claude-sonnet-4-5"]),
-    ("Tell me a joke", ["openai/gpt-4", "google/gemini-2.0-flash"]),
+    ("Tell me a joke", ["openai/gpt-4", "google/gemini-2.5-flash"]),
     ("Summarize AI trends", None),  # Default routing
 ]
 
@@ -488,7 +488,7 @@ class RouterCostTracker:
     # Estimated costs per 1K tokens (input + output averaged)
     MODEL_COSTS = {
         "openai/gpt-4-mini": 0.0002,
-        "google/gemini-2.0-flash": 0.0002,
+        "google/gemini-2.5-flash": 0.0002,
         "openai/gpt-4": 0.0005,
         "openai/gpt-4": 0.003,
         "anthropic/claude-sonnet-4-5": 0.004,
@@ -637,7 +637,7 @@ tracker = RouterCostTracker("YOUR_API_KEY")
 queries = [
     ("What is Python?", ["openai/gpt-4", "anthropic/claude-sonnet-4-5"]),
     ("Explain quantum computing in detail", ["anthropic/claude-opus-4-5", "openai/gpt-4"]),
-    ("Hello", ["openai/gpt-4-mini", "google/gemini-2.0-flash"]),
+    ("Hello", ["openai/gpt-4-mini", "google/gemini-2.5-flash"]),
 ]
 
 for message, candidates in queries:

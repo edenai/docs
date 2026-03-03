@@ -106,7 +106,7 @@ base_url="https://api.edenai.run/v3/llm"
 # Gemini Flash
 
 gemini = ChatOpenAI(
-model="google/gemini-2.0-flash",
+model="google/gemini-2.5-flash",
 api_key="YOUR_EDEN_AI_API_KEY",
 base_url="https://api.edenai.run/v3/llm"
 )
@@ -492,7 +492,7 @@ async def compare_providers(question: str):
     providers = [
         ("Claude", "anthropic/claude-sonnet-4-5"),
         ("GPT-4", "openai/gpt-4"),
-        ("Gemini", "google/gemini-2.0-flash")
+        ("Gemini", "google/gemini-2.5-flash")
     ]
 
     tasks = []

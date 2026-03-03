@@ -150,11 +150,11 @@ payload = {
 
 ---
 
-### Google (Gemini 1.5)
+### Google (Gemini 2.5)
 
 **Models:**
-- `google/gemini-1.5-pro` (Best quality)
-- `google/gemini-1.5-flash` (Best value)
+- `google/gemini-2.5-pro` (Best quality)
+- `google/gemini-2.5-flash` (Best value)
 
 **Strengths:**
 - Massive context window (up to 2 million tokens)
@@ -186,7 +186,7 @@ payload = {
 ```python Python
 # Process a 200-page PDF
 payload = {
-    "model": "google/gemini-1.5-pro",
+    "model": "google/gemini-2.5-pro",
     "messages": [
         {
             "role": "user",
@@ -357,7 +357,7 @@ payload = {
 **Simple tasks (object detection, basic OCR):**
 ```python
 # Use Gemini Flash or Mistral
-"model": "google/gemini-1.5-flash"  # Cheapest
+"model": "google/gemini-2.5-flash"  # Cheapest
 ```
 
 **Medium complexity (chart analysis, multi-image):**
@@ -408,7 +408,7 @@ Process multiple items in fewer requests:
 # Send all images in one request (if provider supports)
 
 payload = {
-    "model": "google/gemini-1.5-pro",
+    "model": "google/gemini-2.5-pro",
     "messages": [
         {
             "role": "user",

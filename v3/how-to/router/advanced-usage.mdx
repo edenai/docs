@@ -30,14 +30,14 @@ class TieredRouter:
 
     BUDGET_MODELS = [
         "openai/gpt-4o-mini",
-        "google/gemini-2.0-flash",
+        "google/gemini-2.5-flash",
         "openai/gpt-4"
     ]
 
     BALANCED_MODELS = [
         "openai/gpt-4o",
         "anthropic/claude-sonnet-4-5",
-        "google/gemini-2.0-flash"
+        "google/gemini-2.5-flash"
     ]
 
     PREMIUM_MODELS = [
@@ -144,7 +144,7 @@ class BudgetAwareRouter:
     # Rough cost estimates per 1k tokens (input + output avg)
     MODEL_COSTS = {
         "openai/gpt-4o-mini": 0.0002,
-        "google/gemini-2.0-flash": 0.0002,
+        "google/gemini-2.5-flash": 0.0002,
         "openai/gpt-4": 0.0005,
         "openai/gpt-4o": 0.003,
         "anthropic/claude-sonnet-4-5": 0.004,
@@ -179,7 +179,7 @@ class BudgetAwareRouter:
             # Only budget models
             return [
                 "openai/gpt-4o-mini",
-                "google/gemini-2.0-flash",
+                "google/gemini-2.5-flash",
                 "openai/gpt-4"
             ]
 
@@ -188,7 +188,7 @@ class BudgetAwareRouter:
             return [
                 "openai/gpt-4o",
                 "anthropic/claude-sonnet-4-5",
-                "google/gemini-2.0-flash"
+                "google/gemini-2.5-flash"
             ]
 
         # Full budget available - use premium
@@ -321,17 +321,17 @@ class ContextAwareRouter:
         ],
         UseCase.TRANSLATION: [
             "openai/gpt-4o",
-            "google/gemini-2.0-flash",
+            "google/gemini-2.5-flash",
             "anthropic/claude-sonnet-4-5"
         ],
         UseCase.CHAT: [
             "openai/gpt-4o",
             "anthropic/claude-sonnet-4-5",
-            "google/gemini-2.0-flash"
+            "google/gemini-2.5-flash"
         ],
         UseCase.SUMMARIZATION: [
             "openai/gpt-4o-mini",
-            "google/gemini-2.0-flash",
+            "google/gemini-2.5-flash",
             "openai/gpt-4"
         ]
     }
@@ -606,7 +606,7 @@ payload = {
     "router_candidates": [
         "openai/gpt-4o",
         "anthropic/claude-sonnet-4-5",
-        "google/gemini-2.0-flash"
+        "google/gemini-2.5-flash"
     ],
     "messages": [
         {"role": "user", "content": "What's the weather in Paris and what's 15 * 23?"}

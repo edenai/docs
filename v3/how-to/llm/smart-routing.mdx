@@ -108,13 +108,13 @@ def chat_with_custom_candidates(
         ],
         "fast": [
             "openai/gpt-4o-mini",
-            "google/gemini-2.0-flash",
+            "google/gemini-2.5-flash",
             "openai/gpt-4",
         ],
         "general": [
             "openai/gpt-4o",
             "anthropic/claude-sonnet-4-5",
-            "google/gemini-2.0-flash",
+            "google/gemini-2.5-flash",
         ]
     }
 
@@ -263,7 +263,7 @@ def chat_with_tools(message: str, tools: list):
         "router_candidates": [
             "openai/gpt-4o",
             "anthropic/claude-sonnet-4-5",
-            "google/gemini-2.0-flash"
+            "google/gemini-2.5-flash"
         ],
         "messages": [{"role": "user", "content": message}],
         "tools": tools  # Router considers tool compatibility
@@ -326,14 +326,14 @@ class CostOptimizedRouter:
     # Model tiers by cost
     BUDGET_MODELS = [
         "openai/gpt-4o-mini",
-        "google/gemini-2.0-flash",
+        "google/gemini-2.5-flash",
         "openai/gpt-4",
     ]
 
     BALANCED_MODELS = [
         "openai/gpt-4o",
         "anthropic/claude-sonnet-4-5",
-        "google/gemini-2.0-flash",
+        "google/gemini-2.5-flash",
     ]
 
     PREMIUM_MODELS = [
@@ -579,7 +579,7 @@ for query in [
 ]:
     result = monitor.chat_with_tracking(
         query,
-        candidates=["openai/gpt-4o", "anthropic/claude-sonnet-4-5", "google/gemini-2.0-flash"]
+        candidates=["openai/gpt-4o", "anthropic/claude-sonnet-4-5", "google/gemini-2.5-flash"]
     )
     print(f"Q: {query}")
     print(f"Model: {result['routing_info']['selected_model']}")

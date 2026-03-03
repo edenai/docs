@@ -296,7 +296,7 @@ class SmartRoutingChatbot:
             "openai/gpt-4o-mini": {"input": 0.00015, "output": 0.0006},
             "anthropic/claude-sonnet-4-5": {"input": 0.003, "output": 0.015},
             "openai/gpt-4": {"input": 0.0008, "output": 0.004},
-            "google/gemini-2.0-flash": {"input": 0.0001, "output": 0.0004},
+            "google/gemini-2.5-flash": {"input": 0.0001, "output": 0.0004},
         }
 
         pricing = PRICING.get(model, PRICING["openai/gpt-4o"])
@@ -335,7 +335,7 @@ if __name__ == "__main__":
         "openai/gpt-4o",
         "openai/gpt-4o-mini",
         "anthropic/claude-sonnet-4-5",
-        "google/gemini-2.0-flash"
+        "google/gemini-2.5-flash"
     ]
 
     chatbot = SmartRoutingChatbot(
@@ -373,7 +373,7 @@ if __name__ == "__main__":
 **Expected Output:**
 ```
 User: What are your business hours?
-Model: google/gemini-2.0-flash
+Model: google/gemini-2.5-flash
 Cost: $0.0002 | Latency: 1.4s
 
 User: How do I reset my password?
@@ -385,7 +385,7 @@ Model: openai/gpt-4o
 Cost: $0.0035 | Latency: 1.8s
 
 Total cost: $0.0045 (vs. $0.0123 baseline = 63% savings!)
-Model distribution: {'google/gemini-2.0-flash': 1, 'openai/gpt-4o-mini': 1, 'openai/gpt-4o': 1}
+Model distribution: {'google/gemini-2.5-flash': 1, 'openai/gpt-4o-mini': 1, 'openai/gpt-4o': 1}
 ```
 
 **Result:** 60%+ cost savings by routing simple queries to cheaper models!
@@ -412,13 +412,13 @@ class TieredRoutingChatbot(SmartRoutingChatbot):
     TIER_CANDIDATES = {
         CostTier.BUDGET: [
             "openai/gpt-4o-mini",
-            "google/gemini-2.0-flash",
+            "google/gemini-2.5-flash",
             "openai/gpt-4",
         ],
         CostTier.BALANCED: [
             "openai/gpt-4o",
             "anthropic/claude-sonnet-4-5",
-            "google/gemini-2.0-flash",
+            "google/gemini-2.5-flash",
         ],
         CostTier.PREMIUM: [
             "anthropic/claude-opus-4-5",
@@ -582,7 +582,7 @@ class ABTester:
             router_candidates=[
                 "openai/gpt-4o",
                 "openai/gpt-4o-mini",
-                "google/gemini-2.0-flash"
+                "google/gemini-2.5-flash"
             ]
         )
 

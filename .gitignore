@@ -13,3 +13,5 @@ coverage.xml
 
 # Environment config
 .env
+
+.DS_Store

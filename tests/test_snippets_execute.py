@@ -5,7 +5,6 @@ import os
 
 import pytest
 
-from tests.conftest import http_recorder_key
 from tests.snippet_extractor import extract_all
 
 pytestmark = pytest.mark.skipif(
@@ -33,10 +32,11 @@ def _case_id(case: dict) -> str:
 
 
 @pytest.mark.execute
+@pytest.mark.usefixtures("http_recorder")
 @pytest.mark.parametrize(
     "test_case", _test_cases, ids=[_case_id(c) for c in _test_cases]
 )
-def test_snippet_executes(test_case, fixtures_dir, monkeypatch, http_recorder, request):
+def test_snippet_executes(test_case, fixtures_dir, monkeypatch):
     """Import and execute a single block function from a generated module."""
     module_name = test_case["module_name"]
     func_name = test_case["func_name"]
@@ -54,8 +54,6 @@ def test_snippet_executes(test_case, fixtures_dir, monkeypatch, http_recorder, r
     if has_input:
         responses = iter(["test input", "quit"])
         monkeypatch.setattr("builtins.input", lambda prompt="": next(responses))
-
-    request.node.stash[http_recorder_key] = http_recorder
 
     full_module = f"tests.generated.{module_name}"
     module = importlib.import_module(full_module)

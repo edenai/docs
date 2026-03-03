@@ -215,9 +215,10 @@ class HttpRecorder:
 
 
 @pytest.fixture()
-def http_recorder(monkeypatch):
+def http_recorder(monkeypatch, request):
     """Monkeypatch requests.Session.send to record the last request/response."""
     recorder = HttpRecorder()
+    request.node.stash[http_recorder_key] = recorder
     original_send = requests.Session.send
 
     def _recording_send(self, request, **kwargs):

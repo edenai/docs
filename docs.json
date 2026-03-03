@@ -176,7 +176,7 @@
                 "openapi": "https://api.edenai.run/v3/docs/openapi.json"
               },
               {
-                "group": "Cost Management",
+                "group": "Cost Management ",
                 "openapi": "https://api.edenai.run/v2/info/splitted-schema/cost_management/openapi.json"
               },
               {

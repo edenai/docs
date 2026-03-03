@@ -1,6 +1,7 @@
 name: Test Documentation Snippets
 
 on:
+  workflow_dispatch:
   pull_request:
     paths:
       - 'v3/**/*.mdx'

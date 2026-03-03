@@ -180,7 +180,7 @@
                 "openapi": "https://api.edenai.run/v2/info/splitted-schema/cost_management/openapi.json"
               },
               {
-                "group": "User Management ",
+                "group": "User Management",
                 "openapi": "https://api.edenai.run/v2/info/splitted-schema/user/openapi.json"
               }
             ]

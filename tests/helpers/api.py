@@ -10,7 +10,10 @@ def api_base_url() -> str:
 
 
 def api_headers() -> dict:
-    return {"Authorization": f"Bearer {os.environ['EDEN_AI_SANDBOX_API_TOKEN']}"}
+    token = os.environ.get("EDEN_AI_SANDBOX_API_TOKEN")
+    if not token:
+        raise RuntimeError("EDEN_AI_SANDBOX_API_TOKEN env var is required")
+    return {"Authorization": f"Bearer {token}"}
 
 
 def list_file_ids() -> set[str]:
@@ -63,7 +66,10 @@ def upload_test_file(file_bytes: bytes, filename: str) -> str:
 
 
 def production_api_headers() -> dict:
-    return {"Authorization": f"Bearer {os.environ['EDEN_AI_PRODUCTION_API_TOKEN']}"}
+    token = os.environ.get("EDEN_AI_PRODUCTION_API_TOKEN")
+    if not token:
+        raise RuntimeError("EDEN_AI_PRODUCTION_API_TOKEN env var is missing")
+    return {"Authorization": f"Bearer {token}"}
 
 
 def list_custom_token_names() -> set[str]:

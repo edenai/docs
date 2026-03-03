@@ -81,6 +81,7 @@ def delete_custom_tokens(names: set[str]) -> int:
     if not names:
         return 0
     deleted = 0
+    errors = []
     for name in names:
         resp = requests.delete(
             f"{api_base_url()}/v2/user/custom_token/{name}/",
@@ -88,4 +89,8 @@ def delete_custom_tokens(names: set[str]) -> int:
         )
         if resp.status_code == 204:
             deleted += 1
+        elif resp.status_code != 404:
+            errors.append(f"{name}: {resp.status_code} {resp.text}")
+    if errors:
+        raise RuntimeError("Failed to delete custom tokens:\n" + "\n".join(errors))
     return deleted

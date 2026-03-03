@@ -7,7 +7,7 @@ __pycache__/
 tests/generated/
 
 # Coverage reports
-tests/htmlcov/
+htmlcov/
 coverage.xml
 .coverage
 

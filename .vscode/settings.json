@@ -5,8 +5,7 @@
     "**/__pycache__": true,
     "**/*.pyc": true,
     "**/*.pyo": true,
-    "tests/generated": true,
-    "tests/htmlcov": true,
+    "**/htmlcov": true,
     "coverage.xml": true,
     ".coverage": true,
     ".venv": true
@@ -15,8 +14,7 @@
     "**/__pycache__": true,
     "**/*.pyc": true,
     "**/*.pyo": true,
-    "tests/generated": true,
-    "tests/htmlcov": true,
+    "**/htmlcov": true,
     "coverage.xml": true,
     ".coverage": true,
     ".venv": true

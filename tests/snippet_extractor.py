@@ -111,7 +111,13 @@ def replace_base_url(code: str) -> str:
 
 
 def build_module(blocks: list[dict], source_mdx: str) -> tuple[str, list[dict]]:
-    """Build a Python module with one function per block."""
+    """Build a Python module with one function per block.
+
+    Known limitation: each snippet is wrapped in a `def block_N():` function,
+    so top-level class/def definitions inside a snippet become nested. This
+    changes semantics for framework decorators, cross-file imports, etc.
+    Snippets with such constructs should be marked with {/* skip-test */}.
+    """
     if not blocks:
         return "", []
 

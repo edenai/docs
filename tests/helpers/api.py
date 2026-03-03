@@ -63,20 +63,14 @@ def upload_test_file(file_bytes: bytes, filename: str) -> str:
 
 
 def production_api_headers() -> dict:
-    token = os.environ.get("EDEN_AI_PRODUCTION_API_TOKEN")
-    if not token:
-        return {}
-    return {"Authorization": f"Bearer {token}"}
+    return {"Authorization": f"Bearer {os.environ['EDEN_AI_PRODUCTION_API_TOKEN']}"}
 
 
 def list_custom_token_names() -> set[str]:
     """Return the set of all custom token names currently on the account."""
-    headers = production_api_headers()
-    if not headers:
-        return set()
     resp = requests.get(
         f"{api_base_url()}/v2/user/custom_token/",
-        headers=headers,
+        headers=production_api_headers(),
     )
     resp.raise_for_status()
     return {t["name"] for t in resp.json()}
@@ -86,14 +80,11 @@ def delete_custom_tokens(names: set[str]) -> int:
     """Delete custom tokens by name. Returns count of deleted tokens."""
     if not names:
         return 0
-    headers = production_api_headers()
-    if not headers:
-        return 0
     deleted = 0
     for name in names:
         resp = requests.delete(
             f"{api_base_url()}/v2/user/custom_token/{name}/",
-            headers=headers,
+            headers=production_api_headers(),
         )
         if resp.status_code == 204:
             deleted += 1

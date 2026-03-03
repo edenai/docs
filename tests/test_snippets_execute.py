@@ -7,11 +7,6 @@ import pytest
 
 from tests.snippet_extractor import extract_all
 
-pytestmark = pytest.mark.skipif(
-    not os.environ.get("EDEN_AI_SANDBOX_API_TOKEN"),
-    reason="EDEN_AI_SANDBOX_API_TOKEN not set — skipping execution tests",
-)
-
 _modules = extract_all()
 
 _test_cases = []
@@ -42,6 +37,9 @@ def test_snippet_executes(test_case, fixtures_dir, monkeypatch):
     func_name = test_case["func_name"]
     has_input = test_case["has_input"]
     needs_production_token = test_case["needs_production_token"]
+
+    if not os.environ.get("EDEN_AI_SANDBOX_API_TOKEN"):
+        pytest.skip("EDEN_AI_SANDBOX_API_TOKEN not set — skipping execution tests")
 
     if test_case.get("skip"):
         pytest.skip("marked with {/* skip-test */}")

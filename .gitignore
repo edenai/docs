@@ -9,7 +9,7 @@ tests/generated/
 # Coverage reports
 htmlcov/
 coverage.xml
-.coverage
+.coverage*
 
 # Environment config
 .env

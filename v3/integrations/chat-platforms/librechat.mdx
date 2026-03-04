@@ -107,8 +107,8 @@ endpoints:
           - "anthropic/claude-sonnet-4-5"
           - "openai/gpt-4"
           - "openai/gpt-4-turbo"
-          - "google/gemini-pro"
-          - "google/gemini-1.5-pro"
+          - "google/gemini-2.5-pro"
+          - "google/gemini-2.5-flash"
           - "cohere/command-r-plus"
           - "openai/gpt-3.5-turbo"
         fetch: false
@@ -170,9 +170,8 @@ endpoints:
       baseURL: "https://api.edenai.run/v3/llm"
       models:
         default:
-          - "google/gemini-pro"
-          - "google/gemini-1.5-pro"
-          - "google/gemini-1.5-flash"
+          - "google/gemini-2.5-pro"
+          - "google/gemini-2.5-flash"
       modelDisplayLabel: "Google (Eden AI)"
 ```
 </CodeGroup>
@@ -202,7 +201,7 @@ endpoints:
       models:
         default:
           - "openai/gpt-4o"
-          - "google/gemini-1.5-pro"
+          - "google/gemini-2.5-pro"
           - "anthropic/claude-sonnet-4-5"
       # Enable file uploads
       fileConfig:
@@ -248,7 +247,7 @@ endpoints:
           system_message: "You are a creative writer. Be imaginative and engaging."
 
         - title: "Data Analyst"
-          model: "google/gemini-1.5-pro"
+          model: "google/gemini-2.5-pro"
           temperature: 0.3
           system_message: "You are a data analyst. Provide clear, data-driven insights."
 ```

@@ -299,13 +299,14 @@ headers = {
 payload = {
     "model": "ocr/financial_parser/google",
     "input": {
+        "language": "en",
         "file": "550e8400-e29b-41d4-a716-446655440000"
     }
 }
 
 response = requests.post(url, headers=headers, json=payload)
 result = response.json()
-print(result["output"]["text"])
+print(result["output"])
     ```
 </CodeGroup>
 
@@ -324,7 +325,7 @@ feature/subfeature/provider[/model]
 | `feature` | Category of AI capability | `text`, `ocr`, `image`, `translation` |
 | `subfeature` | Specific functionality | `moderation`, `ai_detection`, `ocr`, `generation` |
 | `provider` | AI provider | `openai`, `google`, `amazon`, `anthropic` |
-| `model` | Specific model (optional) | `gpt-4`, `claude-sonnet-4-5`, `gemini-pro` |
+| `model` | Specific model (optional) | `gpt-4`, `claude-sonnet-4-5`, `gemini-2.5-pro` |
 
 ### Examples
 
@@ -346,7 +347,7 @@ feature/subfeature/provider[/model]
 **LLM (simplified format):**
 - `openai/gpt-4` - Chat with GPT-4
 - `anthropic/claude-sonnet-4-5` - Chat with Claude
-- `google/gemini-pro` - Chat with Gemini
+- `google/gemini-2.5-flash` - Chat with Gemini
 
 ## API Discovery
 
@@ -360,16 +361,16 @@ import requests
 response = requests.get(
     "https://api.edenai.run/v3/info"
 )
-features = response.json()
-print(features)
-# Output: {"text": ["moderation", "ai_detection", ...], "ocr": [...], ...}
+data = response.json()
+for feature in data["features"]:
+    print(f"{feature['name']}: {[sf['name'] for sf in feature['subfeatures']]}")
 
 # Get details about a specific feature
 response = requests.get(
     "https://api.edenai.run/v3/info/text/moderation"
 )
 feature_info = response.json()
-print(feature_info["providers"])  # List of available providers
+print(feature_info["models"])  # Available models with pricing
 print(feature_info["input_schema"])  # Expected input format
 print(feature_info["output_schema"])  # Response format
     ```

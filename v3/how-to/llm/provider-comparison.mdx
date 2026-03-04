@@ -21,7 +21,7 @@ This guide helps you choose the right provider for your multimodal use cases by 
 |----------|--------|------|-----|------|-----|----------|--------|------|--------|
 | **OpenAI** | gpt-4o, gpt-4-turbo | ✓ | ✓ | ✓ | ✓ | 20 MB | ✓ | ✓ | ✓ |
 | **Anthropic** | claude-opus-4-5, claude-sonnet-4-5 | ✓ | ✓ | ✓ | ✓ | 5 MB | ✓ | ✓ | ✓ |
-| **Google** | gemini-1.5-pro, gemini-1.5-flash | ✓ | ✓ | ✓ | ✓ | 20 MB | ✓ | ✓ | ✓ |
+| **Google** | gemini-2.5-pro, gemini-2.5-flash | ✓ | ✓ | ✓ | ✓ | 20 MB | ✓ | ✓ | ✓ |
 | **Mistral** | pixtral-12b | ✓ | ✓ | ✓ | - | 10 MB | ✓ | ✓ | ✓ |
 
 ### Document Support
@@ -30,7 +30,7 @@ This guide helps you choose the right provider for your multimodal use cases by 
 |----------|--------|-----|------|-----|----------|-----------|----------|
 | **OpenAI** | gpt-4o, gpt-4-turbo | ✓ | ✓ | ✓ | 512 MB | ~1000 | Structured extraction |
 | **Anthropic** | claude-opus-4-5, claude-sonnet-4-5 | ✓ | ✓ | ✓ | 10 MB | ~200 | Deep analysis |
-| **Google** | gemini-1.5-pro, gemini-1.5-flash | ✓ | ✓ | ✓ | 2 GB | ~10000 | Large documents |
+| **Google** | gemini-2.5-pro, gemini-2.5-flash | ✓ | ✓ | ✓ | 2 GB | ~10000 | Large documents |
 | **Mistral** | pixtral-12b | - | - | ✓ | - | - | Text only |
 
 ## Detailed Provider Profiles
@@ -150,11 +150,11 @@ payload = {
 
 ---
 
-### Google (Gemini 1.5)
+### Google (Gemini 2.5)
 
 **Models:**
-- `google/gemini-1.5-pro` (Best quality)
-- `google/gemini-1.5-flash` (Best value)
+- `google/gemini-2.5-pro` (Best quality)
+- `google/gemini-2.5-flash` (Best value)
 
 **Strengths:**
 - Massive context window (up to 2 million tokens)
@@ -186,7 +186,7 @@ payload = {
 ```python Python
 # Process a 200-page PDF
 payload = {
-    "model": "google/gemini-1.5-pro",
+    "model": "google/gemini-2.5-pro",
     "messages": [
         {
             "role": "user",
@@ -357,7 +357,7 @@ payload = {
 **Simple tasks (object detection, basic OCR):**
 ```
 # Use Gemini Flash or Mistral
-"model": "google/gemini-1.5-flash"  # Cheapest
+"model": "google/gemini-2.5-flash"  # Cheapest
 ```
 
 **Medium complexity (chart analysis, multi-image):**
@@ -376,8 +376,9 @@ payload = {
 
 <CodeGroup>
 ```python Python
-from PIL import Image
+import os
 import io
+from PIL import Image
 
 def optimize_image(image_path, max_size_mb=5):
     """Resize image to fit under size limit."""
@@ -408,7 +409,7 @@ Process multiple items in fewer requests:
 image_urls = ["https://example.com/image1.jpg", "https://example.com/image2.jpg"]
 
 payload = {
-    "model": "google/gemini-1.5-pro",
+    "model": "google/gemini-2.5-pro",
     "messages": [
         {
             "role": "user",
@@ -432,8 +433,8 @@ payload = {
 |----------|-------|-------------------|-------------------|
 | OpenAI | gpt-4o | ~1.5s | ~2.5s |
 | Anthropic | claude-sonnet-4-5 | ~2.0s | ~3.5s |
-| Google | gemini-1.5-flash | ~1.0s | ~2.0s |
-| Google | gemini-1.5-pro | ~2.0s | ~3.0s |
+| Google | gemini-2.5-flash | ~1.0s | ~2.0s |
+| Google | gemini-2.5-pro | ~2.0s | ~3.0s |
 | Mistral | pixtral-12b | ~1.5s | ~2.5s |
 
 ### Document Processing (PDF)
@@ -442,7 +443,7 @@ payload = {
 |----------|-------|-------------|--------------|
 | OpenAI | gpt-4o | ~5s | ~30s |
 | Anthropic | claude-opus-4-5 | ~8s | Not recommended |
-| Google | gemini-1.5-pro | ~6s | ~45s |
+| Google | gemini-2.5-pro | ~6s | ~45s |
 
 *Times are approximate and vary based on content complexity and network conditions.*
 

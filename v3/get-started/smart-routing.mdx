@@ -115,7 +115,7 @@ payload = {
     "router_candidates": [
         "openai/gpt-4o",
         "anthropic/claude-sonnet-4-5",
-        "google/gemini-2.0-flash"
+        "google/gemini-2.5-flash"
     ],
     "messages": [
         {"role": "user", "content": "Write a Python function to sort a list"}
@@ -134,7 +134,7 @@ const payload = {
   router_candidates: [
     'openai/gpt-4o',
     'anthropic/claude-sonnet-4-5',
-    'google/gemini-2.0-flash'
+    'google/gemini-2.5-flash'
   ],
   messages: [
     {role: 'user', content: 'Write a Python function to sort a list'}
@@ -160,7 +160,7 @@ curl -X POST https://api.edenai.run/v3/llm/chat/completions \
     "router_candidates": [
       "openai/gpt-4o",
       "anthropic/claude-sonnet-4-5",
-      "google/gemini-2.0-flash"
+      "google/gemini-2.5-flash"
     ],
     "messages": [
       {"role": "user", "content": "Write a Python function to sort a list"}
@@ -284,7 +284,7 @@ Smart routing costs are based on the **selected model's pricing**. The routing d
 
 **Example:**
 - If router selects `openai/gpt-4o` → You pay GPT-4o rates
-- If router selects `google/gemini-2.0-flash` → You pay Gemini Flash rates
+- If router selects `google/gemini-2.5-flash` → You pay Gemini Flash rates
 
 The router optimizes for cost-effectiveness, often selecting cheaper models when they meet quality requirements.
 

@@ -72,8 +72,7 @@
                         "icon": "route",
                         "pages": [
                           "v3/how-to/router/getting-started",
-                          "v3/how-to/router/advanced-usage",
-                          "v3/how-to/router/monitoring"
+                          "v3/how-to/router/advanced-usage"
                         ]
                       },
                       {

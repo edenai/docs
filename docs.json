@@ -120,7 +120,6 @@
                     "icon": "graduation-cap",
                     "pages": [
                       "v3/tutorials/optimize-llm-costs",
-                      "v3/tutorials/track-optimize-spending",
                       "v3/tutorials/multi-environment-tokens"
                     ]
                   },

@@ -355,19 +355,19 @@ payload = {
 ### Choose Based on Task Complexity
 
 **Simple tasks (object detection, basic OCR):**
-```python
+```
 # Use Gemini Flash or Mistral
 "model": "google/gemini-1.5-flash"  # Cheapest
 ```
 
 **Medium complexity (chart analysis, multi-image):**
-```python
+```
 # Use GPT-4o or Claude Sonnet
 "model": "openai/gpt-4o"  # Balanced
 ```
 
 **Complex reasoning (legal docs, deep analysis):**
-```python
+```
 # Use Claude Opus
 "model": "anthropic/claude-opus-4-5"  # Best quality
 ```
@@ -405,6 +405,7 @@ Process multiple items in fewer requests:
 ```python Python
 # Instead of multiple requests
 # Send all images in one request (if provider supports)
+image_urls = ["https://example.com/image1.jpg", "https://example.com/image2.jpg"]
 
 payload = {
     "model": "google/gemini-1.5-pro",

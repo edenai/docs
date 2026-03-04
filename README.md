@@ -18,8 +18,8 @@ Eden AI is a unified API platform that provides:
 ## Documentation Structure
 
 ### V3 Documentation
-- **Get Started** - Introduction, smart routing, FAQ, and enterprise offerings
-- **How-To Guides** - Step-by-step guides for authentication, cost management, user management, smart routing, Universal AI, LLM endpoints, file uploads, and API discovery
+- **Get Started** - Introduction, smart routing, FAQ, enterprise offerings, and professional services
+- **How-To Guides** - Step-by-step guides for authentication, cost management, discovery, user management, smart routing, Universal AI, LLM endpoints, and file uploads
 - **Tutorials** - Practical tutorials for optimizing LLM costs, tracking spending, and managing tokens
 - **Integrations** - SDKs (Python, TypeScript), AI assistants (Claude Code, Continue.dev), frameworks (LangChain), and chat platforms (LibreChat, Open WebUI)
 - **Changelog** - Version history and updates
@@ -58,6 +58,7 @@ View the documentation at `http://localhost:3000`
 - `/v3/` - V3 API documentation pages
 - `/v3/features/` - **Auto-generated** AI feature reference pages (do not edit manually)
 - `/scripts/` - Automation scripts (see below)
+- `/tests/` - Automated test suite for Python code snippets (see [tests/README.md](tests/README.md))
 - `/shared/` - Reusable content snippets
 - `/openapi/` - OpenAPI specification files
 - `/images/` - Documentation images and assets

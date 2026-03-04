@@ -82,6 +82,18 @@ def list_custom_token_names() -> set[str]:
     return {t["name"] for t in resp.json()}
 
 
+def create_custom_token(name: str, **kwargs) -> dict:
+    """Create a custom token and return the response JSON."""
+    payload = {"name": name, **kwargs}
+    resp = requests.post(
+        f"{api_base_url()}/v2/user/custom_token/",
+        headers=production_api_headers(),
+        json=payload,
+    )
+    resp.raise_for_status()
+    return resp.json()
+
+
 def delete_custom_tokens(names: set[str]) -> int:
     """Delete custom tokens by name. Returns count of deleted tokens."""
     if not names:

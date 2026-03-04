@@ -2,6 +2,7 @@
 
 import json
 import os
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -11,6 +12,7 @@ from filelock import FileLock
 from xdist.plugin import is_xdist_worker
 
 from tests.helpers.api import (
+    create_custom_token,
     delete_custom_tokens,
     delete_file_ids,
     list_custom_token_names,
@@ -62,6 +64,23 @@ def pytest_sessionstart(session: pytest.Session) -> None:
 
     if os.environ.get("EDEN_AI_PRODUCTION_API_TOKEN"):
         state["pre_existing_tokens"] = sorted(list_custom_token_names())
+
+        expire = (datetime.now() + timedelta(days=30)).isoformat()
+        for token_spec in [
+            {
+                "name": "my-api-token",
+                "balance": "100.00",
+                "active_balance": True,
+                "expire_time": expire,
+            },
+            {"name": "old-token"},
+        ]:
+            try:
+                create_custom_token(**token_spec)
+            except requests.HTTPError as exc:
+                # token may already exist
+                if not exc.response or exc.response.status_code != 400:
+                    raise
 
     path = _shared_state_path(session.config)
     path.parent.mkdir(parents=True, exist_ok=True)

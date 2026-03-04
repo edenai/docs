@@ -1,1 +1,18 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Generated test modules
+tests/generated/
+
+# Coverage reports
+htmlcov/
+coverage.xml
+.coverage
+
+# Environment config
+.env
+
+.DS_Store
 report.json

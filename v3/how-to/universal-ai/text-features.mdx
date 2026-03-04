@@ -51,6 +51,13 @@ Check text for inappropriate content:
 <CodeGroup>
 ```python Python
 import requests
+
+url = "https://api.edenai.run/v3/universal-ai"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
 payload = {
     "model": "text/moderation/openai",
     "input": {
@@ -74,6 +81,13 @@ Generate semantic vectors for text:
 <CodeGroup>
 ```python Python
 import requests
+
+url = "https://api.edenai.run/v3/universal-ai"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
 payload = {
     "model": "text/embeddings/openai/text-embedding-3-small",
     "input": {

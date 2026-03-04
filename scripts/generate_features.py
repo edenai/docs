@@ -615,17 +615,13 @@ def main() -> None:
 
             content = generate_subfeature_page(fname, sf, detail)
             (feat_dir / f"{sf_slug}.mdx").write_text(content)
-
-    # Generate index page
     print("  Generating index page...")
     index_content = generate_index_page(features)
     (FEATURES_DIR / "index.mdx").write_text(index_content)
 
-    # Clean up stale pages
     print("  Cleaning up stale pages...")
     cleanup_stale_pages(features)
 
-    # Update docs.json navigation
     print("  Updating docs.json navigation...")
     update_docs_json(features)
 

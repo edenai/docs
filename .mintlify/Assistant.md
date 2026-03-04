@@ -35,7 +35,7 @@ Users get their API key from the [Eden AI Dashboard](https://app.edenai.run/) un
 ```
 provider/model
 ```
-Examples: `openai/gpt-4`, `anthropic/claude-sonnet-4-5`, `google/gemini-pro`
+Examples: `openai/gpt-4`, `anthropic/claude-sonnet-4-5`, `google/gemini-2.5-flash`
 
 ### Universal AI
 ```

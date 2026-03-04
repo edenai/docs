@@ -53,7 +53,7 @@ headers = {
 payload = {
     "model": "text/plagia_detection/winstonai",
     "input": {
-        "text": "Your text here"
+        "text": "The quick brown fox jumps over the lazy dog."
     }
 }
 
@@ -67,7 +67,7 @@ curl -X POST https://api.edenai.run/v3/universal-ai \
   -H "Content-Type: application/json" \
   -d '{
     "model": "text/plagia_detection/winstonai",
-    "input": {"text": "Your text here"}
+    "input": {"text": "The quick brown fox jumps over the lazy dog."}
   }'
 ```
 </CodeGroup>

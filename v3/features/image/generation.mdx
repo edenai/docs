@@ -77,7 +77,8 @@ headers = {
 payload = {
     "model": "image/generation/bytedance",
     "input": {
-        "text": "Your text here"
+        "text": "The quick brown fox jumps over the lazy dog.",
+        "resolution": "1024x1024"
     }
 }
 
@@ -91,7 +92,7 @@ curl -X POST https://api.edenai.run/v3/universal-ai \
   -H "Content-Type: application/json" \
   -d '{
     "model": "image/generation/bytedance",
-    "input": {"text": "Your text here"}
+    "input": {"text": "The quick brown fox jumps over the lazy dog.", "resolution": "1024x1024"}
   }'
 ```
 </CodeGroup>

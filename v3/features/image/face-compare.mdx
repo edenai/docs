@@ -54,7 +54,8 @@ headers = {
 payload = {
     "model": "image/face_compare/amazon",
     "input": {
-        "text": "Your text here"
+        "file1": "YOUR_FILE_UUID_OR_URL",
+        "file2": "YOUR_FILE_UUID_OR_URL"
     }
 }
 
@@ -68,7 +69,7 @@ curl -X POST https://api.edenai.run/v3/universal-ai \
   -H "Content-Type: application/json" \
   -d '{
     "model": "image/face_compare/amazon",
-    "input": {"text": "Your text here"}
+    "input": {"file1": "YOUR_FILE_UUID_OR_URL", "file2": "YOUR_FILE_UUID_OR_URL"}
   }'
 ```
 </CodeGroup>

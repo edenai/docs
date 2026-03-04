@@ -67,7 +67,8 @@ headers = {
 payload = {
     "model": "audio/speech_to_text_async/amazon",
     "input": {
-        "file": "YOUR_FILE_UUID_OR_URL"
+        "file": "YOUR_FILE_UUID_OR_URL",
+        "language": "en"
     }
 }
 
@@ -81,7 +82,7 @@ curl -X POST https://api.edenai.run/v3/universal-ai \
   -H "Content-Type: application/json" \
   -d '{
     "model": "audio/speech_to_text_async/amazon",
-    "input": {"file": "YOUR_FILE_UUID_OR_URL"}
+    "input": {"file": "YOUR_FILE_UUID_OR_URL", "language": "en"}
   }'
 ```
 </CodeGroup>

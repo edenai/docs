@@ -134,9 +134,14 @@ def derive_icon(feature_name: str) -> str:
     return DEFAULT_FEATURE_ICON
 
 
-# ---------------------------------------------------------------------------
+# ----------------------
 # Formatting helpers
-# ---------------------------------------------------------------------------
+# ----------------------
+
+
+def escape_frontmatter(text: str) -> str:
+    """Escape a string for use inside double-quoted YAML frontmatter."""
+    return text.replace("\\", "\\\\").replace('"', '\\"')
 
 
 def format_price(price: float, quantity: int, unit_type: str) -> str:
@@ -167,23 +172,80 @@ def slug(name: str) -> str:
     return name.replace("_", "-")
 
 
-def input_type_for_feature(feature: str, detail: dict) -> str:
-    """Determine the sample input type (text, file, etc.) from the schema."""
-    fields = detail.get("input_schema", {}).get("fields", [])
-    field_names = {f["name"] for f in fields}
-    if "text" in field_names:
-        return "text"
-    if "file" in field_names:
-        return "file"
-    if "texts" in field_names:
-        return "texts"
-    return "text"
+# Realistic placeholder values keyed by (field_name, field_type).
+# Checked in order: exact name match first, then type-based fallback.
+_FIELD_PLACEHOLDERS: dict[str, str] = {
+    # By field name
+    "text": '"The quick brown fox jumps over the lazy dog."',
+    "texts": '["First text to analyze", "Second text to analyze"]',
+    "file": '"YOUR_FILE_UUID_OR_URL"',
+    "file_url": '"https://example.com/document.pdf"',
+    "language": '"en"',
+    "source_language": '"en"',
+    "target_language": '"fr"',
+    "speakers": "2",
+    "profanity_filter": "false",
+    "vocabulary": '["Eden AI", "API"]',
+    "resolution": '"1024x1024"',
+    "num_images": "1",
+    "text_prompt": '"A futuristic city skyline at sunset"',
+    "document_type": '"auto-detect"',
+}
+
+_TYPE_PLACEHOLDERS: dict[str, str] = {
+    "string": '"example"',
+    "int": "1",
+    "integer": "1",
+    "float": "0.5",
+    "number": "0.5",
+    "bool": "true",
+    "boolean": "true",
+    "file_input": '"YOUR_FILE_UUID_OR_URL"',
+}
 
 
-# ---------------------------------------------------------------------------
+def _placeholder_for_field(field: dict) -> str:
+    """Return a realistic JSON placeholder value for a schema field."""
+    name = field.get("name", "")
+    ftype = field.get("type", "string")
+
+    # Exact name match
+    if name in _FIELD_PLACEHOLDERS:
+        return _FIELD_PLACEHOLDERS[name]
+
+    # Enum: use the first allowed value
+    if ftype == "enum" and field.get("enum"):
+        return f'"{field["enum"][0]}"'
+
+    # Array of strings
+    if ftype == "array":
+        return '["value1", "value2"]'
+
+    # Type-based fallback
+    return _TYPE_PLACEHOLDERS.get(ftype, '"value"')
+
+
+def build_input_json(fields: list[dict], required_only: bool = False) -> dict[str, str]:
+    """Build a dict of field_name → placeholder value from schema fields.
+
+    Includes all required fields plus optional fields that add useful context
+    (like language). Returns an ordered dict suitable for JSON serialization.
+    """
+    # Always-include optional fields that improve the example
+    useful_optional = {"language", "source_language", "target_language"}
+
+    result: dict[str, str] = {}
+    for f in fields:
+        name = f.get("name", "")
+        is_required = f.get("required", False)
+        if is_required or (not required_only and name in useful_optional):
+            result[name] = _placeholder_for_field(f)
+    return result
+
+
+# --------------------
 # MDX generation
-# ---------------------------------------------------------------------------
-
+# --------------------
 
 def render_schema_table(fields: list[dict], indent: int = 0) -> str:
     """Render a list of schema fields as a Markdown table."""
@@ -229,26 +291,39 @@ def render_providers_table(models: list[dict]) -> str:
     return "\n".join(lines) + "\n"
 
 
+def _format_input_block(fields: list[dict], indent: int = 8) -> str:
+    """Format the input fields as a JSON-like block for embedding in code."""
+    input_map = build_input_json(fields)
+    if not input_map:
+        return "{}"
+    pad = " " * indent
+    lines = ["{"]
+    items = list(input_map.items())
+    for i, (k, v) in enumerate(items):
+        comma = "," if i < len(items) - 1 else ""
+        lines.append(f'{pad}"{k}": {v}{comma}')
+    lines.append(" " * (indent - 4) + "}")
+    return "\n".join(lines)
+
+
+def _format_curl_input(fields: list[dict]) -> str:
+    """Format the input fields as inline JSON for the cURL -d body."""
+    input_map = build_input_json(fields)
+    if not input_map:
+        return ""
+    parts = [f'"{k}": {v}' for k, v in input_map.items()]
+    return ", ".join(parts)
+
+
 def build_code_example(feature: str, subfeature: str, models: list[dict], detail: dict) -> str:
-    """Build a quick-start code example using the first available model."""
+    """Build a quick-start code example from the schema and first available model."""
     if not models:
         return ""
 
     first_model = models[0]["model"]
-    input_type = input_type_for_feature(feature, detail)
-
-    if input_type == "text":
-        input_json = '{\n        "text": "Your text here"\n    }'
-        input_curl = '"text": "Your text here"'
-    elif input_type == "texts":
-        input_json = '{\n        "texts": ["First text", "Second text"]\n    }'
-        input_curl = '"texts": ["First text", "Second text"]'
-    elif input_type == "file":
-        input_json = '{\n        "file": "YOUR_FILE_UUID_OR_URL"\n    }'
-        input_curl = '"file": "YOUR_FILE_UUID_OR_URL"'
-    else:
-        input_json = '{}'
-        input_curl = ''
+    input_fields = detail.get("input_schema", {}).get("fields", [])
+    input_json = _format_input_block(input_fields)
+    input_curl = _format_curl_input(input_fields)
 
     mode = detail.get("mode", "sync")
     if mode == "async":
@@ -306,9 +381,12 @@ def generate_subfeature_page(feature: str, subfeature_info: dict, detail: dict) 
 
     code_example = build_code_example(feature, sf_name, models, detail)
 
+    safe_title = escape_frontmatter(fullname)
+    safe_desc = escape_frontmatter(description[:200])
+
     page = f"""---
-title: "{fullname}"
-description: "{description[:200]}"
+title: "{safe_title}"
+description: "{safe_desc}"
 icon: "{DEFAULT_SUBFEATURE_ICON}"
 ---
 
@@ -381,10 +459,9 @@ Browse all AI features available through the Universal AI endpoint (`POST /v3/un
 """
 
 
-# ---------------------------------------------------------------------------
+# --------------------------------
 # docs.json navigation update
-# ---------------------------------------------------------------------------
-
+# --------------------------------
 
 def build_nav_group(features: list[dict]) -> dict:
     """Build the 'AI Features' navigation group for docs.json."""
@@ -428,23 +505,6 @@ def update_docs_json(features: list[dict]) -> None:
                     if not (isinstance(p, dict) and p.get("group") == "AI Features")
                 ]
 
-                # Remove text-features, ocr-features, image-features from
-                # Universal AI group (superseded by per-feature pages).
-                # The Universal AI group is nested inside "How-To Guides".
-                removed_pages = {
-                    "v3/how-to/universal-ai/text-features",
-                    "v3/how-to/universal-ai/ocr-features",
-                    "v3/how-to/universal-ai/image-features",
-                }
-                for p in pages:
-                    if isinstance(p, dict) and p.get("group") == "How-To Guides":
-                        for sub in p.get("pages", []):
-                            if isinstance(sub, dict) and sub.get("group") == "Universal AI":
-                                sub["pages"] = [
-                                    pg for pg in sub.get("pages", [])
-                                    if pg not in removed_pages
-                                ]
-
                 # Insert AI Features after the How-To Guides group
                 insert_idx = None
                 for i, p in enumerate(pages):
@@ -462,9 +522,9 @@ def update_docs_json(features: list[dict]) -> None:
         f.write("\n")
 
 
-# ---------------------------------------------------------------------------
+# ------------------------
 # Cleanup stale pages
-# ---------------------------------------------------------------------------
+# ------------------------
 
 
 def cleanup_stale_pages(features: list[dict]) -> None:
@@ -490,9 +550,9 @@ def cleanup_stale_pages(features: list[dict]) -> None:
             dirpath.rmdir()
 
 
-# ---------------------------------------------------------------------------
+# ----------
 # Main
-# ---------------------------------------------------------------------------
+# ----------
 
 
 def main() -> None:

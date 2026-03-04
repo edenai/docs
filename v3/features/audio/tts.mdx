@@ -1,6 +1,6 @@
 ---
 title: "Text to Speech"
-description: "Text-to-speech (TTS) is a technology that converts written text into spoken audio, enabling computers and digital devices to "read" text aloud.  It is also known as speech synthesis, read aloud techno"
+description: "Text-to-speech (TTS) is a technology that converts written text into spoken audio, enabling computers and digital devices to \"read\" text aloud.  It is also known as speech synthesis, read aloud techno"
 icon: "microchip-ai"
 ---
 
@@ -43,20 +43,23 @@ For supported voices for your provider/model, please check each provider's docum
 | deepgram (aura) | `audio/tts/deepgram/aura` | $0.015 per 1,000 chars |
 | deepgram (aura-2) | `audio/tts/deepgram/aura-2` | $0.03 per 1,000 chars |
 | elevenlabs | `audio/tts/elevenlabs` | $0.3 per 1,000 chars |
-| google (casual) | `audio/tts/google/casual` | $0.016 per 1,000 chars |
-| google (chirp3-hd) | `audio/tts/google/chirp3-hd` | $0.03 per 1,000 chars |
-| google (chirp-hd) | `audio/tts/google/chirp-hd` | $0.03 per 1,000 chars |
-| google (neural2) | `audio/tts/google/neural2` | $0.016 per 1,000 chars |
-| google (news) | `audio/tts/google/news` | $0.16 per 1,000 chars |
-| google (polyglot) | `audio/tts/google/polyglot` | $0.016 per 1,000 chars |
-| google (standard) | `audio/tts/google/standard` | $0.004 per 1,000 chars |
-| google (studio) | `audio/tts/google/studio` | $0.16 per 1,000 chars |
-| google (wavenet) | `audio/tts/google/wavenet` | $0.016 per 1,000 chars |
-| lovoai | `audio/tts/lovoai` | $0.16 per 1,000 chars |
-| microsoft (neural) | `audio/tts/microsoft/neural` | $0.016 per 1,000 chars |
-| microsoft (neural-hd) | `audio/tts/microsoft/neural-hd` | $0.03 per 1,000 chars |
-| openai (tts-1) | `audio/tts/openai/tts-1` | $0.015 per 1,000 chars |
-| openai (tts-1-hd) | `audio/tts/openai/tts-1-hd` | $0.03 per 1,000 chars |
+| google (casual) | `audio/tts/google/casual` | $16 per 1,000,000 chars |
+| google (chirp3-hd) | `audio/tts/google/chirp3-hd` | $30 per 1,000,000 chars |
+| google (chirp-hd) | `audio/tts/google/chirp-hd` | $30 per 1,000,000 chars |
+| google (gemini-2.5-flash-tts) | `audio/tts/google/gemini-2.5-flash-tts` | $0.006 per minute |
+| google (gemini-2.5-pro-tts) | `audio/tts/google/gemini-2.5-pro-tts` | $0.012 per minute |
+| google (neural2) | `audio/tts/google/neural2` | $16 per 1,000,000 chars |
+| google (news) | `audio/tts/google/news` | $160 per 1,000,000 chars |
+| google (polyglot) | `audio/tts/google/polyglot` | $16 per 1,000,000 chars |
+| google (standard) | `audio/tts/google/standard` | $4 per 1,000,000 chars |
+| google (studio) | `audio/tts/google/studio` | $160 per 1,000,000 chars |
+| google (wavenet) | `audio/tts/google/wavenet` | $4 per 1,000,000 chars |
+| lovoai | `audio/tts/lovoai` | $160 per 1,000,000 chars |
+| microsoft (neural) | `audio/tts/microsoft/neural` | $16 per 1,000,000 chars |
+| microsoft (neural-hd) | `audio/tts/microsoft/neural-hd` | $30 per 1,000,000 chars |
+| openai (gpt-4o-mini-tts) | `audio/tts/openai/gpt-4o-mini-tts` | $0.015 per minute |
+| openai (tts-1) | `audio/tts/openai/tts-1` | $15 per 1,000,000 chars |
+| openai (tts-1-hd) | `audio/tts/openai/tts-1-hd` | $30 per 1,000,000 chars |
 
 
 ## Quick Start
@@ -75,7 +78,7 @@ headers = {
 payload = {
     "model": "audio/tts/amazon/neural",
     "input": {
-        "text": "Your text here"
+        "text": "The quick brown fox jumps over the lazy dog."
     }
 }
 
@@ -89,7 +92,7 @@ curl -X POST https://api.edenai.run/v3/universal-ai \
   -H "Content-Type: application/json" \
   -d '{
     "model": "audio/tts/amazon/neural",
-    "input": {"text": "Your text here"}
+    "input": {"text": "The quick brown fox jumps over the lazy dog."}
   }'
 ```
 </CodeGroup>

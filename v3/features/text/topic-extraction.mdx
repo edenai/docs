@@ -55,7 +55,8 @@ headers = {
 payload = {
     "model": "text/topic_extraction/google",
     "input": {
-        "text": "Your text here"
+        "text": "The quick brown fox jumps over the lazy dog.",
+        "language": "en"
     }
 }
 
@@ -69,7 +70,7 @@ curl -X POST https://api.edenai.run/v3/universal-ai \
   -H "Content-Type: application/json" \
   -d '{
     "model": "text/topic_extraction/google",
-    "input": {"text": "Your text here"}
+    "input": {"text": "The quick brown fox jumps over the lazy dog.", "language": "en"}
   }'
 ```
 </CodeGroup>

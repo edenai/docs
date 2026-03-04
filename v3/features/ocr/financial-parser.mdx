@@ -65,7 +65,8 @@ headers = {
 payload = {
     "model": "ocr/financial_parser/affinda",
     "input": {
-        "file": "YOUR_FILE_UUID_OR_URL"
+        "file": "YOUR_FILE_UUID_OR_URL",
+        "language": "en"
     }
 }
 
@@ -79,7 +80,7 @@ curl -X POST https://api.edenai.run/v3/universal-ai \
   -H "Content-Type: application/json" \
   -d '{
     "model": "ocr/financial_parser/affinda",
-    "input": {"file": "YOUR_FILE_UUID_OR_URL"}
+    "input": {"file": "YOUR_FILE_UUID_OR_URL", "language": "en"}
   }'
 ```
 </CodeGroup>

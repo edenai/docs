@@ -81,6 +81,9 @@
                         "icon": "robot",
                         "pages": [
                           "v3/how-to/universal-ai/getting-started",
+                          "v3/how-to/universal-ai/text-features",
+                          "v3/how-to/universal-ai/ocr-features",
+                          "v3/how-to/universal-ai/image-features",
                           "v3/how-to/universal-ai/multimodal-features"
                         ]
                       },
@@ -232,15 +235,15 @@
             "groups": [
               {
                 "group": "AI Features",
-                "openapi": "https://api.edenai.run/v3/docs/openapi.json"
+                "openapi": "openapi/v3-openapi.json"
               },
               {
                 "group": "Cost Management",
-                "openapi": "https://api.edenai.run/v2/info/splitted-schema/cost_management/openapi.json"
+                "openapi": "openapi/v3-cost-management.json"
               },
               {
                 "group": "User Management",
-                "openapi": "https://api.edenai.run/v2/info/splitted-schema/user/openapi.json"
+                "openapi": "openapi/v3-user.json"
               }
             ]
           }

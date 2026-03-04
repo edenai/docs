@@ -55,7 +55,9 @@ headers = {
 payload = {
     "model": "translation/document_translation/deepl",
     "input": {
-        "file": "YOUR_FILE_UUID_OR_URL"
+        "file": "YOUR_FILE_UUID_OR_URL",
+        "target_language": "fr",
+        "source_language": "en"
     }
 }
 
@@ -69,7 +71,7 @@ curl -X POST https://api.edenai.run/v3/universal-ai \
   -H "Content-Type: application/json" \
   -d '{
     "model": "translation/document_translation/deepl",
-    "input": {"file": "YOUR_FILE_UUID_OR_URL"}
+    "input": {"file": "YOUR_FILE_UUID_OR_URL", "target_language": "fr", "source_language": "en"}
   }'
 ```
 </CodeGroup>

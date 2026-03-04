@@ -408,10 +408,6 @@ description: "{safe_desc}"
 icon: "{DEFAULT_SUBFEATURE_ICON}"
 ---
 
-# {fullname}
-
-{description}
-
 ## Endpoint
 
 `{endpoint_method} {endpoint_path}` ({mode_label})

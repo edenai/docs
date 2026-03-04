@@ -234,6 +234,8 @@ Sign up at [Eden AI Dashboard](https://app.edenai.run/) and get your API key.
 **Option A: Universal AI (Recommended for non-LLM)**
 
 ```python
+import requests
+
 response = requests.post(
     "https://api.edenai.run/v3/universal-ai",
     headers={"Authorization": "Bearer YOUR_API_KEY"},
@@ -247,6 +249,8 @@ response = requests.post(
 **Option B: OpenAI-Compatible LLM**
 
 ```python
+import requests
+
 response = requests.post(
     "https://api.edenai.run/v3/llm/chat/completions",
     headers={"Authorization": "Bearer YOUR_API_KEY"},
@@ -261,6 +265,8 @@ print(response.json()["choices"][0]["message"]["content"])
 ### 3. Handle File Uploads (Optional)
 
 ```python
+import requests
+
 # Upload
 files_response = requests.post(
     "https://api.edenai.run/v3/upload",

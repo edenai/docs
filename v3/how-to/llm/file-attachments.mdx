@@ -331,7 +331,6 @@ Extract structured data from documents:
 <CodeGroup>
 ```python Python
 import requests
-import json
 
 # Upload invoice
 upload_response = requests.post(
@@ -382,11 +381,7 @@ response = requests.post(url, headers=headers, json=payload)
 result = response.json()
 extracted_data = result["choices"][0]["message"]["content"]
 
-# Parse extracted JSON
-invoice_data = json.loads(extracted_data)
-print("Invoice Number:", invoice_data["invoice_number"])
-print("Total Amount:", invoice_data["total_amount"])
-print("Line Items:", len(invoice_data["line_items"]))
+print(extracted_data)
     ```
 </CodeGroup>
 
@@ -515,7 +510,7 @@ print(result["choices"][0]["message"]["content"])
 - Best for text-heavy documents
 
 **Example:**
-```python
+```
 "model": "openai/gpt-4o"
 ```
 
@@ -532,7 +527,7 @@ print(result["choices"][0]["message"]["content"])
 - Slightly slower than OpenAI
 
 **Example:**
-```python
+```
 "model": "anthropic/claude-sonnet-4-5"
 ```
 
@@ -548,7 +543,7 @@ print(result["choices"][0]["message"]["content"])
 - May be less detailed on complex reasoning
 
 **Example:**
-```python
+```
 "model": "google/gemini-1.5-pro"
 ```
 
@@ -561,6 +556,13 @@ Files uploaded to `/v3/upload` persist for 7 days:
 <CodeGroup>
 ```python Python
 import requests
+
+url = "https://api.edenai.run/v3/llm/chat/completions"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
 # Upload once
 upload_response = requests.post(
     "https://api.edenai.run/v3/upload",
@@ -570,6 +572,7 @@ upload_response = requests.post(
 file_id = upload_response.json()["file_id"]
 
 # Use in multiple requests over the next 7 days
+questions = ["Summarize the key findings", "What are the recommendations?"]
 for question in questions:
     payload = {
         "model": "openai/gpt-4o",

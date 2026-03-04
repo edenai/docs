@@ -1,0 +1,21 @@
+{
+  // Debug a single snippet test by opening its generated file and pressing F5.
+  // Set breakpoints anywhere in tests/generated/*.py files.
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug Current Snippet File",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": [
+        "tests/test_snippets_execute.py",
+        "-k", "${fileBasenameNoExtension}",
+        "-v", "--tb=long", "--showlocals", "--no-header",
+        "-x"
+      ],
+      "cwd": "${workspaceFolder}",
+      "justMyCode": false
+    }
+  ]
+}

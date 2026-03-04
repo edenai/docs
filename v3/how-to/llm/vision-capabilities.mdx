@@ -105,6 +105,13 @@ console.log(result);
 <CodeGroup>
 ```python Python
 import requests
+
+url = "https://api.edenai.run/v3/llm/chat/completions"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
 payload = {
     "model": "anthropic/claude-sonnet-4-5",
     "messages": [
@@ -185,6 +192,13 @@ Identify objects, brands, and entities:
 <CodeGroup>
 ```python Python
 import requests
+
+url = "https://api.edenai.run/v3/llm/chat/completions"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
 payload = {
     "model": "openai/gpt-4o",
     "messages": [
@@ -267,6 +281,13 @@ Debug UI issues or analyze interfaces:
 <CodeGroup>
 ```python Python
 import requests
+
+url = "https://api.edenai.run/v3/llm/chat/completions"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
 payload = {
     "model": "openai/gpt-4o",
     "messages": [
@@ -307,6 +328,13 @@ Identify brands and logos:
 <CodeGroup>
 ```python Python
 import requests
+
+url = "https://api.edenai.run/v3/llm/chat/completions"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
 payload = {
     "model": "google/gemini-2.5-pro",
     "messages": [
@@ -390,6 +418,13 @@ Analyze related images together:
 <CodeGroup>
 ```python Python
 import requests
+
+url = "https://api.edenai.run/v3/llm/chat/completions"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
 payload = {
     "model": "anthropic/claude-sonnet-4-5",
     "messages": [
@@ -442,7 +477,7 @@ print(result)
 - Screenshot analysis
 
 **Example:**
-```python
+```
 "model": "openai/gpt-4o"
 ```
 
@@ -462,7 +497,7 @@ print(result)
 - Academic/research content
 
 **Example:**
-```python
+```
 "model": "anthropic/claude-sonnet-4-5"
 ```
 
@@ -482,7 +517,7 @@ print(result)
 - High-volume applications
 
 **Example:**
-```python
+```
 "model": "google/gemini-2.5-flash"
 ```
 
@@ -500,7 +535,7 @@ print(result)
 - Privacy requirements
 
 **Example:**
-```python
+```
 "model": "mistral/pixtral-12b"
 ```
 
@@ -542,6 +577,8 @@ with open("image.jpg", "rb") as f:
 For reusable images:
 
 ```python
+import requests
+
 # Upload first
 upload_response = requests.post(
     "https://api.edenai.run/v3/upload",
@@ -573,7 +610,7 @@ file_id = upload_response.json()["file_id"]
 
 **Request structured output:**
 
-```python
+```
 "Extract the following from this business card and format as JSON:
 - name
 - title
@@ -609,7 +646,7 @@ file_id = upload_response.json()["file_id"]
 
 Adjust temperature based on task:
 
-```python
+```
 # Factual tasks (OCR, counting, detection)
 "temperature": 0.1
 

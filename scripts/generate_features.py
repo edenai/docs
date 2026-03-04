@@ -10,7 +10,9 @@ No dependencies beyond Python stdlib are required.
 
 import json
 import os
+import re
 import shutil
+import tempfile
 import urllib.request
 from pathlib import Path
 
@@ -144,6 +146,22 @@ def escape_frontmatter(text: str) -> str:
     return text.replace("\\", "\\\\").replace('"', '\\"')
 
 
+def truncate_at_word(text: str, max_len: int) -> str:
+    """Truncate text at a word boundary, appending '...' if shortened."""
+    if len(text) <= max_len:
+        return text
+    truncated = text[:max_len].rsplit(" ", 1)[0]
+    return truncated + "..."
+
+
+_HTML_TAG_RE = re.compile(r"<[^>]+>")
+
+
+def strip_html(text: str) -> str:
+    """Remove HTML/JSX tags from text to prevent injection in MDX output."""
+    return _HTML_TAG_RE.sub("", text)
+
+
 def format_price(price: float, quantity: int, unit_type: str) -> str:
     """Return a human-readable price string."""
     if price == 0:
@@ -260,7 +278,7 @@ def render_schema_table(fields: list[dict], indent: int = 0) -> str:
         name = f.get("name", "")
         ftype = f.get("type", "")
         required = "Yes" if f.get("required") else "No"
-        desc = f.get("description", "")
+        desc = strip_html(f.get("description", ""))
         # For array types, annotate the item type
         if ftype == "array" and "items" in f:
             item_type = f["items"].get("type", "")
@@ -382,7 +400,7 @@ def generate_subfeature_page(feature: str, subfeature_info: dict, detail: dict) 
     code_example = build_code_example(feature, sf_name, models, detail)
 
     safe_title = escape_frontmatter(fullname)
-    safe_desc = escape_frontmatter(description[:200])
+    safe_desc = escape_frontmatter(truncate_at_word(description, 200))
 
     page = f"""---
 title: "{safe_title}"
@@ -433,7 +451,7 @@ def generate_index_page(features: list[dict]) -> str:
             sf_fullname = sf.get("fullname", sf["name"])
             sf_desc = sf.get("description", "")
             # Truncate description for card
-            short_desc = sf_desc[:120] + "..." if len(sf_desc) > 120 else sf_desc
+            short_desc = truncate_at_word(sf_desc, 120)
             card_items.append(
                 f'  <Card title="{sf_fullname}" icon="{icon}" href="/v3/features/{fname}/{sf_slug}">\n'
                 f"    {short_desc}\n"
@@ -517,9 +535,16 @@ def update_docs_json(features: list[dict]) -> None:
                     # Fallback: insert before Tutorials or at end
                     pages.append(nav_group)
 
-    with open(DOCS_JSON_PATH, "w") as f:
-        json.dump(docs, f, indent=2)
-        f.write("\n")
+    # Atomic write: write to temp file then replace, so a crash can't corrupt docs.json
+    fd, tmp_path = tempfile.mkstemp(dir=DOCS_JSON_PATH.parent, suffix=".json")
+    try:
+        with os.fdopen(fd, "w") as f:
+            json.dump(docs, f, indent=2)
+            f.write("\n")
+        os.replace(tmp_path, DOCS_JSON_PATH)
+    except BaseException:
+        os.unlink(tmp_path)
+        raise
 
 
 # ------------------------
@@ -559,6 +584,10 @@ def main() -> None:
     print("Fetching features from API...")
     features = fetch_all_features()
     print(f"  Found {len(features)} feature categories")
+
+    if not features:
+        print("ERROR: API returned no features. Aborting to avoid deleting existing pages.")
+        raise SystemExit(1)
 
     total_subfeatures = sum(len(f.get("subfeatures", [])) for f in features)
     print(f"  Total subfeatures: {total_subfeatures}")

@@ -22,7 +22,13 @@ Model string pattern: `image/face_compare/{provider}[/{model}]`
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| items | array[object] | No |  |
+| **items** | array[object] | No |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;confidence | float | Yes |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;**bounding_box** | object | Yes |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;top | float | Yes |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;left | float | Yes |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;height | float | Yes |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;width | float | Yes |  |
 
 
 ## Available Providers

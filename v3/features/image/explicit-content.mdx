@@ -23,7 +23,76 @@ Model string pattern: `image/explicit_content/{provider}[/{model}]`
 |-------|------|----------|-------------|
 | nsfw_likelihood | int | Yes | An integer representing the likelihood of NSFW content. Higher values indicate a higher likelihood. |
 | nsfw_likelihood_score | float | Yes | A floating-point score representing the confidence level of the NSFW likelihood assessment. This is typically a value between 0.0 and 1.0. |
-| items | array[object] | No | A list of items identified as potentially explicit. Each item contains details of the explicit content detected. |
+| **items** | array[object] | No | A list of items identified as potentially explicit. Each item contains details of the explicit content detected. |
+| &nbsp;&nbsp;&nbsp;&nbsp;label | string | Yes |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;likelihood | int | Yes |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;likelihood_score | float | Yes |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;category | enum | Yes | The category of the detected content. Possible values include: 'Toxic', 'Content', 'Sexual', 'Violence', 'DrugAndAlcohol', 'Finance', 'HateAndExtremism', 'Safe', 'Other'. |
+| &nbsp;&nbsp;&nbsp;&nbsp;subcategory | string | Yes | The subcategory of content. Possible values:
+
+Toxic Subcategories:
+- Insult
+- Obscene
+- Derogatory
+- Profanity
+- Threat
+- Toxic
+
+Content Subcategories:
+- MiddleFinger
+- PublicSafety
+- Health
+- Explicit
+- QRCode
+- Medical
+- Politics
+- Legal
+
+Sexual Subcategories:
+- SexualActivity
+- SexualSituations
+- Nudity
+- PartialNudity
+- Suggestive
+- AdultToys
+- RevealingClothes
+- Sexual
+
+Violence Subcategories:
+- GraphicViolenceOrGore
+- PhysicalViolence
+- WeaponViolence
+- Violence
+
+Drug and Alcohol Subcategories:
+- DrugProducts
+- DrugUse
+- Tobacco
+- Smoking
+- Alcohol
+- Drinking
+
+Finance Subcategories:
+- Gambling
+- Finance
+- MoneyContent
+
+Hate and Extremism Subcategories:
+- Hate
+- Harassment
+- Threatening
+- Extremist
+- Racy
+
+Safe Subcategories:
+- Safe
+- NotSafe
+
+Other Subcategories:
+- Spoof
+- Religion
+- Offensive
+- Other |
 
 
 ## Available Providers

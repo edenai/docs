@@ -21,7 +21,13 @@ Model string pattern: `image/logo_detection/{provider}[/{model}]`
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| items | array[object] | No | List of the detected brands logo from the image. |
+| **items** | array[object] | No | List of the detected brands logo from the image. |
+| &nbsp;&nbsp;&nbsp;&nbsp;**bounding_poly** | object | No |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**vertices** | array[object] | No | Vertices of the logos in the image |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;x | float | Yes | The x-coordinate of the vertex. |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;y | float | Yes | The y-coordinate of the vertex. |
+| &nbsp;&nbsp;&nbsp;&nbsp;description | string | Yes | Name of the logo |
+| &nbsp;&nbsp;&nbsp;&nbsp;score | float | Yes | Confidence score how sure it's this is a real logo. |
 
 
 ## Available Providers

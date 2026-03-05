@@ -22,7 +22,10 @@ Model string pattern: `text/named_entity_recognition/{provider}[/{model}]`
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| items | array[object] | No |  |
+| **items** | array[object] | No |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;entity | string | Yes |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;category | string | Yes |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;importance | float | Yes |  |
 
 
 ## Available Providers

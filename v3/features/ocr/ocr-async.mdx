@@ -6,7 +6,7 @@ icon: "microchip-ai"
 
 ## Endpoint
 
-`POST /v3/universal-ai` (async)
+`POST /v3/universal-ai/async` (async)
 
 Model string pattern: `ocr/ocr_async/{provider}[/{model}]`
 
@@ -22,7 +22,23 @@ Model string pattern: `ocr/ocr_async/{provider}[/{model}]`
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | raw_text | string | Yes |  |
-| pages | array[object] | No | List of pages |
+| **pages** | array[object] | No | List of pages |
+| &nbsp;&nbsp;&nbsp;&nbsp;**lines** | array[object] | No | List of lines |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;text | string | Yes | Text detected in the line |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**words** | array[object] | No | List of words |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;text | string | Yes | Text detected in the word |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**bounding_box** | object | Yes | Bounding boxes of the words in the word |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;left | float | Yes | Left coordinate of the bounding box |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;top | float | Yes | Top coordinate of the bounding box |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;width | float | Yes | Width of the bounding box |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;height | float | Yes | Height of the bounding box |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;confidence | float | Yes | Confidence score of the word |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**bounding_box** | object | No | Bounding box of the line, can be None |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;left | float | Yes | Left coordinate of the bounding box |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;top | float | Yes | Top coordinate of the bounding box |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;width | float | Yes | Width of the bounding box |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;height | float | Yes | Height of the bounding box |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;confidence | float | Yes | Confidence of the line |
 | number_of_pages | int | Yes | Number of pages in the document |
 
 
@@ -38,13 +54,13 @@ Model string pattern: `ocr/ocr_async/{provider}[/{model}]`
 ## Quick Start
 
 
-> This is an **async** feature. The initial response returns a job ID. Poll `GET /v3/universal-ai/{job_id}` until the job completes.
+> This is an **async** feature. The initial response returns a job ID. Poll `GET /v3/universal-ai/async/{job_id}` until the job completes.
 
 <CodeGroup>
 ```python Python
 import requests
 
-url = "https://api.edenai.run/v3/universal-ai"
+url = "https://api.edenai.run/v3/universal-ai/async"
 headers = {
     "Authorization": "Bearer YOUR_API_KEY",
     "Content-Type": "application/json"
@@ -62,7 +78,7 @@ print(response.json())
 ```
 
 ```bash cURL
-curl -X POST https://api.edenai.run/v3/universal-ai \
+curl -X POST https://api.edenai.run/v3/universal-ai/async \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{

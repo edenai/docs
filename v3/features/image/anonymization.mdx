@@ -23,7 +23,14 @@ Model string pattern: `image/anonymization/{provider}[/{model}]`
 |-------|------|----------|-------------|
 | image | string | Yes |  |
 | image_resource_url | string | Yes |  |
-| items | array[object] | No |  |
+| **items** | array[object] | No |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;kind | string | Yes |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;confidence | float | Yes |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;**bounding_boxes** | object | Yes |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;x_min | float | Yes |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;x_max | float | Yes |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;y_min | float | Yes |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;y_max | float | Yes |  |
 
 
 ## Available Providers

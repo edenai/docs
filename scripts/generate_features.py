@@ -265,8 +265,35 @@ def build_input_json(fields: list[dict], required_only: bool = False) -> dict[st
 # MDX generation
 # --------------------
 
+def _render_fields_rows(fields: list[dict], depth: int = 0) -> list[str]:
+    """Recursively render schema fields as table rows, expanding nested objects."""
+    rows = []
+    indent = "&nbsp;&nbsp;&nbsp;&nbsp;" * depth  # visual indentation per nesting level
+    for f in fields:
+        name = f.get("name", "")
+        ftype = f.get("type", "")
+        required = "Yes" if f.get("required") else "No"
+        desc = strip_html(f.get("description", ""))
+
+        if ftype == "array" and "items" in f:
+            item_type = f["items"].get("type", "")
+            nested_fields = f["items"].get("fields", [])
+            if item_type == "object" and nested_fields:
+                rows.append(f"| {indent}**{name}** | array[object] | {required} | {desc} |")
+                rows.extend(_render_fields_rows(nested_fields, depth=depth + 1))
+            else:
+                ftype = f"array[{item_type}]" if item_type else "array"
+                rows.append(f"| {indent}{name} | {ftype} | {required} | {desc} |")
+        elif ftype == "object" and "fields" in f:
+            rows.append(f"| {indent}**{name}** | object | {required} | {desc} |")
+            rows.extend(_render_fields_rows(f["fields"], depth=depth + 1))
+        else:
+            rows.append(f"| {indent}{name} | {ftype} | {required} | {desc} |")
+    return rows
+
+
 def render_schema_table(fields: list[dict], indent: int = 0) -> str:
-    """Render a list of schema fields as a Markdown table."""
+    """Render a list of schema fields as a Markdown table, expanding nested objects."""
     if not fields:
         return "_No schema information available._\n"
 
@@ -274,16 +301,7 @@ def render_schema_table(fields: list[dict], indent: int = 0) -> str:
         "| Field | Type | Required | Description |",
         "|-------|------|----------|-------------|",
     ]
-    for f in fields:
-        name = f.get("name", "")
-        ftype = f.get("type", "")
-        required = "Yes" if f.get("required") else "No"
-        desc = strip_html(f.get("description", ""))
-        # For array types, annotate the item type
-        if ftype == "array" and "items" in f:
-            item_type = f["items"].get("type", "")
-            ftype = f"array[{item_type}]" if item_type else "array"
-        lines.append(f"| {name} | {ftype} | {required} | {desc} |")
+    lines.extend(_render_fields_rows(fields))
     return "\n".join(lines) + "\n"
 
 
@@ -344,8 +362,11 @@ def build_code_example(feature: str, subfeature: str, models: list[dict], detail
     input_curl = _format_curl_input(input_fields)
 
     mode = detail.get("mode", "sync")
+    api_path = "/v3/universal-ai/async" if mode == "async" else "/v3/universal-ai"
+    api_url = f"https://api.edenai.run{api_path}"
+
     if mode == "async":
-        mode_note = "\n> This is an **async** feature. The initial response returns a job ID. Poll `GET /v3/universal-ai/{job_id}` until the job completes.\n"
+        mode_note = f"\n> This is an **async** feature. The initial response returns a job ID. Poll `GET /v3/universal-ai/async/{{job_id}}` until the job completes.\n"
     else:
         mode_note = ""
 
@@ -354,7 +375,7 @@ def build_code_example(feature: str, subfeature: str, models: list[dict], detail
 ```python Python
 import requests
 
-url = "https://api.edenai.run/v3/universal-ai"
+url = "{api_url}"
 headers = {{
     "Authorization": "Bearer YOUR_API_KEY",
     "Content-Type": "application/json"
@@ -370,7 +391,7 @@ print(response.json())
 ```
 
 ```bash cURL
-curl -X POST https://api.edenai.run/v3/universal-ai \\
+curl -X POST {api_url} \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{{
@@ -391,7 +412,7 @@ def generate_subfeature_page(feature: str, subfeature_info: dict, detail: dict) 
     models = subfeature_info.get("models", [])
 
     endpoint_method = "POST"
-    endpoint_path = "/v3/universal-ai"
+    endpoint_path = "/v3/universal-ai/async" if mode == "async" else "/v3/universal-ai"
     mode_label = "sync" if mode == "sync" else "async"
 
     input_fields = detail.get("input_schema", {}).get("fields", [])

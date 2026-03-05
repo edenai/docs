@@ -23,7 +23,12 @@ Model string pattern: `text/moderation/{provider}[/{model}]`
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | nsfw_likelihood | int | Yes |  |
-| items | array[object] | No |  |
+| **items** | array[object] | No |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;label | string | Yes |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;likelihood | int | Yes |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;category | enum | Yes |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;subcategory | enum | Yes |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;likelihood_score | float | Yes |  |
 | nsfw_likelihood_score | float | Yes |  |
 
 

@@ -23,7 +23,13 @@ Model string pattern: `text/plagia_detection/{provider}[/{model}]`
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | plagia_score | float | Yes |  |
-| items | array[object] | No |  |
+| **items** | array[object] | No |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;text | string | Yes |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;**candidates** | array[object] | No |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;url | string | Yes |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;plagia_score | float | Yes |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;prediction | string | Yes |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;plagiarized_text | string | Yes |  |
 
 
 ## Available Providers

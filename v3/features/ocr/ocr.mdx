@@ -23,7 +23,12 @@ Model string pattern: `ocr/ocr/{provider}[/{model}]`
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | text | string | Yes |  |
-| bounding_boxes | array[object] | No |  |
+| **bounding_boxes** | array[object] | No |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;text | string | Yes |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;left | float | Yes |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;top | float | Yes |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;width | float | Yes |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;height | float | Yes |  |
 
 
 ## Available Providers

@@ -1,0 +1,81 @@
+---
+title: "Text Detection (OCR)"
+description: "Optical Character Recognition or Reader (OCR) is the electronic or mechanical conversion of images of typed, handwritten or printed text into machine-encoded text. The image can be a scanned document..."
+icon: "microchip-ai"
+---
+
+## Endpoint
+
+`POST /v3/universal-ai` (sync)
+
+Model string pattern: `ocr/ocr/{provider}[/{model}]`
+
+## Input
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| file | file_input | Yes | PDF or image file ID from /v3/upload or direct file URL |
+| language | string | Yes | Document language code |
+
+
+## Output
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| text | string | Yes |  |
+| **bounding_boxes** | array[object] | No |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;text | string | Yes |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;left | float | Yes |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;top | float | Yes |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;width | float | Yes |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;height | float | Yes |  |
+
+
+## Available Providers
+
+| Provider | Model String | Price |
+|----------|-------------|-------|
+| amazon | `ocr/ocr/amazon` | $1.5 per 1,000 pages |
+| api4ai | `ocr/ocr/api4ai` | $3 per 1,000 requests |
+| google | `ocr/ocr/google` | $1.5 per 1,000 pages |
+| microsoft | `ocr/ocr/microsoft` | $1 per 1,000 pages |
+| mistral | `ocr/ocr/mistral` | $1 per 1,000 pages |
+| sentisight | `ocr/ocr/sentisight` | $0.75 per 1,000 files |
+
+
+## Quick Start
+
+
+<CodeGroup>
+```python Python
+import requests
+
+url = "https://api.edenai.run/v3/universal-ai"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+payload = {
+    "model": "ocr/ocr/amazon",
+    "input": {
+        "file": "YOUR_FILE_UUID_OR_URL",
+        "language": "en"
+    }
+}
+
+response = requests.post(url, headers=headers, json=payload)
+print(response.json())
+```
+
+```bash cURL
+curl -X POST https://api.edenai.run/v3/universal-ai \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "ocr/ocr/amazon",
+    "input": {"file": "YOUR_FILE_UUID_OR_URL", "language": "en"}
+  }'
+```
+</CodeGroup>
+

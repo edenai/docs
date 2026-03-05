@@ -1,0 +1,78 @@
+---
+title: "Image Face Comparison"
+description: "Compare two faces and decide whether they are from the same person. The API expects 2 images, reference and query, where the former is the ground truth (e.g. user's official ID) and the latter is the..."
+icon: "microchip-ai"
+---
+
+## Endpoint
+
+`POST /v3/universal-ai` (sync)
+
+Model string pattern: `image/face_compare/{provider}[/{model}]`
+
+## Input
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| file1 | file_input | Yes | Image file ID from /v3/upload or direct file URL |
+| file2 | file_input | Yes | Image file ID from /v3/upload or direct file URL |
+
+
+## Output
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| **items** | array[object] | No |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;confidence | float | Yes |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;**bounding_box** | object | Yes |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;top | float | Yes |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;left | float | Yes |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;height | float | Yes |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;width | float | Yes |  |
+
+
+## Available Providers
+
+| Provider | Model String | Price |
+|----------|-------------|-------|
+| amazon | `image/face_compare/amazon` | $1 per 1,000 requests |
+| base64 | `image/face_compare/base64` | $0.25 per request |
+| facepp | `image/face_compare/facepp` | $2 per 1,000 requests |
+
+
+## Quick Start
+
+
+<CodeGroup>
+```python Python
+import requests
+
+url = "https://api.edenai.run/v3/universal-ai"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+payload = {
+    "model": "image/face_compare/amazon",
+    "input": {
+        "file1": "YOUR_FILE_UUID_OR_URL",
+        "file2": "YOUR_FILE_UUID_OR_URL"
+    }
+}
+
+response = requests.post(url, headers=headers, json=payload)
+print(response.json())
+```
+
+```bash cURL
+curl -X POST https://api.edenai.run/v3/universal-ai \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "image/face_compare/amazon",
+    "input": {"file1": "YOUR_FILE_UUID_OR_URL", "file2": "YOUR_FILE_UUID_OR_URL"}
+  }'
+```
+</CodeGroup>
+

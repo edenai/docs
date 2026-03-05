@@ -1,0 +1,76 @@
+---
+title: "Plagiarism Detection"
+description: "The Plagiarism Detection API is a tool designed to scan a content string for plagiarism using a plagiarism detection module"
+icon: "microchip-ai"
+---
+
+## Endpoint
+
+`POST /v3/universal-ai` (sync)
+
+Model string pattern: `text/plagia_detection/{provider}[/{model}]`
+
+## Input
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| text | string | Yes | Text content on which plagiarism detection will be run |
+| title | string | No | Content title |
+
+
+## Output
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| plagia_score | float | Yes |  |
+| **items** | array[object] | No |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;text | string | Yes |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;**candidates** | array[object] | No |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;url | string | Yes |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;plagia_score | float | Yes |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;prediction | string | Yes |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;plagiarized_text | string | Yes |  |
+
+
+## Available Providers
+
+| Provider | Model String | Price |
+|----------|-------------|-------|
+| winstonai | `text/plagia_detection/winstonai` | $14 per 1,000,000 chars |
+
+
+## Quick Start
+
+
+<CodeGroup>
+```python Python
+import requests
+
+url = "https://api.edenai.run/v3/universal-ai"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+payload = {
+    "model": "text/plagia_detection/winstonai",
+    "input": {
+        "text": "The quick brown fox jumps over the lazy dog."
+    }
+}
+
+response = requests.post(url, headers=headers, json=payload)
+print(response.json())
+```
+
+```bash cURL
+curl -X POST https://api.edenai.run/v3/universal-ai \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "text/plagia_detection/winstonai",
+    "input": {"text": "The quick brown fox jumps over the lazy dog."}
+  }'
+```
+</CodeGroup>
+

@@ -56,6 +56,8 @@ View the documentation at `http://localhost:3000`
 ## Repository Contents
 
 - `/v3/` - V3 API documentation pages
+- `/v3/features/` - **Auto-generated** AI feature reference pages (do not edit manually)
+- `/scripts/` - Automation scripts (see below)
 - `/tests/` - Automated test suite for Python code snippets (see [tests/README.md](tests/README.md))
 - `/shared/` - Reusable content snippets
 - `/openapi/` - OpenAPI specification files
@@ -63,6 +65,54 @@ View the documentation at `http://localhost:3000`
 - `/logo/` - Eden AI logo files (light/dark mode)
 - `docs.json` - Mintlify configuration file
 - `index.mdx` - Documentation homepage
+
+## Auto-Generated AI Feature Pages
+
+The `v3/features/` directory contains automatically generated documentation for all Universal AI features. These pages are created by `scripts/generate_features.py`, which fetches live data from the production `/v3/info` API.
+
+### What gets generated
+
+For each AI subfeature (e.g. text/moderation, image/generation, ocr/ocr):
+- An individual `.mdx` page with:
+  - Input/output schema tables (field name, type, required, description)
+  - Available providers and models with pricing
+  - **Quick-start code examples** (Python + cURL) — built automatically from the input schema. The script picks the first available model, generates realistic placeholder values for each required field (e.g. `"en"` for language, `"The quick brown fox..."` for text), and renders ready-to-copy snippets inside Mintlify `<CodeGroup>` tabs. Async features get a note about polling the job endpoint.
+- An `index.mdx` overview page with cards grouped by feature category
+- The `AI Features` navigation group in `docs.json` is updated automatically
+
+When a feature is added or removed from the API, the generator picks it up: new pages are created and stale pages are deleted.
+
+### How to run manually
+
+```bash
+python scripts/generate_features.py
+```
+
+No dependencies beyond Python stdlib. The script hits the production API at `https://api.edenai.run/v3/info`.
+
+### How to test
+
+1. Run the script and verify the output:
+   ```bash
+   python3 scripts/generate_features.py
+   ```
+2. Check that pages were generated under `v3/features/`:
+   ```bash
+   ls v3/features/*/
+   ```
+3. Preview locally with Mintlify to verify rendering:
+   ```bash
+   npx mint dev
+   ```
+4. Confirm the `AI Features` group appears in the sidebar under V3 Documentation.
+
+### CI/CD automation
+
+A GitHub Actions workflow (`.github/workflows/generate-features.yml`) runs this script daily at 06:00 UTC and on manual dispatch. If any pages changed, it opens a PR on the `auto/update-feature-docs` branch for review.
+
+### Known limitation: missing output field descriptions
+
+Input schema fields include descriptions (e.g. "Text to moderate", "ISO 639-1 language code"), but **output schema fields currently have no descriptions**. This is because the upstream Pydantic output models in `edenai-apis` don't define `Field(description=...)` on their fields. The generator and `/v3/info` API already support descriptions when present — the fix is to add `Field(description="...")` to the output dataclasses in `edenai-apis`.
 
 ## Configuration
 

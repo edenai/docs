@@ -1,0 +1,95 @@
+---
+title: "Text to Speech"
+description: "Text-to-speech (TTS) is a technology that converts written text into spoken audio, enabling computers and digital devices to \"read\" text aloud.  It is also known as speech synthesis, read aloud..."
+icon: "microchip-ai"
+---
+
+## Endpoint
+
+`POST /v3/universal-ai` (sync)
+
+Model string pattern: `audio/tts/{provider}[/{model}]`
+
+## Input
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| text | string | Yes | Text to convert to speech |
+| voice | string | No | Voice identifier to use for synthesis, can be name or id.
+For supported voices for your provider/model, please check each provider's documentation. |
+| speed | float | No | Speed multiplier for speech synthesis |
+| audio_format | string | No | Desired audio format (e.g., 'mp3', 'wav') |
+| speaking_pitch | int | No | Increase or decrease the speaking pitch by a percentage from -100% to 100%, 0 is normal. |
+| speaking_volume | int | No | Increase or decrease the audio volume by a percentage from -100% to 100%, 0 is normal. |
+
+
+## Output
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| audio_resource_url | string | Yes |  |
+
+
+## Available Providers
+
+| Provider | Model String | Price |
+|----------|-------------|-------|
+| amazon (neural) | `audio/tts/amazon/neural` | $0.016 per 1,000 chars |
+| amazon (standard) | `audio/tts/amazon/standard` | $0.004 per 1,000 chars |
+| deepgram (aura) | `audio/tts/deepgram/aura` | $0.015 per 1,000 chars |
+| deepgram (aura-2) | `audio/tts/deepgram/aura-2` | $0.03 per 1,000 chars |
+| elevenlabs | `audio/tts/elevenlabs` | $0.3 per 1,000 chars |
+| google (casual) | `audio/tts/google/casual` | $16 per 1,000,000 chars |
+| google (chirp3-hd) | `audio/tts/google/chirp3-hd` | $30 per 1,000,000 chars |
+| google (chirp-hd) | `audio/tts/google/chirp-hd` | $30 per 1,000,000 chars |
+| google (gemini-2.5-flash-tts) | `audio/tts/google/gemini-2.5-flash-tts` | $0.006 per minute |
+| google (gemini-2.5-pro-tts) | `audio/tts/google/gemini-2.5-pro-tts` | $0.012 per minute |
+| google (neural2) | `audio/tts/google/neural2` | $16 per 1,000,000 chars |
+| google (news) | `audio/tts/google/news` | $160 per 1,000,000 chars |
+| google (polyglot) | `audio/tts/google/polyglot` | $16 per 1,000,000 chars |
+| google (standard) | `audio/tts/google/standard` | $4 per 1,000,000 chars |
+| google (studio) | `audio/tts/google/studio` | $160 per 1,000,000 chars |
+| google (wavenet) | `audio/tts/google/wavenet` | $4 per 1,000,000 chars |
+| lovoai | `audio/tts/lovoai` | $160 per 1,000,000 chars |
+| microsoft (neural) | `audio/tts/microsoft/neural` | $16 per 1,000,000 chars |
+| microsoft (neural-hd) | `audio/tts/microsoft/neural-hd` | $30 per 1,000,000 chars |
+| openai (gpt-4o-mini-tts) | `audio/tts/openai/gpt-4o-mini-tts` | $0.015 per minute |
+| openai (tts-1) | `audio/tts/openai/tts-1` | $15 per 1,000,000 chars |
+| openai (tts-1-hd) | `audio/tts/openai/tts-1-hd` | $30 per 1,000,000 chars |
+
+
+## Quick Start
+
+
+<CodeGroup>
+```python Python
+import requests
+
+url = "https://api.edenai.run/v3/universal-ai"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+payload = {
+    "model": "audio/tts/amazon/neural",
+    "input": {
+        "text": "The quick brown fox jumps over the lazy dog."
+    }
+}
+
+response = requests.post(url, headers=headers, json=payload)
+print(response.json())
+```
+
+```bash cURL
+curl -X POST https://api.edenai.run/v3/universal-ai \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "audio/tts/amazon/neural",
+    "input": {"text": "The quick brown fox jumps over the lazy dog."}
+  }'
+```
+</CodeGroup>
+

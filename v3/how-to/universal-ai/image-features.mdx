@@ -40,7 +40,7 @@ payload = {
 response = requests.post(url, headers=headers, json=payload)
 result = response.json()
 
-image_url = result["output"]["items"][0]["image_url"]
+image_url = result["output"]["items"][0]["image_resource_url"]
 print(f"Generated image: {image_url}")
     ```
 </CodeGroup>
@@ -156,7 +156,7 @@ response = requests.post(url, headers=headers, json=payload)
 result = response.json()
 
 # Download the result
-processed_url = result["output"]["image_url"]
+processed_url = result["output"]["image_resource_url"]
 print(f"Background removed image: {processed_url}")
     ```
 </CodeGroup>

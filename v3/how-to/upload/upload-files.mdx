@@ -39,8 +39,8 @@ response = requests.post(url, headers=headers, files=files, data=data)
 result = response.json()
 
 print(f"File ID: {result['file_id']}")
-print(f"Filename: {result['filename']}")
-print(f"Size: {result['bytes']} bytes")
+print(f"Filename: {result['file_name']}")
+print(f"Size: {result['file_size']} bytes")
 print(f"Expires at: {result['expires_at']}")
     ```
 
@@ -74,9 +74,11 @@ console.log('File ID:', result.file_id);
 ```json
 {
   "file_id": "550e8400-e29b-41d4-a716-446655440000",
-  "filename": "document.pdf",
-  "bytes": 152340,
+  "file_name": "document.pdf",
+  "file_size": 152340,
+  "file_mimetype": "application/pdf",
   "purpose": "ocr-processing",
+  "metadata": {},
   "created_at": "2024-01-15T10:30:00Z",
   "expires_at": "2024-01-22T10:30:00Z"
 }
@@ -106,7 +108,7 @@ payload = {
 
 response = requests.post(url, headers=headers, json=payload)
 result = response.json()
-print(result["output"]["text"])
+print(result["output"]["extracted_data"])
     ```
 </CodeGroup>
 
@@ -193,7 +195,7 @@ def safe_upload(filepath):
             return {
                 "success": True,
                 "file_id": result["file_id"],
-                "filename": result["filename"]
+                "file_name": result["file_name"]
             }
                 
     except FileNotFoundError:
@@ -266,7 +268,7 @@ def upload_and_track(filepath, purpose=None):
     
     # Store metadata
     uploaded_files[result["file_id"]] = {
-        "filename": result["filename"],
+        "file_name": result["file_name"],
         "uploaded_at": result["created_at"],
         "expires_at": result["expires_at"],
         "purpose": purpose

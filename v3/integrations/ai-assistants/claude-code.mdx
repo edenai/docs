@@ -71,7 +71,7 @@ export ANTHROPIC_MODEL="openai/gpt-4"
 claude-code
 
 # Use Gemini Pro
-export ANTHROPIC_MODEL="google/gemini-pro"
+export ANTHROPIC_MODEL="google/gemini-2.5-flash"
 claude-code
 ```
 </CodeGroup>
@@ -91,8 +91,8 @@ When using Eden AI with Claude Code, use the `provider/model` format:
 - `openai/gpt-4o`
 
 ### Google Models
-- `google/gemini-pro`
-- `google/gemini-1.5-pro`
+- `google/gemini-2.5-flash`
+- `google/gemini-2.5-pro`
 
 ## Permanent Configuration
 
@@ -131,7 +131,7 @@ case "$1" in
     echo "Switched to GPT-4"
     ;;
   gemini)
-    export ANTHROPIC_MODEL="google/gemini-pro"
+    export ANTHROPIC_MODEL="google/gemini-2.5-flash"
     echo "Switched to Gemini Pro"
     ;;
   *)

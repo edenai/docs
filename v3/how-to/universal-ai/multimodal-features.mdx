@@ -45,14 +45,14 @@ Text → AI Detection → [If AI: Analyze Further | If Human: Skip]
 
 ### Document Processing Pipeline
 
-Extract, translate, and analyze documents:
+Extract text from documents and analyze it:
 
 <CodeGroup>
 ```python Python
 import requests
 
 def process_document_workflow(file_path):
-    """Complete document processing: OCR → Translation → Analysis."""
+    """Complete document processing: OCR → Analysis."""
 
     # Step 1: Upload file
     upload_url = "https://api.edenai.run/v3/upload"
@@ -72,8 +72,8 @@ def process_document_workflow(file_path):
     }
 
     ocr_payload = {
-        "model": "ocr/financial_parser/google",
-        "input": {"file": file_id}
+        "model": "ocr/ocr/google",
+        "input": {"file": file_id, "language": "en"}
     }
 
     ocr_response = requests.post(universal_ai_url, headers=headers, json=ocr_payload)
@@ -81,49 +81,28 @@ def process_document_workflow(file_path):
 
     print(f"Extracted text: {extracted_text[:100]}...")
 
-    # Step 3: Translate if needed (check language first)
-    # Assume text is in French, translate to English
-    translation_payload = {
-        "model": "translation/document_translation/deepl",
-        "input": {
-            "text": extracted_text,
-            "source_language": "fr",
-            "target_language": "en"
-        }
+    # Step 3: Extract topics from the text
+    topic_payload = {
+        "model": "text/topic_extraction/openai",
+        "input": {"text": extracted_text}
     }
 
-    translation_response = requests.post(
+    topic_response = requests.post(
         universal_ai_url,
         headers=headers,
-        json=translation_payload
+        json=topic_payload
     )
-    translated_text = translation_response.json()["output"]["text"]
+    topics = topic_response.json()["output"]
 
-    print(f"Translated text: {translated_text[:100]}...")
-
-    # Step 4: Analyze sentiment of translated text
-    sentiment_payload = {
-        "model": "text/sentiment_analysis/openai",
-        "input": {"text": translated_text}
-    }
-
-    sentiment_response = requests.post(
-        universal_ai_url,
-        headers=headers,
-        json=sentiment_payload
-    )
-    sentiment = sentiment_response.json()["output"]
-
-    print(f"Sentiment: {sentiment['sentiment']} (rate: {sentiment['sentiment_rate']})")
+    print(f"Topics: {topics}")
 
     return {
-        "original_text": extracted_text,
-        "translated_text": translated_text,
-        "sentiment": sentiment
+        "extracted_text": extracted_text,
+        "topics": topics
     }
 
 # Usage
-result = process_document_workflow("french_document.pdf")
+result = process_document_workflow("document.pdf")
     ```
 </CodeGroup>
 
@@ -154,7 +133,7 @@ def moderate_image_workflow(image_path):
 
     # Stage 1: Explicit content detection
     explicit_payload = {
-        "model": "image/explicit_content_detection/google",
+        "model": "image/explicit_content/google",
         "input": {"file": file_id}
     }
     explicit_response = requests.post(url, headers=headers, json=explicit_payload)
@@ -178,7 +157,7 @@ def moderate_image_workflow(image_path):
         "input": {"file": file_id}
     }
     object_response = requests.post(url, headers=headers, json=object_payload)
-    objects = object_response.json()["output"].get("objects", [])
+    objects = object_response.json()["output"].get("items", [])
 
     print(f"Objects detected: {len(objects)}")
 
@@ -233,43 +212,44 @@ def process_invoice_workflow(invoice_path):
         "Content-Type": "application/json"
     }
 
-    # Stage 1: Parse invoice structure
+    # Stage 1: Parse invoice with financial parser
     parser_payload = {
-        "model": "ocr/invoice_parser/microsoft",
-        "input": {"file": file_id}
+        "model": "ocr/financial_parser/microsoft",
+        "input": {"file": file_id, "language": "en"}
     }
     parser_response = requests.post(url, headers=headers, json=parser_payload)
-    invoice_data = parser_response.json()["output"]
-
-    print(f"Invoice number: {invoice_data.get('invoice_number')}")
-    print(f"Total: {invoice_data.get('total_amount')} {invoice_data.get('currency')}")
+    extracted_data = parser_response.json()["output"]["extracted_data"]
 
     # Stage 2: OCR for additional text extraction
     ocr_payload = {
-        "model": "ocr/financial_parser/google",
-        "input": {"file": file_id}
+        "model": "ocr/ocr/google",
+        "input": {"file": file_id, "language": "en"}
     }
     ocr_response = requests.post(url, headers=headers, json=ocr_payload)
     full_text = ocr_response.json()["output"]["text"]
 
     # Stage 3: Validate data consistency
+    invoice_data = extracted_data[0] if extracted_data else {}
+    merchant = invoice_data.get("merchant_information", {})
+    payment = invoice_data.get("payment_information", {})
+    doc_info = invoice_data.get("financial_document_information", {})
+
     validation_results = {
-        "has_invoice_number": bool(invoice_data.get("invoice_number")),
-        "has_total": bool(invoice_data.get("total_amount")),
-        "has_vendor": bool(invoice_data.get("vendor_name")),
-        "has_date": bool(invoice_data.get("invoice_date")),
-        "line_items_count": len(invoice_data.get("line_items", []))
+        "has_merchant": bool(merchant.get("name")),
+        "has_total": bool(payment.get("total")),
+        "has_date": bool(doc_info.get("invoice_date")),
+        "has_text": len(full_text) > 0
     }
 
     # Calculate completeness score
     completeness = sum(validation_results.values()) / len(validation_results) * 100
 
     return {
-        "invoice_data": invoice_data,
+        "extracted_data": extracted_data,
         "full_text": full_text,
         "validation": validation_results,
         "completeness_score": completeness,
-        "is_valid": completeness >= 80
+        "is_valid": completeness >= 75
     }
 
 # Usage
@@ -277,23 +257,22 @@ result = process_invoice_workflow("invoice.pdf")
 
 if result["is_valid"]:
     print(f"✓ Invoice processed ({result['completeness_score']:.0f}% complete)")
-    print(f"  Total: {result['invoice_data']['total_amount']}")
 else:
     print(f"✗ Invoice incomplete ({result['completeness_score']:.0f}% complete)")
     print("  Missing fields:", [k for k, v in result['validation'].items() if not v])
     ```
 </CodeGroup>
 
-### Multilingual Content Pipeline
+### Multi-Analysis Text Pipeline
 
-Process content in multiple languages:
+Run multiple analyses on the same text:
 
 <CodeGroup>
 ```python Python
 import requests
 
-def multilingual_content_workflow(text, target_languages):
-    """Translate and analyze content in multiple languages."""
+def multi_analysis_workflow(text):
+    """Run moderation, topic extraction, and NER on the same text."""
 
     url = "https://api.edenai.run/v3/universal-ai"
     headers = {
@@ -303,60 +282,41 @@ def multilingual_content_workflow(text, target_languages):
 
     results = {}
 
-    # Stage 1: Analyze original text
-    sentiment_payload = {
-        "model": "text/sentiment_analysis/openai",
+    # Stage 1: Moderate content
+    moderation_payload = {
+        "model": "text/moderation/openai",
         "input": {"text": text}
     }
-    sentiment_response = requests.post(url, headers=headers, json=sentiment_payload)
-    original_sentiment = sentiment_response.json()["output"]
+    mod_response = requests.post(url, headers=headers, json=moderation_payload)
+    results["moderation"] = mod_response.json()["output"]
 
-    results["original"] = {
-        "language": "en",
-        "text": text,
-        "sentiment": original_sentiment
+    print(f"NSFW likelihood: {results['moderation']['nsfw_likelihood']}")
+
+    # Stage 2: Extract topics
+    topic_payload = {
+        "model": "text/topic_extraction/openai",
+        "input": {"text": text}
     }
+    topic_response = requests.post(url, headers=headers, json=topic_payload)
+    results["topics"] = topic_response.json()["output"]
 
-    # Stage 2: Translate and analyze in each target language
-    for lang_code in target_languages:
-        # Translate
-        translation_payload = {
-            "model": "translation/document_translation/deepl",
-            "input": {
-                "text": text,
-                "source_language": "en",
-                "target_language": lang_code
-            }
-        }
-        translation_response = requests.post(url, headers=headers, json=translation_payload)
-        translated_text = translation_response.json()["output"]["text"]
+    print(f"Topics: {results['topics']}")
 
-        # Analyze translated sentiment
-        translated_sentiment_payload = {
-            "model": "text/sentiment_analysis/openai",
-            "input": {"text": translated_text}
-        }
-        translated_sentiment_response = requests.post(
-            url,
-            headers=headers,
-            json=translated_sentiment_payload
-        )
-        translated_sentiment = translated_sentiment_response.json()["output"]
+    # Stage 3: Named entity recognition
+    ner_payload = {
+        "model": "text/named_entity_recognition/openai",
+        "input": {"text": text}
+    }
+    ner_response = requests.post(url, headers=headers, json=ner_payload)
+    results["entities"] = ner_response.json()["output"]
 
-        results[lang_code] = {
-            "language": lang_code,
-            "text": translated_text,
-            "sentiment": translated_sentiment
-        }
-
-        print(f"{lang_code}: {translated_sentiment['sentiment']} (rate: {translated_sentiment['sentiment_rate']})")
+    print(f"Entities: {results['entities']}")
 
     return results
 
 # Usage
-results = multilingual_content_workflow(
-    "Our new product is absolutely amazing and will change your life!",
-    target_languages=["fr", "es", "de", "ja"]
+results = multi_analysis_workflow(
+    "Apple announced a new iPhone at their Cupertino headquarters today."
 )
     ```
 </CodeGroup>
@@ -384,7 +344,7 @@ async def analyze_text_parallel(text):
 
     # Define all analyses to run
     analyses = [
-        {"name": "sentiment", "model": "text/sentiment_analysis/openai"},
+        {"name": "topics", "model": "text/topic_extraction/openai"},
         {"name": "moderation", "model": "text/moderation/openai"},
         {"name": "moderation_google", "model": "text/moderation/google"},
         {"name": "entities", "model": "text/named_entity_recognition/openai"}
@@ -418,7 +378,7 @@ results = asyncio.run(analyze_text_parallel(
     "This is an amazing product that will revolutionize the industry!"
 ))
 
-print("Sentiment:", results["sentiment"]["sentiment"])
+print("Topics:", results["topics"])
 print("Moderation:", results["moderation"])
 print("Moderation (Google):", results["moderation_google"]["nsfw_likelihood"])
 print("Entities:", results["entities"])
@@ -464,7 +424,7 @@ def smart_content_workflow(text):
         print("Content is safe, analyzing sentiment...")
 
         sentiment_payload = {
-            "model": "text/sentiment_analysis/openai",
+            "model": "text/topic_extraction/openai",
             "input": {"text": text}
         }
         sentiment_response = requests.post(url, headers=headers, json=sentiment_payload)
@@ -508,8 +468,8 @@ def iterative_ocr_workflow(image_path, max_iterations=3):
 
     for provider in providers:
         ocr_payload = {
-            "model": f"ocr/financial_parser/{provider}",
-            "input": {"file": file_id}
+            "model": f"ocr/ocr/{provider}",
+            "input": {"file": file_id, "language": "en"}
         }
 
         response = requests.post(url, headers=headers, json=ocr_payload)
@@ -566,7 +526,7 @@ def process_product_workflow(image_path, description):
 
     # 1. Moderate image
     moderation_payload = {
-        "model": "image/explicit_content_detection/google",
+        "model": "image/explicit_content/google",
         "input": {"file": file_id}
     }
     moderation_response = requests.post(url, headers=headers, json=moderation_payload)
@@ -578,15 +538,15 @@ def process_product_workflow(image_path, description):
         "input": {"file": file_id}
     }
     detection_response = requests.post(url, headers=headers, json=detection_payload)
-    detected_objects = detection_response.json()["output"]["objects"]
+    detected_objects = detection_response.json()["output"]["items"]
 
-    # 3. Analyze description sentiment
-    sentiment_payload = {
-        "model": "text/sentiment_analysis/openai",
+    # 3. Extract topics from description
+    topic_payload = {
+        "model": "text/topic_extraction/openai",
         "input": {"text": description}
     }
-    sentiment_response = requests.post(url, headers=headers, json=sentiment_payload)
-    sentiment = sentiment_response.json()["output"]
+    topic_response = requests.post(url, headers=headers, json=topic_payload)
+    topics = topic_response.json()["output"]
 
     # 4. Moderate description text
     text_moderation_payload = {
@@ -600,9 +560,9 @@ def process_product_workflow(image_path, description):
     return {
         "image_safe": is_safe,
         "detected_objects": [obj["label"] for obj in detected_objects],
-        "description_sentiment": sentiment["sentiment"],
+        "description_topics": topics,
         "description_safe": description_safe,
-        "approved": is_safe and description_safe and sentiment["sentiment"] in ["Positive", "Neutral"]
+        "approved": is_safe and description_safe
     }
 
 # Usage
@@ -665,7 +625,7 @@ def comprehensive_moderation_workflow(content_type, file_path=None, text=None):
 
         # Explicit content detection
         explicit_payload = {
-            "model": "image/explicit_content_detection/google",
+            "model": "image/explicit_content/google",
             "input": {"file": file_id}
         }
         response = requests.post(url, headers=headers, json=explicit_payload)
@@ -784,7 +744,7 @@ workflow = [
     },
     {
         "name": "sentiment",
-        "model": "text/sentiment_analysis/openai",
+        "model": "text/topic_extraction/openai",
         "input": lambda ctx: {"text": "Sample text"} if ctx["moderate"]["nsfw_likelihood"] < 3 else None,
         "required": False
     }
@@ -825,7 +785,7 @@ class CostAwareWorkflow:
         result = response.json()
 
         # Track cost
-        cost = result.get("cost", 0)
+        cost = float(result.get("cost", 0))
         self.total_cost += cost
 
         print(f"Step cost: ${cost:.4f} | Total: ${self.total_cost:.4f}")
@@ -841,7 +801,7 @@ try:
         {"text": "Sample"}
     )
     result2 = workflow.execute_with_budget(
-        "text/sentiment_analysis/openai",
+        "text/topic_extraction/openai",
         {"text": "Sample"}
     )
 except ValueError as e:

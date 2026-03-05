@@ -83,8 +83,8 @@ provider/model_name
 - `anthropic/claude-opus-4-5`
 - `anthropic/claude-sonnet-4-5`
 - `anthropic/claude-haiku-4-5`
-- `google/gemini-pro`
-- `google/gemini-1.5-pro`
+- `google/gemini-2.5-flash`
+- `google/gemini-2.5-pro`
 - `cohere/command-r-plus`
 - `mistral/mistral-large`
 
@@ -319,10 +319,9 @@ List all available LLM models.
     {
       "provider": "google",
       "models": [
-        "gemini-pro",
         "gemini-ultra",
-        "gemini-1.5-pro",
-        "gemini-1.5-flash"
+        "gemini-2.5-pro",
+        "gemini-2.5-flash"
       ]
     }
   ]

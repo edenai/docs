@@ -16,7 +16,6 @@ This guide provides LLM-specific patterns and examples for smart routing. For co
 **Related documentation:**
 - **[Router Getting Started](../router/getting-started)** - Core routing concepts and basics
 - **[Router Advanced Usage](../router/advanced-usage)** - Advanced patterns and optimization
-- **[Router Monitoring](../router/monitoring)** - Production monitoring and analytics
 
 ## Basic Implementation Patterns
 
@@ -108,13 +107,13 @@ def chat_with_custom_candidates(
         ],
         "fast": [
             "openai/gpt-4o-mini",
-            "google/gemini-2.0-flash",
+            "google/gemini-2.5-flash",
             "openai/gpt-4",
         ],
         "general": [
             "openai/gpt-4o",
             "anthropic/claude-sonnet-4-5",
-            "google/gemini-2.0-flash",
+            "google/gemini-2.5-flash",
         ]
     }
 
@@ -263,7 +262,7 @@ def chat_with_tools(message: str, tools: list):
         "router_candidates": [
             "openai/gpt-4o",
             "anthropic/claude-sonnet-4-5",
-            "google/gemini-2.0-flash"
+            "google/gemini-2.5-flash"
         ],
         "messages": [{"role": "user", "content": message}],
         "tools": tools  # Router considers tool compatibility
@@ -326,14 +325,14 @@ class CostOptimizedRouter:
     # Model tiers by cost
     BUDGET_MODELS = [
         "openai/gpt-4o-mini",
-        "google/gemini-2.0-flash",
+        "google/gemini-2.5-flash",
         "openai/gpt-4",
     ]
 
     BALANCED_MODELS = [
         "openai/gpt-4o",
         "anthropic/claude-sonnet-4-5",
-        "google/gemini-2.0-flash",
+        "google/gemini-2.5-flash",
     ]
 
     PREMIUM_MODELS = [
@@ -579,7 +578,7 @@ for query in [
 ]:
     result = monitor.chat_with_tracking(
         query,
-        candidates=["openai/gpt-4o", "anthropic/claude-sonnet-4-5", "google/gemini-2.0-flash"]
+        candidates=["openai/gpt-4o", "anthropic/claude-sonnet-4-5", "google/gemini-2.5-flash"]
     )
     print(f"Q: {query}")
     print(f"Model: {result['routing_info']['selected_model']}")
@@ -761,17 +760,16 @@ else:
 
 | Use Case | Recommended Candidates | Notes |
 |----------|----------------------|-------|
-| **General chat** | gpt-4o, claude-sonnet-4-5, gemini-2.0-flash | Balanced quality/cost |
+| **General chat** | gpt-4o, claude-sonnet-4-5, gemini-2.5-flash | Balanced quality/cost |
 | **Code generation** | gpt-4o, claude-sonnet-4-5 | Strong coding models |
 | **Creative writing** | claude-opus-4-5, gpt-4o, gemini-2.5-pro | Premium models |
-| **Simple Q&A** | gpt-4o-mini, gemini-2.0-flash, claude-haiku-4-5 | Fast and cheap |
-| **Function calling** | gpt-4o, claude-sonnet-4-5, gemini-2.0-flash | Tool-compatible |
+| **Simple Q&A** | gpt-4o-mini, gemini-2.5-flash, claude-haiku-4-5 | Fast and cheap |
+| **Function calling** | gpt-4o, claude-sonnet-4-5, gemini-2.5-flash | Tool-compatible |
 
 ## Next Steps
 
 - **[Router Getting Started](../router/getting-started)** - Learn core routing concepts
 - **[Router Advanced Usage](../router/advanced-usage)** - Master advanced routing patterns
-- **[Router Monitoring](../router/monitoring)** - Track routing in production
 - **[Optimize LLM Costs Tutorial](../../tutorials/optimize-llm-costs)** - Complete cost optimization workflow
 - **[Chat Completions Guide](./chat-completions)** - Master the LLM endpoint
 - **[Streaming Guide](./streaming)** - Handle SSE responses

@@ -6,13 +6,12 @@ Use the Universal AI endpoint to access all text analysis features through a sin
 
 | Subfeature | Model String Pattern | Description |
 |------------|---------------------|-------------|
-| AI Detection | `text/ai_detection/provider/model` | Detect AI-generated content |
+| AI Detection | `text/ai_detection/provider` | Detect AI-generated content |
 | Moderation | `text/moderation/provider` | Content safety and moderation |
-| Embeddings | `text/embeddings/provider/model` | Semantic search vectors |
-| Sentiment Analysis | `text/sentiment_analysis/provider` | Analyze text sentiment |
 | Spell Check | `text/spell_check/provider` | Grammar and spelling correction |
-| Named Entity Recognition | `text/ner/provider` | Extract entities from text |
+| Named Entity Recognition | `text/named_entity_recognition/provider` | Extract entities from text |
 | Topic Extraction | `text/topic_extraction/provider` | Identify main topics |
+| Plagiarism Detection | `text/plagia_detection/provider` | Detect plagiarized content |
 
 ## Content Moderation (Google)
 
@@ -74,9 +73,9 @@ for item in result['output']['items']:
     ```
 </CodeGroup>
 
-## Text Embeddings
+## Topic Extraction
 
-Generate semantic vectors for text:
+Identify main topics in text:
 
 <CodeGroup>
 ```python Python
@@ -89,20 +88,17 @@ headers = {
 }
 
 payload = {
-    "model": "text/embeddings/openai/text-embedding-3-small",
+    "model": "text/topic_extraction/openai",
     "input": {
-        "texts": [
-            "First text to embed",
-            "Second text to embed"
-        ]
+        "text": "Apple announced a new iPhone at their Cupertino headquarters today."
     }
 }
 
 response = requests.post(url, headers=headers, json=payload)
 result = response.json()
 
-for i, item in enumerate(result['output']['items']):
-    print(f"Text {i+1} embedding: {item['embedding'][:5]}...")
+for item in result['output']['items']:
+    print(f"  {item['category']}: importance {item['importance']}")
     ```
 </CodeGroup>
 

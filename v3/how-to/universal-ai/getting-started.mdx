@@ -169,11 +169,12 @@ file_id = upload_response.json()["file_id"]
 # Then use it in Universal AI
 payload = {
     "model": "ocr/financial_parser/google",
-    "input": {"file": file_id}
+    "input": {"file": file_id, "language": "en"}
 }
     
 response = requests.post(url, headers=headers, json=payload)
-extracted_text = response.json()["output"]["text"]
+result = response.json()
+print(result["output"]["extracted_data"])
     ```
 </CodeGroup>
 

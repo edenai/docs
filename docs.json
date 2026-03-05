@@ -72,8 +72,7 @@
                         "icon": "route",
                         "pages": [
                           "v3/how-to/router/getting-started",
-                          "v3/how-to/router/advanced-usage",
-                          "v3/how-to/router/monitoring"
+                          "v3/how-to/router/advanced-usage"
                         ]
                       },
                       {
@@ -183,7 +182,6 @@
                     "icon": "graduation-cap",
                     "pages": [
                       "v3/tutorials/optimize-llm-costs",
-                      "v3/tutorials/track-optimize-spending",
                       "v3/tutorials/multi-environment-tokens"
                     ]
                   },

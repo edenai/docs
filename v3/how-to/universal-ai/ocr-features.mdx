@@ -8,7 +8,7 @@ Extract text and structured data from documents using the Universal AI endpoint.
 |------------|---------------------|-------------|
 | OCR | `ocr/financial_parser/provider` | Extract financial information from images/PDFs |
 | Identity Parser | `ocr/identity_parser/provider` | Parse ID documents and passports |
-| Invoice Parser | `ocr/invoice_parser/provider` | Extract structured invoice data |
+| Financial Parser | `ocr/financial_parser/provider` | Extract structured financial & invoice data |
 | Resume Parser | `ocr/resume_parser/provider` | Parse CV and resume data |
 
 ## Text Extraction (OCR)
@@ -45,7 +45,7 @@ payload = {
 response = requests.post(url, headers=headers, json=payload)
 result = response.json()
 
-print(result["output"]["text"])
+print(result["output"]["extracted_data"])
     ```
 </CodeGroup>
 
@@ -111,22 +111,17 @@ file_id = upload_response.json()["file_id"]
 
 # Parse invoice
 payload = {
-    "model": "ocr/invoice_parser/microsoft",
+    "model": "ocr/financial_parser/microsoft",
     "input": {
-        "file": file_id
+        "file": file_id,
+        "language": "en"
     }
 }
 
 response = requests.post(url, headers=headers, json=payload)
 result = response.json()
 
-invoice = result["output"]
-print(f"Invoice Number: {invoice.get('invoice_number')}")
-print(f"Total: {invoice.get('invoice_total')}")
-print(f"Date: {invoice.get('date')}")
-
-for item in invoice.get("items", []):
-    print(f"  - {item['description']}: ${item['amount']}")
+print(result["output"]["extracted_data"])
     ```
 </CodeGroup>
 
@@ -147,14 +142,14 @@ headers = {
 payload = {
     "model": "ocr/financial_parser/affinda",
     "input": {
-        "file": "https://example.com/document.jpg",
+        "file": "https://slicedinvoices.com/pdf/wordpress-pdf-invoice-plugin-sample.pdf",
         "language": "en"
     }
 }
 
 response = requests.post(url, headers=headers, json=payload)
 result = response.json()
-print(result["output"]["text"])
+print(result["output"]["extracted_data"])
     ```
 </CodeGroup>
 

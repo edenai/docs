@@ -19,7 +19,6 @@ _PRODUCTION_TOKEN_FILES = {
     "v3/how-to/cost-management/monitor-usage.mdx",
     "v3/how-to/user-management/manage-tokens.mdx",
     "v3/tutorials/multi-environment-tokens.mdx",
-    "v3/tutorials/track-optimize-spending.mdx",
 }
 
 

@@ -1,0 +1,8 @@
+.venv/
+.vscode/
+report.json
+qa/
+tests/
+htmlcov/
+coverage.xml
+CLAUDE.md

@@ -309,9 +309,29 @@
                     "Universal-ai"
                 ],
                 "summary": "List Async Jobs",
-                "description": "List all async jobs for the authenticated user.\n\nResults are ordered by creation date (newest first). Supports filtering by status and pagination.",
+                "description": "List all async jobs for the authenticated user.\n\nResults are ordered by creation date (newest first). Supports filtering by feature, subfeature, and status.",
                 "operationId": "list_async_jobs_v3_universal_ai_async_get",
                 "parameters": [
+                    {
+                        "name": "feature",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "description": "Filter by feature (e.g., audio, ocr)"
+                        },
+                        "description": "Filter by feature"
+                    },
+                    {
+                        "name": "subfeature",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "description": "Filter by subfeature (e.g., speech_to_text_async)"
+                        },
+                        "description": "Filter by subfeature"
+                    },
                     {
                         "name": "status",
                         "in": "query",
@@ -342,8 +362,8 @@
                         "schema": {
                             "type": "integer",
                             "minimum": 1,
-                            "maximum": 100,
-                            "default": 20,
+                            "maximum": 1000,
+                            "default": 100,
                             "description": "Maximum number of items per page"
                         },
                         "description": "Maximum number of items per page"
@@ -355,10 +375,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/UniversalAIAsyncResponse"
-                                    }
+                                    "$ref": "#/components/schemas/UniversalAIAsyncJobListResponse"
                                 }
                             }
                         }
@@ -1801,6 +1818,91 @@
                 ],
                 "title": "UniversalAIResponse",
                 "description": "Normalized response from universal-ai endpoint.\n\nAll responses have a consistent structure regardless of the feature/subfeature."
+            },
+            "UniversalAIAsyncJobListItem": {
+                "properties": {
+                    "public_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Public ID",
+                        "description": "Job ID"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": ["success", "fail", "processing"],
+                        "title": "Status",
+                        "description": "Job status"
+                    },
+                    "feature": {
+                        "type": "string",
+                        "title": "Feature",
+                        "description": "Feature name"
+                    },
+                    "subfeature": {
+                        "type": "string",
+                        "title": "Subfeature",
+                        "description": "Subfeature name"
+                    },
+                    "provider": {
+                        "type": "string",
+                        "title": "Provider",
+                        "description": "Provider name"
+                    },
+                    "model": {
+                        "anyOf": [
+                            { "type": "string" },
+                            { "type": "null" }
+                        ],
+                        "title": "Model",
+                        "description": "Model name"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At",
+                        "description": "Job creation timestamp"
+                    }
+                },
+                "type": "object",
+                "required": ["public_id", "status", "feature", "subfeature", "provider", "created_at"],
+                "title": "UniversalAIAsyncJobListItem",
+                "description": "Summary item for async job list."
+            },
+            "UniversalAIAsyncJobListResponse": {
+                "properties": {
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/UniversalAIAsyncJobListItem"
+                        },
+                        "title": "Items",
+                        "description": "List of async jobs"
+                    },
+                    "total": {
+                        "type": "integer",
+                        "title": "Total",
+                        "description": "Total number of items"
+                    },
+                    "page": {
+                        "type": "integer",
+                        "title": "Page",
+                        "description": "Current page number"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "title": "Limit",
+                        "description": "Items per page"
+                    },
+                    "total_pages": {
+                        "type": "integer",
+                        "title": "Total Pages",
+                        "description": "Total number of pages"
+                    }
+                },
+                "type": "object",
+                "required": ["items", "total", "page", "limit", "total_pages"],
+                "title": "UniversalAIAsyncJobListResponse",
+                "description": "Paginated response for listing async jobs."
             },
             "UniversalAIAsyncResponse": {
                 "properties": {

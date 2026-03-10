@@ -258,6 +258,233 @@
                 ]
             }
         },
+        "/v3/universal-ai/async": {
+            "post": {
+                "tags": [
+                    "Universal-ai"
+                ],
+                "summary": "Create Async Job",
+                "description": "Submit an asynchronous Universal AI job for long-running AI features.\n\nModel format: feature/subfeature/provider[/model]\n\nUse this endpoint for features that require processing time (e.g., speech-to-text, OCR on large documents). The response returns a job ID that you can poll using `GET /v3/universal-ai/async/{job_id}`.\n\nRequest body is identical to the sync endpoint (`POST /v3/universal-ai`).\n\nExample:\n```json\n{\n    \"model\": \"audio/speech_to_text_async/google\",\n    \"input\": {\"file\": \"YOUR_FILE_UUID_OR_URL\", \"language\": \"en\"}\n}\n```\n\nResponse (202 Accepted):\n```json\n{\n    \"public_id\": \"abc123-def456\",\n    \"status\": \"processing\",\n    \"cost\": \"0.000\",\n    \"provider\": \"google\",\n    \"feature\": \"audio\",\n    \"subfeature\": \"speech_to_text_async\",\n    \"output\": null,\n    \"error\": null,\n    \"model\": null,\n    \"created_at\": \"2025-01-01T00:00:00Z\"\n}\n```",
+                "operationId": "create_async_job_v3_universal_ai_async_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UniversalAIBody"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "202": {
+                        "description": "Job Created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UniversalAIAsyncResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "AuthBearer": []
+                    }
+                ]
+            },
+            "get": {
+                "tags": [
+                    "Universal-ai"
+                ],
+                "summary": "List Async Jobs",
+                "description": "List all async jobs for the authenticated user.\n\nResults are ordered by creation date (newest first). Supports filtering by feature, subfeature, and status.",
+                "operationId": "list_async_jobs_v3_universal_ai_async_get",
+                "parameters": [
+                    {
+                        "name": "feature",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "description": "Filter by feature (e.g., audio, ocr)"
+                        },
+                        "description": "Filter by feature"
+                    },
+                    {
+                        "name": "subfeature",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "description": "Filter by subfeature (e.g., speech_to_text_async)"
+                        },
+                        "description": "Filter by subfeature"
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": ["processing", "success", "fail"],
+                            "description": "Filter by job status"
+                        },
+                        "description": "Filter by job status"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "default": 1,
+                            "description": "Page number (1-indexed)"
+                        },
+                        "description": "Page number (1-indexed)"
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 1000,
+                            "default": 100,
+                            "description": "Maximum number of items per page"
+                        },
+                        "description": "Maximum number of items per page"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UniversalAIAsyncJobListResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "AuthBearer": []
+                    }
+                ]
+            }
+        },
+        "/v3/universal-ai/async/{job_id}": {
+            "get": {
+                "tags": [
+                    "Universal-ai"
+                ],
+                "summary": "Get Async Job",
+                "description": "Retrieve the status and results of an async job.\n\nPoll this endpoint until `status` changes from `\"processing\"` to `\"success\"` or `\"fail\"`.\n\nExample response (completed):\n```json\n{\n    \"public_id\": \"abc123-def456\",\n    \"status\": \"success\",\n    \"cost\": \"0.005\",\n    \"provider\": \"google\",\n    \"feature\": \"audio\",\n    \"subfeature\": \"speech_to_text_async\",\n    \"output\": {\"text\": \"Hello world\", ...},\n    \"error\": null,\n    \"model\": null,\n    \"created_at\": \"2025-01-01T00:00:00Z\"\n}\n```",
+                "operationId": "get_async_job_v3_universal_ai_async__job_id__get",
+                "parameters": [
+                    {
+                        "name": "job_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid",
+                            "title": "Job ID",
+                            "description": "The job ID returned from POST /v3/universal-ai/async"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UniversalAIAsyncResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Job not found"
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "AuthBearer": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Universal-ai"
+                ],
+                "summary": "Delete Async Job",
+                "description": "Delete an async job by ID.\n\nThis permanently removes the job and its results. This action cannot be undone.",
+                "operationId": "delete_async_job_v3_universal_ai_async__job_id__delete",
+                "parameters": [
+                    {
+                        "name": "job_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid",
+                            "title": "Job ID",
+                            "description": "The job ID to delete"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Job deleted successfully"
+                    },
+                    "404": {
+                        "description": "Job not found"
+                    }
+                },
+                "security": [
+                    {
+                        "AuthBearer": []
+                    }
+                ]
+            }
+        },
         "/v3/upload": {
             "post": {
                 "tags": [
@@ -1591,6 +1818,195 @@
                 ],
                 "title": "UniversalAIResponse",
                 "description": "Normalized response from universal-ai endpoint.\n\nAll responses have a consistent structure regardless of the feature/subfeature."
+            },
+            "UniversalAIAsyncJobListItem": {
+                "properties": {
+                    "public_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Public ID",
+                        "description": "Job ID"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": ["success", "fail", "processing"],
+                        "title": "Status",
+                        "description": "Job status"
+                    },
+                    "feature": {
+                        "type": "string",
+                        "title": "Feature",
+                        "description": "Feature name"
+                    },
+                    "subfeature": {
+                        "type": "string",
+                        "title": "Subfeature",
+                        "description": "Subfeature name"
+                    },
+                    "provider": {
+                        "type": "string",
+                        "title": "Provider",
+                        "description": "Provider name"
+                    },
+                    "model": {
+                        "anyOf": [
+                            { "type": "string" },
+                            { "type": "null" }
+                        ],
+                        "title": "Model",
+                        "description": "Model name"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At",
+                        "description": "Job creation timestamp"
+                    }
+                },
+                "type": "object",
+                "required": ["public_id", "status", "feature", "subfeature", "provider", "created_at"],
+                "title": "UniversalAIAsyncJobListItem",
+                "description": "Summary item for async job list."
+            },
+            "UniversalAIAsyncJobListResponse": {
+                "properties": {
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/UniversalAIAsyncJobListItem"
+                        },
+                        "title": "Items",
+                        "description": "List of async jobs"
+                    },
+                    "total": {
+                        "type": "integer",
+                        "title": "Total",
+                        "description": "Total number of items"
+                    },
+                    "page": {
+                        "type": "integer",
+                        "title": "Page",
+                        "description": "Current page number"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "title": "Limit",
+                        "description": "Items per page"
+                    },
+                    "total_pages": {
+                        "type": "integer",
+                        "title": "Total Pages",
+                        "description": "Total number of pages"
+                    }
+                },
+                "type": "object",
+                "required": ["items", "total", "page", "limit", "total_pages"],
+                "title": "UniversalAIAsyncJobListResponse",
+                "description": "Paginated response for listing async jobs."
+            },
+            "UniversalAIAsyncResponse": {
+                "properties": {
+                    "public_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Public ID",
+                        "description": "Job ID for polling status"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "success",
+                            "fail",
+                            "processing"
+                        ],
+                        "title": "Status",
+                        "description": "Job status: processing (still running), success, or fail"
+                    },
+                    "cost": {
+                        "type": "string",
+                        "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                        "title": "Cost",
+                        "description": "Cost in credits for this request"
+                    },
+                    "provider": {
+                        "type": "string",
+                        "title": "Provider",
+                        "description": "Provider name that processed the request"
+                    },
+                    "feature": {
+                        "type": "string",
+                        "title": "Feature",
+                        "description": "Feature category (e.g., audio, ocr, image)"
+                    },
+                    "subfeature": {
+                        "type": "string",
+                        "title": "Subfeature",
+                        "description": "Specific subfeature (e.g., speech_to_text_async, ocr_async)"
+                    },
+                    "output": {
+                        "anyOf": [
+                            {},
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Output",
+                        "description": "Normalized output from the provider (null while processing)"
+                    },
+                    "error": {
+                        "anyOf": [
+                            {
+                                "additionalProperties": true,
+                                "type": "object"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Error",
+                        "description": "Error details from the provider (only present when status is 'fail')"
+                    },
+                    "original_response": {
+                        "anyOf": [
+                            {},
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Original Response",
+                        "description": "Raw response from the provider (if show_original_response=true)"
+                    },
+                    "model": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Model",
+                        "description": "Model name if specified in the request"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At",
+                        "description": "Job creation timestamp"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "public_id",
+                    "status",
+                    "cost",
+                    "provider",
+                    "feature",
+                    "subfeature",
+                    "created_at"
+                ],
+                "title": "UniversalAIAsyncResponse",
+                "description": "Response from the async universal-ai endpoint. Used for both job creation (202) and job status polling (GET)."
             },
             "UploadResponse": {
                 "properties": {

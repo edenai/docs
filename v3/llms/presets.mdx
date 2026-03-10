@@ -1,0 +1,152 @@
+---
+title: "Presets"
+---
+
+Presets are saved configurations that bundle a model, parameters, and optionally a system message into a reusable template. Instead of specifying `model`, `temperature`, `max_tokens`, and other settings on every request, you create a preset once and reference it by name.
+
+## How Presets Work
+
+A preset stores:
+
+| Field | Description |
+|-------|-------------|
+| **Name** | A unique identifier for the preset (e.g., `"code-assistant"`) |
+| **Model** | The model to use (e.g., `anthropic/claude-sonnet-4-5`) |
+| **Parameters** | Temperature, max tokens, top_p, penalties, etc. |
+| **System message** | Optional default system prompt |
+
+When you use a preset, its saved configuration is applied to the request. You can still override individual parameters per request.
+
+## Creating Presets
+
+Presets can be created and managed from the [Eden AI dashboard](https://app.edenai.run). Navigate to the **Presets** section to:
+
+- Create new presets with custom model and parameter combinations
+- Edit existing presets
+- Delete presets you no longer need
+
+## Using a Preset
+
+Reference a preset by name in your chat completion request using the `preset` field:
+
+<CodeGroup>
+```python Python
+import requests
+
+url = "https://api.edenai.run/v3/llm/chat/completions"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+# Use a preset instead of specifying model and parameters
+payload = {
+    "preset": "code-assistant",
+    "messages": [
+        {"role": "user", "content": "Write a Python function to merge two sorted lists."}
+    ]
+}
+
+response = requests.post(url, headers=headers, json=payload)
+result = response.json()
+print(result["choices"][0]["message"]["content"])
+```
+
+```javascript JavaScript
+const url = 'https://api.edenai.run/v3/llm/chat/completions';
+const headers = {
+  'Authorization': 'Bearer YOUR_API_KEY',
+  'Content-Type': 'application/json'
+};
+
+const payload = {
+  preset: 'code-assistant',
+  messages: [
+    { role: 'user', content: 'Write a Python function to merge two sorted lists.' }
+  ]
+};
+
+const response = await fetch(url, {
+  method: 'POST',
+  headers: headers,
+  body: JSON.stringify(payload)
+});
+
+const result = await response.json();
+console.log(result.choices[0].message.content);
+```
+
+```bash cURL
+curl -X POST https://api.edenai.run/v3/llm/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "preset": "code-assistant",
+    "messages": [
+      {"role": "user", "content": "Write a Python function to merge two sorted lists."}
+    ]
+  }'
+```
+</CodeGroup>
+
+## Overriding Preset Parameters
+
+You can override any preset parameter on a per-request basis. Explicit parameters take precedence over the preset's saved values:
+
+{/* skip-test */}
+<CodeGroup>
+```python Python
+import requests
+
+url = "https://api.edenai.run/v3/llm/chat/completions"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+# Use preset but override temperature
+payload = {
+    "preset": "code-assistant",
+    "messages": [
+        {"role": "user", "content": "Suggest creative variable names for a game engine."}
+    ],
+    "temperature": 0.9  # Override the preset's temperature
+}
+
+response = requests.post(url, headers=headers, json=payload)
+result = response.json()
+print(result["choices"][0]["message"]["content"])
+```
+</CodeGroup>
+
+## Example Preset Configurations
+
+Here are common preset patterns:
+
+| Preset Name | Model | Temperature | Use Case |
+|-------------|-------|-------------|----------|
+| `code-assistant` | `anthropic/claude-sonnet-4-5` | 0.1 | Precise code generation |
+| `creative-writer` | `openai/gpt-4o` | 0.9 | Creative content and brainstorming |
+| `data-analyst` | `google/gemini-2.5-pro` | 0.3 | Data-driven analysis and summaries |
+| `translator` | `openai/gpt-4o` | 0.2 | Accurate translations |
+
+<Tip>
+Use low temperature (0.0–0.3) for deterministic tasks like code generation and data extraction. Use higher temperature (0.7–1.0) for creative tasks like writing and brainstorming.
+</Tip>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Chat Completions" icon="comments" href="/v3/llms/chat-completions">
+    Complete endpoint reference
+  </Card>
+  <Card title="Smart Routing" icon="shuffle" href="/v3/llms/smart-routing">
+    Automatic model selection
+  </Card>
+  <Card title="Streaming" icon="bolt" href="/v3/llms/streaming">
+    Handle real-time SSE responses
+  </Card>
+  <Card title="Tools" icon="wrench" href="/v3/llms/tools">
+    Let models call your functions
+  </Card>
+</CardGroup>

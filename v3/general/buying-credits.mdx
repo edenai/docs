@@ -1,0 +1,58 @@
+---
+title: "Buying Credits & Auto-Refill"
+---
+
+Eden AI uses a **pay-per-use credit system**. Every API response includes a `cost` field showing the charge in USD for that request, so you always know exactly what you are spending.
+
+## Purchasing Credits
+
+1. Log in to the [Eden AI dashboard](https://app.edenai.run/).
+2. Navigate to the billing section.
+3. Choose the amount of credits to purchase.
+4. Complete the payment.
+
+Credits are added to your account immediately and are shared across all your API tokens.
+
+## Auto-Refill
+
+To avoid service interruptions, you can enable **auto-refill**:
+
+1. Go to the billing section in the dashboard.
+2. Enable auto-refill.
+3. Set a **threshold** — the minimum balance that triggers a top-up.
+4. Set a **refill amount** — how many credits to add when the threshold is reached.
+
+When your balance drops below the threshold, credits are purchased automatically using your payment method on file.
+
+<Tip>
+Auto-refill is strongly recommended for production applications. A depleted balance causes API requests to fail with a `402 Payment Required` error.
+</Tip>
+
+## Checking Your Balance
+
+You can check your current credit balance in the [Eden AI dashboard](https://app.edenai.run/) or programmatically via the [monitoring endpoint](/v3/general/monitoring).
+
+## Understanding Costs
+
+Every API response includes a `cost` field:
+
+```json
+{
+  "results": { "..." : "..." },
+  "cost": 0.002
+}
+```
+
+This is the amount in USD deducted from your balance for that request.
+
+## Insufficient Credits
+
+If your balance reaches zero, API requests return a `402 Payment Required` error:
+
+```json
+{
+  "error": "Insufficient credits"
+}
+```
+
+To resolve this, purchase more credits or enable auto-refill.

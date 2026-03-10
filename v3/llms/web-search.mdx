@@ -1,0 +1,149 @@
+---
+title: "Web Search"
+---
+
+Web search lets LLMs access real-time information from the internet when generating responses. Instead of relying solely on training data, the model can search the web to ground its answers with up-to-date facts, links, and sources.
+
+## How It Works
+
+Enable web search by adding `web_search: true` to your chat completion request. When enabled, the model will:
+
+1. Analyze the user's query to determine if web search is needed.
+2. Search the web for relevant, current information.
+3. Generate a response grounded in the search results, often including source citations.
+
+## Basic Example
+
+<CodeGroup>
+```python Python
+import requests
+
+url = "https://api.edenai.run/v3/llm/chat/completions"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+payload = {
+    "model": "openai/gpt-4o",
+    "messages": [
+        {"role": "user", "content": "What are the latest developments in AI regulation in 2025?"}
+    ],
+    "web_search": True
+}
+
+response = requests.post(url, headers=headers, json=payload)
+result = response.json()
+print(result["choices"][0]["message"]["content"])
+```
+
+```javascript JavaScript
+const url = 'https://api.edenai.run/v3/llm/chat/completions';
+const headers = {
+  'Authorization': 'Bearer YOUR_API_KEY',
+  'Content-Type': 'application/json'
+};
+
+const payload = {
+  model: 'openai/gpt-4o',
+  messages: [
+    { role: 'user', content: 'What are the latest developments in AI regulation in 2025?' }
+  ],
+  web_search: true
+};
+
+const response = await fetch(url, {
+  method: 'POST',
+  headers: headers,
+  body: JSON.stringify(payload)
+});
+
+const result = await response.json();
+console.log(result.choices[0].message.content);
+```
+
+```bash cURL
+curl -X POST https://api.edenai.run/v3/llm/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-4o",
+    "messages": [
+      {"role": "user", "content": "What are the latest developments in AI regulation in 2025?"}
+    ],
+    "web_search": true
+  }'
+```
+</CodeGroup>
+
+## Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `web_search` | boolean | `false` | Enable web search grounding for the request |
+
+## With System Messages
+
+Combine web search with system messages to control how the model uses search results:
+
+{/* skip-test */}
+<CodeGroup>
+```python Python
+import requests
+
+url = "https://api.edenai.run/v3/llm/chat/completions"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+payload = {
+    "model": "google/gemini-2.5-flash",
+    "messages": [
+        {
+            "role": "system",
+            "content": "You are a research assistant. When answering, always cite your sources with URLs."
+        },
+        {
+            "role": "user",
+            "content": "What is the current stock price of Apple?"
+        }
+    ],
+    "web_search": True
+}
+
+response = requests.post(url, headers=headers, json=payload)
+result = response.json()
+print(result["choices"][0]["message"]["content"])
+```
+</CodeGroup>
+
+## When to Use Web Search
+
+Web search is useful when the user's question involves:
+
+- **Current events** — news, stock prices, weather, sports scores
+- **Recent releases** — software versions, product launches, research papers
+- **Factual lookups** — statistics, regulations, schedules that change over time
+- **Verification** — checking claims against live sources
+
+<Tip>
+For questions about static knowledge (math, programming concepts, general reasoning), web search adds latency without much benefit. Only enable it when freshness matters.
+</Tip>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Tools (Function Calling)" icon="wrench" href="/v3/llms/tools">
+    Let models call your functions
+  </Card>
+  <Card title="Plugins" icon="plug" href="/v3/llms/plugins">
+    Extend LLM capabilities with plugins
+  </Card>
+  <Card title="Chat Completions" icon="comments" href="/v3/llms/chat-completions">
+    Complete endpoint reference
+  </Card>
+  <Card title="Streaming" icon="bolt" href="/v3/llms/streaming">
+    Handle real-time SSE responses
+  </Card>
+</CardGroup>

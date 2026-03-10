@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git mv:*)",
+      "Bash(mv v3/index.mdx /tmp/docs-unlisted/v3/ && mv v3/expert-models/features/index.mdx /tmp/docs-unlisted/v3/expert-models/features/)",
+      "WebFetch(domain:www.edenai.co)",
+      "Bash(cat > \"C:/Users/Tristan/Documents/edenai/docs/v3/general/support.mdx\" << 'ENDOFFILE'\n---\ntitle: \"Support\"\ndescription: \"How to get help from the Eden AI team.\"\n---\n\n# Support\n\nEden AI offers several support channels depending on the nature of your question and your plan.\n\n## Intercom Chat\n\nFor quick questions, use the chat widget available in the [Eden AI dashboard]\\(https://app.edenai.run/\\). On the **Self-serve AI API Gateway** plan, chat support responds within 48 hours on working days.\n\n## Email\n\nFor detailed issues, bug reports, or account inquiries, email the support team:\n\n**support@edenai.co**\n\nInclude your account email and any relevant request IDs or error messages to help the team investigate quickly.\n\n## Status Page\n\nCheck the current status of Eden AI services and subscribe to incident notifications:\n\n**[https://app-edenai.instatus.com/]\\(https://app-edenai.instatus.com/\\)**\n\n## Dedicated Support with SLA\n\nDedicated support is available on the **Advanced AI Platform** plan and includes:\n\n- Dedicated support channel with SLA guarantees\n- Help with debugging provider issues, routing decisions, and best practices\n- Custom latency and cost optimization guidance\n\nSee [plans and pricing]\\(https://www.edenai.co/pricing\\) for details.\n\n## Professional Services\n\nNeed more than API support? Eden AI offers **Professional Services** with access to dedicated AI engineers who can help you:\n\n- Design and implement AI solutions tailored to your use case\n- Productionize AI workflows with monitoring and safety controls\n- Choose the right models and providers for your requirements\n\n<Info>\nProfessional Services are available on the Advanced AI Platform plan. [Contact the team]\\(https://www.edenai.co/pricing\\) to learn more.\n</Info>\nENDOFFILE\necho \"Done: support.mdx\")"
+    ]
+  }
+}

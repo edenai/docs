@@ -1,0 +1,33 @@
+---
+title: "Caching"
+---
+
+Eden AI automatically caches responses for repeated identical requests. When a request matches a previous one (same model and same input), the cached response is returned at no additional cost.
+
+## How It Works
+
+1. You send a request with a specific model and input.
+2. Eden AI processes the request and stores the result.
+3. If the same model + input combination is sent again, the cached result is returned immediately.
+
+Cached responses are faster (no round-trip to the provider) and free (no additional credit charge).
+
+## Best Suited For
+
+Caching works well with **deterministic features** where the same input always produces the same output:
+
+- **Embeddings** — identical text produces identical vectors
+- **Moderation** — same text yields the same classification
+- **OCR** — same document produces the same extracted text
+- **Named entity recognition** — same text, same entities
+
+## Not Suited For
+
+Caching is less useful for **non-deterministic** outputs:
+
+- **LLM chat completions** — responses vary by design (temperature, randomness)
+- **Image generation** — same prompt can produce different images
+
+<Info>
+Caching is handled automatically. There is no configuration needed — simply send your requests as usual and Eden AI will cache where appropriate.
+</Info>

@@ -1,0 +1,219 @@
+---
+title: "Webhooks"
+---
+
+Webhooks let you receive results from async Universal AI jobs via HTTP callbacks instead of polling. When a job completes, Eden AI sends the result directly to your specified URL.
+
+## How It Works
+
+1. Submit an async request with a `webhook_receiver` in the payload.
+2. Eden AI processes the job in the background.
+3. When the job finishes, Eden AI sends a `POST` request to your `webhook_receiver` with the result.
+
+This eliminates the need to repeatedly poll `GET /v3/universal-ai/async/{job_id}`.
+
+## Sending an Async Request with a Webhook
+
+Add the `webhook_receiver` field to any async Universal AI request:
+
+<CodeGroup>
+```python Python
+import requests
+
+url = "https://api.edenai.run/v3/universal-ai/async"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+payload = {
+    "model": "ocr/ocr_async/amazon",
+    "input": {
+        "file": "YOUR_FILE_UUID_OR_URL"
+    },
+    "webhook_receiver": "https://your-server.com/webhooks/edenai"
+}
+
+response = requests.post(url, headers=headers, json=payload)
+result = response.json()
+print(result)  # Contains the job ID
+```
+
+```javascript JavaScript
+const url = 'https://api.edenai.run/v3/universal-ai/async';
+const headers = {
+  'Authorization': 'Bearer YOUR_API_KEY',
+  'Content-Type': 'application/json'
+};
+
+const payload = {
+  model: 'ocr/ocr_async/amazon',
+  input: {
+    file: 'YOUR_FILE_UUID_OR_URL'
+  },
+  webhook_receiver: 'https://your-server.com/webhooks/edenai'
+};
+
+const response = await fetch(url, {
+  method: 'POST',
+  headers: headers,
+  body: JSON.stringify(payload)
+});
+
+const result = await response.json();
+console.log(result);
+```
+
+```bash cURL
+curl -X POST https://api.edenai.run/v3/universal-ai/async \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "ocr/ocr_async/amazon",
+    "input": {"file": "YOUR_FILE_UUID_OR_URL"},
+    "webhook_receiver": "https://your-server.com/webhooks/edenai"
+  }'
+```
+</CodeGroup>
+
+## Webhook Payload
+
+When the job completes, Eden AI sends a `POST` request to your webhook URL with the job result as the JSON body:
+
+```json
+{
+  "job_id": "550e8400-e29b-41d4-a716-446655440000",
+  "status": "success",
+  "cost": "0.0015",
+  "provider": "amazon",
+  "feature": "ocr",
+  "subfeature": "ocr_async",
+  "output": {
+    "raw_text": "Extracted text content...",
+    "pages": [...],
+    "number_of_pages": 3
+  },
+  "error": null
+}
+```
+
+If the job fails, the payload includes error details:
+
+```json
+{
+  "job_id": "550e8400-e29b-41d4-a716-446655440000",
+  "status": "fail",
+  "cost": "0.0015",
+  "provider": "amazon",
+  "feature": "ocr",
+  "subfeature": "ocr_async",
+  "output": null,
+  "error": {
+    "message": "Provider error details",
+    "error_code": "PROVIDER_ERROR"
+  }
+}
+```
+
+## Handling Webhooks
+
+Your webhook endpoint should:
+
+1. Accept `POST` requests with a JSON body.
+2. Return a `200` status code to acknowledge receipt.
+3. Process the result asynchronously if needed.
+
+{/* skip-test */}
+<CodeGroup>
+```python Python (Flask)
+from flask import Flask, request, jsonify
+
+app = Flask(__name__)
+
+@app.route("/webhooks/edenai", methods=["POST"])
+def handle_webhook():
+    payload = request.get_json()
+
+    job_id = payload["job_id"]
+    status = payload["status"]
+
+    if status == "success":
+        output = payload["output"]
+        # Process the result (e.g., store in database)
+        print(f"Job {job_id} completed: {output}")
+    else:
+        error = payload["error"]
+        print(f"Job {job_id} failed: {error['message']}")
+
+    return jsonify({"received": True}), 200
+```
+</CodeGroup>
+
+## Webhook vs Polling
+
+| | Webhooks | Polling |
+|---|----------|---------|
+| **How it works** | Eden AI pushes the result to your URL | You repeatedly call `GET /v3/universal-ai/async/{job_id}` |
+| **Latency** | Immediate notification on completion | Depends on polling interval |
+| **Efficiency** | No wasted requests | Requires repeated API calls |
+| **Setup** | Requires a publicly accessible endpoint | Works from any client |
+
+<Tip>
+Use **webhooks** for production workflows where you need immediate notification. Use **polling** for quick scripts, local development, or when you don't have a public endpoint.
+</Tip>
+
+## Polling Approach (for Comparison)
+
+Without webhooks, you poll for results:
+
+{/* skip-test */}
+<CodeGroup>
+```python Python
+import requests
+import time
+
+url = "https://api.edenai.run/v3/universal-ai/async"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+# Step 1: Submit the job
+payload = {
+    "model": "audio/speech_to_text_async/amazon",
+    "input": {
+        "file": "YOUR_FILE_UUID_OR_URL",
+        "language": "en"
+    }
+}
+
+response = requests.post(url, headers=headers, json=payload)
+job = response.json()
+job_id = job["job_id"]
+
+# Step 2: Poll until complete
+while True:
+    status_response = requests.get(
+        f"https://api.edenai.run/v3/universal-ai/async/{job_id}",
+        headers=headers
+    )
+    result = status_response.json()
+
+    if result["status"] in ("success", "fail"):
+        print(result)
+        break
+
+    time.sleep(5)  # Wait 5 seconds before checking again
+```
+</CodeGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Fallback" icon="shield" href="/v3/expert-models/fallback">
+    Automatic provider failover
+  </Card>
+  <Card title="Provider Parameters" icon="sliders" href="/v3/expert-models/provider-parameters">
+    Pass provider-specific options
+  </Card>
+</CardGroup>

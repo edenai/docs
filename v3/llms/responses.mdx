@@ -1,0 +1,228 @@
+---
+title: "Responses"
+---
+
+Eden AI's LLM endpoint returns responses in the OpenAI chat completions format, making it fully compatible with existing OpenAI tooling and libraries.
+
+## Success Response
+
+Every successful chat completion returns a JSON object with the following structure:
+
+```json
+{
+  "id": "chatcmpl-abc123def456",
+  "object": "chat.completion",
+  "created": 1710000000,
+  "model": "openai/gpt-4",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Hello! I'm doing well, thank you for asking. How can I help you today?"
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 12,
+    "completion_tokens": 18,
+    "total_tokens": 30
+  }
+}
+```
+
+## Field Reference
+
+### Top-Level Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Unique identifier for the completion |
+| `object` | string | Always `"chat.completion"` for non-streaming responses |
+| `created` | integer | Unix timestamp (seconds) when the response was generated |
+| `model` | string | The model that produced the response (e.g., `openai/gpt-4`) |
+| `choices` | array | List of completion choices (typically one) |
+| `usage` | object | Token usage statistics for the request |
+
+### `choices[]` Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `index` | integer | Index of the choice in the array (starts at 0) |
+| `message.role` | string | Always `"assistant"` for model responses |
+| `message.content` | string | The generated text content |
+| `message.tool_calls` | array | Tool/function calls requested by the model (if applicable). See [Tools](/v3/llms/tools) |
+| `finish_reason` | string | Why the model stopped generating |
+
+### `usage` Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `prompt_tokens` | integer | Number of tokens in the input messages |
+| `completion_tokens` | integer | Number of tokens in the generated response |
+| `total_tokens` | integer | Sum of `prompt_tokens` and `completion_tokens` |
+
+<Tip>
+Use the `usage` field to monitor token consumption and estimate costs across providers.
+</Tip>
+
+## Finish Reasons
+
+The `finish_reason` field indicates why the model stopped generating:
+
+| Value | Meaning |
+|-------|---------|
+| `stop` | The model completed its response naturally |
+| `length` | The response hit the `max_tokens` limit |
+| `tool_calls` | The model is requesting a tool/function call |
+| `content_filter` | Content was omitted due to a provider content filter |
+
+## Accessing the Response
+
+<CodeGroup>
+```python Python
+import requests
+
+url = "https://api.edenai.run/v3/llm/chat/completions"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+payload = {
+    "model": "openai/gpt-4",
+    "messages": [
+        {"role": "user", "content": "What is the capital of France?"}
+    ]
+}
+
+response = requests.post(url, headers=headers, json=payload)
+result = response.json()
+
+# Access the generated text
+content = result["choices"][0]["message"]["content"]
+print(content)
+
+# Check why the model stopped
+finish_reason = result["choices"][0]["finish_reason"]
+print(f"Finish reason: {finish_reason}")
+
+# Check token usage
+usage = result["usage"]
+print(f"Tokens used: {usage['total_tokens']} (prompt: {usage['prompt_tokens']}, completion: {usage['completion_tokens']})")
+```
+
+```bash cURL
+curl -X POST https://api.edenai.run/v3/llm/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-4",
+    "messages": [{"role": "user", "content": "What is the capital of France?"}]
+  }'
+```
+</CodeGroup>
+
+## Error Responses
+
+When a request fails, the API returns an error object with an HTTP status code and a descriptive message.
+
+### Error Response Format
+
+```json
+{
+  "error": {
+    "message": "Invalid API key provided.",
+    "type": "authentication_error",
+    "code": 401
+  }
+}
+```
+
+### Status Codes
+
+| Code | Meaning | Common Cause |
+|------|---------|--------------|
+| `400` | Bad Request | Malformed request body, missing required fields |
+| `401` | Unauthorized | Invalid or missing API key |
+| `402` | Insufficient Credits | Account balance is too low to process the request |
+| `404` | Not Found | Invalid model name or endpoint |
+| `422` | Validation Error | Invalid parameter values (e.g., temperature out of range) |
+| `429` | Rate Limited | Too many requests; retry after the indicated delay |
+| `500` | Server Error | Internal server error; retry the request |
+
+### Handling Errors
+
+<CodeGroup>
+```python Python
+import requests
+
+url = "https://api.edenai.run/v3/llm/chat/completions"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+payload = {
+    "model": "openai/gpt-4",
+    "messages": [
+        {"role": "user", "content": "Hello!"}
+    ]
+}
+
+response = requests.post(url, headers=headers, json=payload)
+
+if response.status_code == 200:
+    result = response.json()
+    print(result["choices"][0]["message"]["content"])
+elif response.status_code == 401:
+    print("Authentication failed. Check your API key.")
+elif response.status_code == 402:
+    print("Insufficient credits. Please top up your account.")
+elif response.status_code == 429:
+    print("Rate limited. Please slow down your requests.")
+else:
+    error = response.json().get("error", {})
+    print(f"Error {response.status_code}: {error.get('message', 'Unknown error')}")
+```
+
+```bash cURL
+# A failed request returns an error JSON with the appropriate HTTP status code
+curl -s -w "\nHTTP Status: %{http_code}\n" \
+  -X POST https://api.edenai.run/v3/llm/chat/completions \
+  -H "Authorization: Bearer INVALID_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-4",
+    "messages": [{"role": "user", "content": "Hello!"}]
+  }'
+```
+</CodeGroup>
+
+<Note>
+When you receive a `429` (rate limited) response, implement exponential backoff before retrying. Start with a 1-second delay and double it on each retry.
+</Note>
+
+## Streaming Responses
+
+When `stream: true` is set, responses are delivered as Server-Sent Events (SSE) with a different format. Each chunk uses `"object": "chat.completion.chunk"` and contains a `delta` field instead of `message`.
+
+See [Streaming Responses](/v3/llms/streaming) for the full SSE format and parsing examples.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Streaming" icon="bolt" href="/v3/llms/streaming">
+    Handle real-time SSE responses
+  </Card>
+  <Card title="Tools (Function Calling)" icon="wrench" href="/v3/llms/tools">
+    Let models call your functions
+  </Card>
+  <Card title="Structured Output" icon="code" href="/v3/llms/structured-output">
+    Get JSON responses matching a schema
+  </Card>
+  <Card title="Chat Completions" icon="comments" href="/v3/llms/chat-completions">
+    Complete endpoint reference
+  </Card>
+</CardGroup>

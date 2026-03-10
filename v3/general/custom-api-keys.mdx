@@ -1,0 +1,145 @@
+---
+title: "Custom API Keys"
+---
+
+Custom API keys let you create additional tokens beyond your main account key. Each token can have its own budget, expiration, and type, giving you fine-grained control over access and spending.
+
+## Use Cases
+
+- **Environment separation** — dedicated keys for development, staging, and production
+- **Team access** — separate keys for different team members or projects
+- **Budget control** — set credit limits per key to cap spending
+- **Security** — rotate or revoke individual keys without affecting other integrations
+- **Usage tracking** — monitor consumption per key
+
+## Token Types
+
+| Type | Description | Use Case |
+|------|-------------|----------|
+| `api_token` | Production token with full access | Live applications |
+| `sandbox_api_token` | Test token, no real provider calls | Development and testing |
+
+<Info>
+Sandbox tokens return simulated responses and do not incur any cost. They are ideal for development and CI pipelines.
+</Info>
+
+## API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/v2/user/custom_token/` | `POST` | Create a new token |
+| `/v2/user/custom_token/` | `GET` | List all tokens |
+| `/v2/user/custom_token/{name}/` | `GET` | Get a specific token |
+| `/v2/user/custom_token/{name}/` | `PATCH` | Update a token |
+| `/v2/user/custom_token/{name}/` | `DELETE` | Delete a token |
+
+## Create a Token
+
+<CodeGroup>
+```python Python
+import requests
+
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+response = requests.post(
+    "https://api.edenai.run/v2/user/custom_token/",
+    headers=headers,
+    json={
+        "name": "production-v1"
+    }
+)
+
+token = response.json()
+print(f"Created token: {token['name']}")
+```
+
+```bash cURL
+curl -X POST https://api.edenai.run/v2/user/custom_token/ \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "production-v1"}'
+```
+</CodeGroup>
+
+## Create a Token with Budget
+
+Set a spending limit by enabling `active_balance`:
+
+<CodeGroup>
+```python Python
+import requests
+
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+response = requests.post(
+    "https://api.edenai.run/v2/user/custom_token/",
+    headers=headers,
+    json={
+        "name": "team-backend",
+        "token_type": "api_token",
+        "balance": "50.00",
+        "active_balance": True
+    }
+)
+
+token = response.json()
+print(f"Created token with ${token['balance']} budget")
+```
+
+```bash cURL
+curl -X POST https://api.edenai.run/v2/user/custom_token/ \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "team-backend",
+    "token_type": "api_token",
+    "balance": "50.00",
+    "active_balance": true
+  }'
+```
+</CodeGroup>
+
+When `active_balance` is `true`, every API call deducts from the token's balance. Once it reaches $0, the token stops working.
+
+## List All Tokens
+
+<CodeGroup>
+```python Python
+import requests
+
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY"
+}
+
+response = requests.get(
+    "https://api.edenai.run/v2/user/custom_token/",
+    headers=headers
+)
+
+tokens = response.json()
+for t in tokens:
+    print(f"{t['name']} | type: {t['token_type']} | balance: {t['balance']}")
+```
+
+```bash cURL
+curl -X GET https://api.edenai.run/v2/user/custom_token/ \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+</CodeGroup>
+
+## Best Practices
+
+<Tip>
+Use clear naming conventions like `env-project-purpose` (e.g., `prod-billing-api`, `dev-ml-team`) so tokens are easy to identify at a glance.
+</Tip>
+
+- **Set budgets on non-production tokens** to prevent accidental overspending during development.
+- **Use sandbox tokens for CI/CD** to validate integrations without incurring costs.
+- **Rotate tokens periodically** — create a new token, migrate your application, then delete the old one.
+- **Set expiration dates** on temporary tokens (e.g., for contractors or short-term projects).

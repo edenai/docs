@@ -1,0 +1,212 @@
+---
+title: "Provider Parameters"
+---
+
+The `provider_params` field lets you pass provider-specific parameters that aren't part of Eden AI's unified schema. This gives you access to advanced or niche options offered by individual providers without breaking the standard request format.
+
+## How It Works
+
+Add a `provider_params` object to any Universal AI request. The contents are forwarded directly to the provider alongside the standard `input` fields.
+
+```json
+{
+  "model": "{feature}/{subfeature}/{provider}[/{model}]",
+  "input": {
+    // Standard unified parameters
+  },
+  "provider_params": {
+    // Provider-specific parameters passed through as-is
+  }
+}
+```
+
+## Basic Example
+
+<CodeGroup>
+```python Python
+import requests
+
+url = "https://api.edenai.run/v3/universal-ai"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+payload = {
+    "model": "image/generation/openai/dall-e-3",
+    "input": {
+        "text": "A futuristic city at sunset, cyberpunk style"
+    },
+    "provider_params": {
+        "quality": "hd",
+        "style": "vivid"
+    }
+}
+
+response = requests.post(url, headers=headers, json=payload)
+result = response.json()
+print(result)
+```
+
+```javascript JavaScript
+const url = 'https://api.edenai.run/v3/universal-ai';
+const headers = {
+  'Authorization': 'Bearer YOUR_API_KEY',
+  'Content-Type': 'application/json'
+};
+
+const payload = {
+  model: 'image/generation/openai/dall-e-3',
+  input: {
+    text: 'A futuristic city at sunset, cyberpunk style'
+  },
+  provider_params: {
+    quality: 'hd',
+    style: 'vivid'
+  }
+};
+
+const response = await fetch(url, {
+  method: 'POST',
+  headers: headers,
+  body: JSON.stringify(payload)
+});
+
+const result = await response.json();
+console.log(result);
+```
+
+```bash cURL
+curl -X POST https://api.edenai.run/v3/universal-ai \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "image/generation/openai/dall-e-3",
+    "input": {
+      "text": "A futuristic city at sunset, cyberpunk style"
+    },
+    "provider_params": {
+      "quality": "hd",
+      "style": "vivid"
+    }
+  }'
+```
+</CodeGroup>
+
+## Common Use Cases
+
+### OCR — Language Hints
+
+Some OCR providers perform better when given a language hint:
+
+{/* skip-test */}
+<CodeGroup>
+```python Python
+import requests
+
+url = "https://api.edenai.run/v3/universal-ai"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+payload = {
+    "model": "ocr/ocr/google",
+    "input": {
+        "file": "YOUR_FILE_UUID_OR_URL"
+    },
+    "provider_params": {
+        "language_hints": ["fr", "en"]
+    }
+}
+
+response = requests.post(url, headers=headers, json=payload)
+print(response.json())
+```
+</CodeGroup>
+
+### Image Generation — Size and Quality
+
+Control output dimensions and quality for image generation:
+
+{/* skip-test */}
+<CodeGroup>
+```python Python
+import requests
+
+url = "https://api.edenai.run/v3/universal-ai"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+payload = {
+    "model": "image/generation/openai/dall-e-3",
+    "input": {
+        "text": "A watercolor painting of a mountain landscape"
+    },
+    "provider_params": {
+        "size": "1792x1024",
+        "quality": "hd"
+    }
+}
+
+response = requests.post(url, headers=headers, json=payload)
+print(response.json())
+```
+</CodeGroup>
+
+### Text to Speech — Voice Settings
+
+Pass provider-specific voice parameters:
+
+{/* skip-test */}
+<CodeGroup>
+```python Python
+import requests
+
+url = "https://api.edenai.run/v3/universal-ai"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+payload = {
+    "model": "audio/text_to_speech/google",
+    "input": {
+        "text": "Hello, welcome to Eden AI!",
+        "language": "en",
+        "option": "MALE"
+    },
+    "provider_params": {
+        "speaking_rate": 1.2,
+        "pitch": 0.5
+    }
+}
+
+response = requests.post(url, headers=headers, json=payload)
+print(response.json())
+```
+</CodeGroup>
+
+## Important Notes
+
+<Note>
+- `provider_params` are **not validated** by Eden AI — they are passed directly to the provider. Invalid parameters may cause provider-side errors.
+- Available parameters vary by provider and feature. Refer to the provider's own documentation for supported options.
+- `provider_params` only apply to the specific provider in the `model` string. If you switch providers, you may need to update the parameters.
+</Note>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Webhooks" icon="bell" href="/v3/expert-models/webhooks">
+    Get notified when async jobs complete
+  </Card>
+  <Card title="Fallback" icon="shield" href="/v3/expert-models/fallback">
+    Automatic provider failover
+  </Card>
+  <Card title="Listing Models" icon="list" href="/v3/expert-models/listing-models">
+    Discover available providers and features
+  </Card>
+</CardGroup>

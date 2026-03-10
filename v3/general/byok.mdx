@@ -1,0 +1,53 @@
+---
+title: "BYOK (Bring Your Own Key)"
+---
+
+Eden AI lets you use your own provider API keys (OpenAI, Google, Anthropic, etc.) instead of going through Eden AI's billing. This gives you flexibility to leverage existing provider contracts, credits, or pricing tiers.
+
+## Benefits
+
+- **Use existing credits** — apply provider credits or free tiers you already have
+- **Cost optimization** — take advantage of volume discounts or enterprise agreements with providers
+- **Full provider access** — use provider-specific features or models that may have restricted access
+- **Unified interface** — even with your own keys, you still get Eden AI's unified API, monitoring, and routing
+
+## How to Configure
+
+1. Log in to the [Eden AI dashboard](https://app.edenai.run/).
+2. Navigate to the provider settings section.
+3. Select the provider you want to configure (e.g., OpenAI, Google, Anthropic).
+4. Enter your provider API key.
+5. Save the configuration.
+
+Once configured, requests routed to that provider will use your key and be billed directly by the provider.
+
+<Note>
+When using your own provider key, the `cost` field in API responses reflects the estimated cost based on the provider's public pricing. Actual billing happens on the provider's side.
+</Note>
+
+## What You Still Get
+
+Even when using your own provider keys, Eden AI continues to provide:
+
+- **Unified API format** — same request/response structure across all providers
+- **Monitoring and logging** — track usage, latency, and errors in the Eden AI dashboard
+- **Routing and fallback** — combine BYOK providers with Eden AI-billed providers in your routing logic
+- **File management** — use Eden AI's persistent file storage with any provider
+
+## When to Use BYOK
+
+| Scenario | Recommendation |
+|----------|---------------|
+| Getting started / prototyping | Use Eden AI billing (simpler setup) |
+| Existing provider contract with volume discounts | Use BYOK |
+| Need unified billing across all providers | Use Eden AI billing |
+| Free tier or credits with a specific provider | Use BYOK for that provider |
+
+<Tip>
+You can mix and match — use your own key for one provider and Eden AI billing for others. This lets you optimize costs provider by provider.
+</Tip>
+
+## Related
+
+- [Custom API Keys](/v3/general/custom-api-keys) — manage Eden AI API tokens for your team
+- [Buying Credits](/v3/general/buying-credits) — purchase Eden AI credits for providers without BYOK

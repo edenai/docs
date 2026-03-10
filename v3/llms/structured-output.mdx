@@ -1,0 +1,237 @@
+---
+title: "Structured Output"
+---
+
+Structured output lets you constrain LLM responses to valid JSON that follows a specific format. This is useful when you need to parse model output programmatically -- for example, extracting entities, generating API payloads, or building data pipelines.
+
+## Overview
+
+Eden AI supports two modes of structured output through the `response_format` parameter:
+
+| Mode | Description |
+|------|-------------|
+| `json_object` | The model returns valid JSON. You guide the structure via your system prompt. |
+| `json_schema` | The model returns JSON that conforms to a specific JSON Schema you provide. |
+
+<Note>
+When using `response_format`, always include a system or user message that instructs the model to respond in JSON. Some providers require this instruction to be present.
+</Note>
+
+## JSON Object Mode
+
+The simplest approach: set `response_format` to `{"type": "json_object"}` and instruct the model to return JSON in your prompt.
+
+<CodeGroup>
+```python Python
+import requests
+import json
+
+url = "https://api.edenai.run/v3/llm/chat/completions"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+payload = {
+    "model": "openai/gpt-4o",
+    "response_format": {"type": "json_object"},
+    "messages": [
+        {
+            "role": "system",
+            "content": "You extract contact information. Respond with a JSON object containing: name, email, phone, company. Use null for missing fields."
+        },
+        {
+            "role": "user",
+            "content": "John Smith works at Acme Corp. His email is john@acme.com and his phone is 555-0123."
+        }
+    ]
+}
+
+response = requests.post(url, headers=headers, json=payload)
+result = response.json()
+
+# Parse the JSON response
+content = result["choices"][0]["message"]["content"]
+data = json.loads(content)
+print(json.dumps(data, indent=2))
+```
+
+```bash cURL
+curl -X POST https://api.edenai.run/v3/llm/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-4o",
+    "response_format": {"type": "json_object"},
+    "messages": [
+      {
+        "role": "system",
+        "content": "You extract contact information. Respond with a JSON object containing: name, email, phone, company. Use null for missing fields."
+      },
+      {
+        "role": "user",
+        "content": "John Smith works at Acme Corp. His email is john@acme.com and his phone is 555-0123."
+      }
+    ]
+  }'
+```
+</CodeGroup>
+
+**Example response:**
+
+```json
+{
+  "name": "John Smith",
+  "email": "john@acme.com",
+  "phone": "555-0123",
+  "company": "Acme Corp"
+}
+```
+
+## JSON Schema Mode
+
+For stricter control, provide a JSON Schema that the model's response must conform to. This guarantees the output matches your expected structure.
+
+<CodeGroup>
+```python Python
+import requests
+import json
+
+url = "https://api.edenai.run/v3/llm/chat/completions"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+payload = {
+    "model": "openai/gpt-4o",
+    "response_format": {
+        "type": "json_schema",
+        "json_schema": {
+            "name": "product_review",
+            "strict": True,
+            "schema": {
+                "type": "object",
+                "properties": {
+                    "sentiment": {
+                        "type": "string",
+                        "enum": ["positive", "negative", "neutral"]
+                    },
+                    "rating": {
+                        "type": "integer",
+                        "description": "Rating from 1 to 5"
+                    },
+                    "summary": {
+                        "type": "string",
+                        "description": "One-sentence summary of the review"
+                    },
+                    "keywords": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Key topics mentioned"
+                    }
+                },
+                "required": ["sentiment", "rating", "summary", "keywords"],
+                "additionalProperties": False
+            }
+        }
+    },
+    "messages": [
+        {
+            "role": "system",
+            "content": "Analyze the following product review and return structured data."
+        },
+        {
+            "role": "user",
+            "content": "This laptop is amazing! Great battery life, super fast processor, and the screen is gorgeous. Only downside is it's a bit heavy. Definitely worth the price."
+        }
+    ]
+}
+
+response = requests.post(url, headers=headers, json=payload)
+result = response.json()
+
+content = result["choices"][0]["message"]["content"]
+data = json.loads(content)
+print(json.dumps(data, indent=2))
+```
+
+```bash cURL
+curl -X POST https://api.edenai.run/v3/llm/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-4o",
+    "response_format": {
+      "type": "json_schema",
+      "json_schema": {
+        "name": "product_review",
+        "strict": true,
+        "schema": {
+          "type": "object",
+          "properties": {
+            "sentiment": {"type": "string", "enum": ["positive", "negative", "neutral"]},
+            "rating": {"type": "integer"},
+            "summary": {"type": "string"},
+            "keywords": {"type": "array", "items": {"type": "string"}}
+          },
+          "required": ["sentiment", "rating", "summary", "keywords"],
+          "additionalProperties": false
+        }
+      }
+    },
+    "messages": [
+      {"role": "system", "content": "Analyze the following product review and return structured data."},
+      {"role": "user", "content": "This laptop is amazing! Great battery life, super fast processor, and the screen is gorgeous. Only downside is it'\''s a bit heavy. Definitely worth the price."}
+    ]
+  }'
+```
+</CodeGroup>
+
+**Example response:**
+
+```json
+{
+  "sentiment": "positive",
+  "rating": 4,
+  "summary": "An excellent laptop with great performance and display, though slightly heavy.",
+  "keywords": ["battery life", "processor", "screen", "heavy", "price"]
+}
+```
+
+## Supported Providers
+
+| Provider | `json_object` | `json_schema` |
+|----------|:---:|:---:|
+| OpenAI (GPT-4o, GPT-4 Turbo) | Yes | Yes |
+| Anthropic (Claude 3.5+, Claude 4) | Yes | Yes |
+| Google (Gemini 1.5+, Gemini 2.5) | Yes | Yes |
+
+<Info>
+Provider support for structured output varies. If a provider does not support `json_schema`, use `json_object` mode with a detailed system prompt describing the expected format.
+</Info>
+
+## Best Practices
+
+- **Always include JSON instructions in your prompt.** Even with `response_format` set, some providers require the prompt to mention JSON output.
+- **Use `json_schema` for critical parsing.** When your downstream code depends on exact field names and types, `json_schema` mode is more reliable than `json_object`.
+- **Set `additionalProperties: false`** in your schema to prevent the model from adding extra fields.
+- **Always parse the response.** The `content` field is still a string -- use `json.loads()` (Python) or `JSON.parse()` (JavaScript) to convert it to a structured object.
+- **Handle parsing errors gracefully.** In rare cases, the model may return malformed JSON. Wrap your parsing in a try/catch block.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Tools (Function Calling)" icon="wrench" href="/v3/llms/tools">
+    Let models call your functions
+  </Card>
+  <Card title="Responses" icon="file-lines" href="/v3/llms/responses">
+    Understand the full response format
+  </Card>
+  <Card title="Chat Completions" icon="comments" href="/v3/llms/chat-completions">
+    Complete endpoint reference
+  </Card>
+  <Card title="Streaming" icon="bolt" href="/v3/llms/streaming">
+    Handle real-time SSE responses
+  </Card>
+</CardGroup>

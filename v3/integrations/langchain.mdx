@@ -1,0 +1,577 @@
+Integrate Eden AI with LangChain for building powerful LLM applications with access to 200+ models.
+
+## Overview
+
+[LangChain](https://langchain.com) is a framework for developing applications powered by language models. Eden AI integrates seamlessly with LangChain's `ChatOpenAI` class, giving you access to multiple providers through a single interface.
+
+## Installation
+
+Install LangChain and required dependencies:
+
+<CodeGroup>
+```bash Python
+pip install "langchain~=1.2" "langchain-openai~=1.1" "langchain-community~=0.4" "langgraph~=1.0"
+```
+
+```bash TypeScript
+npm install langchain @langchain/openai
+```
+
+</CodeGroup>
+
+## Quick Start (Python)
+
+Use Eden AI with LangChain's OpenAI integration:
+
+<CodeGroup>
+```python Python
+from langchain_openai import ChatOpenAI
+from langchain_core.messages import HumanMessage, SystemMessage
+
+# Initialize with Eden AI endpoint
+
+llm = ChatOpenAI(
+model="openai/gpt-4",
+api_key="YOUR_EDEN_AI_API_KEY",
+base_url="https://api.edenai.run/v3/llm"
+)
+
+# Create messages
+
+messages = [
+SystemMessage(content="You are a helpful assistant."),
+HumanMessage(content="What is LangChain?")
+]
+
+# Get response
+
+response = llm.invoke(messages)
+print(response.content)
+
+```
+</CodeGroup>
+
+## Quick Start (TypeScript)
+
+<CodeGroup>
+```typescript TypeScript
+import { ChatOpenAI } from "@langchain/openai";
+import { HumanMessage, SystemMessage } from "@langchain/core/messages";
+
+const llm = new ChatOpenAI({
+  modelName: "openai/gpt-4",
+  openAIApiKey: "YOUR_EDEN_AI_API_KEY",
+  configuration: {
+    baseURL: "https://api.edenai.run/v3/llm",
+  },
+});
+
+const messages = [
+  new SystemMessage("You are a helpful assistant."),
+  new HumanMessage("What is LangChain?"),
+];
+
+const response = await llm.invoke(messages);
+console.log(response.content);
+```
+
+</CodeGroup>
+
+## Available Models
+
+Access any model from Eden AI:
+
+<CodeGroup>
+```python Python
+from langchain_openai import ChatOpenAI
+
+# GPT-4
+
+gpt4 = ChatOpenAI(
+model="openai/gpt-4",
+api_key="YOUR_EDEN_AI_API_KEY",
+base_url="https://api.edenai.run/v3/llm"
+)
+
+# Claude Haiku
+
+claude_haiku = ChatOpenAI(
+model="openai/gpt-4",
+api_key="YOUR_EDEN_AI_API_KEY",
+base_url="https://api.edenai.run/v3/llm"
+)
+
+# Gemini Flash
+
+gemini = ChatOpenAI(
+model="google/gemini-2.5-flash",
+api_key="YOUR_EDEN_AI_API_KEY",
+base_url="https://api.edenai.run/v3/llm"
+)
+
+```
+</CodeGroup>
+
+## Simple Responses
+
+Get responses from the model:
+
+<CodeGroup>
+```python Python
+from langchain_openai import ChatOpenAI
+from langchain_core.messages import HumanMessage
+
+llm = ChatOpenAI(
+    model="openai/gpt-4",
+    api_key="YOUR_EDEN_AI_API_KEY",
+    base_url="https://api.edenai.run/v3/llm"
+)
+
+messages = [HumanMessage(content="Write a short story about AI.")]
+
+# Get response
+response = llm.invoke(messages)
+print(response.content)
+```
+
+```typescript TypeScript
+import { ChatOpenAI } from "@langchain/openai";
+import { HumanMessage } from "@langchain/core/messages";
+
+const llm = new ChatOpenAI({
+  modelName: "openai/gpt-4",
+  openAIApiKey: "YOUR_EDEN_AI_API_KEY",
+  configuration: {
+    baseURL: "https://api.edenai.run/v3/llm",
+  },
+});
+
+const messages = [new HumanMessage("Write a short story about AI.")];
+
+const response = await llm.invoke(messages);
+console.log(response.content);
+```
+
+</CodeGroup>
+
+## Prompt Templates
+
+Use LangChain's prompt templates:
+
+<CodeGroup>
+```python Python
+from langchain_openai import ChatOpenAI
+from langchain_core.prompts import ChatPromptTemplate
+
+llm = ChatOpenAI(
+model="openai/gpt-4",
+api_key="YOUR_EDEN_AI_API_KEY",
+base_url="https://api.edenai.run/v3/llm"
+)
+
+# Create prompt template
+
+prompt = ChatPromptTemplate.from_messages([
+("system", "You are a helpful assistant that translates {input_language} to {output_language}."),
+("human", "{text}")
+])
+
+# Create chain
+
+chain = prompt | llm
+
+# Run chain
+
+response = chain.invoke({
+"input_language": "English",
+"output_language": "French",
+"text": "Hello, how are you?"
+})
+
+print(response.content)
+
+```
+</CodeGroup>
+
+## Chains
+
+Build complex workflows with chains:
+
+<CodeGroup>
+```python Python
+from langchain_openai import ChatOpenAI
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+
+llm = ChatOpenAI(
+    model="openai/gpt-4",
+    api_key="YOUR_EDEN_AI_API_KEY",
+    base_url="https://api.edenai.run/v3/llm"
+)
+
+# Create prompts
+joke_prompt = ChatPromptTemplate.from_template(
+    "Tell me a joke about {topic}"
+)
+
+explanation_prompt = ChatPromptTemplate.from_template(
+    "Explain this joke: {joke}"
+)
+
+# Create chains
+joke_chain = joke_prompt | llm | StrOutputParser()
+explanation_chain = explanation_prompt | llm | StrOutputParser()
+
+# Compose chains
+full_chain = {"joke": joke_chain} | explanation_chain
+
+# Run
+result = full_chain.invoke({"topic": "programming"})
+print(result)
+```
+
+</CodeGroup>
+
+## RAG (Retrieval-Augmented Generation)
+
+Build RAG applications with vector stores:
+
+<CodeGroup>
+```python Python
+from langchain_openai import ChatOpenAI
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_core.documents import Document
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.runnables import RunnablePassthrough
+
+# Initialize LLM with Eden AI
+
+llm = ChatOpenAI(
+model="openai/gpt-4",
+api_key="YOUR_EDEN_AI_API_KEY",
+base_url="https://api.edenai.run/v3/llm"
+)
+
+# Create documents (replace with your data source)
+
+docs = [Document(page_content="""
+Eden AI provides a unified API for 200+ AI models across providers
+like OpenAI, Google, and Anthropic. It supports text, image, audio,
+and video processing through a single endpoint.
+""")]
+
+# Split documents into chunks
+
+text_splitter = RecursiveCharacterTextSplitter(
+chunk_size=200,
+chunk_overlap=50
+)
+splits = text_splitter.split_documents(docs)
+
+# Build RAG chain with LCEL (using splits as context)
+
+def format_docs(docs):
+    return "\n\n".join(doc.page_content for doc in docs)
+
+prompt = ChatPromptTemplate.from_template(
+"Answer the question based on the context:\n\n{context}\n\nQuestion: {question}"
+)
+
+chain = (
+{"context": lambda _: format_docs(splits), "question": RunnablePassthrough()}
+| prompt
+| llm
+| StrOutputParser()
+)
+
+# Query
+
+result = chain.invoke("What does Eden AI do?")
+print(result)
+
+```
+</CodeGroup>
+
+## Agents
+
+Create autonomous agents:
+
+<CodeGroup>
+```python Python
+from langchain_openai import ChatOpenAI
+from langchain_core.tools import tool
+from langchain.agents import create_agent
+
+# Initialize LLM
+llm = ChatOpenAI(
+    model="openai/gpt-4",
+    api_key="YOUR_EDEN_AI_API_KEY",
+    base_url="https://api.edenai.run/v3/llm",
+    temperature=0
+)
+
+# Define tools
+@tool
+def search(query: str) -> str:
+    """Search for information"""
+    return f"Search results for: {query}"
+
+@tool
+def calculator(expression: str) -> str:
+    """Calculate mathematical expressions"""
+    try:
+        return str(eval(expression))
+    except Exception as e:
+        return f"Error: {str(e)}"
+
+# Create agent
+agent = create_agent(llm, [search, calculator])
+
+# Run agent
+result = agent.invoke({
+    "messages": [{"role": "user", "content": "What is 25 * 4 + 10?"}]
+})
+print(result["messages"][-1].content)
+```
+
+</CodeGroup>
+
+## Conversational Memory
+
+Add memory to maintain context:
+
+<CodeGroup>
+```python Python
+from langchain_openai import ChatOpenAI
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.runnables.history import RunnableWithMessageHistory
+from langchain_core.chat_history import InMemoryChatMessageHistory
+
+llm = ChatOpenAI(
+model="openai/gpt-4",
+api_key="YOUR_EDEN_AI_API_KEY",
+base_url="https://api.edenai.run/v3/llm"
+)
+
+# Create prompt with history placeholder
+prompt = ChatPromptTemplate.from_messages([
+    ("system", "You are a helpful assistant."),
+    MessagesPlaceholder(variable_name="history"),
+    ("human", "{input}")
+])
+
+chain = prompt | llm
+
+# Store sessions in memory
+sessions = {}
+
+def get_session_history(session_id: str):
+    if session_id not in sessions:
+        sessions[session_id] = InMemoryChatMessageHistory()
+    return sessions[session_id]
+
+# Wrap chain with message history
+with_history = RunnableWithMessageHistory(
+    chain,
+    get_session_history,
+    input_messages_key="input",
+    history_messages_key="history"
+)
+
+# Have a multi-turn conversation
+config = {"configurable": {"session_id": "user-1"}}
+
+response1 = with_history.invoke({"input": "Hi! My name is Alice."}, config=config)
+print(response1.content)
+
+response2 = with_history.invoke({"input": "What's my name?"}, config=config)
+print(response2.content)
+
+```
+</CodeGroup>
+
+## Function Calling (Tools)
+
+Use function calling for structured outputs:
+
+<CodeGroup>
+```python Python
+from langchain_openai import ChatOpenAI
+from langchain_core.tools import tool
+from langchain_core.messages import HumanMessage
+
+@tool
+def get_weather(city: str) -> str:
+    """Get the current weather for a city"""
+    # Implement weather API call
+    return f"The weather in {city} is sunny, 72°F"
+
+llm = ChatOpenAI(
+    model="openai/gpt-4",
+    api_key="YOUR_EDEN_AI_API_KEY",
+    base_url="https://api.edenai.run/v3/llm"
+)
+
+# Bind tools to LLM
+llm_with_tools = llm.bind_tools([get_weather])
+
+# Invoke
+messages = [HumanMessage(content="What's the weather in Paris?")]
+response = llm_with_tools.invoke(messages)
+
+# Check if tool was called
+if response.tool_calls:
+    tool_call = response.tool_calls[0]
+    result = get_weather.invoke(tool_call["args"])
+    print(result)
+```
+
+</CodeGroup>
+
+## Output Parsing
+
+Parse structured outputs:
+
+<CodeGroup>
+```python Python
+from langchain_openai import ChatOpenAI
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import PydanticOutputParser
+from langchain_core.exceptions import OutputParserException
+from pydantic import BaseModel, Field
+
+# Define output schema
+class Person(BaseModel):
+    name: str = Field(description="Person's name")
+    age: int = Field(description="Person's age")
+    occupation: str = Field(description="Person's occupation")
+
+llm = ChatOpenAI(
+model="openai/gpt-4",
+api_key="YOUR_EDEN_AI_API_KEY",
+base_url="https://api.edenai.run/v3/llm"
+)
+
+parser = PydanticOutputParser(pydantic_object=Person)
+
+prompt = ChatPromptTemplate.from_template(
+"Extract information about the person.\n{format_instructions}\n{query}"
+)
+
+chain = prompt | llm | parser
+
+try:
+    result = chain.invoke({
+        "query": "John Doe is a 35-year-old software engineer.",
+        "format_instructions": parser.get_format_instructions()
+    })
+
+    print(f"Name: {result.name}")
+    print(f"Age: {result.age}")
+    print(f"Occupation: {result.occupation}")
+except OutputParserException as e:
+    print(f"Parsing failed: {e}")
+
+```
+</CodeGroup>
+
+## Multi-Provider Comparison
+
+Compare responses from different providers:
+
+<CodeGroup>
+```python Python
+from langchain_openai import ChatOpenAI
+from langchain_core.messages import HumanMessage
+import asyncio
+
+async def compare_providers(question: str):
+    providers = [
+        ("Claude", "anthropic/claude-sonnet-4-5"),
+        ("GPT-4", "openai/gpt-4"),
+        ("Gemini", "google/gemini-2.5-flash")
+    ]
+
+    tasks = []
+    for name, model in providers:
+        llm = ChatOpenAI(
+            model=model,
+            api_key="YOUR_EDEN_AI_API_KEY",
+            base_url="https://api.edenai.run/v3/llm"
+        )
+        tasks.append(llm.ainvoke([HumanMessage(content=question)]))
+
+    responses = await asyncio.gather(*tasks)
+
+    for (name, _), response in zip(providers, responses):
+        print(f"\n{name}:")
+        print(response.content)
+        print("-" * 80)
+
+# Run comparison
+asyncio.run(compare_providers("Explain quantum computing in simple terms."))
+```
+
+</CodeGroup>
+
+## Environment Variables
+
+Store credentials securely:
+
+<CodeGroup>
+```bash .env
+EDEN_AI_API_KEY=your_api_key_here
+```
+
+```python Python
+import os
+from dotenv import load_dotenv
+from langchain_openai import ChatOpenAI
+
+load_dotenv()
+
+llm = ChatOpenAI(
+    model="openai/gpt-4",
+    api_key=os.getenv("EDEN_AI_API_KEY"),
+    base_url="https://api.edenai.run/v3/llm"
+)
+```
+
+</CodeGroup>
+
+## Best Practices
+
+### 1. Choose the Right Model
+
+Select models based on your use case:
+
+- **Complex reasoning**: `openai/gpt-5.2`
+- **Fast and cost-effective**: `anthropic/claude-haiku-4-5`
+
+### 2. Implement Error Handling
+
+Wrap API calls in try-except blocks:
+
+{/* skip-test */}
+```python
+try:
+    response = llm.invoke(messages)
+except Exception as e:
+    print(f"Error: {e}")
+```
+
+### 3. Cache Results
+
+Use LangChain's caching to avoid redundant API calls:
+
+```python
+from langchain_community.cache import InMemoryCache
+from langchain_core.globals import set_llm_cache
+
+set_llm_cache(InMemoryCache())
+```
+
+## Next Steps
+
+- [Python SDK](../sdks/python-openai) - Direct SDK usage

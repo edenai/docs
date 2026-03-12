@@ -71,7 +71,9 @@ print(response.json()['choices'][0]['message']['content'])
 
 ## Next Steps
 
-- **[Fallback](/v3/llms/fallback)** - Configure automatic provider failover
-- **[Chat Completions](/v3/llms/chat-completions)** - Master the LLM endpoint
-- **[List LLM Models](/v3/llms/listing-models)** - Browse available models and pricing
+<CardGroup cols={2}>
+  <Card title="Expert Model Fallback" icon="microchip" href="/v3/expert-models/fallback">
+    Implement provider fallback for OCR, image, and audio features
+  </Card>
+</CardGroup>
 - **[Streaming Guide](./streaming)** - Handle SSE responses

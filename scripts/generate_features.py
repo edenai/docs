@@ -24,7 +24,7 @@ INFO_ENDPOINT = f"{API_BASE}/v3/info"
 
 # Root of the Mintlify docs site (where docs.json lives)
 DOCS_ROOT = Path(__file__).resolve().parent.parent
-FEATURES_DIR = DOCS_ROOT / "v3" / "features"
+FEATURES_DIR = DOCS_ROOT / "v3" / "expert-models" / "features"
 DOCS_JSON_PATH = DOCS_ROOT / "docs.json"
 
 # Fallback icon when no keyword match is found
@@ -63,6 +63,24 @@ def fetch_all_features() -> list[dict]:
 def fetch_subfeature_detail(feature: str, subfeature: str) -> dict:
     url = f"{INFO_ENDPOINT}/{feature}/{subfeature}?format=simplified"
     return fetch_json(url)
+
+
+def cheapest_openai_model() -> str:
+    """Return the cheapest OpenAI model ID from the /v3/llm/models endpoint."""
+    data = fetch_json(f"{API_BASE}/v3/llm/models")
+    # Response shape: {"object": "list", "data": [{...}, ...]}
+    models = data.get("data", []) if isinstance(data, dict) else data
+    openai_models = [m for m in models if isinstance(m, dict) and m.get("id", "").startswith("openai/")]
+    if not openai_models:
+        raise RuntimeError("No OpenAI models found in /v3/llm/models")
+    cheapest = min(
+        openai_models,
+        key=lambda m: (
+            m.get("pricing", {}).get("input_cost_per_token", 0)
+            + m.get("pricing", {}).get("output_cost_per_token", 0)
+        ),
+    )
+    return cheapest["id"]
 
 
 # -------------------------------------------------------------
@@ -470,7 +488,7 @@ def generate_index_page(features: list[dict]) -> str:
             # Truncate description for card
             short_desc = truncate_at_word(sf_desc, 120)
             card_items.append(
-                f'  <Card title="{sf_fullname}" icon="{icon}" href="/v3/features/{fname}/{sf_slug}">\n'
+                f'  <Card title="{sf_fullname}" icon="{icon}" href="/v3/expert-models/features/{fname}/{sf_slug}">\n'
                 f"    {short_desc}\n"
                 f"  </Card>"
             )
@@ -500,14 +518,14 @@ Browse all AI features available through the Universal AI endpoint (`POST /v3/un
 
 def build_nav_group(features: list[dict]) -> dict:
     """Build the 'AI Features' navigation group for docs.json."""
-    pages: list = ["v3/features/index"]
+    pages: list = ["v3/expert-models/features/index"]
     for feat in features:
         fname = feat["name"]
         display = derive_display_name(feat)
         subpages = []
         for sf in feat.get("subfeatures", []):
             sf_slug = slug(sf["name"])
-            subpages.append(f"v3/features/{fname}/{sf_slug}")
+            subpages.append(f"v3/expert-models/features/{fname}/{sf_slug}")
         pages.append({"group": display, "icon": derive_icon(fname), "pages": subpages})
     return {"group": "AI Features", "icon": "microchip", "pages": pages}
 
@@ -600,6 +618,9 @@ def cleanup_stale_pages(features: list[dict]) -> None:
 def main() -> None:
     print("Fetching features from API...")
     features = fetch_all_features()
+    print("Fetching first LLM model...")
+    first_llm_model = fetch_first_llm_model()
+    print(f"  Using LLM model: {first_llm_model}")
     print(f"  Found {len(features)} feature categories")
 
     if not features:

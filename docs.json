@@ -16,9 +16,9 @@
   "favicon": "/images/favicon.png",
   "ask": "Ask AI",
   "colors": {
-    "primary": "#5386b2",
-    "light": "#7ba3ca",
-    "dark": "#3d6a91"
+    "primary": "#3d7cc9",
+    "light": "#6aa3e0",
+    "dark": "#2a5fa8"
   },
   "navigation": {
     "versions": [
@@ -38,7 +38,7 @@
                     "expanded": true,
                     "pages": [
                       "v3/quickstart/first-llm-call",
-                      "v3/quickstart/first-universal-ai-call"
+                      "v3/quickstart/first-expert-model-call"
                     ]
                   },
                   {
@@ -47,35 +47,32 @@
                     "expanded": true,
                     "pages": [
                       "v3/overview/ai-gateway",
-                      "v3/overview/universal-ai",
                       "v3/overview/llms-vs-expert-models",
-                      "v3/overview/sandbox",
                       "v3/overview/plans-prices"
                     ]
                   },
                   {
                     "group": "LLMs",
                     "icon": "brain",
-                    "expanded": true,
+                    "expanded": false,
+                    "divider": true,
                     "pages": [
                       "v3/llms/responses",
                       "v3/llms/chat-completions",
                       "v3/llms/file-upload",
                       "v3/llms/fallback",
-                      "v3/llms/tools",
                       "v3/llms/structured-output",
                       "v3/llms/web-search",
                       "v3/llms/smart-routing",
                       "v3/llms/streaming",
-                      "v3/llms/listing-models",
-                      "v3/llms/presets",
-                      "v3/llms/plugins"
+                      "v3/llms/listing-models"
                     ]
                   },
                   {
                     "group": "Expert Models",
                     "icon": "microchip",
-                    "expanded": true,
+                    "expanded": false,
+                    "divider": true,
                     "pages": [
                       "v3/expert-models/fallback",
                       "v3/expert-models/webhooks",
@@ -146,7 +143,8 @@
                   {
                     "group": "General",
                     "icon": "gear",
-                    "expanded": true,
+                    "expanded": false,
+                    "divider": true,
                     "pages": [
                       "v3/general/caching",
                       "v3/general/buying-credits",
@@ -161,7 +159,7 @@
                   {
                     "group": "Data Governance",
                     "icon": "shield-halved",
-                    "expanded": true,
+                    "expanded": false,
                     "pages": [
                       "v3/data-governance/servers-location",
                       "v3/data-governance/data-retention"
@@ -170,7 +168,8 @@
                   {
                     "group": "Integrations",
                     "icon": "plug",
-                    "expanded": true,
+                    "expanded": false,
+                    "divider": true,
                     "pages": [
                       "v3/integrations/openai-sdk-python",
                       "v3/integrations/openai-sdk-typescript",

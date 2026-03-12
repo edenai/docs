@@ -6,8 +6,6 @@ The OpenAI Python SDK is fully compatible with Eden AI's V3 API. Simply point th
 
 ## Installation
 
-Install the OpenAI Python SDK:
-
 <CodeGroup>
 ```bash pip
 pip install openai
@@ -27,26 +25,19 @@ Configure the OpenAI client to use Eden AI:
 ```python Python
 from openai import OpenAI
 
-# Initialize client with Eden AI endpoint
-
 client = OpenAI(
-api_key="YOUR_EDEN_AI_API_KEY", # Get from https://app.edenai.run
-base_url="https://api.edenai.run/v3/llm"
+    api_key="YOUR_EDEN_AI_API_KEY",  # Get from https://app.edenai.run
+    base_url="https://api.edenai.run/v3/llm"
 )
-
-# Make a request
 
 response = client.chat.completions.create(
-model="openai/gpt-4",
-messages=[
-{"role": "user", "content": "Hello! How are you?"}
-]
+    model="openai/gpt-4",
+    messages=[
+        {"role": "user", "content": "Hello! How are you?"}
+    ]
 )
 
-# Print the response
-
 print(response.choices[0].message.content)
-
 ```
 </CodeGroup>
 
@@ -54,27 +45,26 @@ print(response.choices[0].message.content)
 
 Access models from multiple providers using the `provider/model` format:
 
-### OpenAI
+**OpenAI**
 - `openai/gpt-4`
 - `openai/gpt-4-turbo`
 - `openai/gpt-4o`
 - `openai/gpt-3.5-turbo`
 
-### Anthropic
+**Anthropic**
 - `anthropic/claude-sonnet-4-5`
 - `anthropic/claude-opus-4-5`
-- `anthropic/claude-sonnet-4-5`
 - `anthropic/claude-haiku-4-5`
 
-### Google
+**Google**
 - `google/gemini-2.5-pro`
 - `google/gemini-2.5-flash`
 
-### Cohere
+**Cohere**
 - `cohere/command-r-plus`
 - `cohere/command-r`
 
-### Meta
+**Meta**
 - `meta/llama-3-70b`
 - `meta/llama-3-8b`
 
@@ -96,7 +86,6 @@ messages = [
     {"role": "user", "content": "What is the capital of France?"}
 ]
 
-# First interaction
 response = client.chat.completions.create(
     model="anthropic/claude-sonnet-4-5",
     messages=messages
@@ -121,36 +110,6 @@ print(response.choices[0].message.content)
 
 </CodeGroup>
 
-## Advanced Parameters
-
-Control model behavior with standard OpenAI parameters:
-
-<CodeGroup>
-```python Python
-from openai import OpenAI
-
-client = OpenAI(
-api_key="YOUR_EDEN_AI_API_KEY",
-base_url="https://api.edenai.run/v3/llm"
-)
-
-response = client.chat.completions.create(
-model="openai/gpt-4",
-messages=[
-{"role": "user", "content": "Write a creative story about AI."}
-],
-temperature=0.9, # Higher = more creative (0-2)
-max_tokens=500, # Limit response length
-top_p=1.0, # Nucleus sampling
-frequency_penalty=0.0, # Penalize repetition (-2 to 2)
-presence_penalty=0.0 # Penalize topic repetition (-2 to 2)
-)
-
-print(response.choices[0].message.content)
-
-```
-</CodeGroup>
-
 ## Vision Capabilities
 
 Send images to vision-capable models:
@@ -158,6 +117,7 @@ Send images to vision-capable models:
 <CodeGroup>
 ```python Python
 from openai import OpenAI
+import requests
 
 client = OpenAI(
     api_key="YOUR_EDEN_AI_API_KEY",
@@ -165,8 +125,6 @@ client = OpenAI(
 )
 
 # First, upload the image to get a file_id
-import requests
-
 upload_response = requests.post(
     "https://api.edenai.run/v3/upload",
     headers={"Authorization": f"Bearer YOUR_EDEN_AI_API_KEY"},
@@ -193,42 +151,11 @@ print(response.choices[0].message.content)
 
 </CodeGroup>
 
-## Async Support
-
-Use async/await for concurrent requests:
-
-<CodeGroup>
-```python Python
-from openai import AsyncOpenAI
-import asyncio
-
-async def main():
-    client = AsyncOpenAI(
-        api_key="YOUR_EDEN_AI_API_KEY",
-        base_url="https://api.edenai.run/v3/llm"
-    )
-
-    response = await client.chat.completions.create(
-        model="openai/gpt-4",
-        messages=[
-            {"role": "user", "content": "Hello!"}
-        ]
-    )
-
-    print(response.choices[0].message.content)
-
-asyncio.run(main())
-
-```
-</CodeGroup>
-
 ## Error Handling
 
-Handle API errors gracefully:
-
 <CodeGroup>
 ```python Python
-from openai import OpenAI, OpenAIError
+from openai import OpenAI
 import openai
 
 client = OpenAI(
@@ -250,183 +177,31 @@ except openai.RateLimitError as e:
     print(f"Rate limit exceeded: {e}")
 except openai.APIError as e:
     print(f"API error: {e}")
-except Exception as e:
-    print(f"Unexpected error: {e}")
-```
-
-</CodeGroup>
-
-## Complete Example
-
-A full example with conversation management:
-
-<CodeGroup>
-```python Python
-from openai import OpenAI
-import sys
-
-def chat_with_ai():
-    client = OpenAI(
-        api_key="YOUR_EDEN_AI_API_KEY",
-        base_url="https://api.edenai.run/v3/llm"
-    )
-
-    messages = [
-        {"role": "system", "content": "You are a helpful assistant."}
-    ]
-
-    print("Chat with AI (type 'quit' to exit)")
-    print("-" * 50)
-
-    while True:
-        # Get user input
-        user_input = input("\nYou: ").strip()
-
-        if user_input.lower() == 'quit':
-            break
-
-        if not user_input:
-            continue
-
-        # Add user message
-        messages.append({"role": "user", "content": user_input})
-
-        # Get AI response
-        response = client.chat.completions.create(
-            model="anthropic/claude-sonnet-4-5",
-            messages=messages,
-            temperature=0.7
-        )
-
-        assistant_response = response.choices[0].message.content
-        print(f"\nAssistant: {assistant_response}")
-
-        # Add assistant response to history
-        messages.append({"role": "assistant", "content": assistant_response})
-
-if __name__ == "__main__":
-    chat_with_ai()
-
-```
-</CodeGroup>
-
-## List Available Models
-
-Discover available models programmatically:
-
-<CodeGroup>
-```python Python
-import requests
-
-response = requests.get(
-    "https://api.edenai.run/v3/llm/models",
-    headers={"Authorization": "Bearer YOUR_EDEN_AI_API_KEY"}
-)
-
-models = response.json()
-
-# Print models by provider
-providers = {}
-for model in models["data"]:
-    provider = model["owned_by"]
-    if provider not in providers:
-        providers[provider] = []
-    providers[provider].append(model["id"])
-
-for provider, model_list in providers.items():
-    print(f"\n{provider}:")
-    for model_id in model_list:
-        print(f"  - {model_id}")
 ```
 
 </CodeGroup>
 
 ## Environment Variables
 
-Store your API key securely using environment variables:
-
 <CodeGroup>
-```python Python
-import os
-from openai import OpenAI
-
-client = OpenAI(
-api_key=os.getenv("EDEN_AI_API_KEY"),
-base_url="https://api.edenai.run/v3/llm"
-)
-
-```
-
 ```bash .env
 EDEN_AI_API_KEY=your_api_key_here
 ```
 
-</CodeGroup>
-
-Use with `python-dotenv`:
-
-<CodeGroup>
 ```python Python
-from dotenv import load_dotenv
 import os
 from openai import OpenAI
 
-load_dotenv()
-
 client = OpenAI(
-api_key=os.getenv("EDEN_AI_API_KEY"),
-base_url="https://api.edenai.run/v3/llm"
-)
-
-```
-</CodeGroup>
-
-## Troubleshooting
-
-### Authentication Errors
-
-Ensure your API key is correct and has the `Bearer` prefix when using raw requests:
-
-```python
-headers = {"Authorization": "Bearer YOUR_API_KEY"}
-```
-
-### Rate Limiting
-
-If you hit rate limits, implement exponential backoff:
-
-<CodeGroup>
-```python Python
-import time
-from openai import OpenAI, RateLimitError
-
-client = OpenAI(
-    api_key="YOUR_EDEN_AI_API_KEY",
+    api_key=os.getenv("EDEN_AI_API_KEY"),
     base_url="https://api.edenai.run/v3/llm"
 )
-
-def create_completion_with_retry(messages, max_retries=3):
-    for attempt in range(max_retries):
-        try:
-            return client.chat.completions.create(
-                model="openai/gpt-4",
-                messages=messages
-            )
-        except RateLimitError:
-            if attempt < max_retries - 1:
-                wait_time = 2 ** attempt  # Exponential backoff
-                print(f"Rate limited. Waiting {wait_time}s...")
-                time.sleep(wait_time)
-            else:
-                raise
-
 ```
-</CodeGroup>
 
+</CodeGroup>
 
 ## Next Steps
 
 - [Vision Capabilities](../../how-to/llm/vision-capabilities) - Working with images
 - [File Attachments](../../how-to/llm/file-attachments) - Uploading files
 - [Provider Comparison](../../how-to/llm/provider-comparison) - Choosing the right model
-```

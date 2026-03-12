@@ -57,6 +57,7 @@
                     "expanded": false,
                     "divider": true,
                     "pages": [
+                      "v3/llms/listing-models",
                       "v3/llms/responses",
                       "v3/llms/chat-completions",
                       "v3/llms/file-upload",
@@ -64,8 +65,7 @@
                       "v3/llms/structured-output",
                       "v3/llms/web-search",
                       "v3/llms/smart-routing",
-                      "v3/llms/streaming",
-                      "v3/llms/listing-models"
+                      "v3/llms/streaming"
                     ]
                   },
                   {

@@ -1,118 +1,95 @@
 ---
+title: "List Expert Models"
 icon: "list"
-title: "Listing Models"
 ---
 
-Use the `/v3/info` endpoints to discover available features, providers, and models programmatically. This is useful for building dynamic UIs, validating model strings, or exploring what Eden AI offers.
+Use the `/v3/info` endpoints to discover all available expert model features, providers, and models.
 
 ## Endpoints
 
 | Endpoint | Description |
 |----------|-------------|
-| `GET /v3/info` | List all available features and subfeatures |
-| `GET /v3/info/{feature}/{subfeature}` | Get details for a specific feature (providers, models, pricing, schemas) |
+| `GET /v3/info` | List all features and subfeatures |
+| `GET /v3/info/{feature}/{subfeature}` | Get providers, models, pricing, and schemas for a specific feature |
 
 ## List All Features
 
-Retrieve every feature and subfeature available on the Universal AI endpoint.
-
 <CodeGroup>
 ```bash cURL
-curl -X GET https://api.edenai.run/v3/info \
+curl https://api.edenai.run/v3/info \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
 ```python Python
 import requests
 
-headers = {
-    "Authorization": "Bearer YOUR_API_KEY"
-}
-
 response = requests.get(
     "https://api.edenai.run/v3/info",
-    headers=headers
+    headers={"Authorization": "Bearer YOUR_API_KEY"}
 )
 
-features = response.json()
-for feature in features:
-    print(feature)
+for feature in response.json()["features"]:
+    print(feature["name"])
 ```
 
 ```javascript JavaScript
 const response = await fetch("https://api.edenai.run/v3/info", {
-  headers: {
-    "Authorization": "Bearer YOUR_API_KEY"
-  }
+  headers: { "Authorization": "Bearer YOUR_API_KEY" }
 });
 
-const features = await response.json();
-console.log(features);
+const { features } = await response.json();
+features.forEach(f => console.log(f.name));
 ```
 </CodeGroup>
 
 ## Get Feature Details
 
-Retrieve detailed information about a specific feature, including available providers, models, pricing, and input/output schemas.
+Retrieve providers, pricing, and input/output schemas for a specific feature.
 
 <CodeGroup>
 ```bash cURL
-curl -X GET https://api.edenai.run/v3/info/text/moderation \
+curl https://api.edenai.run/v3/info/text/moderation \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
 ```python Python
 import requests
 
-headers = {
-    "Authorization": "Bearer YOUR_API_KEY"
-}
-
 response = requests.get(
     "https://api.edenai.run/v3/info/text/moderation",
-    headers=headers
+    headers={"Authorization": "Bearer YOUR_API_KEY"}
 )
 
 details = response.json()
-
-# List available providers
-for provider in details.get("providers", []):
-    print(f"Provider: {provider['name']}")
-    if "models" in provider:
-        for model in provider["models"]:
-            print(f"  Model: {model}")
-```
-
-```javascript JavaScript
-const response = await fetch("https://api.edenai.run/v3/info/text/moderation", {
-  headers: {
-    "Authorization": "Bearer YOUR_API_KEY"
-  }
-});
-
-const details = await response.json();
-console.log(JSON.stringify(details, null, 2));
+for model in details.get("models", []):
+    print(model["model"], model["pricing"])
 ```
 </CodeGroup>
 
-## Response Contents
-
-The feature details response includes:
+## Response Fields
 
 | Field | Description |
 |-------|-------------|
-| `providers` | List of available providers and their supported models |
-| `pricing` | Cost information per provider |
-| `input_schema` | JSON Schema describing the expected input format |
-| `output_schema` | JSON Schema describing the response format |
+| `models` | Available providers and model strings |
+| `pricing` | Cost per provider |
+| `input_schema` | Parameters accepted by this feature |
+| `output_schema` | Structure of the response |
 
 <Tip>
-Use the `input_schema` and `output_schema` fields to understand exactly what parameters each feature accepts and what the response looks like. This is especially helpful when integrating a feature for the first time.
+You can also browse all features and providers visually in the [Eden AI model catalog](https://app.edenai.run/models).
 </Tip>
 
-## Use Cases
+<Note>
+Looking for LLMs like GPT-4o or Claude? See [List LLM Models](/v3/llms/listing-models) for the full list of chat models.
+</Note>
 
-- **Dynamic model selection** — build UIs that let users pick providers from the live list.
-- **Validation** — verify a model string is valid before sending a request.
-- **Cost comparison** — compare pricing across providers for the same feature.
-- **Schema inspection** — check input requirements without reading documentation.
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Fallback & Routing" icon="shuffle" href="/v3/expert-models/fallback">
+    Configure automatic provider fallback
+  </Card>
+  <Card title="Provider Parameters" icon="sliders" href="/v3/expert-models/provider-parameters">
+    Pass provider-specific options
+  </Card>
+</CardGroup>

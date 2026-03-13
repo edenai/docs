@@ -27,7 +27,7 @@ def _case_id(case: dict) -> str:
 
 
 @pytest.mark.execute
-@pytest.mark.usefixtures("http_recorder")
+@pytest.mark.usefixtures("http_interceptor")
 @pytest.mark.parametrize(
     "test_case", _test_cases, ids=[_case_id(c) for c in _test_cases]
 )

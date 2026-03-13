@@ -3,7 +3,7 @@ sidebarTitle: "Data Retention"
 icon: "clock-rotate-left"
 ---
 
-Learn about Eden AI's data retention policies and Zero Data Retention (ZDR) options.
+Learn about Eden AI's data retention policies and log retention options.
 
 ## Default Retention
 
@@ -13,12 +13,19 @@ By default, Eden AI:
 - **Logs metadata** for billing and analytics (timestamps, token counts, costs)
 - **Does not use your data** for training AI models
 
-## Zero Data Retention (ZDR)
+## Async Job Results
 
-For enhanced privacy, Eden AI offers Zero Data Retention:
+Results from asynchronous jobs (e.g., OCR async, speech-to-text async) are retained for **7 days**. After that, the results are automatically deleted and cannot be recovered.
 
-- No logging of request/response content
-- Minimal metadata retention
+## Log Retention (for Debugging)
+
+By default, full request/response logs are not stored. If you need logs for debugging purposes, you can activate **log retention** from the Eden AI dashboard:
+
+1. Go to [app.edenai.run](https://app.edenai.run/)
+2. Navigate to your project settings
+3. Enable **Log Retention**
+
+Once enabled, request and response content will be stored so you can inspect them in the monitoring section. Disable it when you no longer need it to revert to the default privacy-preserving behavior.
 
 
 ## GDPR Rights

@@ -58,7 +58,6 @@
                     "divider": true,
                     "pages": [
                       "v3/llms/listing-models",
-                      "v3/llms/responses",
                       "v3/llms/chat-completions",
                       "v3/llms/file-upload",
                       "v3/llms/fallback",

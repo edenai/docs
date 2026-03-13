@@ -14,7 +14,7 @@ Eden AI V3 provides full OpenAI API compatibility with multi-provider support. T
 POST /v3/llm/chat/completions
 ```
 
-**Note:** Streaming is optional. When enabled, responses are delivered via Server-Sent Events (SSE). See [Streaming Responses](./streaming) for streaming examples.
+**Note:** Streaming is optional. When enabled, responses are delivered via Server-Sent Events (SSE). See [Streaming](/v3/llms/streaming) for streaming examples.
 
 ## Model Format
 
@@ -223,27 +223,7 @@ Standard JSON response:
 
 ## Available Models
 
-### OpenAI
-- `openai/gpt-4`
-- `openai/gpt-4-turbo`
-- `openai/gpt-3.5-turbo`
-
-### Anthropic
-- `anthropic/claude-sonnet-4-5`
-- `anthropic/claude-opus-4-5`
-- `anthropic/claude-sonnet-4-5`
-
-### Google
-- `google/gemini-2.5-flash`
-- `google/gemini-2.5-pro`
-
-### Cohere
-- `cohere/command-r-plus`
-- `cohere/command-r`
-
-### Meta
-- `meta/llama-3-70b`
-- `meta/llama-3-8b`
+For the full list of supported models and their capabilities (PDF support, reasoning, web search, tool calling), see [List LLM Models](/v3/llms/listing-models).
 
 ## OpenAI Python SDK Integration
 

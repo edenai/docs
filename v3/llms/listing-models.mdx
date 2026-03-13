@@ -3,7 +3,7 @@ title: "List LLM Models"
 icon: "list"
 ---
 
-Use the `/v3/llm/models` endpoint to retrieve all LLM models available through Eden AI.
+Use the `/v3/llm/models` endpoint to retrieve all LLM models available through Eden AI, along with their capabilities: PDF support, reasoning, web search, and tool calling.
 
 ## Endpoint
 
@@ -50,18 +50,52 @@ data.forEach(model => console.log(model.id));
     {
       "id": "openai/gpt-4o",
       "object": "model",
-      "owned_by": "openai"
+      "owned_by": "openai",
+      "capabilities": {
+        "pdf": true,
+        "reasoning": false,
+        "web_search": true,
+        "tool_calling": true
+      }
     },
     {
       "id": "anthropic/claude-3-5-sonnet-latest",
       "object": "model",
-      "owned_by": "anthropic"
+      "owned_by": "anthropic",
+      "capabilities": {
+        "pdf": true,
+        "reasoning": false,
+        "web_search": false,
+        "tool_calling": true
+      }
+    },
+    {
+      "id": "anthropic/claude-3-7-sonnet-latest",
+      "object": "model",
+      "owned_by": "anthropic",
+      "capabilities": {
+        "pdf": true,
+        "reasoning": true,
+        "web_search": false,
+        "tool_calling": true
+      }
     }
   ]
 }
 ```
 
 Each model `id` is used directly as the `model` parameter in your requests.
+
+## Capabilities
+
+The `capabilities` object describes what each model supports:
+
+| Field | Description |
+|-------|-------------|
+| `pdf` | Model can process PDF files as input |
+| `reasoning` | Model supports extended thinking / reasoning mode |
+| `web_search` | Model can perform live web searches |
+| `tool_calling` | Model supports function/tool calling |
 
 <Note>
 Looking for OCR, image, or audio models? See [List Expert Models](/v3/expert-models/listing-models) for the full catalog of expert model features.

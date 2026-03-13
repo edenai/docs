@@ -7,15 +7,29 @@ Learn how to upload and manage files with V3's persistent file storage system.
 ## Overview
 
 V3 introduces **persistent file storage** that allows you to:
-- Upload files once
-- Reference them in multiple requests
-- Reduce upload overhead
-- Manage file lifecycle
+- Upload files once and reference them across multiple requests
+- Reduce upload overhead and latency
+- Manage file lifecycle with automatic expiration
 
 **Endpoint:**
 ```
 POST /v3/upload
 ```
+
+## File Intent (purpose)
+
+When uploading a file, the optional `purpose` field describes your intended use. This helps Eden AI route and optimize the file for the right feature:
+
+| Purpose | Use case |
+|---------|----------|
+| `assistants` | Attach the file to an LLM chat completion (PDF, documents) |
+| `ocr` | Extract text from documents or images |
+| `financial_parser` | Parse invoices, receipts, and financial documents |
+| `identity_parser` | Extract data from IDs, passports, and similar documents |
+| `resume_parser` | Extract structured data from CVs and resumes |
+| `speech` | Transcribe audio files |
+
+Specifying the correct `purpose` ensures your file is handled appropriately and enables intent-based filtering in the dashboard.
 
 ## Upload a File
 

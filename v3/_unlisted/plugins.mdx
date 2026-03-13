@@ -1,0 +1,147 @@
+---
+icon: "puzzle-piece"
+title: "Plugins"
+---
+
+Plugins extend LLM capabilities beyond text generation. They enable models to perform actions like browsing the web, executing code, or interacting with external services — all within a single chat completion request.
+
+## How Plugins Work
+
+Plugins are enabled by adding a `plugins` array to your chat completion request. Each plugin is identified by name and can accept optional configuration. When a plugin is active, the model can use it during response generation.
+
+## Available Plugins
+
+| Plugin | Description |
+|--------|-------------|
+| `web_browsing` | Browse and extract content from web pages |
+| `code_execution` | Run code snippets and return results |
+
+<Note>
+Available plugins may vary. Check the [Eden AI dashboard](https://app.edenai.run) for the latest list of supported plugins.
+</Note>
+
+## Enabling Plugins
+
+Add the `plugins` field to your chat completion request:
+
+<CodeGroup>
+```python Python
+import requests
+
+url = "https://api.edenai.run/v3/llm/chat/completions"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+payload = {
+    "model": "openai/gpt-4o",
+    "messages": [
+        {"role": "user", "content": "Browse https://example.com and summarize the page content."}
+    ],
+    "plugins": ["web_browsing"]
+}
+
+response = requests.post(url, headers=headers, json=payload)
+result = response.json()
+print(result["choices"][0]["message"]["content"])
+```
+
+```javascript JavaScript
+const url = 'https://api.edenai.run/v3/llm/chat/completions';
+const headers = {
+  'Authorization': 'Bearer YOUR_API_KEY',
+  'Content-Type': 'application/json'
+};
+
+const payload = {
+  model: 'openai/gpt-4o',
+  messages: [
+    { role: 'user', content: 'Browse https://example.com and summarize the page content.' }
+  ],
+  plugins: ['web_browsing']
+};
+
+const response = await fetch(url, {
+  method: 'POST',
+  headers: headers,
+  body: JSON.stringify(payload)
+});
+
+const result = await response.json();
+console.log(result.choices[0].message.content);
+```
+
+```bash cURL
+curl -X POST https://api.edenai.run/v3/llm/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-4o",
+    "messages": [
+      {"role": "user", "content": "Browse https://example.com and summarize the page content."}
+    ],
+    "plugins": ["web_browsing"]
+  }'
+```
+</CodeGroup>
+
+## Multiple Plugins
+
+You can enable multiple plugins in a single request:
+
+{/* skip-test */}
+<CodeGroup>
+```python Python
+import requests
+
+url = "https://api.edenai.run/v3/llm/chat/completions"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+payload = {
+    "model": "openai/gpt-4o",
+    "messages": [
+        {"role": "user", "content": "Find the current Python version from python.org, then write and run a hello world script."}
+    ],
+    "plugins": ["web_browsing", "code_execution"]
+}
+
+response = requests.post(url, headers=headers, json=payload)
+result = response.json()
+print(result["choices"][0]["message"]["content"])
+```
+</CodeGroup>
+
+## Plugins vs Tools
+
+Plugins and [tools (function calling)](/v3/llms/tools) both extend what an LLM can do, but they work differently:
+
+| | Plugins | Tools |
+|---|---------|-------|
+| **Execution** | Server-side — Eden AI runs the plugin | Client-side — your code executes the function |
+| **Setup** | Enable by name, no schema needed | Define function schemas in the request |
+| **Use case** | Built-in capabilities (browsing, code execution) | Custom business logic (database queries, API calls) |
+
+<Tip>
+Use **plugins** for general-purpose capabilities that don't require access to your systems. Use **tools** when the model needs to interact with your own functions and data.
+</Tip>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Web Search" icon="magnifying-glass" href="/v3/llms/web-search">
+    Ground responses with real-time web data
+  </Card>
+  <Card title="Tools (Function Calling)" icon="wrench" href="/v3/llms/tools">
+    Let models call your functions
+  </Card>
+  <Card title="Chat Completions" icon="comments" href="/v3/llms/chat-completions">
+    Complete endpoint reference
+  </Card>
+  <Card title="Streaming" icon="bolt" href="/v3/llms/streaming">
+    Handle real-time SSE responses
+  </Card>
+</CardGroup>

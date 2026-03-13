@@ -1,0 +1,76 @@
+---
+title: "Named Entity Recognition"
+icon: "🔖"
+---
+
+## Endpoint
+
+`POST /v3/universal-ai` (sync)
+
+Model string pattern: `text/named_entity_recognition/{provider}[/{model}]`
+
+## Input
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| text | string | Yes | Text to analyze for named entities |
+| language | string | No | ISO 639-1 language code |
+
+
+## Output
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| **items** | array[object] | No |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;entity | string | Yes |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;category | string | Yes |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;importance | float | Yes |  |
+
+
+## Available Providers
+
+| Provider | Model String | Price |
+|----------|-------------|-------|
+| amazon | `text/named_entity_recognition/amazon` | $1 per 1,000,000 chars |
+| microsoft | `text/named_entity_recognition/microsoft` | $1 per 1,000,000 chars |
+| openai | `text/named_entity_recognition/openai` | $10 per 1,000,000 tokens |
+| openai (gpt-4o) | `text/named_entity_recognition/openai/gpt-4o` | $10 per 1,000,000 tokens |
+| tenstorrent | `text/named_entity_recognition/tenstorrent` | $1 per 1,000,000 chars |
+
+
+## Quick Start
+
+
+<CodeGroup>
+```python Python
+import requests
+
+url = "https://api.edenai.run/v3/universal-ai"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+payload = {
+    "model": "text/named_entity_recognition/amazon",
+    "input": {
+        "text": "The quick brown fox jumps over the lazy dog.",
+        "language": "en"
+    }
+}
+
+response = requests.post(url, headers=headers, json=payload)
+print(response.json())
+```
+
+```bash cURL
+curl -X POST https://api.edenai.run/v3/universal-ai \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "text/named_entity_recognition/amazon",
+    "input": {"text": "The quick brown fox jumps over the lazy dog.", "language": "en"}
+  }'
+```
+</CodeGroup>
+

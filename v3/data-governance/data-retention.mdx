@@ -1,0 +1,47 @@
+---
+sidebarTitle: "Data Retention"
+icon: "clock-rotate-left"
+---
+
+Learn about Eden AI's data retention policies and log retention options.
+
+## Default Retention
+
+By default, Eden AI:
+
+- **Does not store** your request/response content
+- **Logs metadata** for billing and analytics (timestamps, token counts, costs)
+- **Does not use your data** for training AI models
+
+## Async Job Results
+
+Results from asynchronous jobs (e.g., OCR async, speech-to-text async) are retained for **7 days**. After that, the results are automatically deleted and cannot be recovered.
+
+## Log Retention (for Debugging)
+
+By default, full request/response logs are not stored. If you need logs for debugging purposes, you can activate **log retention** from the Eden AI dashboard:
+
+1. Go to [app.edenai.run](https://app.edenai.run/)
+2. Navigate to your project settings
+3. Enable **Log Retention**
+
+Once enabled, request and response content will be stored so you can inspect them in the monitoring section. Disable it when you no longer need it to revert to the default privacy-preserving behavior.
+
+
+## GDPR Rights
+
+Eden AI supports GDPR data subject rights:
+
+- **Right to Access** - Request your data
+- **Right to Deletion** - Delete your data
+- **Right to Portability** - Export your data
+
+Contact support@edenai.co for data requests.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Plans & Pricing" icon="book-open" href="/v3/overview/plans-prices">
+    See data governance options available per plan
+  </Card>
+</CardGroup>

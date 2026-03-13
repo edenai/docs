@@ -1,0 +1,73 @@
+---
+title: "Document Translation"
+icon: "🌍"
+---
+
+## Endpoint
+
+`POST /v3/universal-ai` (sync)
+
+Model string pattern: `translation/document_translation/{provider}[/{model}]`
+
+## Input
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| file | file_input | Yes | Document file ID from /v3/upload or direct file URL (PDF, DOCX, PPTX) |
+| target_language | string | Yes | Target language code |
+| source_language | string | No | Source language code |
+
+
+## Output
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| file | string | Yes |  |
+| document_resource_url | string | Yes |  |
+
+
+## Available Providers
+
+| Provider | Model String | Price |
+|----------|-------------|-------|
+| deepl | `translation/document_translation/deepl` | $2 per 20 pages |
+| google | `translation/document_translation/google` | $0.08 per page |
+
+
+## Quick Start
+
+
+<CodeGroup>
+```python Python
+import requests
+
+url = "https://api.edenai.run/v3/universal-ai"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+payload = {
+    "model": "translation/document_translation/deepl",
+    "input": {
+        "file": "YOUR_FILE_UUID_OR_URL",
+        "target_language": "fr",
+        "source_language": "en"
+    }
+}
+
+response = requests.post(url, headers=headers, json=payload)
+print(response.json())
+```
+
+```bash cURL
+curl -X POST https://api.edenai.run/v3/universal-ai \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "translation/document_translation/deepl",
+    "input": {"file": "YOUR_FILE_UUID_OR_URL", "target_language": "fr", "source_language": "en"}
+  }'
+```
+</CodeGroup>
+

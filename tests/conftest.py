@@ -2,6 +2,7 @@
 
 import json
 import os
+import time
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -29,7 +30,7 @@ from tests.helpers.file_generators import (
 
 load_dotenv(Path(__file__).parent / ".env")
 
-http_recorder_key = pytest.StashKey()
+http_interceptor_key = pytest.StashKey()
 
 _SHARED_STATE_FILE = ".eden_test_shared_state.json"
 
@@ -234,19 +235,26 @@ class HttpRecorder:
 
 
 @pytest.fixture()
-def http_recorder(monkeypatch, request):
-    """Monkeypatch requests.Session.send to record the last request/response."""
+def http_interceptor(monkeypatch, request):
+    """Monkeypatch requests.Session.send to record requests and retry on 429."""
     recorder = HttpRecorder()
-    request.node.stash[http_recorder_key] = recorder
+    request.node.stash[http_interceptor_key] = recorder
     original_send = requests.Session.send
 
-    def _recording_send(self, request, **kwargs):
-        recorder.last_request = request
-        response = original_send(self, request, **kwargs)
+    def _intercepted_send(self, prepared_request, **kwargs):
+        recorder.last_request = prepared_request
+        response = original_send(self, prepared_request, **kwargs)
         recorder.last_response = response
+        retries = 0
+        while response.status_code == 429 and retries < 5:
+            retry_after = float(response.headers.get("Retry-After", 1))
+            time.sleep(retry_after)
+            response = original_send(self, prepared_request, **kwargs)
+            recorder.last_response = response
+            retries += 1
         return response
 
-    monkeypatch.setattr(requests.Session, "send", _recording_send)
+    monkeypatch.setattr(requests.Session, "send", _intercepted_send)
     return recorder
 
 
@@ -257,7 +265,7 @@ def pytest_runtest_makereport(item, call):
     report = outcome.get_result()
 
     if report.when == "call" and report.failed:
-        recorder = item.stash.get(http_recorder_key, None)
+        recorder = item.stash.get(http_interceptor_key, None)
         if recorder is not None:
             summary = recorder.summary()
             if summary != "(no HTTP calls recorded)":

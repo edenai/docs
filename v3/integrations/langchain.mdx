@@ -1,0 +1,164 @@
+---
+icon: "🦜"
+---
+
+Integrate Eden AI with LangChain for building powerful LLM applications with access to 200+ models.
+
+## Overview
+
+[LangChain](https://langchain.com) is a framework for developing applications powered by language models. Eden AI integrates seamlessly with LangChain's `ChatOpenAI` class, giving you access to multiple providers through a single interface.
+
+## Installation
+
+<CodeGroup>
+```bash Python
+pip install "langchain~=1.2" "langchain-openai~=1.1" "langchain-community~=0.4" "langgraph~=1.0"
+```
+
+```bash TypeScript
+npm install langchain @langchain/openai
+```
+
+</CodeGroup>
+
+## Quick Start (Python)
+
+<CodeGroup>
+```python Python
+from langchain_openai import ChatOpenAI
+from langchain_core.messages import HumanMessage, SystemMessage
+
+llm = ChatOpenAI(
+    model="openai/gpt-4",
+    api_key="YOUR_EDEN_AI_API_KEY",
+    base_url="https://api.edenai.run/v3/llm"
+)
+
+messages = [
+    SystemMessage(content="You are a helpful assistant."),
+    HumanMessage(content="What is LangChain?")
+]
+
+response = llm.invoke(messages)
+print(response.content)
+```
+</CodeGroup>
+
+## Quick Start (TypeScript)
+
+<CodeGroup>
+```typescript TypeScript
+import { ChatOpenAI } from "@langchain/openai";
+import { HumanMessage, SystemMessage } from "@langchain/core/messages";
+
+const llm = new ChatOpenAI({
+  modelName: "openai/gpt-4",
+  openAIApiKey: "YOUR_EDEN_AI_API_KEY",
+  configuration: {
+    baseURL: "https://api.edenai.run/v3/llm",
+  },
+});
+
+const messages = [
+  new SystemMessage("You are a helpful assistant."),
+  new HumanMessage("What is LangChain?"),
+];
+
+const response = await llm.invoke(messages);
+console.log(response.content);
+```
+
+</CodeGroup>
+
+## Available Models
+
+Pass any `provider/model` string as the `model` (or `modelName`) parameter. For example:
+
+- `openai/gpt-4` — GPT-4
+- `anthropic/claude-sonnet-4-5` — Claude Sonnet
+- `google/gemini-2.5-flash` — Gemini Flash
+
+## Prompt Templates
+
+<CodeGroup>
+```python Python
+from langchain_openai import ChatOpenAI
+from langchain_core.prompts import ChatPromptTemplate
+
+llm = ChatOpenAI(
+    model="openai/gpt-4",
+    api_key="YOUR_EDEN_AI_API_KEY",
+    base_url="https://api.edenai.run/v3/llm"
+)
+
+prompt = ChatPromptTemplate.from_messages([
+    ("system", "You are a helpful assistant that translates {input_language} to {output_language}."),
+    ("human", "{text}")
+])
+
+chain = prompt | llm
+
+response = chain.invoke({
+    "input_language": "English",
+    "output_language": "French",
+    "text": "Hello, how are you?"
+})
+
+print(response.content)
+```
+</CodeGroup>
+
+## Chains
+
+<CodeGroup>
+```python Python
+from langchain_openai import ChatOpenAI
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+
+llm = ChatOpenAI(
+    model="openai/gpt-4",
+    api_key="YOUR_EDEN_AI_API_KEY",
+    base_url="https://api.edenai.run/v3/llm"
+)
+
+joke_prompt = ChatPromptTemplate.from_template("Tell me a joke about {topic}")
+explanation_prompt = ChatPromptTemplate.from_template("Explain this joke: {joke}")
+
+joke_chain = joke_prompt | llm | StrOutputParser()
+explanation_chain = explanation_prompt | llm | StrOutputParser()
+
+full_chain = {"joke": joke_chain} | explanation_chain
+
+result = full_chain.invoke({"topic": "programming"})
+print(result)
+```
+
+</CodeGroup>
+
+## Environment Variables
+
+<CodeGroup>
+```bash .env
+EDEN_AI_API_KEY=your_api_key_here
+```
+
+```python Python
+import os
+from dotenv import load_dotenv
+from langchain_openai import ChatOpenAI
+
+load_dotenv()
+
+llm = ChatOpenAI(
+    model="openai/gpt-4",
+    api_key=os.getenv("EDEN_AI_API_KEY"),
+    base_url="https://api.edenai.run/v3/llm"
+)
+```
+
+</CodeGroup>
+
+## Next Steps
+
+- [Python SDK](../sdks/python-openai) - Direct SDK usage

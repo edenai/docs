@@ -1,0 +1,195 @@
+---
+icon: "chart-line"
+---
+
+Learn how to track your Eden AI API consumption and costs using the Cost Monitoring endpoints.
+
+> **Note**: These are admin/dashboard endpoints typically used by the Eden AI dashboard or custom admin interfaces. For standard API usage authentication, see the [API Keys guide](/v3/general/custom-api-keys).
+
+## Overview
+
+The Cost Monitoring API provides two key endpoints to help you track and manage your Eden AI spending:
+
+- **Monitor Consumptions** - Get detailed usage and cost breakdowns by date, provider, and feature
+- **Check Credits** - Retrieve your current account credit balance
+
+## Endpoints
+
+### Monitor Consumptions
+
+```
+GET https://api.edenai.run/v2/cost_management/
+```
+
+### Check Current Credits
+
+```
+GET https://api.edenai.run/v2/cost_management/credits/
+```
+
+## Key Concepts
+
+### Step Parameter
+
+The `step` parameter controls how data is aggregated:
+
+| Step Value | Aggregation Period | Use Case |
+|------------|-------------------|----------|
+| 1 | Daily | Detailed daily analysis |
+| 2 | Weekly | Weekly trends |
+| 3 | Monthly | Monthly reports |
+| 4 | Yearly | Annual summaries |
+
+### Filtering Options
+
+Filter your cost data by adding any of these query parameters:
+
+| Parameter | Description | Example |
+|-----------|-------------|---------|
+| `provider` | Specific AI provider | `openai`, `anthropic` |
+| `subfeature` | Specific feature | `chat`, `ocr`, `text_to_speech` |
+| `token` | Specific API token | `prod_token_123` |
+| `workflow_id` | Specific workflow execution | |
+| `rag_project_id` | Specific RAG project | |
+
+## Check Your Current Credits
+
+```python Python
+import requests
+
+API_KEY = "eyJhbG...xxxxxxxxxxxxxxxxxxxxxxxx"
+
+response = requests.get(
+    "https://api.edenai.run/v2/cost_management/credits/",
+    headers={"Authorization": f"Bearer {API_KEY}"}
+)
+
+credits_data = response.json()
+print(f"Current credits: ${credits_data['credits']:.2f}")
+```
+
+**Response:**
+
+```json
+{
+  "credits": 42.50
+}
+```
+
+## Monitor Usage
+
+Get your last 30 days of usage, grouped by day:
+
+```python Python
+import requests
+from datetime import datetime, timedelta
+
+API_KEY = "eyJhbG...xxxxxxxxxxxxxxxxxxxxxxxx"
+
+end_date = datetime.now()
+begin_date = end_date - timedelta(days=30)
+
+response = requests.get(
+    "https://api.edenai.run/v2/cost_management/",
+    headers={"Authorization": f"Bearer {API_KEY}"},
+    params={
+        "begin": begin_date.strftime("%Y-%m-%d"),
+        "end": end_date.strftime("%Y-%m-%d"),
+        "step": 1  # Daily aggregation
+    }
+)
+
+data = response.json()
+print(f"Usage data retrieved for {len(data['response'])} token(s)")
+```
+
+## Response Format
+
+The monitoring endpoint returns data structured by token, date, and feature:
+
+```json
+{
+  "response": [
+    {
+      "token": "base_token",
+      "data": {
+        "2024-01-01": {
+          "text__chat": {
+            "total_cost": 11.30,
+            "details": 381,
+            "cost_per_provider": {
+              "openai": 11.28,
+              "anthropic": 0.02
+            }
+          },
+          "image__explicit_content": {
+            "total_cost": 0.15,
+            "details": 101,
+            "cost_per_provider": {
+              "google": 0.15
+            }
+          }
+        }
+      }
+    }
+  ]
+}
+```
+
+### Response Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `token` | string | API token identifier |
+| `data` | object | Date-keyed usage data |
+| `total_cost` | number | Total cost for this feature on this date |
+| `details` | integer | Number of API calls made |
+| `cost_per_provider` | object | Cost breakdown by provider |
+
+### Feature Naming Convention
+
+Features follow the pattern `{category}__{subfeature}`:
+
+| Key | Description |
+|-----|-------------|
+| `text__chat` | LLM chat completions |
+| `text__generation` | Text generation |
+| `text__embeddings` | Text embeddings |
+| `image__explicit_content` | Image moderation |
+| `image__question_answer` | Image Q&A |
+| `ocr__ocr` | OCR text extraction |
+| `audio__text_to_speech` | Text-to-speech |
+
+## Error Responses
+
+### 400 Bad Request
+
+```json
+{
+  "error": {
+    "type": "validation_error",
+    "message": {
+      "begin": ["This field is required."]
+    }
+  }
+}
+```
+
+### 403 Forbidden
+
+```json
+{
+  "error": {
+    "type": "permission_error",
+    "message": "You do not have permission to access this resource"
+  }
+}
+```
+
+### 404 Not Found
+
+```json
+{
+  "details": "Not Found"
+}
+```

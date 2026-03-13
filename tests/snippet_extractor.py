@@ -16,8 +16,11 @@ _SANDBOX_TOKEN_VAR = "EDEN_AI_SANDBOX_API_TOKEN"
 _PRODUCTION_TOKEN_VAR = "EDEN_AI_PRODUCTION_API_TOKEN"
 
 _PRODUCTION_TOKEN_FILES = {
+    "v3/general/custom-api-keys.mdx",
+    "v3/general/monitoring.mdx",
     "v3/how-to/cost-management/monitor-usage.mdx",
     "v3/how-to/user-management/manage-tokens.mdx",
+    "v3/llms/structured-output.mdx",
     "v3/tutorials/multi-environment-tokens.mdx",
 }
 

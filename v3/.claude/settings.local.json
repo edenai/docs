@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:api.edenai.run)",
+      "Bash(find /c/Users/Eden/docs/v3/_unlisted/expert-models/features -type f -name \"*.mdx\" 2>/dev/null | head -10)"
+    ]
+  }
+}

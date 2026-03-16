@@ -1,0 +1,211 @@
+---
+icon: "🐍"
+---
+
+Use the official OpenAI Python SDK with Eden AI to access 200+ AI models through a familiar interface.
+
+## Overview
+
+The OpenAI Python SDK is fully compatible with Eden AI's V3 API. Simply point the SDK to Eden AI's endpoint and you can access models from OpenAI, Anthropic, Google, Cohere, Meta, and more.
+
+## Installation
+
+<CodeGroup>
+```bash pip
+pip install openai
+```
+
+```bash poetry
+poetry add openai
+```
+
+</CodeGroup>
+
+## Quick Start
+
+Configure the OpenAI client to use Eden AI:
+
+<CodeGroup>
+```python Python
+from openai import OpenAI
+
+client = OpenAI(
+    api_key="YOUR_EDEN_AI_API_KEY",  # Get from https://app.edenai.run
+    base_url="https://api.edenai.run/v3/llm"
+)
+
+response = client.chat.completions.create(
+    model="openai/gpt-4",
+    messages=[
+        {"role": "user", "content": "Hello! How are you?"}
+    ]
+)
+
+print(response.choices[0].message.content)
+```
+</CodeGroup>
+
+## Available Models
+
+Access models from multiple providers using the `provider/model` format:
+
+**OpenAI**
+- `openai/gpt-4`
+- `openai/gpt-4-turbo`
+- `openai/gpt-4o`
+- `openai/gpt-3.5-turbo`
+
+**Anthropic**
+- `anthropic/claude-sonnet-4-5`
+- `anthropic/claude-opus-4-5`
+- `anthropic/claude-haiku-4-5`
+
+**Google**
+- `google/gemini-2.5-pro`
+- `google/gemini-2.5-flash`
+
+**Cohere**
+- `cohere/command-r-plus`
+- `cohere/command-r`
+
+**Meta**
+- `meta/llama-3-70b`
+- `meta/llama-3-8b`
+
+## Multi-Turn Conversations
+
+Build conversational applications with message history:
+
+<CodeGroup>
+```python Python
+from openai import OpenAI
+
+client = OpenAI(
+    api_key="YOUR_EDEN_AI_API_KEY",
+    base_url="https://api.edenai.run/v3/llm"
+)
+
+messages = [
+    {"role": "system", "content": "You are a helpful assistant."},
+    {"role": "user", "content": "What is the capital of France?"}
+]
+
+response = client.chat.completions.create(
+    model="anthropic/claude-sonnet-4-5",
+    messages=messages
+)
+
+assistant_response = response.choices[0].message.content
+print(assistant_response)
+
+# Add assistant response to history
+messages.append({"role": "assistant", "content": assistant_response})
+
+# Continue conversation
+messages.append({"role": "user", "content": "What's the population?"})
+
+response = client.chat.completions.create(
+    model="anthropic/claude-sonnet-4-5",
+    messages=messages
+)
+
+print(response.choices[0].message.content)
+```
+
+</CodeGroup>
+
+## Vision Capabilities
+
+Send images to vision-capable models:
+
+<CodeGroup>
+```python Python
+from openai import OpenAI
+import requests
+
+client = OpenAI(
+    api_key="YOUR_EDEN_AI_API_KEY",
+    base_url="https://api.edenai.run/v3/llm"
+)
+
+# First, upload the image to get a file_id
+upload_response = requests.post(
+    "https://api.edenai.run/v3/upload",
+    headers={"Authorization": f"Bearer YOUR_EDEN_AI_API_KEY"},
+    files={"file": open("image.jpg", "rb")}
+)
+file_id = upload_response.json()["file_id"]
+
+# Use the file_id in a chat message
+response = client.chat.completions.create(
+    model="openai/gpt-4o",
+    messages=[
+        {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": "What's in this image?"},
+                {"type": "file", "file": {"file_id": file_id}}
+            ]
+        }
+    ]
+)
+
+print(response.choices[0].message.content)
+```
+
+</CodeGroup>
+
+## Error Handling
+
+<CodeGroup>
+```python Python
+from openai import OpenAI
+import openai
+
+client = OpenAI(
+    api_key="YOUR_EDEN_AI_API_KEY",
+    base_url="https://api.edenai.run/v3/llm"
+)
+
+try:
+    response = client.chat.completions.create(
+        model="openai/gpt-4",
+        messages=[{"role": "user", "content": "Hello!"}]
+    )
+
+    print(response.choices[0].message.content)
+
+except openai.AuthenticationError as e:
+    print(f"Authentication failed: {e}")
+except openai.RateLimitError as e:
+    print(f"Rate limit exceeded: {e}")
+except openai.APIError as e:
+    print(f"API error: {e}")
+```
+
+</CodeGroup>
+
+## Environment Variables
+
+<CodeGroup>
+```bash .env
+EDEN_AI_API_KEY=your_api_key_here
+```
+
+```python Python
+import os
+from openai import OpenAI
+
+client = OpenAI(
+    api_key=os.getenv("EDEN_AI_API_KEY"),
+    base_url="https://api.edenai.run/v3/llm"
+)
+```
+
+</CodeGroup>
+
+## Next Steps
+
+- [Vision Capabilities](../../how-to/llm/vision-capabilities) - Working with images
+- [File Attachments](../../how-to/llm/file-attachments) - Uploading files
+- [Provider Comparison](../../how-to/llm/provider-comparison) - Choosing the right model

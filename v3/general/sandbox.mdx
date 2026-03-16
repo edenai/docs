@@ -1,0 +1,184 @@
+---
+title: "Sandbox"
+icon: "box"
+---
+
+Sandbox tokens let you **test your integration without real provider calls and at no cost**. Requests made with a sandbox token return simulated data, so you can build and validate your workflow before going to production.
+
+## Token Types
+
+Eden AI supports two token types:
+
+| Token Type | Purpose | Real Provider Calls | Cost |
+| --- | --- | --- | --- |
+| `api_token` | Production use | Yes | Pay-per-use |
+| `sandbox_api_token` | Testing and development | No | Free |
+
+When you use a sandbox token, Eden AI returns **mock responses** that match the real response structure. This means your code works the same way in development and production — you just swap the token.
+
+## Creating a Sandbox Token
+
+You can create sandbox tokens from the [Eden AI dashboard](https://app.edenai.run/) under **API Keys**, or programmatically via the API:
+
+{/* skip-test */}
+<CodeGroup>
+```python Python
+import requests
+
+url = "https://api.edenai.run/v2/user/custom_token/"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+payload = {
+    "name": "dev-testing",
+    "token_type": "sandbox_api_token"
+}
+
+response = requests.post(url, headers=headers, json=payload)
+sandbox_token = response.json()
+print(f"Sandbox token: {sandbox_token['token']}")
+```
+
+```bash cURL
+curl -X POST https://api.edenai.run/v2/user/custom_token/ \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "dev-testing",
+    "token_type": "sandbox_api_token"
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.edenai.run/v2/user/custom_token/', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer YOUR_API_KEY',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    name: 'dev-testing',
+    token_type: 'sandbox_api_token'
+  })
+});
+
+const sandboxToken = await response.json();
+console.log(`Sandbox token: ${sandboxToken.token}`);
+```
+</CodeGroup>
+
+## Using a Sandbox Token
+
+Usage is identical to a production token — just use the sandbox token in the `Authorization` header:
+
+{/* skip-test */}
+<CodeGroup>
+```python Python
+import requests
+
+url = "https://api.edenai.run/v3/llm/chat/completions"
+headers = {
+    "Authorization": "Bearer YOUR_SANDBOX_TOKEN",
+    "Content-Type": "application/json"
+}
+
+payload = {
+    "model": "openai/gpt-4",
+    "messages": [
+        {"role": "user", "content": "Hello!"}
+    ]
+}
+
+response = requests.post(url, headers=headers, json=payload)
+result = response.json()
+
+# Returns simulated data — same structure as a real response
+print(result["choices"][0]["message"]["content"])
+```
+
+```bash cURL
+curl -X POST https://api.edenai.run/v3/llm/chat/completions \
+  -H "Authorization: Bearer YOUR_SANDBOX_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-4",
+    "messages": [{"role": "user", "content": "Hello!"}]
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.edenai.run/v3/llm/chat/completions', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer YOUR_SANDBOX_TOKEN',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    model: 'openai/gpt-4',
+    messages: [{role: 'user', content: 'Hello!'}]
+  })
+});
+
+const result = await response.json();
+console.log(result.choices[0].message.content);
+```
+</CodeGroup>
+
+## Multi-Environment Setup
+
+A common pattern is to create one sandbox token per environment and swap to a production token when you go live:
+
+{/* skip-test */}
+<CodeGroup>
+```python Python
+import os
+
+# Use a sandbox token in dev/staging, a real token in production
+EDENAI_TOKEN = (
+    os.getenv("EDENAI_SANDBOX_TOKEN")
+    if os.getenv("ENV") != "production"
+    else os.getenv("EDENAI_API_TOKEN")
+)
+
+headers = {"Authorization": f"Bearer {EDENAI_TOKEN}"}
+```
+
+```javascript JavaScript
+const token =
+  process.env.ENV !== 'production'
+    ? process.env.EDENAI_SANDBOX_TOKEN
+    : process.env.EDENAI_API_TOKEN;
+
+const headers = { Authorization: `Bearer ${token}` };
+```
+</CodeGroup>
+
+You can create multiple sandbox tokens — one per app or environment — from the dashboard or via the API with different `name` values.
+
+## When to Use Sandbox Tokens
+
+<CardGroup cols={2}>
+
+<Card title="Development" icon="code">
+  Build and iterate on your integration without spending credits.
+</Card>
+
+<Card title="CI/CD Pipelines" icon="rotate">
+  Run automated tests against the API without incurring costs.
+</Card>
+
+<Card title="Demos" icon="presentation-screen">
+  Show your integration to stakeholders with predictable responses.
+</Card>
+
+<Card title="Prototyping" icon="lightbulb">
+  Validate your architecture and request flow before going live.
+</Card>
+
+</CardGroup>
+
+<Note>
+Sandbox tokens return simulated data. The response structure matches production responses, but the actual content is mock data. Do not use sandbox tokens to evaluate model quality or accuracy.
+</Note>

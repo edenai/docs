@@ -16,9 +16,9 @@
   "favicon": "/images/favicon.png",
   "ask": "Ask AI",
   "colors": {
-    "primary": "#5386b2",
-    "light": "#7ba3ca",
-    "dark": "#3d6a91"
+    "primary": "#3d7cc9",
+    "light": "#6aa3e0",
+    "dark": "#2a5fa8"
   },
   "navigation": {
     "versions": [
@@ -31,199 +31,154 @@
               {
                 "group": "V3 Documentation",
                 "pages": [
+                  "index",
                   {
-                    "group": "Get Started",
-                    "icon": "rocket",
+                    "group": "Quick Start",
+                    "icon": "bolt",
+                    "expanded": true,
                     "pages": [
-                      "v3/get-started/introduction",
-                      "v3/get-started/smart-routing",
-                      "v3/get-started/faq",
-                      "v3/get-started/entreprise_offer",
-                      "v3/get-started/professional_services"
+                      "v3/quickstart/first-llm-call",
+                      "v3/quickstart/first-expert-model-call"
                     ]
                   },
                   {
-                    "group": "How-To Guides",
-                    "icon": "question-circle",
+                    "group": "Overview",
+                    "icon": "book-open",
+                    "expanded": true,
                     "pages": [
-                      {
-                        "group": "Authentication",
-                        "icon": "shield-check",
-                        "pages": [
-                          "v3/how-to/authentication/bearer-token-auth"
-                        ]
-                      },
-                      {
-                        "group": "Cost Management",
-                        "icon": "dollar-sign",
-                        "pages": [
-                          "v3/how-to/cost-management/monitor-usage"
-                        ]
-                      },
-                      {
-                        "group": "User Management",
-                        "icon": "users",
-                        "pages": [
-                          "v3/how-to/user-management/manage-tokens"
-                        ]
-                      },
-                      {
-                        "group": "Smart Routing",
-                        "icon": "route",
-                        "pages": [
-                          "v3/how-to/router/getting-started",
-                          "v3/how-to/router/advanced-usage"
-                        ]
-                      },
-                      {
-                        "group": "Universal AI",
-                        "icon": "robot",
-                        "pages": [
-                          "v3/how-to/universal-ai/getting-started",
-                          "v3/how-to/universal-ai/text-features",
-                          "v3/how-to/universal-ai/ocr-features",
-                          "v3/how-to/universal-ai/image-features",
-                          "v3/how-to/universal-ai/multimodal-features"
-                        ]
-                      },
-                      {
-                        "group": "LLM (OpenAI-Compatible)",
-                        "icon": "brain",
-                        "pages": [
-                          "v3/how-to/llm/chat-completions",
-                          "v3/how-to/llm/smart-routing",
-                          "v3/how-to/llm/streaming",
-                          "v3/how-to/llm/working-with-media",
-                          "v3/how-to/llm/vision-capabilities",
-                          "v3/how-to/llm/file-attachments",
-                          "v3/how-to/llm/provider-comparison"
-                        ]
-                      },
-                      {
-                        "group": "File Upload",
-                        "icon": "cloud-arrow-up",
-                        "pages": [
-                          "v3/how-to/upload/upload-files"
-                        ]
-                      },
-                      {
-                        "group": "API Discovery",
-                        "icon": "magnifying-glass",
-                        "pages": [
-                          "v3/how-to/discovery/explore-api"
-                        ]
-                      }
+                      "v3/overview/ai-gateway",
+                      "v3/overview/llms-vs-expert-models",
+                      "v3/overview/plans-prices"
                     ]
                   },
                   {
-                    "group": "AI Features",
+                    "group": "LLMs",
+                    "icon": "brain",
+                    "expanded": false,
+                    "divider": true,
+                    "pages": [
+                      "v3/llms/listing-models",
+                      "v3/llms/chat-completions",
+                      "v3/llms/file-upload",
+                      "v3/llms/fallback",
+                      "v3/llms/structured-output",
+                      "v3/llms/web-search",
+                      "v3/llms/smart-routing",
+                      "v3/llms/streaming"
+                    ]
+                  },
+                  {
+                    "group": "Expert Models",
                     "icon": "microchip",
+                    "expanded": false,
+                    "divider": true,
                     "pages": [
-                      "v3/features/index",
+                      "v3/expert-models/fallback",
+                      "v3/expert-models/webhooks",
+                      "v3/expert-models/listing-models",
+                      "v3/expert-models/provider-parameters",
                       {
-                        "group": "Text",
+                        "group": "Text Features",
                         "icon": "font",
+                        "expanded": false,
                         "pages": [
-                          "v3/features/text/ai-detection",
-                          "v3/features/text/moderation",
-                          "v3/features/text/spell-check",
-                          "v3/features/text/topic-extraction",
-                          "v3/features/text/named-entity-recognition",
-                          "v3/features/text/plagia-detection"
+                          "v3/expert-models/features/text/ai-detection",
+                          "v3/expert-models/features/text/moderation",
+                          "v3/expert-models/features/text/spell-check",
+                          "v3/expert-models/features/text/topic-extraction",
+                          "v3/expert-models/features/text/named-entity-recognition",
+                          "v3/expert-models/features/text/plagia-detection"
                         ]
                       },
                       {
-                        "group": "OCR",
+                        "group": "OCR Features",
                         "icon": "file-lines",
+                        "expanded": false,
                         "pages": [
-                          "v3/features/ocr/ocr",
-                          "v3/features/ocr/ocr-async",
-                          "v3/features/ocr/ocr-tables-async",
-                          "v3/features/ocr/identity-parser",
-                          "v3/features/ocr/financial-parser",
-                          "v3/features/ocr/resume-parser"
+                          "v3/expert-models/features/ocr/ocr",
+                          "v3/expert-models/features/ocr/ocr-async",
+                          "v3/expert-models/features/ocr/ocr-tables-async",
+                          "v3/expert-models/features/ocr/identity-parser",
+                          "v3/expert-models/features/ocr/financial-parser",
+                          "v3/expert-models/features/ocr/resume-parser"
                         ]
                       },
                       {
-                        "group": "Image",
+                        "group": "Image Features",
                         "icon": "image",
+                        "expanded": false,
                         "pages": [
-                          "v3/features/image/background-removal",
-                          "v3/features/image/generation",
-                          "v3/features/image/ai-detection",
-                          "v3/features/image/object-detection",
-                          "v3/features/image/face-detection",
-                          "v3/features/image/explicit-content",
-                          "v3/features/image/anonymization",
-                          "v3/features/image/deepfake-detection",
-                          "v3/features/image/face-compare",
-                          "v3/features/image/logo-detection"
+                          "v3/expert-models/features/image/background-removal",
+                          "v3/expert-models/features/image/generation",
+                          "v3/expert-models/features/image/ai-detection",
+                          "v3/expert-models/features/image/object-detection",
+                          "v3/expert-models/features/image/face-detection",
+                          "v3/expert-models/features/image/explicit-content",
+                          "v3/expert-models/features/image/anonymization",
+                          "v3/expert-models/features/image/deepfake-detection",
+                          "v3/expert-models/features/image/face-compare",
+                          "v3/expert-models/features/image/logo-detection"
                         ]
                       },
                       {
-                        "group": "Document Translation",
+                        "group": "Translation",
                         "icon": "language",
+                        "expanded": false,
                         "pages": [
-                          "v3/features/translation/document-translation"
+                          "v3/expert-models/features/translation/document-translation"
                         ]
                       },
                       {
-                        "group": "Audio",
+                        "group": "Audio Features",
                         "icon": "volume-high",
+                        "expanded": false,
                         "pages": [
-                          "v3/features/audio/tts",
-                          "v3/features/audio/speech-to-text-async"
+                          "v3/expert-models/features/audio/tts",
+                          "v3/expert-models/features/audio/speech-to-text-async"
                         ]
                       }
                     ]
                   },
                   {
-                    "group": "Tutorials",
-                    "icon": "graduation-cap",
+                    "group": "General",
+                    "icon": "gear",
+                    "expanded": false,
+                    "divider": true,
                     "pages": [
-                      "v3/tutorials/optimize-llm-costs",
-                      "v3/tutorials/multi-environment-tokens"
+                      "v3/general/caching",
+                      "v3/general/buying-credits",
+                      "v3/general/sandbox",
+                      "v3/general/custom-api-keys",
+                      "v3/general/monitoring",
+                      "v3/general/users-organisation",
+                      "v3/general/support",
+                      "v3/general/byok"
+                    ]
+                  },
+                  {
+                    "group": "Data Governance",
+                    "icon": "shield-halved",
+                    "expanded": false,
+                    "pages": [
+                      "v3/data-governance/servers-location",
+                      "v3/data-governance/data-retention"
                     ]
                   },
                   {
                     "group": "Integrations",
                     "icon": "plug",
+                    "expanded": false,
+                    "divider": true,
                     "pages": [
-                      "v3/integrations/index",
-                      {
-                        "group": "SDKs",
-                        "icon": "code",
-                        "pages": [
-                          "v3/integrations/sdks/python-openai",
-                          "v3/integrations/sdks/typescript-openai"
-                        ]
-                      },
-                      {
-                        "group": "AI Assistants",
-                        "icon": "robot",
-                        "pages": [
-                          "v3/integrations/ai-assistants/claude-code",
-                          "v3/integrations/ai-assistants/continue-dev"
-                        ]
-                      },
-                      {
-                        "group": "Frameworks",
-                        "icon": "cubes",
-                        "pages": [
-                          "v3/integrations/frameworks/langchain"
-                        ]
-                      },
-                      {
-                        "group": "Chat Platforms",
-                        "icon": "comments",
-                        "pages": [
-                          "v3/integrations/chat-platforms/librechat",
-                          "v3/integrations/chat-platforms/open-webui"
-                        ]
-                      }
+                      "v3/integrations/openai-sdk-python",
+                      "v3/integrations/openai-sdk-typescript",
+                      "v3/integrations/claude-code",
+                      "v3/integrations/continue-dev",
+                      "v3/integrations/langchain",
+                      "v3/integrations/librechat",
+                      "v3/integrations/open-webui"
                     ]
-                  },
-                  "v3/changelog"
+                  }
                 ]
               }
             ]

@@ -1,0 +1,138 @@
+---
+sidebarTitle: "First LLM Call"
+title: "First LLM Call" 
+icon: "rocket"
+---
+
+Get started with Eden AI's OpenAI-compatible LLM endpoint in minutes.
+
+<Note>
+You need credits to make API calls.
+For testing without using credits, use a [sandbox token](/v3/general/sandbox).
+</Note>
+
+## Prerequisites
+
+1. **API Token** - Get your token from the [Eden AI dashboard](https://app.edenai.run/)
+2. **Credits** - Ensure your account has sufficient credits
+
+## Make Your First Call
+
+Eden AI provides access to 100+ LLM models through a single OpenAI-compatible endpoint.
+
+<CodeGroup>
+```python Python
+import requests
+
+url = "https://api.edenai.run/v3/llm/chat/completions"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+payload = {
+    "model": "openai/gpt-4",
+    "messages": [
+        {"role": "user", "content": "Hello! How are you?"}
+    ]
+}
+
+response = requests.post(url, headers=headers, json=payload)
+result = response.json()
+print(result["choices"][0]["message"]["content"])
+```
+
+```bash cURL
+curl -X POST https://api.edenai.run/v3/llm/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-4",
+    "messages": [{"role": "user", "content": "Hello!"}]
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.edenai.run/v3/llm/chat/completions', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer YOUR_API_KEY',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    model: 'openai/gpt-4',
+    messages: [{role: 'user', content: 'Hello!'}]
+  })
+});
+
+const result = await response.json();
+console.log(result.choices[0].message.content);
+```
+</CodeGroup>
+
+## Response
+
+```json
+{
+  "id": "chatcmpl-123",
+  "object": "chat.completion",
+  "choices": [
+    {
+      "message": {"role": "assistant", "content": "Hello! I'm doing well, thank you."},
+      "index": 0,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {"prompt_tokens": 12, "completion_tokens": 10, "total_tokens": 22}
+}
+```
+
+## Using OpenAI SDK
+
+You can use the official OpenAI SDK with Eden AI:
+
+```python Python
+from openai import OpenAI
+
+client = OpenAI(
+    api_key="YOUR_EDEN_AI_API_KEY",
+    base_url="https://api.edenai.run/v3/llm"
+)
+
+response = client.chat.completions.create(
+    model="anthropic/claude-sonnet-4-5",
+    messages=[{"role": "user", "content": "Hello!"}]
+)
+
+print(response.choices[0].message.content)
+```
+
+## Model Format
+
+Use the format `provider/model`:
+
+- `openai/gpt-4`
+- `anthropic/claude-sonnet-4-5`
+- `google/gemini-2.5-flash`
+- `mistral/mistral-large`
+
+<Card title="List all available models" icon="list" href="/v3/llms/listing-models">
+  Discover all 100+ LLM models available through Eden AI.
+</Card>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Streaming" icon="brain" href="/v3/llms/streaming">
+    Enable real-time streaming responses
+  </Card>
+  <Card title="File Attachments" icon="brain" href="/v3/llms/file-upload">
+    Send images and documents to LLMs
+  </Card>
+  <Card title="Smart Routing" icon="brain" href="/v3/llms/smart-routing">
+    Automatic model selection and fallbacks
+  </Card>
+  <Card title="Chat Completions" icon="brain" href="/v3/llms/chat-completions">
+    Full reference for the chat completions endpoint
+  </Card>
+</CardGroup>

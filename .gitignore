@@ -15,4 +15,5 @@ coverage.xml
 .env
 
 .DS_Store
+.claude/settings.local.json
 report.json.vscode/

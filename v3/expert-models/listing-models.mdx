@@ -1,0 +1,85 @@
+---
+title: "List Expert Models"
+icon: "list"
+---
+
+Use the `/v3/info` endpoints to discover all available expert model features, providers, and models.
+
+## Endpoints
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /v3/info` | List all features and subfeatures |
+| `GET /v3/info/{feature}/{subfeature}` | Get providers, models, pricing, and schemas for a specific feature |
+
+## List All Features
+
+<CodeGroup>
+```bash cURL
+curl https://api.edenai.run/v3/info \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+```python Python
+import requests
+
+response = requests.get(
+    "https://api.edenai.run/v3/info",
+    headers={"Authorization": "Bearer YOUR_API_KEY"}
+)
+
+for feature in response.json()["features"]:
+    print(feature["name"])
+```
+
+```javascript JavaScript
+const response = await fetch("https://api.edenai.run/v3/info", {
+  headers: { "Authorization": "Bearer YOUR_API_KEY" }
+});
+
+const { features } = await response.json();
+features.forEach(f => console.log(f.name));
+```
+</CodeGroup>
+
+## Get Feature Details
+
+Retrieve providers, pricing, and input/output schemas for a specific feature.
+
+<CodeGroup>
+```bash cURL
+curl https://api.edenai.run/v3/info/text/moderation \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+```python Python
+import requests
+
+response = requests.get(
+    "https://api.edenai.run/v3/info/text/moderation",
+    headers={"Authorization": "Bearer YOUR_API_KEY"}
+)
+
+details = response.json()
+for model in details.get("models", []):
+    print(model["model"], model["pricing"])
+```
+</CodeGroup>
+
+## Response Fields
+
+| Field | Description |
+|-------|-------------|
+| `models` | Available providers and model strings |
+| `pricing` | Cost per provider |
+| `input_schema` | Parameters accepted by this feature |
+| `output_schema` | Structure of the response |
+
+<Tip>
+You can also browse all features and providers visually in the [Eden AI model catalog](https://app.edenai.run/models).
+</Tip>
+
+<Note>
+Looking for LLMs like GPT-4o or Claude? See [List LLM Models](/v3/llms/listing-models) for the full list of chat models.
+</Note>
+

@@ -1,0 +1,137 @@
+---
+sidebarTitle: "First Expert Model Call"
+title: "First Expert Model call"
+icon: "wand-magic-sparkles"
+---
+
+Get started with Eden AI's Universal AI endpoint for expert models (OCR, image analysis, text processing, and more).
+
+<Note>
+You need credits to make API calls.
+For testing without using credits, use a [sandbox token](/v3/general/sandbox).
+</Note>
+
+## Prerequisites
+
+1. **API Token** - Get your token from the [Eden AI dashboard](https://app.edenai.run/)
+2. **Credits** - Ensure your account has sufficient credits
+
+## Make Your First Call
+
+The Universal AI endpoint handles all non-LLM features (OCR, image analysis, text processing, etc.) through a single endpoint.
+
+<CodeGroup>
+```python Python
+import requests
+
+url = "https://api.edenai.run/v3/universal-ai"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+payload = {
+    "model": "text/moderation/google",
+    "input": {
+        "text": "This is a sample text to moderate for harmful content."
+    }
+}
+
+response = requests.post(url, headers=headers, json=payload)
+result = response.json()
+print(result)
+```
+
+```bash cURL
+curl -X POST https://api.edenai.run/v3/universal-ai \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "text/moderation/google",
+    "input": {
+      "text": "This is a sample text to moderate for harmful content."
+    }
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.edenai.run/v3/universal-ai', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer YOUR_API_KEY',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    model: 'text/moderation/google',
+    input: { text: 'This is a sample text to moderate for harmful content.' }
+  })
+});
+
+const result = await response.json();
+console.log(result);
+```
+</CodeGroup>
+
+## Response
+
+```json
+{
+  "status": "success",
+  "cost": 0.0001,
+  "provider": "google",
+  "feature": "text",
+  "subfeature": "moderation",
+  "output": {
+    "nsfw_likelihood": 1,
+    "items": [
+      {"label": "Toxic", "likelihood": 1, "likelihood_score": 0.0908}
+    ],
+    "nsfw_likelihood_score": 0.0908
+  }
+}
+```
+
+## Model Format
+
+Use the format `feature/subfeature/provider[/model]`:
+
+```
+feature/subfeature/provider[/model]
+```
+
+**Examples:**
+- `text/moderation/google` - Content moderation
+- `ocr/financial_parser/google` - Invoice/receipt parsing
+- `image/generation/openai/dall-e-3` - Image generation
+- `image/object_detection/amazon` - Object detection
+
+## Available Features
+
+| Feature | Description | Example Models |
+|---------|-------------|----------------|
+| **Text** | Moderation, AI detection, NER | `text/moderation/openai` |
+| **OCR** | Document parsing, text extraction | `ocr/financial_parser/google` |
+| **Image** | Generation, detection, analysis | `image/generation/openai/dall-e-3` |
+| **Audio** | Speech-to-text, text-to-speech | `audio/tts/google` |
+| **Translation** | Document translation | `translation/document/google` |
+
+<Card title="List all available models" icon="list" href="/v3/expert-models/listing-models">
+  Discover all expert models available through Eden AI.
+</Card>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Audio Features" icon="volume-high" href="/v3/expert-models/features/audio/tts">
+    Speech-to-text transcription and text-to-speech synthesis
+  </Card>
+  <Card title="OCR Features" icon="file-lines" href="/v3/expert-models/features/ocr/ocr">
+    Document parsing and text extraction
+  </Card>
+  <Card title="Image Features" icon="image" href="/v3/expert-models/features/image/generation">
+    Image generation and analysis
+  </Card>
+  <Card title="List All Models" icon="list" href="/v3/expert-models/listing-models">
+    Browse all expert model features
+  </Card>
+</CardGroup>

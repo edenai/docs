@@ -1,0 +1,166 @@
+---
+icon: "wave-square"
+---
+
+Learn how to handle streaming responses from the V3 LLM endpoint using Server-Sent Events (SSE).
+
+## Overview
+
+When streaming is enabled in V3, LLM responses are delivered via Server-Sent Events (SSE), providing real-time token-by-token output.
+
+**Benefits:**
+- Immediate response feedback
+- Better user experience with progressive display
+- Lower perceived latency
+
+## Server-Sent Events Format
+
+SSE responses follow this pattern:
+
+```
+data: {JSON_CHUNK}
+
+data: {JSON_CHUNK}
+
+data: [DONE]
+```
+
+Each line starts with `data: ` followed by JSON or the `[DONE]` marker.
+
+## Python with OpenAI SDK
+
+{/* skip-test */}
+<CodeGroup>
+```python Python
+from openai import OpenAI
+
+client = OpenAI(
+    api_key="YOUR_EDEN_AI_API_KEY",
+    base_url="https://api.edenai.run/v3/llm"
+)
+
+stream = client.chat.completions.create(
+    model="anthropic/claude-sonnet-4-5",
+    messages=[{"role": "user", "content": "Tell me a short story"}],
+    stream=True
+)
+
+full_content = ""
+
+for chunk in stream:
+    if chunk.choices[0].delta.content:
+        content = chunk.choices[0].delta.content
+        full_content += content
+        print(content, end='', flush=True)
+
+print(f"\n\nComplete response: {full_content}")
+```
+</CodeGroup>
+
+## JavaScript with Fetch API
+
+<CodeGroup>
+```javascript JavaScript
+const url = 'https://api.edenai.run/v3/llm/chat/completions';
+const headers = {
+  'Authorization': 'Bearer YOUR_API_KEY',
+  'Content-Type': 'application/json'
+};
+
+const payload = {
+  model: 'openai/gpt-4',
+  messages: [{role: 'user', content: 'Tell me a short story'}],
+  stream: true
+};
+
+const response = await fetch(url, {
+  method: 'POST',
+  headers: headers,
+  body: JSON.stringify(payload)
+});
+
+const reader = response.body.getReader();
+const decoder = new TextDecoder();
+let buffer = '';
+
+while (true) {
+  const {done, value} = await reader.read();
+  if (done) break;
+
+  buffer += decoder.decode(value, {stream: true});
+  const lines = buffer.split('\n');
+  buffer = lines.pop(); // Keep incomplete line in buffer
+
+  for (const line of lines) {
+    if (line.startsWith('data: ')) {
+      const data = line.slice(6);
+
+      if (data === '[DONE]') {
+        console.log('\nStream finished');
+        break;
+      }
+
+      try {
+        const chunk = JSON.parse(data);
+        const content = chunk.choices[0]?.delta?.content;
+        if (content) {
+          process.stdout.write(content);
+        }
+      } catch (e) {
+        // Ignore parse errors
+      }
+    }
+  }
+}
+```
+</CodeGroup>
+
+## Chunk Structure
+
+Each JSON chunk follows OpenAI's format:
+
+```json
+{
+  "id": "chatcmpl-abc123",
+  "object": "chat.completion.chunk",
+  "created": 1677652288,
+  "model": "gpt-4",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "Hello"
+      },
+      "finish_reason": null
+    }
+  ]
+}
+```
+
+### Key Fields
+
+| Field | Description |
+|-------|-------------|
+| `id` | Unique completion ID |
+| `created` | Unix timestamp |
+| `model` | Model used |
+| `choices[].delta.role` | Role (only in first chunk) |
+| `choices[].delta.content` | Token content |
+| `choices[].finish_reason` | Stop reason in final chunk |
+
+## Finish Reasons
+
+| Value | Meaning |
+|-------|---------|
+| `stop` | Completed normally |
+| `length` | Stopped at `max_tokens` limit |
+| `content_filter` | Stopped by content policy |
+| `tool_calls` | Stopped to invoke a tool |
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Plans & Pricing" icon="book-open" href="/v3/overview/plans-prices">
+    Understand how streaming usage is billed
+  </Card>
+</CardGroup>

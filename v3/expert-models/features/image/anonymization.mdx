@@ -1,0 +1,76 @@
+---
+title: "Image Anonymization"
+icon: "🕵️"
+---
+
+## Endpoint
+
+`POST /v3/universal-ai` (sync)
+
+Model string pattern: `image/anonymization/{provider}[/{model}]`
+
+## Input
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| file | file_input | Yes | Image file ID from /v3/upload or direct file URL |
+
+
+## Output
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| image | string | Yes |  |
+| image_resource_url | string | Yes |  |
+| **items** | array[object] | No |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;kind | string | Yes |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;confidence | float | Yes |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;**bounding_boxes** | object | Yes |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;x_min | float | Yes |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;x_max | float | Yes |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;y_min | float | Yes |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;y_max | float | Yes |  |
+
+
+## Available Providers
+
+| Provider | Model String | Price |
+|----------|-------------|-------|
+| api4ai | `image/anonymization/api4ai` | $25 per 1,000 files |
+
+
+## Quick Start
+
+
+<CodeGroup>
+```python Python
+import requests
+
+url = "https://api.edenai.run/v3/universal-ai"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+payload = {
+    "model": "image/anonymization/api4ai",
+    "input": {
+        "file": "YOUR_FILE_UUID_OR_URL"
+    }
+}
+
+response = requests.post(url, headers=headers, json=payload)
+print(response.json())
+```
+
+```bash cURL
+curl -X POST https://api.edenai.run/v3/universal-ai \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "image/anonymization/api4ai",
+    "input": {"file": "YOUR_FILE_UUID_OR_URL"}
+  }'
+```
+</CodeGroup>
+

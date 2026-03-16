@@ -1,0 +1,138 @@
+---
+icon: "rotate-left"
+title: "Fallback"
+---
+
+When using Universal AI / expert models, there is no built-in fallback mechanism in the model string (unlike the [LLM smart routing](/v3/llms/smart-routing)). Instead, you implement fallback logic in your application code.
+
+## What is Fallback?
+
+Fallback means automatically retrying a request with an alternative provider when the primary provider fails. This improves reliability by ensuring your application continues working even if one provider experiences downtime or errors.
+
+## Implementation Pattern
+
+The approach is straightforward:
+
+1. Send a request to your primary provider
+2. If it fails (network error, provider outage, rate limit, etc.), catch the error
+3. Retry the same request with a fallback provider
+
+<CodeGroup>
+```python Python
+import requests
+
+url = "https://api.edenai.run/v3/universal-ai"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+text_to_moderate = "Some text to check for harmful content."
+
+# Define primary and fallback models
+primary_model = "text/moderation/openai"
+fallback_model = "text/moderation/google"
+
+def call_universal_ai(model, text):
+    response = requests.post(url, headers=headers, json={
+        "model": model,
+        "input": {"text": text}
+    })
+    response.raise_for_status()
+    return response.json()
+
+# Try primary, fall back if it fails
+try:
+    result = call_universal_ai(primary_model, text_to_moderate)
+    print("Primary provider succeeded")
+except requests.exceptions.RequestException as e:
+    print(f"Primary provider failed: {e}. Trying fallback...")
+    result = call_universal_ai(fallback_model, text_to_moderate)
+    print("Fallback provider succeeded")
+
+print(result)
+```
+
+```javascript JavaScript
+const url = "https://api.edenai.run/v3/universal-ai";
+const headers = {
+  "Authorization": "Bearer YOUR_API_KEY",
+  "Content-Type": "application/json"
+};
+
+const textToModerate = "Some text to check for harmful content.";
+
+const primaryModel = "text/moderation/openai";
+const fallbackModel = "text/moderation/google";
+
+async function callUniversalAI(model, text) {
+  const response = await fetch(url, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ model, input: { text } })
+  });
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  return response.json();
+}
+
+let result;
+try {
+  result = await callUniversalAI(primaryModel, textToModerate);
+  console.log("Primary provider succeeded");
+} catch (e) {
+  console.log(`Primary provider failed: ${e.message}. Trying fallback...`);
+  result = await callUniversalAI(fallbackModel, textToModerate);
+  console.log("Fallback provider succeeded");
+}
+
+console.log(result);
+```
+</CodeGroup>
+
+### Multiple Fallbacks
+
+You can chain several fallback providers for even greater resilience:
+
+```python Python
+import requests
+
+url = "https://api.edenai.run/v3/universal-ai"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+models = [
+    "text/moderation/openai",
+    "text/moderation/google",
+    "text/moderation/microsoft"
+]
+
+result = None
+for model in models:
+    try:
+        response = requests.post(url, headers=headers, json={
+            "model": model,
+            "input": {"text": "Text to moderate"}
+        })
+        response.raise_for_status()
+        result = response.json()
+        print(f"Success with {model}")
+        break
+    except requests.exceptions.RequestException as e:
+        print(f"{model} failed: {e}")
+
+if result is None:
+    print("All providers failed")
+```
+
+## Best Practices
+
+<Tip>
+Choose fallback providers that support the **same feature and subfeature**. For example, if your primary is `text/moderation/openai`, your fallback should also be a `text/moderation/*` provider. Use the [Listing Models](/v3/expert-models/listing-models) endpoint to discover which providers support a given feature.
+</Tip>
+
+- **Order by preference** — place your most reliable or cost-effective provider first.
+- **Log fallback events** — track when fallbacks occur so you can identify recurring provider issues.
+- **Set timeouts** — add request timeouts so a slow provider triggers the fallback quickly rather than hanging.
+- **Handle all providers failing** — always have a final error path if every provider is unavailable.

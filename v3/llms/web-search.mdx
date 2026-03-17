@@ -7,7 +7,7 @@ Web search lets LLMs access real-time information from the internet when generat
 
 ## How It Works
 
-Enable web search by adding `web_search: true` to your chat completion request. When enabled, the model will:
+Enable web search by adding `web_search_options` to your chat completion request. When enabled, the model will:
 
 1. Analyze the user's query to determine if web search is needed.
 2. Search the web for relevant, current information.
@@ -30,7 +30,9 @@ payload = {
     "messages": [
         {"role": "user", "content": "What are the latest developments in AI regulation in 2025?"}
     ],
-    "web_search": True
+    "web_search_options": {
+        "search_context_size": "medium"
+    }
 }
 
 response = requests.post(url, headers=headers, json=payload)
@@ -50,7 +52,9 @@ const payload = {
   messages: [
     { role: 'user', content: 'What are the latest developments in AI regulation in 2025?' }
   ],
-  web_search: true
+  web_search_options: {
+    search_context_size: 'medium'
+  }
 };
 
 const response = await fetch(url, {
@@ -72,7 +76,9 @@ curl -X POST https://api.edenai.run/v3/llm/chat/completions \
     "messages": [
       {"role": "user", "content": "What are the latest developments in AI regulation in 2025?"}
     ],
-    "web_search": true
+    "web_search_options": {
+      "search_context_size": "medium"
+    }
   }'
 ```
 </CodeGroup>
@@ -83,9 +89,10 @@ Not all models support web search. Use the [List LLM Models](/v3/llms/listing-mo
 
 ## Parameters
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `web_search` | boolean | `false` | Enable web search grounding for the request |
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `web_search_options` | object | Options for web search integration. Omit to disable web search. |
+| `web_search_options.search_context_size` | string | Amount of context retrieved from the web. Options: `"low"`, `"medium"`, `"high"`. Default: `"medium"` |
 
 ## With System Messages
 
@@ -114,7 +121,9 @@ payload = {
             "content": "What is the current stock price of Apple?"
         }
     ],
-    "web_search": True
+    "web_search_options": {
+        "search_context_size": "high"
+    }
 }
 
 response = requests.post(url, headers=headers, json=payload)

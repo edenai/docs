@@ -539,16 +539,16 @@ def update_docs_json(features: list[dict]) -> None:
                     if not (isinstance(p, dict) and p.get("group") == "AI Features")
                 ]
 
-                # Insert AI Features after the How-To Guides group
+                # Insert AI Features right before the Integrations group
                 insert_idx = None
                 for i, p in enumerate(pages):
-                    if isinstance(p, dict) and p.get("group") == "How-To Guides":
-                        insert_idx = i + 1
+                    if isinstance(p, dict) and p.get("group") == "Integrations":
+                        insert_idx = i
                         break
                 if insert_idx is not None:
                     pages.insert(insert_idx, nav_group)
                 else:
-                    # Fallback: insert before Tutorials or at end
+                    # Fallback: insert at end
                     pages.append(nav_group)
 
     # Atomic write: write to temp file then replace, so a crash can't corrupt docs.json

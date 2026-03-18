@@ -426,7 +426,6 @@ def generate_subfeature_page(feature: str, subfeature_info: dict, detail: dict) 
     page = f"""---
 title: "{safe_title}"
 description: "{safe_desc}"
-icon: "{DEFAULT_SUBFEATURE_ICON}"
 ---
 
 ## Endpoint

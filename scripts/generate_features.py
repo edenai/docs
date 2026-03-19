@@ -65,24 +65,6 @@ def fetch_subfeature_detail(feature: str, subfeature: str) -> dict:
     return fetch_json(url)
 
 
-def cheapest_openai_model() -> str:
-    """Return the cheapest OpenAI model ID from the /v3/llm/models endpoint."""
-    data = fetch_json(f"{API_BASE}/v3/llm/models")
-    # Response shape: {"object": "list", "data": [{...}, ...]}
-    models = data.get("data", []) if isinstance(data, dict) else data
-    openai_models = [m for m in models if isinstance(m, dict) and m.get("id", "").startswith("openai/")]
-    if not openai_models:
-        raise RuntimeError("No OpenAI models found in /v3/llm/models")
-    cheapest = min(
-        openai_models,
-        key=lambda m: (
-            m.get("pricing", {}).get("input_cost_per_token", 0)
-            + m.get("pricing", {}).get("output_cost_per_token", 0)
-        ),
-    )
-    return cheapest["id"]
-
-
 # -------------------------------------------------------------
 # Feature display name / icon derivation (fully automatic)
 # -------------------------------------------------------------
@@ -444,7 +426,6 @@ def generate_subfeature_page(feature: str, subfeature_info: dict, detail: dict) 
     page = f"""---
 title: "{safe_title}"
 description: "{safe_desc}"
-icon: "{DEFAULT_SUBFEATURE_ICON}"
 ---
 
 ## Endpoint
@@ -558,16 +539,16 @@ def update_docs_json(features: list[dict]) -> None:
                     if not (isinstance(p, dict) and p.get("group") == "AI Features")
                 ]
 
-                # Insert AI Features after the How-To Guides group
+                # Insert AI Features right before the Integrations group
                 insert_idx = None
                 for i, p in enumerate(pages):
-                    if isinstance(p, dict) and p.get("group") == "How-To Guides":
-                        insert_idx = i + 1
+                    if isinstance(p, dict) and p.get("group") == "Integrations":
+                        insert_idx = i
                         break
                 if insert_idx is not None:
                     pages.insert(insert_idx, nav_group)
                 else:
-                    # Fallback: insert before Tutorials or at end
+                    # Fallback: insert at end
                     pages.append(nav_group)
 
     # Atomic write: write to temp file then replace, so a crash can't corrupt docs.json
@@ -588,7 +569,7 @@ def update_docs_json(features: list[dict]) -> None:
 
 
 def cleanup_stale_pages(features: list[dict]) -> None:
-    """Remove .mdx files under v3/features/ that no longer map to an API feature."""
+    """Remove .mdx files under v3/expert-models/features/ that no longer map to an API feature."""
     expected_files: set[Path] = {FEATURES_DIR / "index.mdx"}
     for feat in features:
         fname = feat["name"]
@@ -618,9 +599,6 @@ def cleanup_stale_pages(features: list[dict]) -> None:
 def main() -> None:
     print("Fetching features from API...")
     features = fetch_all_features()
-    print("Fetching first LLM model...")
-    first_llm_model = fetch_first_llm_model()
-    print(f"  Using LLM model: {first_llm_model}")
     print(f"  Found {len(features)} feature categories")
 
     if not features:

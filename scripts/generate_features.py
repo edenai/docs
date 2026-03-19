@@ -497,9 +497,10 @@ Browse all AI features available through the Universal AI endpoint (`POST /v3/un
 # docs.json navigation update
 # --------------------------------
 
-def build_nav_group(features: list[dict]) -> dict:
-    """Build the 'AI Features' navigation group for docs.json."""
-    pages: list = ["v3/expert-models/features/index"]
+
+def _build_feature_subgroups(features: list[dict]) -> list[dict]:
+    """Build the feature subgroup entries to nest inside Expert Models."""
+    subgroups = []
     for feat in features:
         fname = feat["name"]
         display = derive_display_name(feat)
@@ -507,18 +508,23 @@ def build_nav_group(features: list[dict]) -> dict:
         for sf in feat.get("subfeatures", []):
             sf_slug = slug(sf["name"])
             subpages.append(f"v3/expert-models/features/{fname}/{sf_slug}")
-        pages.append({"group": display, "icon": derive_icon(fname), "pages": subpages})
-    return {"group": "AI Features", "icon": "microchip", "pages": pages}
+        subgroups.append({
+            "group": f"{display} Features",
+            "icon": derive_icon(fname),
+            "expanded": False,
+            "pages": subpages,
+        })
+    return subgroups
 
 
 def update_docs_json(features: list[dict]) -> None:
-    """Read docs.json, add/update the AI Features navigation group, write back."""
+    """Read docs.json, update the feature subgroups inside Expert Models, write back."""
     with open(DOCS_JSON_PATH, "r") as f:
         docs = json.load(f)
 
-    nav_group = build_nav_group(features)
+    feature_subgroups = _build_feature_subgroups(features)
 
-    # Find V3 Documentation tab → its groups[0] → pages array (the top-level groups list)
+    # Find V3 Documentation tab → its groups → Expert Models group
     versions = docs.get("navigation", {}).get("versions", [])
     for version in versions:
         if version.get("version") != "V3":
@@ -533,23 +539,24 @@ def update_docs_json(features: list[dict]) -> None:
                     continue
                 pages = group.get("pages", [])
 
-                # Remove old AI Features entry if present
+                # Remove old standalone "AI Features" entry if present
                 pages[:] = [
                     p for p in pages
                     if not (isinstance(p, dict) and p.get("group") == "AI Features")
                 ]
 
-                # Insert AI Features right before the Integrations group
-                insert_idx = None
-                for i, p in enumerate(pages):
-                    if isinstance(p, dict) and p.get("group") == "Integrations":
-                        insert_idx = i
+                # Find the Expert Models group and replace its feature subgroups
+                for p in pages:
+                    if isinstance(p, dict) and p.get("group") == "Expert Models":
+                        expert_pages = p.get("pages", [])
+                        # Keep non-feature pages (e.g. fallback, webhooks, listing-models)
+                        static_pages = [
+                            ep for ep in expert_pages
+                            if isinstance(ep, str)
+                        ]
+                        # Replace with static pages + new feature subgroups
+                        p["pages"] = static_pages + feature_subgroups
                         break
-                if insert_idx is not None:
-                    pages.insert(insert_idx, nav_group)
-                else:
-                    # Fallback: insert at end
-                    pages.append(nav_group)
 
     # Atomic write: write to temp file then replace, so a crash can't corrupt docs.json
     fd, tmp_path = tempfile.mkstemp(dir=DOCS_JSON_PATH.parent, suffix=".json")

@@ -3,19 +3,15 @@ icon: "rotate-left"
 title: "Fallback"
 ---
 
-When using Universal AI / expert models, there is no built-in fallback mechanism in the model string (unlike the [LLM smart routing](/v3/llms/smart-routing)). Instead, you implement fallback logic in your application code.
+Eden AI handles fallback for Universal AI / expert model requests. If your primary provider fails (outage, rate limit, error), Eden AI retries with the next provider in your fallback list -- no retry logic needed on your side.
 
-## What is Fallback?
+## Usage
 
-Fallback means automatically retrying a request with an alternative provider when the primary provider fails. This improves reliability by ensuring your application continues working even if one provider experiences downtime or errors.
+Set your primary provider in `model` and add a `fallbacks` array with one or more backup providers. If the primary fails, Eden AI tries each fallback in order.
 
-## Implementation Pattern
-
-The approach is straightforward:
-
-1. Send a request to your primary provider
-2. If it fails (network error, provider outage, rate limit, etc.), catch the error
-3. Retry the same request with a fallback provider
+<Info>
+All providers (primary and fallbacks) must support the same feature and subfeature. Use the [Listing Models](/v3/expert-models/listing-models) endpoint to discover available providers.
+</Info>
 
 <CodeGroup>
 ```python Python
@@ -24,115 +20,58 @@ import requests
 url = "https://api.edenai.run/v3/universal-ai"
 headers = {
     "Authorization": "Bearer YOUR_API_KEY",
-    "Content-Type": "application/json"
+    "Content-Type": "application/json",
 }
 
-text_to_moderate = "Some text to check for harmful content."
+payload = {
+    "model": "text/moderation/microsoft",
+    "fallbacks": ["text/moderation/google"],
+    "input": {"text": "Text to moderate"}
+}
 
-# Define primary and fallback models
-primary_model = "text/moderation/openai"
-fallback_model = "text/moderation/google"
+response = requests.post(url, headers=headers, json=payload)
 
-def call_universal_ai(model, text):
-    response = requests.post(url, headers=headers, json={
-        "model": model,
-        "input": {"text": text}
-    })
-    response.raise_for_status()
-    return response.json()
-
-# Try primary, fall back if it fails
-try:
-    result = call_universal_ai(primary_model, text_to_moderate)
-    print("Primary provider succeeded")
-except requests.exceptions.RequestException as e:
-    print(f"Primary provider failed: {e}. Trying fallback...")
-    result = call_universal_ai(fallback_model, text_to_moderate)
-    print("Fallback provider succeeded")
-
-print(result)
+print(response.status_code)
+print(response.json())
 ```
 
 ```javascript JavaScript
-const url = "https://api.edenai.run/v3/universal-ai";
-const headers = {
-  "Authorization": "Bearer YOUR_API_KEY",
-  "Content-Type": "application/json"
-};
+const response = await fetch("https://api.edenai.run/v3/universal-ai", {
+  method: "POST",
+  headers: {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    model: "text/moderation/microsoft",
+    fallbacks: ["text/moderation/google"],
+    input: { text: "Text to moderate" }
+  })
+});
 
-const textToModerate = "Some text to check for harmful content.";
+console.log(response.status);
+console.log(await response.json());
+```
 
-const primaryModel = "text/moderation/openai";
-const fallbackModel = "text/moderation/google";
-
-async function callUniversalAI(model, text) {
-  const response = await fetch(url, {
-    method: "POST",
-    headers,
-    body: JSON.stringify({ model, input: { text } })
-  });
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
-  return response.json();
-}
-
-let result;
-try {
-  result = await callUniversalAI(primaryModel, textToModerate);
-  console.log("Primary provider succeeded");
-} catch (e) {
-  console.log(`Primary provider failed: ${e.message}. Trying fallback...`);
-  result = await callUniversalAI(fallbackModel, textToModerate);
-  console.log("Fallback provider succeeded");
-}
-
-console.log(result);
+```bash cURL
+curl -X POST https://api.edenai.run/v3/universal-ai \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "text/moderation/microsoft",
+    "fallbacks": ["text/moderation/google"],
+    "input": {"text": "Text to moderate"}
+  }'
 ```
 </CodeGroup>
 
-### Multiple Fallbacks
+## Next Steps
 
-You can chain several fallback providers for even greater resilience:
-
-```python Python
-import requests
-
-url = "https://api.edenai.run/v3/universal-ai"
-headers = {
-    "Authorization": "Bearer YOUR_API_KEY",
-    "Content-Type": "application/json"
-}
-
-models = [
-    "text/moderation/openai",
-    "text/moderation/google",
-    "text/moderation/microsoft"
-]
-
-result = None
-for model in models:
-    try:
-        response = requests.post(url, headers=headers, json={
-            "model": model,
-            "input": {"text": "Text to moderate"}
-        })
-        response.raise_for_status()
-        result = response.json()
-        print(f"Success with {model}")
-        break
-    except requests.exceptions.RequestException as e:
-        print(f"{model} failed: {e}")
-
-if result is None:
-    print("All providers failed")
-```
-
-## Best Practices
-
-<Tip>
-Choose fallback providers that support the **same feature and subfeature**. For example, if your primary is `text/moderation/openai`, your fallback should also be a `text/moderation/*` provider. Use the [Listing Models](/v3/expert-models/listing-models) endpoint to discover which providers support a given feature.
-</Tip>
-
-- **Order by preference** — place your most reliable or cost-effective provider first.
-- **Log fallback events** — track when fallbacks occur so you can identify recurring provider issues.
-- **Set timeouts** — add request timeouts so a slow provider triggers the fallback quickly rather than hanging.
-- **Handle all providers failing** — always have a final error path if every provider is unavailable.
+<CardGroup cols={2}>
+  <Card title="LLM Fallback" icon="rotate-left" href="/v3/llms/fallback">
+    Built-in fallback for LLM chat requests
+  </Card>
+  <Card title="Listing Models" icon="list" href="/v3/expert-models/listing-models">
+    Discover available providers for each feature
+  </Card>
+</CardGroup>

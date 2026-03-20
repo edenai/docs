@@ -239,7 +239,7 @@
       }
     ],
     "primary": {
-      "label": "Get Started",
+      "label": "To the App",
       "href": "https://app.edenai.run/",
       "type": "button"
     }

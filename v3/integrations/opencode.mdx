@@ -1,0 +1,103 @@
+---
+title: "OpenCode"
+---
+
+Configure [OpenCode](https://opencode.ai), the AI-powered terminal coding assistant, to use Eden AI for access to 500+ models.
+
+## Overview
+
+OpenCode is a terminal-based AI coding assistant. By connecting it to Eden AI, you get:
+
+- **500+ models**: Access OpenAI, Anthropic, Google, and more through a single API key
+- **Auto-configured**: A script fetches Eden AI's full model catalog and writes your config automatically
+- **Tool calling**: All models in the generated config support function calling, which OpenCode requires
+
+## Setup
+
+### 1. Install OpenCode
+
+```bash
+npm install -g opencode-ai
+```
+
+### 2. Generate your config
+
+Download the script and run it:
+
+```bash
+python gen_opencode_config.py
+```
+
+This fetches all available Eden AI models and writes them directly to `~/.config/opencode/opencode.json`.
+
+<CodeGroup>
+```python gen_opencode_config.py
+"""Generate opencode.json from Eden AI's model catalog."""
+
+import json
+import requests
+from pathlib import Path
+
+MODELS_URL = "https://api.edenai.run/v3/llm/models"
+BASE_URL = "https://api.edenai.run/v3/llm"
+
+models = requests.get(MODELS_URL).json()["data"]
+
+def to_per_million(v):
+    return round(v * 1_000_000, 6) if v else None
+
+model_entries = {}
+for m in models:
+    caps = m.get("capabilities", {})
+    if not caps.get("supports_function_calling"):
+        continue  # opencode requires tool calling
+
+    p = m.get("pricing", {})
+    cost = {k: to_per_million(p.get(v)) for k, v in {
+        "input": "input_cost_per_token",
+        "output": "output_cost_per_token",
+        "cache_read": "cache_read_input_token_cost",
+        "cache_write": "cache_creation_input_token_cost",
+    }.items() if p.get(v)}
+
+    model_entries[m["id"]] = {
+        **({"cost": cost} if cost else {}),
+        **({"reasoning": True} if caps.get("supports_reasoning") else {}),
+    }
+
+config = {
+    "$schema": "https://opencode.ai/config.json",
+    "provider": {
+        "edenai": {
+            "npm": "@ai-sdk/openai-compatible",
+            "name": "Eden AI",
+            "options": {"baseURL": BASE_URL},
+            "models": model_entries,
+        }
+    },
+}
+
+output = Path.home() / ".config" / "opencode" / "opencode.json"
+output.parent.mkdir(parents=True, exist_ok=True)
+output.write_text(json.dumps(config, indent=2))
+
+print(f"Written {len(model_entries)} models to {output}")
+```
+</CodeGroup>
+
+### 3. Connect your API key
+
+Launch OpenCode, run `/connect`, select **Eden AI** from the list, and paste your API key when prompted.
+
+Get your key from [app.edenai.run](https://app.edenai.run) → **API Keys**.
+
+### 4. Start coding
+
+```bash
+opencode
+```
+
+## Next Steps
+
+- [Continue.dev](./continue-dev) - AI code assistant for VS Code and JetBrains
+- [Claude Code](./claude-code) - Official Claude CLI

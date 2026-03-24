@@ -137,6 +137,14 @@
                           "v3/expert-models/features/audio/tts",
                           "v3/expert-models/features/audio/speech-to-text-async"
                         ]
+                      },
+                      {
+                        "group": "Video Generation Features",
+                        "icon": "video",
+                        "expanded": false,
+                        "pages": [
+                          "v3/expert-models/features/video/generation-async"
+                        ]
                       }
                     ]
                   },

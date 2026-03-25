@@ -3,218 +3,369 @@ icon: "message"
 title: "Responses"
 ---
 
-Eden AI's LLM endpoint returns responses in the OpenAI format, making it fully compatible with existing OpenAI tooling and libraries.
+Eden AI supports the OpenAI Responses API — a stateful alternative to chat completions that stores conversation history server-side, so you don't need to resend the full message history on each turn.
 
-## Success Response
+## Overview
 
-Every successful chat completion returns a JSON object with the following structure:
+**Endpoints:**
 
-```json
-{
-  "id": "chatcmpl-abc123def456",
-  "object": "chat.completion",
-  "created": 1710000000,
-  "model": "openai/gpt-4",
-  "choices": [
-    {
-      "index": 0,
-      "message": {
-        "role": "assistant",
-        "content": "Hello! I'm doing well, thank you for asking. How can I help you today?"
-      },
-      "finish_reason": "stop"
-    }
-  ],
-  "usage": {
-    "prompt_tokens": 12,
-    "completion_tokens": 18,
-    "total_tokens": 30
-  }
-}
-```
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/v3/llm/responses` | Create a response |
+| `GET` | `/v3/llm/responses/{response_id}` | Retrieve a stored response |
+| `DELETE` | `/v3/llm/responses/{response_id}` | Delete a stored response |
+| `GET` | `/v3/llm/responses/{response_id}/input_items` | List the input items of a response |
 
-## Field Reference
+## How It Differs from Chat Completions
 
-### Top-Level Fields
+| | Chat Completions | Responses |
+|---|---|---|
+| System prompt | `messages[{role: "system"}]` | `instructions` top-level field |
+| User input | `messages` array | `input` string or array |
+| Response text | `choices[0].message.content` | `output_text` or `output[0].content[0].text` |
+| Multi-turn | Resend full history | `previous_response_id` |
+| Persistence | Stateless | Stored by default (`store: true`) |
+| Token fields | `prompt_tokens` / `completion_tokens` | `input_tokens` / `output_tokens` |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | string | Unique identifier for the completion |
-| `object` | string | Always `"chat.completion"` for non-streaming responses |
-| `created` | integer | Unix timestamp (seconds) when the response was generated |
-| `model` | string | The model that produced the response (e.g., `openai/gpt-4`) |
-| `choices` | array | List of completion choices (typically one) |
-| `usage` | object | Token usage statistics for the request |
-
-### `choices[]` Fields
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `index` | integer | Index of the choice in the array (starts at 0) |
-| `message.role` | string | Always `"assistant"` for model responses |
-| `message.content` | string | The generated text content |
-| `message.tool_calls` | array | Tool/function calls requested by the model (if applicable). See [Tools](/v3/llms/tools) |
-| `finish_reason` | string | Why the model stopped generating |
-
-### `usage` Fields
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `prompt_tokens` | integer | Number of tokens in the input messages |
-| `completion_tokens` | integer | Number of tokens in the generated response |
-| `total_tokens` | integer | Sum of `prompt_tokens` and `completion_tokens` |
-
-<Tip>
-Use the `usage` field to monitor token consumption and estimate costs across providers.
-</Tip>
-
-## Finish Reasons
-
-The `finish_reason` field indicates why the model stopped generating:
-
-| Value | Meaning |
-|-------|---------|
-| `stop` | The model completed its response naturally |
-| `length` | The response hit the `max_tokens` limit |
-| `tool_calls` | The model is requesting a tool/function call |
-| `content_filter` | Content was omitted due to a provider content filter |
-
-## Accessing the Response
+## Create a Response
 
 <CodeGroup>
 ```python Python
 import requests
 
-url = "https://api.edenai.run/v3/llm/chat/responses"
+url = "https://api.edenai.run/v3/llm/responses"
 headers = {
     "Authorization": "Bearer YOUR_API_KEY",
     "Content-Type": "application/json"
 }
 
 payload = {
-    "model": "openai/gpt-4",
-    "messages": [
-        {"role": "user", "content": "What is the capital of France?"}
-    ]
+    "model": "openai/gpt-4o",
+    "input": "What is the capital of France?",
+    "instructions": "You are a helpful assistant."
 }
 
 response = requests.post(url, headers=headers, json=payload)
 result = response.json()
 
-# Access the generated text
-content = result["choices"][0]["message"]["content"]
-print(content)
+print(result["output_text"])
+```
 
-# Check why the model stopped
-finish_reason = result["choices"][0]["finish_reason"]
-print(f"Finish reason: {finish_reason}")
+```javascript JavaScript
+const response = await fetch("https://api.edenai.run/v3/llm/responses", {
+  method: "POST",
+  headers: {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    model: "openai/gpt-4o",
+    input: "What is the capital of France?",
+    instructions: "You are a helpful assistant."
+  })
+});
 
-# Check token usage
-usage = result["usage"]
-print(f"Tokens used: {usage['total_tokens']} (prompt: {usage['prompt_tokens']}, completion: {usage['completion_tokens']})")
+const result = await response.json();
+console.log(result.output_text);
 ```
 
 ```bash cURL
-curl -X POST https://api.edenai.run/v3/llm/chat/responses \
+curl -X POST https://api.edenai.run/v3/llm/responses \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-4",
-    "messages": [{"role": "user", "content": "What is the capital of France?"}]
+    "model": "openai/gpt-4o",
+    "input": "What is the capital of France?",
+    "instructions": "You are a helpful assistant."
   }'
 ```
 </CodeGroup>
 
-## Error Responses
+## Request Parameters
 
-When a request fails, the API returns an error object with an HTTP status code and a descriptive message.
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `model` | string | Required | Model string, e.g. `openai/gpt-4o` |
+| `input` | string \| array | Required | User input — a plain string or an array of input items |
+| `instructions` | string | — | System-level instructions for the model (replaces the `system` message) |
+| `previous_response_id` | string | — | Chain to a prior response for multi-turn conversations |
+| `store` | boolean | `true` | Persist the response server-side |
+| `stream` | boolean | `false` | Enable streaming via SSE |
+| `temperature` | float | `1.0` | Randomness (0–2) |
+| `max_output_tokens` | integer | — | Maximum tokens to generate |
+| `top_p` | float | `1.0` | Nucleus sampling threshold |
+| `tools` | array | — | Tool definitions (function calling, web search) |
+| `tool_choice` | string \| object | `"auto"` | How the model selects tools |
+| `truncation` | string | `"disabled"` | Truncation strategy: `"auto"` or `"disabled"` |
+| `metadata` | object | — | Arbitrary key-value pairs attached to the response |
+| `user` | string | — | Stable identifier for the end-user |
 
-### Error Response Format
+## Response Object
 
 ```json
 {
-  "error": {
-    "message": "Invalid API key provided.",
-    "type": "authentication_error",
-    "code": 401
+  "id": "resp_abc123def456",
+  "object": "response",
+  "created_at": 1710000000,
+  "model": "openai/gpt-4o",
+  "status": "completed",
+  "instructions": "You are a helpful assistant.",
+  "output": [
+    {
+      "id": "msg_abc123",
+      "type": "message",
+      "role": "assistant",
+      "content": [
+        {
+          "type": "output_text",
+          "text": "The capital of France is Paris."
+        }
+      ]
+    }
+  ],
+  "output_text": "The capital of France is Paris.",
+  "usage": {
+    "input_tokens": 20,
+    "output_tokens": 9,
+    "total_tokens": 29
   }
 }
 ```
 
-### Status Codes
+### Top-Level Fields
 
-| Code | Meaning | Common Cause |
-|------|---------|--------------|
-| `400` | Bad Request | Malformed request body, missing required fields |
-| `401` | Unauthorized | Invalid or missing API key |
-| `402` | Insufficient Credits | Account balance is too low to process the request |
-| `404` | Not Found | Invalid model name or endpoint |
-| `422` | Validation Error | Invalid parameter values (e.g., temperature out of range) |
-| `429` | Rate Limited | Too many requests; retry after the indicated delay |
-| `500` | Server Error | Internal server error; retry the request |
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Unique response identifier |
+| `object` | string | Always `"response"` |
+| `created_at` | integer | Unix timestamp of creation |
+| `model` | string | Model that produced the response |
+| `status` | string | `"completed"`, `"in_progress"`, `"incomplete"`, or `"failed"` |
+| `instructions` | string | System instructions used |
+| `output` | array | List of output items (messages, tool calls, reasoning) |
+| `output_text` | string | Convenience shorthand for the first text content |
+| `usage` | object | Token consumption |
+| `error` | object | Present when `status` is `"failed"` |
 
-### Handling Errors
+### `output[]` Item Types
+
+| `type` | Description |
+|--------|-------------|
+| `message` | Assistant text response |
+| `function_call` | A tool/function call requested by the model |
+| `reasoning` | Reasoning steps (o-series models only) |
+| `web_search_call` | Web search tool invocation |
+
+### `usage` Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `input_tokens` | integer | Tokens consumed by the input |
+| `output_tokens` | integer | Tokens generated in the response |
+| `total_tokens` | integer | Sum of input and output tokens |
+
+## Multi-Turn Conversations
+
+Because responses are stored server-side, you only need to send the new user message and reference the prior response ID:
 
 <CodeGroup>
 ```python Python
 import requests
 
-url = "https://api.edenai.run/v3/llm/chat/responses"
+url = "https://api.edenai.run/v3/llm/responses"
 headers = {
     "Authorization": "Bearer YOUR_API_KEY",
     "Content-Type": "application/json"
 }
 
-payload = {
-    "model": "openai/gpt-4",
-    "messages": [
-        {"role": "user", "content": "Hello!"}
-    ]
-}
+# First turn
+res1 = requests.post(url, headers=headers, json={
+    "model": "openai/gpt-4o",
+    "input": "What is the capital of France?",
+    "store": True
+}).json()
 
-response = requests.post(url, headers=headers, json=payload)
+print(res1["output_text"])  # "The capital of France is Paris."
 
-if response.status_code == 200:
-    result = response.json()
-    print(result["choices"][0]["message"]["content"])
-elif response.status_code == 401:
-    print("Authentication failed. Check your API key.")
-elif response.status_code == 402:
-    print("Insufficient credits. Please top up your account.")
-elif response.status_code == 429:
-    print("Rate limited. Please slow down your requests.")
-else:
-    error = response.json().get("error", {})
-    print(f"Error {response.status_code}: {error.get('message', 'Unknown error')}")
+# Second turn — no need to resend history
+res2 = requests.post(url, headers=headers, json={
+    "model": "openai/gpt-4o",
+    "input": "What is its population?",
+    "previous_response_id": res1["id"]
+}).json()
+
+print(res2["output_text"])
 ```
 
-```bash cURL
-# A failed request returns an error JSON with the appropriate HTTP status code
-curl -s -w "\nHTTP Status: %{http_code}\n" \
-  -X POST https://api.edenai.run/v3/llm/chat/responses \
-  -H "Authorization: Bearer INVALID_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "openai/gpt-4",
-    "messages": [{"role": "user", "content": "Hello!"}]
-  }'
+```javascript JavaScript
+const url = "https://api.edenai.run/v3/llm/responses";
+const headers = {
+  "Authorization": "Bearer YOUR_API_KEY",
+  "Content-Type": "application/json"
+};
+
+const res1 = await fetch(url, {
+  method: "POST",
+  headers,
+  body: JSON.stringify({
+    model: "openai/gpt-4o",
+    input: "What is the capital of France?",
+    store: true
+  })
+}).then(r => r.json());
+
+const res2 = await fetch(url, {
+  method: "POST",
+  headers,
+  body: JSON.stringify({
+    model: "openai/gpt-4o",
+    input: "What is its population?",
+    previous_response_id: res1.id
+  })
+}).then(r => r.json());
+
+console.log(res2.output_text);
 ```
 </CodeGroup>
 
-<Note>
-When you receive a `429` (rate limited) response, implement exponential backoff before retrying. Start with a 1-second delay and double it on each retry.
-</Note>
+<Tip>
+Pass `store: false` if you don't need persistence and want to keep the conversation stateless, like chat completions.
+</Tip>
 
-## Streaming Responses
+## Retrieve a Response
 
-When `stream: true` is set, responses are delivered as Server-Sent Events (SSE) with a different format. Each chunk uses `"object": "chat.completion.chunk"` and contains a `delta` field instead of `message`.
+Fetch a previously stored response by ID:
 
-See [Streaming Responses](/v3/llms/streaming) for the full SSE format and parsing examples.
+<CodeGroup>
+```python Python
+import requests
+
+response_id = "resp_abc123def456"
+url = f"https://api.edenai.run/v3/llm/responses/{response_id}"
+headers = {"Authorization": "Bearer YOUR_API_KEY"}
+
+result = requests.get(url, headers=headers).json()
+print(result["output_text"])
+```
+
+```bash cURL
+curl https://api.edenai.run/v3/llm/responses/resp_abc123def456 \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+</CodeGroup>
+
+## Delete a Response
+
+Remove a stored response. The response will no longer be retrievable or usable as a `previous_response_id`:
+
+<CodeGroup>
+```python Python
+import requests
+
+response_id = "resp_abc123def456"
+url = f"https://api.edenai.run/v3/llm/responses/{response_id}"
+headers = {"Authorization": "Bearer YOUR_API_KEY"}
+
+result = requests.delete(url, headers=headers).json()
+print(result)  # {"id": "resp_abc123def456", "deleted": true}
+```
+
+```bash cURL
+curl -X DELETE https://api.edenai.run/v3/llm/responses/resp_abc123def456 \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+</CodeGroup>
+
+## List Input Items
+
+Retrieve the list of inputs that were sent as part of a response:
+
+<CodeGroup>
+```python Python
+import requests
+
+response_id = "resp_abc123def456"
+url = f"https://api.edenai.run/v3/llm/responses/{response_id}/input_items"
+headers = {"Authorization": "Bearer YOUR_API_KEY"}
+
+result = requests.get(url, headers=headers).json()
+for item in result["data"]:
+    print(item)
+```
+
+```bash cURL
+curl https://api.edenai.run/v3/llm/responses/resp_abc123def456/input_items \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+</CodeGroup>
+
+## OpenAI SDK
+
+Use Eden AI's Responses endpoint directly with the OpenAI Python SDK:
+
+<CodeGroup>
+```python Python
+from openai import OpenAI
+
+client = OpenAI(
+    api_key="YOUR_EDEN_AI_API_KEY",
+    base_url="https://api.edenai.run/v3/llm"
+)
+
+response = client.responses.create(
+    model="anthropic/claude-sonnet-4-5",
+    input="What is the capital of France?",
+    instructions="You are a helpful assistant."
+)
+
+print(response.output_text)
+```
+</CodeGroup>
+
+For multi-turn with the SDK:
+
+<CodeGroup>
+```python Python
+from openai import OpenAI
+
+client = OpenAI(
+    api_key="YOUR_EDEN_AI_API_KEY",
+    base_url="https://api.edenai.run/v3/llm"
+)
+
+res1 = client.responses.create(
+    model="openai/gpt-4o",
+    input="What is the capital of France?",
+    store=True
+)
+
+res2 = client.responses.create(
+    model="openai/gpt-4o",
+    input="What is its population?",
+    previous_response_id=res1.id
+)
+
+print(res2.output_text)
+```
+</CodeGroup>
+
+## Streaming
+
+Set `stream: true` to receive output incrementally as Server-Sent Events. See [Streaming](/v3/llms/streaming) for the full SSE format and parsing examples.
 
 ## Next Steps
 
 <CardGroup cols={2}>
-  <Card title="LLMs vs Expert Models" icon="book-open" href="/v3/overview/llms-vs-expert-models">
-    Understand when to use the LLM endpoint vs Expert Models
+  <Card title="Chat Completions" icon="comment-dots" href="/v3/llms/chat-completions">
+    Use the stateless chat completions endpoint
+  </Card>
+  <Card title="Streaming" icon="bolt" href="/v3/llms/streaming">
+    Receive responses token by token via SSE
+  </Card>
+  <Card title="Tools" icon="wrench" href="/v3/llms/tools">
+    Extend responses with function calling and built-in tools
+  </Card>
+  <Card title="Structured Output" icon="brackets-curly" href="/v3/llms/structured-output">
+    Constrain responses to a JSON schema
   </Card>
 </CardGroup>

@@ -3,7 +3,7 @@ icon: "message"
 title: "Responses"
 ---
 
-Eden AI's LLM endpoint returns responses in the OpenAI chat completions format, making it fully compatible with existing OpenAI tooling and libraries.
+Eden AI's LLM endpoint returns responses in the OpenAI format, making it fully compatible with existing OpenAI tooling and libraries.
 
 ## Success Response
 
@@ -85,7 +85,7 @@ The `finish_reason` field indicates why the model stopped generating:
 ```python Python
 import requests
 
-url = "https://api.edenai.run/v3/llm/chat/completions"
+url = "https://api.edenai.run/v3/llm/chat/responses"
 headers = {
     "Authorization": "Bearer YOUR_API_KEY",
     "Content-Type": "application/json"
@@ -115,7 +115,7 @@ print(f"Tokens used: {usage['total_tokens']} (prompt: {usage['prompt_tokens']}, 
 ```
 
 ```bash cURL
-curl -X POST https://api.edenai.run/v3/llm/chat/completions \
+curl -X POST https://api.edenai.run/v3/llm/chat/responses \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -159,7 +159,7 @@ When a request fails, the API returns an error object with an HTTP status code a
 ```python Python
 import requests
 
-url = "https://api.edenai.run/v3/llm/chat/completions"
+url = "https://api.edenai.run/v3/llm/chat/responses"
 headers = {
     "Authorization": "Bearer YOUR_API_KEY",
     "Content-Type": "application/json"
@@ -191,7 +191,7 @@ else:
 ```bash cURL
 # A failed request returns an error JSON with the appropriate HTTP status code
 curl -s -w "\nHTTP Status: %{http_code}\n" \
-  -X POST https://api.edenai.run/v3/llm/chat/completions \
+  -X POST https://api.edenai.run/v3/llm/chat/responses \
   -H "Authorization: Bearer INVALID_KEY" \
   -H "Content-Type: application/json" \
   -d '{

@@ -14,7 +14,6 @@ Eden AI supports the OpenAI Responses API — a stateful alternative to chat com
 | `POST` | `/v3/llm/responses` | Create a response |
 | `GET` | `/v3/llm/responses/{response_id}` | Retrieve a stored response |
 | `DELETE` | `/v3/llm/responses/{response_id}` | Delete a stored response |
-| `GET` | `/v3/llm/responses/{response_id}/input_items` | List the input items of a response |
 
 <Warning>
 **Provider-Dependent Behavior** — The Responses API is a passthrough to the underlying provider. Stateful features (server-side storage, response retrieval/deletion, and `previous_response_id` chaining) are only available when the provider natively supports the Responses API (e.g. OpenAI). For all other providers, responses are not stored and the retrieve/delete endpoints are not functional.
@@ -26,13 +25,14 @@ Eden AI supports the OpenAI Responses API — a stateful alternative to chat com
 |---|---|---|
 | System prompt | `messages[{role: "system"}]` | `instructions` top-level field |
 | User input | `messages` array | `input` string or array |
-| Response text | `choices[0].message.content` | `output_text` or `output[0].content[0].text` |
+| Response text | `choices[0].message.content` | `output[0].content[0].text` |
 | Multi-turn | Resend full history | `previous_response_id` |
 | Persistence | Stateless | Stored by default (`store: true`) |
 | Token fields | `prompt_tokens` / `completion_tokens` | `input_tokens` / `output_tokens` |
 
 ## Create a Response
 
+{/* skip-test */}
 <CodeGroup>
 ```python Python
 import requests
@@ -52,7 +52,7 @@ payload = {
 response = requests.post(url, headers=headers, json=payload)
 result = response.json()
 
-print(result.get("output_text") or result["output"][0]["content"][0]["text"])
+print(result["output"][0]["content"][0]["text"])
 ```
 
 ```javascript JavaScript
@@ -70,7 +70,7 @@ const response = await fetch("https://api.edenai.run/v3/llm/responses", {
 });
 
 const result = await response.json();
-console.log(result.output_text ?? result.output[0].content[0].text);
+console.log(result.output[0].content[0].text);
 ```
 
 ```bash cURL
@@ -118,6 +118,7 @@ curl -X POST https://api.edenai.run/v3/llm/responses \
     {
       "id": "msg_abc123",
       "type": "message",
+      "status": "completed",
       "role": "assistant",
       "content": [
         {
@@ -127,12 +128,14 @@ curl -X POST https://api.edenai.run/v3/llm/responses \
       ]
     }
   ],
-  "output_text": "The capital of France is Paris.",
   "usage": {
     "input_tokens": 20,
     "output_tokens": 9,
     "total_tokens": 29
-  }
+  },
+  "provider": "openai",
+  "cost": 0.000087,
+  "provider_time": 1.23
 }
 ```
 
@@ -147,9 +150,11 @@ curl -X POST https://api.edenai.run/v3/llm/responses \
 | `status` | string | `"completed"`, `"in_progress"`, `"incomplete"`, or `"failed"` |
 | `instructions` | string | System instructions used |
 | `output` | array | List of output items (messages, tool calls, reasoning) |
-| `output_text` | string | Convenience shorthand for the first text content |
 | `usage` | object | Token consumption |
 | `error` | object | Present when `status` is `"failed"` |
+| `provider` | string | Eden AI: provider name extracted from the model string |
+| `cost` | float | Eden AI: estimated cost in USD for this request |
+| `provider_time` | float | Eden AI: provider response time in seconds |
 
 ### `output[]` Item Types
 
@@ -172,6 +177,7 @@ curl -X POST https://api.edenai.run/v3/llm/responses \
 
 Because responses are stored server-side, you only need to send the new user message and reference the prior response ID:
 
+{/* skip-test */}
 <CodeGroup>
 ```python Python
 import requests
@@ -189,7 +195,7 @@ res1 = requests.post(url, headers=headers, json={
     "store": True
 }).json()
 
-print(res1.get("output_text") or res1["output"][0]["content"][0]["text"])
+print(res1["output"][0]["content"][0]["text"])
 
 # Second turn — no need to resend history
 res2 = requests.post(url, headers=headers, json={
@@ -198,7 +204,7 @@ res2 = requests.post(url, headers=headers, json={
     "previous_response_id": res1["id"]
 }).json()
 
-print(res2.get("output_text") or res2["output"][0]["content"][0]["text"])
+print(res2["output"][0]["content"][0]["text"])
 ```
 
 ```javascript JavaScript
@@ -228,7 +234,7 @@ const res2 = await fetch(url, {
   })
 }).then(r => r.json());
 
-console.log(res2.output_text ?? res2.output[0].content[0].text);
+console.log(res2.output[0].content[0].text);
 ```
 </CodeGroup>
 
@@ -248,7 +254,7 @@ This endpoint only works for providers with native Responses API support. For ot
 
 Fetch a previously stored response by ID:
 
-{/* skip-test */}
+
 <CodeGroup>
 ```python Python
 import requests
@@ -258,7 +264,7 @@ url = f"https://api.edenai.run/v3/llm/responses/{response_id}"
 headers = {"Authorization": "Bearer YOUR_API_KEY"}
 
 result = requests.get(url, headers=headers).json()
-print(result.get("output_text") or result["output"][0]["content"][0]["text"])
+print(result["output"][0]["content"][0]["text"])
 ```
 
 ```bash cURL
@@ -275,7 +281,7 @@ This endpoint only works for providers with native Responses API support. For ot
 
 Remove a stored response. The response will no longer be retrievable or usable as a `previous_response_id`:
 
-{/* skip-test */}
+
 <CodeGroup>
 ```python Python
 import requests
@@ -294,34 +300,11 @@ curl -X DELETE https://api.edenai.run/v3/llm/responses/resp_abc123def456 \
 ```
 </CodeGroup>
 
-## List Input Items
-
-Retrieve the list of inputs that were sent as part of a response:
-
-{/* skip-test */}
-<CodeGroup>
-```python Python
-import requests
-
-response_id = "resp_abc123def456"
-url = f"https://api.edenai.run/v3/llm/responses/{response_id}/input_items"
-headers = {"Authorization": "Bearer YOUR_API_KEY"}
-
-result = requests.get(url, headers=headers).json()
-for item in result["data"]:
-    print(item)
-```
-
-```bash cURL
-curl https://api.edenai.run/v3/llm/responses/resp_abc123def456/input_items \
-  -H "Authorization: Bearer YOUR_API_KEY"
-```
-</CodeGroup>
-
 ## OpenAI SDK
 
 Use Eden AI's Responses endpoint directly with the OpenAI Python SDK:
 
+{/* skip-test */}
 <CodeGroup>
 ```python Python
 from openai import OpenAI
@@ -337,12 +320,13 @@ response = client.responses.create(
     instructions="You are a helpful assistant."
 )
 
-print(response.output_text)
+print(response.output[0].content[0].text)
 ```
 </CodeGroup>
 
 For multi-turn with the SDK:
 
+{/* skip-test */}
 <CodeGroup>
 ```python Python
 from openai import OpenAI
@@ -364,7 +348,7 @@ res2 = client.responses.create(
     previous_response_id=res1.id
 )
 
-print(res2.output_text)
+print(res2.output[0].content[0].text)
 ```
 </CodeGroup>
 

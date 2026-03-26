@@ -16,6 +16,10 @@ Eden AI supports the OpenAI Responses API — a stateful alternative to chat com
 | `DELETE` | `/v3/llm/responses/{response_id}` | Delete a stored response |
 | `GET` | `/v3/llm/responses/{response_id}/input_items` | List the input items of a response |
 
+<Warning>
+**Provider-Dependent Behavior** — The Responses API is a passthrough to the underlying provider. Stateful features (server-side storage, response retrieval/deletion, and `previous_response_id` chaining) are only available when the provider natively supports the Responses API (e.g. OpenAI). For all other providers, responses are not stored and the retrieve/delete endpoints are not functional.
+</Warning>
+
 ## How It Differs from Chat Completions
 
 | | Chat Completions | Responses |
@@ -228,11 +232,19 @@ console.log(res2.output_text ?? res2.output[0].content[0].text);
 ```
 </CodeGroup>
 
+<Warning>
+`previous_response_id` chaining only works for providers with native Responses API support. For other providers, responses are not stored server-side — you must manage conversation history client-side (e.g. by resending the full message array, as with chat completions).
+</Warning>
+
 <Tip>
 Pass `store: false` if you don't need persistence and want to keep the conversation stateless, like chat completions.
 </Tip>
 
 ## Retrieve a Response
+
+<Warning>
+This endpoint only works for providers with native Responses API support. For other providers, responses are not stored and this endpoint will return an error.
+</Warning>
 
 Fetch a previously stored response by ID:
 
@@ -256,6 +268,10 @@ curl https://api.edenai.run/v3/llm/responses/resp_abc123def456 \
 </CodeGroup>
 
 ## Delete a Response
+
+<Warning>
+This endpoint only works for providers with native Responses API support. For other providers, responses are not stored and this endpoint will return an error.
+</Warning>
 
 Remove a stored response. The response will no longer be retrievable or usable as a `previous_response_id`:
 

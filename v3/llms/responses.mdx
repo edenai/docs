@@ -48,7 +48,7 @@ payload = {
 response = requests.post(url, headers=headers, json=payload)
 result = response.json()
 
-print(result["output_text"])
+print(result.get("output_text") or result["output"][0]["content"][0]["text"])
 ```
 
 ```javascript JavaScript
@@ -66,7 +66,7 @@ const response = await fetch("https://api.edenai.run/v3/llm/responses", {
 });
 
 const result = await response.json();
-console.log(result.output_text);
+console.log(result.output_text ?? result.output[0].content[0].text);
 ```
 
 ```bash cURL
@@ -185,7 +185,7 @@ res1 = requests.post(url, headers=headers, json={
     "store": True
 }).json()
 
-print(res1["output_text"])  # "The capital of France is Paris."
+print(res1.get("output_text") or res1["output"][0]["content"][0]["text"])
 
 # Second turn — no need to resend history
 res2 = requests.post(url, headers=headers, json={
@@ -194,7 +194,7 @@ res2 = requests.post(url, headers=headers, json={
     "previous_response_id": res1["id"]
 }).json()
 
-print(res2["output_text"])
+print(res2.get("output_text") or res2["output"][0]["content"][0]["text"])
 ```
 
 ```javascript JavaScript
@@ -224,7 +224,7 @@ const res2 = await fetch(url, {
   })
 }).then(r => r.json());
 
-console.log(res2.output_text);
+console.log(res2.output_text ?? res2.output[0].content[0].text);
 ```
 </CodeGroup>
 
@@ -236,6 +236,7 @@ Pass `store: false` if you don't need persistence and want to keep the conversat
 
 Fetch a previously stored response by ID:
 
+{/* skip-test */}
 <CodeGroup>
 ```python Python
 import requests
@@ -245,7 +246,7 @@ url = f"https://api.edenai.run/v3/llm/responses/{response_id}"
 headers = {"Authorization": "Bearer YOUR_API_KEY"}
 
 result = requests.get(url, headers=headers).json()
-print(result["output_text"])
+print(result.get("output_text") or result["output"][0]["content"][0]["text"])
 ```
 
 ```bash cURL
@@ -258,6 +259,7 @@ curl https://api.edenai.run/v3/llm/responses/resp_abc123def456 \
 
 Remove a stored response. The response will no longer be retrievable or usable as a `previous_response_id`:
 
+{/* skip-test */}
 <CodeGroup>
 ```python Python
 import requests
@@ -280,6 +282,7 @@ curl -X DELETE https://api.edenai.run/v3/llm/responses/resp_abc123def456 \
 
 Retrieve the list of inputs that were sent as part of a response:
 
+{/* skip-test */}
 <CodeGroup>
 ```python Python
 import requests

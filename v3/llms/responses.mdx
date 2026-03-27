@@ -32,7 +32,7 @@ Eden AI supports the OpenAI Responses API — a stateful alternative to chat com
 
 ## Create a Response
 
-{/* skip-test */}
+
 <CodeGroup>
 ```python Python
 import requests
@@ -177,7 +177,7 @@ curl -X POST https://api.edenai.run/v3/llm/responses \
 
 Because responses are stored server-side, you only need to send the new user message and reference the prior response ID:
 
-{/* skip-test */}
+
 <CodeGroup>
 ```python Python
 import requests
@@ -254,8 +254,8 @@ This endpoint only works for providers with native Responses API support. For ot
 
 Fetch a previously stored response by ID:
 
-
 <CodeGroup>
+{/* skip-test */}
 ```python Python
 import requests
 
@@ -281,7 +281,7 @@ This endpoint only works for providers with native Responses API support. For ot
 
 Remove a stored response. The response will no longer be retrievable or usable as a `previous_response_id`:
 
-
+{/* skip-test */}
 <CodeGroup>
 ```python Python
 import requests
@@ -304,7 +304,7 @@ curl -X DELETE https://api.edenai.run/v3/llm/responses/resp_abc123def456 \
 
 Use Eden AI's Responses endpoint directly with the OpenAI Python SDK:
 
-{/* skip-test */}
+
 <CodeGroup>
 ```python Python
 from openai import OpenAI
@@ -326,7 +326,6 @@ print(response.output[0].content[0].text)
 
 For multi-turn with the SDK:
 
-{/* skip-test */}
 <CodeGroup>
 ```python Python
 from openai import OpenAI

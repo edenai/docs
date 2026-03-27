@@ -6,6 +6,9 @@
     "hotjar": {
       "hjid": "6654925",
       "hjsv": "6"
+    },
+    "intercom": {
+      "appId": "we8gfv17"
     }
   },
   "logo": {
@@ -59,6 +62,7 @@
                     "pages": [
                       "v3/llms/listing-models",
                       "v3/llms/chat-completions",
+                      "v3/llms/responses",
                       "v3/llms/file-upload",
                       "v3/llms/fallback",
                       "v3/llms/structured-output",
@@ -137,6 +141,14 @@
                           "v3/expert-models/features/audio/tts",
                           "v3/expert-models/features/audio/speech-to-text-async"
                         ]
+                      },
+                      {
+                        "group": "Video Generation Features",
+                        "icon": "video",
+                        "expanded": false,
+                        "pages": [
+                          "v3/expert-models/features/video/generation-async"
+                        ]
                       }
                     ]
                   },
@@ -175,6 +187,7 @@
                       "v3/integrations/openai-sdk-typescript",
                       "v3/integrations/claude-code",
                       "v3/integrations/continue-dev",
+                      "v3/integrations/opencode",
                       "v3/integrations/langchain",
                       "v3/integrations/librechat",
                       "v3/integrations/open-webui"
@@ -235,7 +248,7 @@
       }
     ],
     "primary": {
-      "label": "Get Started",
+      "label": "To the App",
       "href": "https://app.edenai.run/",
       "type": "button"
     }

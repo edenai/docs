@@ -67,7 +67,7 @@ GENERATED_DIR = Path(__file__).resolve().parent / "generated"
 
 def extract_python_blocks(mdx_path: Path) -> list[dict]:
     """Extract all Python code blocks from an .mdx file."""
-    content = mdx_path.read_text()
+    content = mdx_path.read_text(encoding="utf-8")
     blocks = []
     for match in CODE_BLOCK_RE.finditer(content):
         preceding = content[: match.start()]

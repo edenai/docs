@@ -3,6 +3,7 @@
 report.json
 qa/
 tests/
+tests/.venv/
 htmlcov/
 coverage.xml
 CLAUDE.md

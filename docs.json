@@ -34,7 +34,8 @@
               {
                 "group": "V3 Documentation",
                 "pages": [
-                  "index",
+                  "index"]
+                },
                   {
                     "group": "Quick Start",
                     "icon": "bolt",
@@ -194,9 +195,7 @@
                     ]
                   }
                 ]
-              }
-            ]
-          },
+              },
           {
             "tab": "V3 API Reference",
             "groups": [
@@ -222,6 +221,7 @@
           "v2/index"
         ]
       }
+    
     ]
   },
   "contextual": {

@@ -44,9 +44,9 @@ headers = {
 files = {
     "file": open("document.pdf", "rb")
 }
-    
+
 data = {
-    "purpose": "ocr-processing"  # Optional: describe intended use
+    "purpose": "assistants"  # Optional: describe intended use
 }
 
 response = requests.post(url, headers=headers, files=files, data=data)
@@ -62,13 +62,13 @@ print(f"Expires at: {result['expires_at']}")
 curl -X POST https://api.edenai.run/v3/upload \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -F "file=@document.pdf" \
-  -F "purpose=ocr-processing"
+  -F "purpose=assistants"
     ```
 
 ```javascript JavaScript
 const formData = new FormData();
 formData.append('file', fileInput.files[0]);
-formData.append('purpose', 'ocr-processing');
+formData.append('purpose', 'assistants');
 
 const response = await fetch('https://api.edenai.run/v3/upload', {
   method: 'POST',
@@ -100,29 +100,34 @@ console.log('File ID:', result.file_id);
 
 ## Use Uploaded File
 
-Once uploaded, reference the file by its `file_id` in any Universal AI request:
+Once uploaded, reference the file by its `file_id` in an LLM chat completion:
 
 <CodeGroup>
 ```python Python
 import requests
-# Use file in OCR request
-url = "https://api.edenai.run/v3/universal-ai"
+
+url = "https://api.edenai.run/v3/llm/chat/completions"
 headers = {
     "Authorization": "Bearer YOUR_API_KEY",
     "Content-Type": "application/json"
 }
 
 payload = {
-    "model": "ocr/financial_parser/google",
-    "input": {
-        "file": "550e8400-e29b-41d4-a716-446655440000",
-        "language": "en"
-    }
+    "model": "openai/gpt-4o",
+    "messages": [
+        {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": "Summarize this document."},
+                {"type": "file", "file": {"file_id": "550e8400-e29b-41d4-a716-446655440000"}}
+            ]
+        }
+    ]
 }
 
 response = requests.post(url, headers=headers, json=payload)
 result = response.json()
-print(result["output"]["extracted_data"])
+print(result["choices"][0]["message"]["content"])
     ```
 </CodeGroup>
 
@@ -160,7 +165,7 @@ file_ids = []
 
 for filepath in files_to_upload:
     files = {"file": open(filepath, "rb")}
-    data = {"purpose": "invoice-processing"}
+    data = {"purpose": "assistants"}
         
     response = requests.post(url, headers=headers, files=files, data=data)
     result = response.json()
@@ -230,7 +235,7 @@ Upload once, use in multiple requests:
 import requests
 
 upload_url = "https://api.edenai.run/v3/upload"
-universal_ai_url = "https://api.edenai.run/v3/universal-ai"
+llm_url = "https://api.edenai.run/v3/llm/chat/completions"
 headers = {"Authorization": "Bearer YOUR_API_KEY"}
 files = {"file": open("document.pdf", "rb")}
 
@@ -238,18 +243,29 @@ files = {"file": open("document.pdf", "rb")}
 upload_response = requests.post(upload_url, headers=headers, files=files)
 file_id = upload_response.json()["file_id"]
 
-# Use in multiple requests
-features = [
-    "ocr/financial_parser/google",
-    "ocr/financial_parser/amazon",
-    "ocr/identity_parser/microsoft"
+# Query with multiple models without re-uploading
+models = [
+    "openai/gpt-4o",
+    "anthropic/claude-sonnet-4-5",
+    "google/gemini-2.5-flash"
 ]
 
-for model in features:
+for model in models:
     response = requests.post(
-        universal_ai_url,
+        llm_url,
         headers=headers,
-        json={"model": model, "input": {"file": file_id}}
+        json={
+            "model": model,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": "Summarize this document."},
+                        {"type": "file", "file": {"file_id": file_id}}
+                    ]
+                }
+            ]
+        }
     )
 ```
 
@@ -327,10 +343,10 @@ Invalid request format. Ensure file field is properly set.
 ## Next Steps
 
 <CardGroup cols={2}>
-  <Card title="OCR" icon="file-lines" href="/v3/expert-models/features/ocr/ocr">
-    Use uploaded documents for text extraction
+  <Card title="Chat Completions" icon="comment-dots" href="/v3/llms/chat-completions">
+    Use uploaded files in LLM conversations
   </Card>
-  <Card title="Image Features" icon="image" href="/v3/expert-models/features/image/generation">
-    Process and analyze uploaded images
+  <Card title="Streaming" icon="bolt" href="/v3/llms/streaming">
+    Stream responses when processing documents
   </Card>
 </CardGroup>

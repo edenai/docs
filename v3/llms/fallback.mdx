@@ -3,24 +3,14 @@ icon: "rotate-left"
 title: "Fallback"
 ---
 
-Fallback ensures your application stays resilient by automatically retrying with an alternative model when the primary model fails. Whether a provider is down, rate-limited, or returns an error, fallback keeps your requests flowing.
+Eden AI automatically handles fallback for LLM requests. If your primary model fails (provider outage, rate limit, error), Eden AI retries with the next model in your fallback list -- no retry logic needed on your side.
 
-## How Fallback Works
+## Usage
 
-Eden AI supports two approaches to fallback:
-
-1. **Built-in fallback with smart routing** -- automatic, zero-configuration
-2. **Manual fallback** -- explicit control over primary and backup models
-
-## Built-In Fallback with Smart Routing
-
-When you use smart routing (`model: "@edenai"`), fallback is handled automatically:
-
-- **With `router_candidates`** -- if the selected model fails, the router retries with the next best candidate from your list.
-- **Without `router_candidates`** -- if the selected model fails, the router falls back to `openai/gpt-4o` as the default backup.
+Add a `fallbacks` array to your request with one or more backup models. If the primary `model` fails, Eden AI will try each fallback in order.
 
 <Info>
-Smart routing fallback happens server-side. You do not need to add any retry logic in your code -- Eden AI handles it transparently.
+All models (primary and fallbacks) must be valid models listed in the [Models](/v3/llms/models) page.
 </Info>
 
 <CodeGroup>
@@ -30,29 +20,22 @@ import requests
 url = "https://api.edenai.run/v3/llm/chat/completions"
 headers = {
     "Authorization": "Bearer YOUR_API_KEY",
-    "Content-Type": "application/json"
+    "Content-Type": "application/json",
 }
 
-# Built-in fallback: if the best candidate fails,
-# the router automatically tries the next one
 payload = {
-    "model": "@edenai",
-    "router_candidates": [
-        "anthropic/claude-sonnet-4-5",
-        "openai/gpt-4o",
-        "google/gemini-2.5-flash"
-    ],
+    "model": "google/gemini-2.5-pro",
+    "fallbacks": ["openai/gpt-4o"],
     "messages": [
-        {"role": "user", "content": "Explain quantum computing in simple terms."}
-    ]
+        {"role": "user", "content": [{"type": "text", "text": "hi"}]}
+    ],
+    "reasoning_effort": "none",
 }
 
 response = requests.post(url, headers=headers, json=payload)
-result = response.json()
 
-# The response includes which model was actually used
-print(f"Model used: {result['model']}")
-print(result["choices"][0]["message"]["content"])
+print(response.status_code)
+print(response.json())
 ```
 
 ```bash cURL
@@ -60,220 +43,21 @@ curl -X POST https://api.edenai.run/v3/llm/chat/completions \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "@edenai",
-    "router_candidates": [
-      "anthropic/claude-sonnet-4-5",
-      "openai/gpt-4o",
-      "google/gemini-2.5-flash"
-    ],
-    "messages": [{"role": "user", "content": "Explain quantum computing in simple terms."}]
+    "model": "google/gemini-2.5-pro",
+    "fallbacks": ["openai/gpt-4o"],
+    "messages": [{"role": "user", "content": [{"type": "text", "text": "hi"}]}],
+    "reasoning_effort": "none"
   }'
 ```
 </CodeGroup>
-
-## Manual Fallback
-
-For full control over fallback behavior, implement it client-side. This approach lets you customize retry logic, log failures, and choose exactly which backup models to use.
-
-### Basic Manual Fallback
-
-{/* skip-test */}
-<CodeGroup>
-```python Python
-import requests
-
-url = "https://api.edenai.run/v3/llm/chat/completions"
-headers = {
-    "Authorization": "Bearer YOUR_API_KEY",
-    "Content-Type": "application/json"
-}
-
-def chat_with_fallback(message: str) -> dict:
-    """Try the primary model, fall back to alternatives on failure."""
-
-    models = [
-        "anthropic/claude-sonnet-4-5",  # Primary
-        "openai/gpt-4o",               # First fallback
-        "google/gemini-2.5-flash"       # Second fallback
-    ]
-
-    for model in models:
-        try:
-            payload = {
-                "model": model,
-                "messages": [{"role": "user", "content": message}]
-            }
-
-            response = requests.post(
-                url, headers=headers, json=payload, timeout=30
-            )
-            response.raise_for_status()
-
-            result = response.json()
-            return {
-                "content": result["choices"][0]["message"]["content"],
-                "model": model,
-                "fallback_used": model != models[0]
-            }
-
-        except Exception as e:
-            print(f"[{model}] Failed: {e}")
-            continue  # Try next model
-
-    raise RuntimeError("All models failed")
-
-# Usage
-result = chat_with_fallback("What is machine learning?")
-print(f"Model: {result['model']}")
-print(f"Fallback used: {result['fallback_used']}")
-print(result["content"])
-```
-
-```bash cURL
-# Manual fallback in cURL requires scripting.
-# Try the primary model first:
-curl -s -f -X POST https://api.edenai.run/v3/llm/chat/completions \
-  -H "Authorization: Bearer YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "anthropic/claude-sonnet-4-5",
-    "messages": [{"role": "user", "content": "What is machine learning?"}]
-  }' || \
-# If it fails, try the fallback:
-curl -X POST https://api.edenai.run/v3/llm/chat/completions \
-  -H "Authorization: Bearer YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "openai/gpt-4o",
-    "messages": [{"role": "user", "content": "What is machine learning?"}]
-  }'
-```
-</CodeGroup>
-
-### Resilient Router Pattern
-
-A production-ready pattern that combines smart routing with a fixed-model fallback:
-
-{/* skip-test */}
-<CodeGroup>
-```python Python
-import requests
-from typing import Optional
-
-class ResilientRouter:
-    """Smart routing with automatic fallback to a fixed model."""
-
-    def __init__(
-        self,
-        api_key: str,
-        fallback_model: str = "openai/gpt-4o"
-    ):
-        self.api_key = api_key
-        self.fallback_model = fallback_model
-        self.url = "https://api.edenai.run/v3/llm/chat/completions"
-
-    def chat(
-        self,
-        message: str,
-        candidates: list = None,
-        timeout: int = 30
-    ) -> dict:
-        """Chat with smart routing, falling back to a fixed model on error."""
-
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json"
-        }
-
-        # Step 1: Try smart routing
-        try:
-            payload = {
-                "model": "@edenai",
-                "messages": [{"role": "user", "content": message}]
-            }
-            if candidates:
-                payload["router_candidates"] = candidates
-
-            response = requests.post(
-                self.url, headers=headers, json=payload, timeout=timeout
-            )
-            response.raise_for_status()
-            data = response.json()
-
-            return {
-                "content": data["choices"][0]["message"]["content"],
-                "model": data["model"],
-                "method": "smart_routing"
-            }
-
-        except Exception as e:
-            print(f"Smart routing failed: {e}")
-
-        # Step 2: Fall back to fixed model
-        try:
-            payload = {
-                "model": self.fallback_model,
-                "messages": [{"role": "user", "content": message}]
-            }
-
-            response = requests.post(
-                self.url, headers=headers, json=payload, timeout=timeout
-            )
-            response.raise_for_status()
-            data = response.json()
-
-            return {
-                "content": data["choices"][0]["message"]["content"],
-                "model": self.fallback_model,
-                "method": "fallback"
-            }
-
-        except Exception as fallback_error:
-            raise RuntimeError(f"All attempts failed. Last error: {fallback_error}")
-
-# Usage
-router = ResilientRouter("YOUR_API_KEY", fallback_model="openai/gpt-4o")
-
-result = router.chat(
-    "Explain neural networks",
-    candidates=["anthropic/claude-sonnet-4-5", "google/gemini-2.5-pro"]
-)
-
-print(f"Method: {result['method']}")
-print(f"Model: {result['model']}")
-print(result["content"])
-```
-</CodeGroup>
-
-## Best Practices
-
-<Tip>
-**Always have a fallback.** No single provider guarantees 100% uptime. A fallback strategy is essential for production applications.
-</Tip>
-
-| Practice | Why |
-|----------|-----|
-| Set timeouts on every request | Prevents hanging when a provider is slow or unresponsive. 30 seconds is a good default. |
-| Log fallback events | Helps you spot provider reliability issues and adjust your candidate list over time. |
-| Choose diverse fallback providers | Using models from different providers (e.g., Anthropic + OpenAI + Google) protects against single-provider outages. |
-| Use smart routing for simple cases | Built-in fallback requires zero code and covers most scenarios. |
-| Use manual fallback for critical paths | When you need full control over retry logic, timeouts, and error handling. |
-
-## Comparison: Smart Routing vs. Manual Fallback
-
-| Feature | Smart Routing (`@edenai`) | Manual Fallback |
-|---------|--------------------------|-----------------|
-| Setup effort | None (built-in) | Requires code |
-| Fallback control | Automatic | Full control |
-| Retry logic | Server-side | Client-side |
-| Logging | Limited | Custom |
-| Timeout control | Default | Per-request |
-| Best for | Most use cases | Critical production paths |
 
 ## Next Steps
 
 <CardGroup cols={2}>
   <Card title="Expert Model Fallback" icon="microchip" href="/v3/expert-models/fallback">
-    Implement fallback for OCR, image, and audio features
+    Fallback for Universal AI / expert model requests
+  </Card>
+  <Card title="Models" icon="list" href="/v3/llms/models">
+    Browse available LLM models
   </Card>
 </CardGroup>

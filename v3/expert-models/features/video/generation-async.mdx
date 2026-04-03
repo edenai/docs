@@ -1,91 +1,91 @@
----
-title: "Video Generation"
-description: "The Video Generation API enables easy creation of high-quality videos from text,and images, perfect for marketing, education, and more—all through one integration."
----
-
-## Endpoint
-
-`POST /v3/universal-ai/async` (async)
-
-Model string pattern: `video/generation_async/{provider}[/{model}]`
-
-## Input
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| text | string | Yes | Text prompt describing the content and style of the video to generate |
-| file | file_input | No | Initial keyframe image (JPEG or PNG) file ID from /v3/upload or direct file URL |
-| duration | int | No | Length of the generated video in seconds |
-| fps | int | No | Frames per second of the generated video |
-| dimension | string | No | Video resolution in 'widthxheight' format (e.g., '1280x720') |
-| seed | int | No | Random seed for generation reproducibility (0 to 2,147,483,646) |
-
-
-## Output
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| video | string | Yes |  |
-| video_resource_url | string | Yes |  |
-
-
-## Available Providers
-
-| Provider | Model String | Price |
-|----------|-------------|-------|
-| amazon (amazon.nova-reel-v1:0) | `video/generation_async/amazon/amazon.nova-reel-v1:0` | $0.08 per seconde |
-| amazon (amazon.nova-reel-v1:1) | `video/generation_async/amazon/amazon.nova-reel-v1:1` | $0.08 per seconde |
-| amazon | `video/generation_async/amazon` | $0.5 per request |
-| bytedance | `video/generation_async/bytedance` | $0.4 per request |
-| bytedance (seedance-1-0-lite-t2v-250428) | `video/generation_async/bytedance/seedance-1-0-lite-t2v-250428` | $1.8 per 1,000,000 tokens |
-| bytedance (seedance-1-0-pro-250528) | `video/generation_async/bytedance/seedance-1-0-pro-250528` | $0.62 per request |
-| google | `video/generation_async/google` | $3.6 per request |
-| google (veo-3.0-fast-generate-001) | `video/generation_async/google/veo-3.0-fast-generate-001` | $0.15 per seconde |
-| google (veo-3.0-generate-001) | `video/generation_async/google/veo-3.0-generate-001` | $0.4 per seconde |
-| google (veo-3.1-generate-preview) | `video/generation_async/google/veo-3.1-generate-preview` | $0.4 per seconde |
-| minimax | `video/generation_async/minimax` | $0.56 per request |
-| minimax (MiniMax-Hailuo-02) | `video/generation_async/minimax/MiniMax-Hailuo-02` | $0.28 per request |
-| minimax (MiniMax-Hailuo-2.3) | `video/generation_async/minimax/MiniMax-Hailuo-2.3` | $0.28 per request |
-| minimax (S2V-01) | `video/generation_async/minimax/S2V-01` | $0.65 per request |
-| minimax (T2V/I2V-01-Director) | `video/generation_async/minimax/T2V/I2V-01-Director` | $0.43 per request |
-| openai | `video/generation_async/openai` | $5 per request |
-| openai (sora-2) | `video/generation_async/openai/sora-2` | $0.1 per seconde |
-
-
-## Quick Start
-
-
-> This is an **async** feature. The initial response returns a job ID. Poll `GET /v3/universal-ai/async/{job_id}` until the job completes.
-
-<CodeGroup>
-```python Python
-import requests
-
-url = "https://api.edenai.run/v3/universal-ai/async"
-headers = {
-    "Authorization": "Bearer YOUR_API_KEY",
-    "Content-Type": "application/json"
-}
-
-payload = {
-    "model": "video/generation_async/amazon/amazon.nova-reel-v1:0",
-    "input": {
-        "text": "The quick brown fox jumps over the lazy dog."
-    }
-}
-
-response = requests.post(url, headers=headers, json=payload)
-print(response.json())
-```
-
-```bash cURL
-curl -X POST https://api.edenai.run/v3/universal-ai/async \
-  -H "Authorization: Bearer YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "video/generation_async/amazon/amazon.nova-reel-v1:0",
-    "input": {"text": "The quick brown fox jumps over the lazy dog."}
-  }'
-```
-</CodeGroup>
-
+---
+title: "Video Generation"
+description: "The Video Generation API enables easy creation of high-quality videos from text,and images, perfect for marketing, education, and more—all through one integration."
+---
+
+## Endpoint
+
+`POST /v3/universal-ai/async` (async)
+
+Model string pattern: `video/generation_async/{provider}[/{model}]`
+
+## Input
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| text | string | Yes | Text prompt describing the content and style of the video to generate |
+| file | file_input | No | Initial keyframe image (JPEG or PNG) file ID from /v3/upload or direct file URL |
+| duration | int | No | Length of the generated video in seconds |
+| fps | int | No | Frames per second of the generated video |
+| dimension | string | No | Video resolution in 'widthxheight' format (e.g., '1280x720') |
+| seed | int | No | Random seed for generation reproducibility (0 to 2,147,483,646) |
+
+
+## Output
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| video | string | Yes |  |
+| video_resource_url | string | Yes |  |
+
+
+## Available Providers
+
+| Provider | Model String | Price |
+|----------|-------------|-------|
+| amazon (amazon.nova-reel-v1:0) | `video/generation_async/amazon/amazon.nova-reel-v1:0` | $0.08 per seconde |
+| amazon (amazon.nova-reel-v1:1) | `video/generation_async/amazon/amazon.nova-reel-v1:1` | $0.08 per seconde |
+| amazon | `video/generation_async/amazon` | $0.5 per request |
+| bytedance | `video/generation_async/bytedance` | $0.4 per request |
+| bytedance (seedance-1-0-lite-t2v-250428) | `video/generation_async/bytedance/seedance-1-0-lite-t2v-250428` | $1.8 per 1,000,000 tokens |
+| bytedance (seedance-1-0-pro-250528) | `video/generation_async/bytedance/seedance-1-0-pro-250528` | $0.62 per request |
+| google | `video/generation_async/google` | $3.6 per request |
+| google (veo-3.0-fast-generate-001) | `video/generation_async/google/veo-3.0-fast-generate-001` | $0.15 per seconde |
+| google (veo-3.0-generate-001) | `video/generation_async/google/veo-3.0-generate-001` | $0.4 per seconde |
+| google (veo-3.1-generate-preview) | `video/generation_async/google/veo-3.1-generate-preview` | $0.4 per seconde |
+| minimax | `video/generation_async/minimax` | $0.56 per request |
+| minimax (MiniMax-Hailuo-02) | `video/generation_async/minimax/MiniMax-Hailuo-02` | $0.28 per request |
+| minimax (MiniMax-Hailuo-2.3) | `video/generation_async/minimax/MiniMax-Hailuo-2.3` | $0.28 per request |
+| minimax (S2V-01) | `video/generation_async/minimax/S2V-01` | $0.65 per request |
+| minimax (T2V/I2V-01-Director) | `video/generation_async/minimax/T2V/I2V-01-Director` | $0.43 per request |
+| openai | `video/generation_async/openai` | $5 per request |
+| openai (sora-2) | `video/generation_async/openai/sora-2` | $0.1 per seconde |
+
+
+## Quick Start
+
+
+> This is an **async** feature. The initial response returns a job ID. Poll `GET /v3/universal-ai/async/{job_id}` until the job completes.
+
+<CodeGroup>
+```python Python
+import requests
+
+url = "https://api.edenai.run/v3/universal-ai/async"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+payload = {
+    "model": "video/generation_async/amazon/amazon.nova-reel-v1:0",
+    "input": {
+        "text": "The quick brown fox jumps over the lazy dog."
+    }
+}
+
+response = requests.post(url, headers=headers, json=payload)
+print(response.json())
+```
+
+```bash cURL
+curl -X POST https://api.edenai.run/v3/universal-ai/async \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "video/generation_async/amazon/amazon.nova-reel-v1:0",
+    "input": {"text": "The quick brown fox jumps over the lazy dog."}
+  }'
+```
+</CodeGroup>
+

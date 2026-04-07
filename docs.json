@@ -190,6 +190,7 @@
                       "v3/integrations/continue-dev",
                       "v3/integrations/opencode",
                       "v3/integrations/langchain",
+                      "v3/integrations/n8n",
                       "v3/integrations/librechat",
                       "v3/integrations/open-webui"
                     ]

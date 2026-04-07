@@ -1,0 +1,86 @@
+[
+    {
+        "id": "q1",
+        "question": "How do I make a chat completion request with Eden AI?",
+        "expected_output": "Send a POST request to https://api.edenai.run/v3/llm/chat/completions with an Authorization: Bearer header. The JSON body needs a 'model' field in provider/model format (e.g. openai/gpt-4) and a 'messages' array. The response follows the OpenAI chat completions format with choices[0].message.content.",
+        "source_doc": "v3/llms/chat-completions.mdx",
+        "category": "llm"
+    },
+    {
+        "id": "q2",
+        "question": "How do I extract text from a document using OCR with Eden AI?",
+        "expected_output": "Use the Universal AI endpoint POST https://api.edenai.run/v3/universal-ai with a model in the format ocr/ocr/provider. Upload the document as a file in a multipart request or provide a file_url. The response contains extracted text organized by pages.",
+        "source_doc": "v3/expert-models/features/ocr/ocr.mdx",
+        "category": "expert-models"
+    },
+    {
+        "id": "q3",
+        "question": "How do I authenticate my API requests to Eden AI?",
+        "expected_output": "Add an Authorization: Bearer header with your Eden AI API key to every request. You can get your API key from the Eden AI dashboard at https://app.edenai.run. Eden AI supports two token types: api_token for production (real provider calls, pay-per-use) and sandbox_api_token for testing (mock responses, free).",
+        "source_doc": "v3/_unlisted/general/authentication.mdx",
+        "category": "general"
+    },
+    {
+        "id": "q4",
+        "question": "How do I stream LLM responses with Eden AI?",
+        "expected_output": "Set 'stream': true in your chat completions request to POST /v3/llm/chat/completions. Responses are delivered via Server-Sent Events (SSE) as data: chunks. Each chunk contains a delta with the incremental text. The stream ends with a data: [DONE] message.",
+        "source_doc": "v3/llms/streaming.mdx",
+        "category": "llm"
+    },
+    {
+        "id": "q5",
+        "question": "How do I get structured JSON output from an LLM with Eden AI?",
+        "expected_output": "Use the response_format parameter in your chat completions request. Two modes are available: json_object (set response_format to {\"type\": \"json_object\"} and instruct the model to return JSON in your prompt) and json_schema (provide a JSON Schema that the model output must conform to). Always include a message instructing the model to respond in JSON.",
+        "source_doc": "v3/llms/structured-output.mdx",
+        "category": "llm"
+    },
+    {
+        "id": "q6",
+        "question": "How does smart routing work in Eden AI?",
+        "expected_output": "Smart routing automatically selects the best LLM provider for each request based on cost, latency, and quality. Instead of specifying a fixed provider/model, you can let Eden AI choose the optimal model for your use case.",
+        "source_doc": "v3/llms/smart-routing.mdx",
+        "category": "llm"
+    },
+    {
+        "id": "q7",
+        "question": "How do I use the OpenAI Python SDK with Eden AI?",
+        "expected_output": "Install the openai package and point it to Eden AI by setting base_url to https://api.edenai.run/v3/llm and api_key to your Eden AI token. Then use the standard OpenAI client methods (chat.completions.create, etc.) with provider/model format for the model parameter.",
+        "source_doc": "v3/integrations/openai-sdk-python.mdx",
+        "category": "integrations"
+    },
+    {
+        "id": "q8",
+        "question": "How do I use Eden AI with LangChain?",
+        "expected_output": "Eden AI integrates with LangChain through the ChatOpenAI class. Set the openai_api_base to https://api.edenai.run/v3/llm and provide your Eden AI API key. Use provider/model format for the model name.",
+        "source_doc": "v3/integrations/langchain.mdx",
+        "category": "integrations"
+    },
+    {
+        "id": "q9",
+        "question": "How does caching work in Eden AI?",
+        "expected_output": "Eden AI can cache API responses to reduce latency and cost for repeated requests. When caching is enabled, identical requests return cached results instead of making new provider calls.",
+        "source_doc": "v3/general/caching.mdx",
+        "category": "general"
+    },
+    {
+        "id": "q10",
+        "question": "What is the sandbox mode in Eden AI and how do I use it?",
+        "expected_output": "Sandbox mode uses a sandbox_api_token instead of a production api_token. Requests made with a sandbox token return simulated mock responses that match the real response structure, at no cost and without real provider calls. Create sandbox tokens from the Eden AI dashboard under API Keys or via the API.",
+        "source_doc": "v3/general/sandbox.mdx",
+        "category": "general"
+    },
+    {
+        "id": "q11",
+        "question": "How do I upload a file and use it with an LLM in Eden AI?",
+        "expected_output": "Eden AI supports file uploads for LLM requests. You can upload files (images, PDFs, etc.) and reference them in your chat completions messages for multimodal interactions.",
+        "source_doc": "v3/llms/file-upload.mdx",
+        "category": "llm"
+    },
+    {
+        "id": "q12",
+        "question": "How does fallback work for LLM requests in Eden AI?",
+        "expected_output": "Add a 'fallbacks' array to your chat completions request with backup models. If the primary model fails (provider outage, rate limit, error), Eden AI automatically retries with the next model in the fallback list in order. No retry logic needed on your side. All models must be valid models from the models list.",
+        "source_doc": "v3/llms/fallback.mdx",
+        "category": "llm"
+    }
+]

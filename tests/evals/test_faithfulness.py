@@ -12,10 +12,10 @@ from deepeval.metrics import FaithfulnessMetric
 from deepeval.test_case import LLMTestCase
 
 
-def test_faithfulness(entry, edenai_llm, mintlify_answers, doc_contexts):
+def test_faithfulness(entry, edenai_llm, actual_output, doc_contexts):
     test_case = LLMTestCase(
         input=entry["question"],
-        actual_output=mintlify_answers[entry["id"]],
+        actual_output=actual_output,
         retrieval_context=doc_contexts[entry["id"]],
     )
     metric = FaithfulnessMetric(threshold=0.7, model=edenai_llm)

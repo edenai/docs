@@ -11,10 +11,10 @@ from deepeval.metrics import AnswerRelevancyMetric
 from deepeval.test_case import LLMTestCase
 
 
-def test_answer_relevancy(entry, edenai_llm, mintlify_answers):
+def test_answer_relevancy(entry, edenai_llm, actual_output):
     test_case = LLMTestCase(
         input=entry["question"],
-        actual_output=mintlify_answers[entry["id"]],
+        actual_output=actual_output,
     )
     metric = AnswerRelevancyMetric(threshold=0.7, model=edenai_llm)
     assert_test(test_case, [metric])

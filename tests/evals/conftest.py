@@ -84,6 +84,15 @@ def mintlify_answers(request: pytest.FixtureRequest) -> dict[str, str]:
     return answers
 
 
+@pytest.fixture
+def actual_output(entry: dict, mintlify_answers: dict[str, str]) -> str:
+    """Get the Mintlify answer for the current entry, skip if empty."""
+    answer = mintlify_answers[entry["id"]]
+    if not answer:
+        pytest.skip(f"Mintlify returned empty answer for {entry['id']}")
+    return answer
+
+
 @pytest.fixture(scope="session")
 def doc_contexts() -> dict[str, list[str]]:
     """Load retrieval contexts from .mdx source docs."""

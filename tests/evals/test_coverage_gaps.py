@@ -42,10 +42,10 @@ def _doc_completeness_metric(model) -> GEval:
     )
 
 
-def test_contextual_recall(entry, edenai_llm, mintlify_answers, doc_contexts):
+def test_contextual_recall(entry, edenai_llm, actual_output, doc_contexts):
     test_case = LLMTestCase(
         input=entry["question"],
-        actual_output=mintlify_answers[entry["id"]],
+        actual_output=actual_output,
         expected_output=entry["expected_output"],
         retrieval_context=doc_contexts[entry["id"]],
     )
@@ -53,10 +53,10 @@ def test_contextual_recall(entry, edenai_llm, mintlify_answers, doc_contexts):
     assert_test(test_case, [metric])
 
 
-def test_doc_completeness(entry, edenai_llm, mintlify_answers, doc_contexts):
+def test_doc_completeness(entry, edenai_llm, actual_output, doc_contexts):
     test_case = LLMTestCase(
         input=entry["question"],
-        actual_output=mintlify_answers[entry["id"]],
+        actual_output=actual_output,
         retrieval_context=doc_contexts[entry["id"]],
     )
     metric = _doc_completeness_metric(edenai_llm)

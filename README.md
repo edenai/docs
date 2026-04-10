@@ -59,6 +59,7 @@ View the documentation at `http://localhost:3000`
 - `/v3/features/` - **Auto-generated** AI feature reference pages (do not edit manually)
 - `/scripts/` - Automation scripts (see below)
 - `/tests/` - Automated test suite for Python code snippets (see [tests/README.md](tests/README.md))
+- `/tests/evals/` - DeepEval-based evaluation pipeline for Mintlify Ask AI quality (see [tests/evals/README.md](tests/evals/README.md))
 - `/shared/` - Reusable content snippets
 - `/openapi/` - OpenAPI specification files
 - `/images/` - Documentation images and assets

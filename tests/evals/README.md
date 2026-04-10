@@ -9,7 +9,9 @@ LLM-as-a-judge evaluation pipeline for the [docs.edenai.co](https://docs.edenai.
 | **Faithfulness** | Is the answer grounded in the source doc? | Ask AI is hallucinating beyond what docs say |
 | **Answer Relevancy** | Does the answer address the question? | Answer drifts off-topic |
 | **Contextual Recall** | Does the doc contain info for the expected answer? | Documentation has a coverage gap |
-| **Doc Completeness** | Is the doc sufficient to fully answer the question? | Docs need more content for this topic |
+| **Doc Completeness** | Is the doc sufficient to fully answer the question? | Docs need more depth (code, params, edge cases) |
+| **Actionability** | Can a developer implement the task from the answer? | Answer is conceptual but not actionable |
+| **Cross-Reference Accuracy** | Does the answer correctly synthesize multi-page info? | Answer conflates features or misattributes behavior |
 
 ## Setup
 
@@ -44,14 +46,29 @@ pytest tests/evals/ -n0
 
 # Run a specific metric
 pytest tests/evals/test_faithfulness.py -n0
-pytest tests/evals/test_answer_relevancy.py -n0
-pytest tests/evals/test_coverage_gaps.py -n0
+pytest tests/evals/test_actionability.py -n0
+pytest tests/evals/test_cross_reference.py -n0
 
 # Run for a specific question
-pytest tests/evals/ -n0 -k q1
+pytest tests/evals/ -n0 -k q01
 
 # Re-fetch Ask AI answers (ignoring cache)
 pytest tests/evals/ -n0 --refresh-answers
+```
+
+### Filtering by category or difficulty
+
+```bash
+# By category
+pytest tests/evals/ -n0 --category=llm
+pytest tests/evals/ -n0 --category=cross-cutting
+
+# By difficulty
+pytest tests/evals/ -n0 --difficulty=basic
+pytest tests/evals/ -n0 --difficulty=advanced
+
+# Combinations
+pytest tests/evals/test_actionability.py -n0 --category=llm --difficulty=advanced
 ```
 
 > **Note:** `-n0` disables pytest-xdist parallelism (configured in `tests/pytest.ini`).
@@ -71,15 +88,34 @@ Edit `dataset.json` and add a new entry:
 
 ```json
 {
-    "id": "q13",
+    "id": "q37",
     "question": "Your question here?",
     "expected_output": "A concise ideal answer for contextual recall evaluation.",
     "source_doc": "v3/path/to/relevant-doc.mdx",
-    "category": "llm"
+    "category": "llm",
+    "difficulty": "intermediate"
 }
 ```
 
-Then run `pytest tests/evals/ -n0 --refresh-answers -k q13` to fetch the answer and evaluate it.
+For cross-page questions, use an array for `source_doc`:
+
+```json
+{
+    "id": "q38",
+    "question": "How do X and Y compare?",
+    "expected_output": "...",
+    "source_doc": ["v3/path/to/x.mdx", "v3/path/to/y.mdx"],
+    "category": "cross-cutting",
+    "difficulty": "advanced"
+}
+```
+
+Then run `pytest tests/evals/ -n0 --refresh-answers -k q37` to fetch the answer and evaluate it.
+
+## Dataset dimensions
+
+- **Categories**: `llm`, `expert-models`, `integrations`, `general`, `cross-cutting`
+- **Difficulty**: `basic` (single page), `intermediate` (requires context), `advanced` (cross-page synthesis)
 
 ## Project structure
 
@@ -88,8 +124,11 @@ Then run `pytest tests/evals/ -n0 --refresh-answers -k q13` to fetch the answer 
 | `edenai_llm.py` | Eden AI adapter for deepeval's LLM judge interface |
 | `mintlify_client.py` | Mintlify Ask AI SSE client |
 | `context_loader.py` | Reads .mdx docs as retrieval context |
-| `dataset.json` | Test questions with expected outputs and source doc paths |
-| `conftest.py` | Pytest fixtures (LLM, answer caching, doc contexts) |
-| `test_faithfulness.py` | Faithfulness metric tests |
-| `test_answer_relevancy.py` | Answer relevancy metric tests |
-| `test_coverage_gaps.py` | Contextual recall + doc completeness tests |
+| `dataset.json` | Test questions with expected outputs, source docs, and metadata |
+| `conftest.py` | Pytest fixtures (LLM, answer caching, doc contexts, filtering) |
+| `test_faithfulness.py` | Faithfulness metric (answer grounded in docs?) |
+| `test_answer_relevancy.py` | Answer relevancy metric (on-topic?) |
+| `test_coverage_gaps.py` | Contextual recall metric (docs have enough info?) |
+| `test_doc_completeness.py` | Doc completeness metric (docs sufficiently detailed?) |
+| `test_actionability.py` | Actionability metric (developer can implement from answer?) |
+| `test_cross_reference.py` | Cross-reference accuracy metric (multi-page synthesis correct?) |

@@ -1,86 +1,315 @@
 [
     {
-        "id": "q1",
+        "id": "q01",
         "question": "How do I make a chat completion request with Eden AI?",
-        "expected_output": "Send a POST request to https://api.edenai.run/v3/llm/chat/completions with an Authorization: Bearer header. The JSON body needs a 'model' field in provider/model format (e.g. openai/gpt-4) and a 'messages' array. The response follows the OpenAI chat completions format with choices[0].message.content.",
+        "expected_output": "Send a POST request to https://api.edenai.run/v3/llm/chat/completions with an Authorization: Bearer header and Content-Type: application/json. The JSON body needs a 'model' field in provider/model format (e.g. openai/gpt-4) and a 'messages' array with role/content objects. The response follows the OpenAI format with choices[0].message.content containing the answer.",
         "source_doc": "v3/llms/chat-completions.mdx",
-        "category": "llm"
+        "category": "llm",
+        "difficulty": "basic"
     },
     {
-        "id": "q2",
+        "id": "q02",
         "question": "How do I extract text from a document using OCR with Eden AI?",
-        "expected_output": "Use the Universal AI endpoint POST https://api.edenai.run/v3/universal-ai with a model in the format ocr/ocr/provider. Upload the document as a file in a multipart request or provide a file_url. The response contains extracted text organized by pages.",
+        "expected_output": "Use the Universal AI endpoint POST https://api.edenai.run/v3/universal-ai with a model string in the format ocr/ocr/provider (e.g. ocr/ocr/amazon). Provide the document as a file ID or URL in the input.file field and a language code in input.language. The response contains extracted text and bounding boxes.",
         "source_doc": "v3/expert-models/features/ocr/ocr.mdx",
-        "category": "expert-models"
+        "category": "expert-models",
+        "difficulty": "basic"
     },
     {
-        "id": "q3",
-        "question": "How do I authenticate my API requests to Eden AI?",
-        "expected_output": "Add an Authorization: Bearer header with your Eden AI API key to every request. You can get your API key from the Eden AI dashboard at https://app.edenai.run. Eden AI supports two token types: api_token for production (real provider calls, pay-per-use) and sandbox_api_token for testing (mock responses, free).",
-        "source_doc": "v3/_unlisted/general/authentication.mdx",
-        "category": "general"
-    },
-    {
-        "id": "q4",
+        "id": "q03",
         "question": "How do I stream LLM responses with Eden AI?",
-        "expected_output": "Set 'stream': true in your chat completions request to POST /v3/llm/chat/completions. Responses are delivered via Server-Sent Events (SSE) as data: chunks. Each chunk contains a delta with the incremental text. The stream ends with a data: [DONE] message.",
+        "expected_output": "Set 'stream': true in your chat completions request to POST /v3/llm/chat/completions. Responses are delivered via Server-Sent Events (SSE) as data: chunks. Each chunk contains choices[0].delta with incremental text. The stream ends with a data: [DONE] message. The finish_reason field appears only in the final chunk.",
         "source_doc": "v3/llms/streaming.mdx",
-        "category": "llm"
+        "category": "llm",
+        "difficulty": "basic"
     },
     {
-        "id": "q5",
+        "id": "q04",
         "question": "How do I get structured JSON output from an LLM with Eden AI?",
-        "expected_output": "Use the response_format parameter in your chat completions request. Two modes are available: json_object (set response_format to {\"type\": \"json_object\"} and instruct the model to return JSON in your prompt) and json_schema (provide a JSON Schema that the model output must conform to). Always include a message instructing the model to respond in JSON.",
+        "expected_output": "Use the response_format parameter in your chat completions request. Two modes: json_object (set response_format to {\"type\": \"json_object\"} and instruct JSON in your prompt) and json_schema (provide a JSON Schema under response_format.json_schema with name, strict, and schema fields). The content field is still a string that needs parsing with json.loads(). Always include a message instructing JSON output.",
         "source_doc": "v3/llms/structured-output.mdx",
-        "category": "llm"
+        "category": "llm",
+        "difficulty": "basic"
     },
     {
-        "id": "q6",
-        "question": "How does smart routing work in Eden AI?",
-        "expected_output": "Smart routing automatically selects the best LLM provider for each request based on cost, latency, and quality. Instead of specifying a fixed provider/model, you can let Eden AI choose the optimal model for your use case.",
-        "source_doc": "v3/llms/smart-routing.mdx",
-        "category": "llm"
-    },
-    {
-        "id": "q7",
+        "id": "q05",
         "question": "How do I use the OpenAI Python SDK with Eden AI?",
-        "expected_output": "Install the openai package and point it to Eden AI by setting base_url to https://api.edenai.run/v3/llm and api_key to your Eden AI token. Then use the standard OpenAI client methods (chat.completions.create, etc.) with provider/model format for the model parameter.",
+        "expected_output": "Install the openai package. Create an OpenAI client with api_key set to your Eden AI API key and base_url set to https://api.edenai.run/v3/llm. Use standard OpenAI methods like client.chat.completions.create() with the model in provider/model format (e.g. 'openai/gpt-4'). Streaming, multi-turn, and vision all work the same.",
         "source_doc": "v3/integrations/openai-sdk-python.mdx",
-        "category": "integrations"
+        "category": "integrations",
+        "difficulty": "basic"
     },
     {
-        "id": "q8",
-        "question": "How do I use Eden AI with LangChain?",
-        "expected_output": "Eden AI integrates with LangChain through the ChatOpenAI class. Set the openai_api_base to https://api.edenai.run/v3/llm and provide your Eden AI API key. Use provider/model format for the model name.",
-        "source_doc": "v3/integrations/langchain.mdx",
-        "category": "integrations"
+        "id": "q06",
+        "question": "What is the sandbox mode in Eden AI and how do I use it?",
+        "expected_output": "Sandbox mode uses a sandbox_api_token instead of a production api_token. Requests made with a sandbox token return simulated mock responses that match the real response structure, at no cost and without real provider calls. Create sandbox tokens from the Eden AI dashboard under API Keys or via the custom token API.",
+        "source_doc": "v3/general/sandbox.mdx",
+        "category": "general",
+        "difficulty": "basic"
     },
     {
-        "id": "q9",
+        "id": "q07",
         "question": "How does caching work in Eden AI?",
-        "expected_output": "Eden AI can cache API responses to reduce latency and cost for repeated requests. When caching is enabled, identical requests return cached results instead of making new provider calls.",
+        "expected_output": "Eden AI automatically caches responses for identical requests (same model and input). Cached responses are returned immediately at no cost. Caching works best for deterministic features like embeddings, moderation, OCR, and NER. It is less useful for non-deterministic outputs like LLM chat and image generation. Caching is enabled by default and can be toggled per project in the dashboard.",
         "source_doc": "v3/general/caching.mdx",
-        "category": "general"
+        "category": "general",
+        "difficulty": "basic"
+    },
+    {
+        "id": "q08",
+        "question": "How do I list available LLM models in Eden AI?",
+        "expected_output": "Send GET to /v3/llm/models with your Authorization header. The response contains a data array where each item has id (the model string, e.g. 'openai/gpt-4o'), owned_by (provider name), and a capabilities object with boolean fields: pdf, reasoning, web_search, and tool_calling. Use the model id directly as the model parameter in requests.",
+        "source_doc": "v3/llms/listing-models.mdx",
+        "category": "llm",
+        "difficulty": "basic"
+    },
+    {
+        "id": "q09",
+        "question": "How do I list available expert model providers for a specific feature?",
+        "expected_output": "Use GET /v3/info to list all features and subfeatures. For a specific feature, use GET /v3/info/{feature}/{subfeature} (e.g. GET /v3/info/text/moderation) which returns available models with their model strings, pricing, and input/output schemas. You can also browse the catalog at app.edenai.run/models.",
+        "source_doc": "v3/expert-models/listing-models.mdx",
+        "category": "expert-models",
+        "difficulty": "basic"
     },
     {
         "id": "q10",
-        "question": "What is the sandbox mode in Eden AI and how do I use it?",
-        "expected_output": "Sandbox mode uses a sandbox_api_token instead of a production api_token. Requests made with a sandbox token return simulated mock responses that match the real response structure, at no cost and without real provider calls. Create sandbox tokens from the Eden AI dashboard under API Keys or via the API.",
-        "source_doc": "v3/general/sandbox.mdx",
-        "category": "general"
+        "question": "How do I use BYOK (Bring Your Own Key) with Eden AI?",
+        "expected_output": "In the Eden AI dashboard, navigate to provider settings, select a provider (e.g. OpenAI, Google, Anthropic), enter your own provider API key, and save. Requests to that provider then use your key and are billed directly by the provider. You still get Eden AI's unified API, monitoring, routing, and fallback. You can mix BYOK for some providers with Eden AI billing for others.",
+        "source_doc": "v3/general/byok.mdx",
+        "category": "general",
+        "difficulty": "basic"
     },
     {
         "id": "q11",
-        "question": "How do I upload a file and use it with an LLM in Eden AI?",
-        "expected_output": "Eden AI supports file uploads for LLM requests. You can upload files (images, PDFs, etc.) and reference them in your chat completions messages for multimodal interactions.",
-        "source_doc": "v3/llms/file-upload.mdx",
-        "category": "llm"
+        "question": "How do I enable web search for an LLM request?",
+        "expected_output": "Add web_search_options to your chat completions request with search_context_size set to 'low', 'medium', or 'high' (default: 'medium'). Not all models support web search -- check capabilities.web_search from GET /v3/llm/models. The model automatically searches the web for relevant information and generates a grounded response. Best for current events and factual lookups.",
+        "source_doc": "v3/llms/web-search.mdx",
+        "category": "llm",
+        "difficulty": "basic"
     },
     {
         "id": "q12",
-        "question": "How does fallback work for LLM requests in Eden AI?",
-        "expected_output": "Add a 'fallbacks' array to your chat completions request with backup models. If the primary model fails (provider outage, rate limit, error), Eden AI automatically retries with the next model in the fallback list in order. No retry logic needed on your side. All models must be valid models from the models list.",
-        "source_doc": "v3/llms/fallback.mdx",
-        "category": "llm"
+        "question": "How do I use Eden AI with LangChain?",
+        "expected_output": "Import ChatOpenAI from langchain_openai. Set base_url to https://api.edenai.run/v3/llm and api_key to your Eden AI API key. Use provider/model format for the model name (e.g. 'openai/gpt-4'). Then use the ChatOpenAI instance in LangChain chains and agents as normal.",
+        "source_doc": "v3/integrations/langchain.mdx",
+        "category": "integrations",
+        "difficulty": "basic"
+    },
+    {
+        "id": "q13",
+        "question": "How do I use Eden AI with Claude Code?",
+        "expected_output": "Set environment variables: ANTHROPIC_API_KEY to your Eden AI API key and ANTHROPIC_BASE_URL to https://api.edenai.run/v3/llm. Optionally set ANTHROPIC_MODEL to a provider/model string (e.g. 'anthropic/claude-sonnet-4-5'). Alternatively, configure via ~/.config/claude-code/config.json with api_key, base_url, and model fields.",
+        "source_doc": "v3/integrations/claude-code.mdx",
+        "category": "integrations",
+        "difficulty": "basic"
+    },
+    {
+        "id": "q14",
+        "question": "How do I upload a file and use it in an LLM conversation?",
+        "expected_output": "Upload via POST /v3/upload as multipart with the 'file' field. The response returns a file_id, file_name, file_size, and expires_at (7-day default retention). Reference the file in chat completions messages using content array format: [{\"type\": \"text\", \"text\": \"...\"}, {\"type\": \"file\", \"file\": {\"file_id\": \"...\"}}]. Max file size is 100 MB.",
+        "source_doc": "v3/llms/file-upload.mdx",
+        "category": "llm",
+        "difficulty": "intermediate"
+    },
+    {
+        "id": "q15",
+        "question": "How does smart routing work in Eden AI, and how do I use it?",
+        "expected_output": "Set model to '@edenai' in your chat completions request. Eden AI's router analyzes your request and selects the optimal model. Optionally provide router_candidates to restrict selection to specific models. The response includes the selected model in the 'model' field. With the OpenAI SDK, pass router_candidates via extra_body.",
+        "source_doc": "v3/llms/smart-routing.mdx",
+        "category": "llm",
+        "difficulty": "intermediate"
+    },
+    {
+        "id": "q16",
+        "question": "How do I use the Responses API with Eden AI?",
+        "expected_output": "POST to /v3/llm/responses with model (provider/model format), input (string or array), and optionally instructions (system prompt). Responses are stored server-side by default (store: true). For multi-turn, chain with previous_response_id. Response text is at output[0].content[0].text. Important: stateful features (storage, retrieval, previous_response_id) only work with providers that natively support the Responses API.",
+        "source_doc": "v3/llms/responses.mdx",
+        "category": "llm",
+        "difficulty": "intermediate"
+    },
+    {
+        "id": "q17",
+        "question": "How do I process a large multi-page PDF with OCR using Eden AI?",
+        "expected_output": "Use the async OCR endpoint: POST /v3/universal-ai/async with model 'ocr/ocr_async/provider' (e.g. ocr/ocr_async/amazon). Provide the file as a file ID or URL in the input. The initial response returns a job_id. Poll GET /v3/universal-ai/async/{job_id} until the job completes. The output contains raw_text, pages array with lines and words including bounding boxes and confidence scores.",
+        "source_doc": "v3/expert-models/features/ocr/ocr-async.mdx",
+        "category": "expert-models",
+        "difficulty": "intermediate"
+    },
+    {
+        "id": "q18",
+        "question": "How do I use webhooks to get async job results instead of polling?",
+        "expected_output": "Add a 'webhook_receiver' field with your endpoint URL to any async Universal AI request (POST /v3/universal-ai/async). When the job completes, Eden AI sends a POST to your URL with JSON containing job_id, status ('success' or 'fail'), cost, provider, feature, subfeature, output (on success), and error (on failure). Your endpoint must return 200 to acknowledge receipt.",
+        "source_doc": "v3/expert-models/webhooks.mdx",
+        "category": "expert-models",
+        "difficulty": "intermediate"
+    },
+    {
+        "id": "q19",
+        "question": "How do I transcribe an audio file using Eden AI?",
+        "expected_output": "Use the async endpoint POST /v3/universal-ai/async with model 'audio/speech_to_text_async/provider' (e.g. audio/speech_to_text_async/amazon). Input fields: file (file ID or URL, required), language (ISO code, optional), speakers (integer, optional), profanity_filter (boolean, optional). The response returns a job_id to poll. Output includes text and diarization with entries containing speaker, start_time, end_time, and confidence.",
+        "source_doc": "v3/expert-models/features/audio/speech-to-text-async.mdx",
+        "category": "expert-models",
+        "difficulty": "intermediate"
+    },
+    {
+        "id": "q20",
+        "question": "How do I pass provider-specific parameters to an expert model request?",
+        "expected_output": "Add a 'provider_params' object to your Universal AI request alongside 'model' and 'input'. The contents are forwarded directly to the provider without validation by Eden AI. For example, for DALL-E 3 image generation, set provider_params to {\"quality\": \"hd\", \"style\": \"vivid\"}. Available parameters vary by provider and are not listed in Eden AI docs -- refer to the provider's own documentation.",
+        "source_doc": "v3/expert-models/provider-parameters.mdx",
+        "category": "expert-models",
+        "difficulty": "intermediate"
+    },
+    {
+        "id": "q21",
+        "question": "How do I create a custom API token with a budget limit?",
+        "expected_output": "POST to /v2/user/custom_token/ with name, token_type ('api_token' or 'sandbox_api_token'), balance (string, e.g. '50.00'), and active_balance set to true. When active_balance is true, every API call deducts from the token's balance and the token stops working at $0. List tokens with GET /v2/user/custom_token/, update with PATCH, delete with DELETE.",
+        "source_doc": "v3/general/custom-api-keys.mdx",
+        "category": "general",
+        "difficulty": "intermediate"
+    },
+    {
+        "id": "q22",
+        "question": "How do I monitor my API usage and costs in Eden AI?",
+        "expected_output": "Use GET /v2/cost_management/ with begin and end date params and a step param (1=daily, 2=weekly, 3=monthly, 4=yearly). Optional filters: provider, subfeature, token. Response includes per-token usage grouped by date and feature (e.g. text__chat), with total_cost and cost_per_provider breakdown. Check credit balance with GET /v2/cost_management/credits/.",
+        "source_doc": "v3/general/monitoring.mdx",
+        "category": "general",
+        "difficulty": "intermediate"
+    },
+    {
+        "id": "q23",
+        "question": "What are the available parameters for a chat completion request?",
+        "expected_output": "Required: model (string, provider/model format) and messages (array of role/content objects). Optional: stream (boolean), temperature (float 0-2, default 1.0), max_tokens (integer), top_p (float 0-1), frequency_penalty (float -2 to 2), presence_penalty (float -2 to 2). Additional: tools (array for function calling), response_format (for structured output), fallbacks (array of backup models), web_search_options (with search_context_size).",
+        "source_doc": "v3/llms/chat-completions.mdx",
+        "category": "llm",
+        "difficulty": "intermediate"
+    },
+    {
+        "id": "q24",
+        "question": "How do I migrate my existing OpenAI code to use Eden AI?",
+        "expected_output": "Change two things in your OpenAI client: set api_key to your Eden AI API key and base_url to https://api.edenai.run/v3/llm. Change model strings from 'gpt-4' to 'openai/gpt-4' (provider/model format). All OpenAI SDK methods (chat.completions.create, streaming, multi-turn, vision) work the same way. You can also use non-OpenAI models like 'anthropic/claude-sonnet-4-5'.",
+        "source_doc": "v3/integrations/openai-sdk-python.mdx",
+        "category": "integrations",
+        "difficulty": "intermediate"
+    },
+    {
+        "id": "q25",
+        "question": "What model string format do I use for LLMs vs expert models?",
+        "expected_output": "LLMs use provider/model format (e.g. 'openai/gpt-4o', 'anthropic/claude-sonnet-4-5'). Expert models use feature/subfeature/provider format, optionally with a model variant: feature/subfeature/provider/model (e.g. 'text/moderation/openai', 'ocr/ocr/amazon', 'image/generation/openai/dall-e-3'). LLM models go with POST /v3/llm/chat/completions. Expert model strings go with POST /v3/universal-ai.",
+        "source_doc": [
+            "v3/overview/llms-vs-expert-models.mdx",
+            "v3/llms/chat-completions.mdx",
+            "v3/quickstart/first-expert-model-call.mdx"
+        ],
+        "category": "cross-cutting",
+        "difficulty": "intermediate"
+    },
+    {
+        "id": "q26",
+        "question": "Which LLM models support web search in Eden AI?",
+        "expected_output": "Use GET /v3/llm/models and check the capabilities.web_search field for each model. The listing endpoint returns a data array where each model has a capabilities object with boolean flags including web_search. Only models with web_search: true can use the web_search_options parameter in chat completions.",
+        "source_doc": "v3/llms/listing-models.mdx",
+        "category": "llm",
+        "difficulty": "intermediate"
+    },
+    {
+        "id": "q27",
+        "question": "Can I use the file upload endpoint for expert models, not just LLMs?",
+        "expected_output": "Yes. POST /v3/upload accepts a 'purpose' field that indicates the intended use. Supported purposes include: 'assistants' (LLM chat), 'ocr' (text extraction), 'financial_parser' (invoice parsing), 'identity_parser' (ID/passport parsing), 'resume_parser' (CV parsing), and 'speech' (audio transcription). Upload a file, get a file_id, then use that file_id in the input.file field of any matching Universal AI request.",
+        "source_doc": "v3/llms/file-upload.mdx",
+        "category": "cross-cutting",
+        "difficulty": "intermediate"
+    },
+    {
+        "id": "q28",
+        "question": "What is the difference between the fallback syntax for LLMs and expert models?",
+        "expected_output": "Both use a 'fallbacks' array in the request body, but the model string format differs. For LLMs: POST /v3/llm/chat/completions, model and fallbacks use provider/model format (e.g. 'openai/gpt-4o'). For expert models: POST /v3/universal-ai, model and fallbacks use feature/subfeature/provider format (e.g. 'text/moderation/google'). All fallback providers must support the same feature. Use /v3/info to discover compatible providers.",
+        "source_doc": [
+            "v3/llms/fallback.mdx",
+            "v3/expert-models/fallback.mdx"
+        ],
+        "category": "cross-cutting",
+        "difficulty": "advanced"
+    },
+    {
+        "id": "q29",
+        "question": "What is the difference between the LLM endpoint and the Universal AI endpoint?",
+        "expected_output": "The LLM endpoint (POST /v3/llm/chat/completions) is for chat, text generation, vision, and tool calling. It uses provider/model format and returns OpenAI-compatible responses with choices and usage fields. It supports streaming. The Universal AI endpoint (POST /v3/universal-ai) is for OCR, text analysis, image processing, translation, and audio. It uses feature/subfeature/provider format and returns status, cost, and output fields. It does not support streaming.",
+        "source_doc": "v3/overview/llms-vs-expert-models.mdx",
+        "category": "cross-cutting",
+        "difficulty": "advanced"
+    },
+    {
+        "id": "q30",
+        "question": "What is the difference between listing models for LLMs vs expert models?",
+        "expected_output": "LLMs use GET /v3/llm/models which returns a data array with model IDs in provider/model format and a capabilities object (pdf, reasoning, web_search, tool_calling). Expert models use GET /v3/info (all features) and GET /v3/info/{feature}/{subfeature} (specific feature) which returns providers, model strings in feature/subfeature/provider format, pricing, and input/output schemas. Different endpoints, different response structures.",
+        "source_doc": [
+            "v3/llms/listing-models.mdx",
+            "v3/expert-models/listing-models.mdx"
+        ],
+        "category": "cross-cutting",
+        "difficulty": "advanced"
+    },
+    {
+        "id": "q31",
+        "question": "Can I use streaming with structured JSON output in Eden AI?",
+        "expected_output": "Yes, you can combine stream: true with response_format in your chat completions request. Set stream to true and include response_format with type json_object or json_schema. The response is delivered as SSE chunks where each chunk's delta.content contains a fragment of the JSON string. Accumulate all chunks and parse the complete JSON after the stream ends (data: [DONE]).",
+        "source_doc": [
+            "v3/llms/streaming.mdx",
+            "v3/llms/structured-output.mdx"
+        ],
+        "category": "llm",
+        "difficulty": "advanced"
+    },
+    {
+        "id": "q32",
+        "question": "Does streaming work with expert models (Universal AI endpoint)?",
+        "expected_output": "No, streaming is only available for LLM requests via POST /v3/llm/chat/completions with stream: true. The Universal AI endpoint (POST /v3/universal-ai) does not support streaming. For long-running expert model tasks, use the async endpoint POST /v3/universal-ai/async which returns a job_id for polling or webhook delivery.",
+        "source_doc": [
+            "v3/overview/llms-vs-expert-models.mdx",
+            "v3/llms/streaming.mdx"
+        ],
+        "category": "cross-cutting",
+        "difficulty": "advanced"
+    },
+    {
+        "id": "q33",
+        "question": "How do I combine smart routing with fallback in Eden AI?",
+        "expected_output": "You can use model '@edenai' with router_candidates and separately add a 'fallbacks' array. The router selects from the candidates first. If the selected model fails, the fallback models are tried in order. You can also implement application-level fallback by catching errors from routed requests and retrying with a fixed model.",
+        "source_doc": [
+            "v3/llms/smart-routing.mdx",
+            "v3/llms/fallback.mdx"
+        ],
+        "category": "llm",
+        "difficulty": "advanced"
+    },
+    {
+        "id": "q34",
+        "question": "How do I use the Responses API with the OpenAI Python SDK via Eden AI?",
+        "expected_output": "Create an OpenAI client with api_key set to your Eden AI key and base_url to https://api.edenai.run/v3/llm. Use client.responses.create() with model in provider/model format, input as a string, and optionally instructions for system prompt. For multi-turn, pass previous_response_id from the first response's id. Note: stateful features only work with providers that natively support the Responses API.",
+        "source_doc": "v3/llms/responses.mdx",
+        "category": "integrations",
+        "difficulty": "advanced"
+    },
+    {
+        "id": "q35",
+        "question": "What is the difference between 'async' expert model features and async programming with Eden AI?",
+        "expected_output": "These are different concepts. Async expert model features (like ocr_async, speech_to_text_async) return a job_id immediately and process in the background -- you poll GET /v3/universal-ai/async/{job_id} or use webhooks for results. This is because the processing takes too long for a synchronous HTTP response. Async programming (Python asyncio, JavaScript async/await) is about non-blocking code on the client side -- any Eden AI endpoint can be called asynchronously.",
+        "source_doc": [
+            "v3/expert-models/features/ocr/ocr-async.mdx",
+            "v3/expert-models/webhooks.mdx"
+        ],
+        "category": "cross-cutting",
+        "difficulty": "advanced"
+    },
+    {
+        "id": "q36",
+        "question": "How do I use BYOK with fallback -- can I mix my own keys with Eden AI billing?",
+        "expected_output": "Yes. Configure BYOK for specific providers in the dashboard while using Eden AI billing for others. When setting up fallbacks, you can mix BYOK and Eden AI-billed providers in the same fallback chain. For example, use your own OpenAI key as primary and fall back to Eden AI-billed Anthropic. You still get unified API, monitoring, routing, and fallback features.",
+        "source_doc": [
+            "v3/general/byok.mdx",
+            "v3/llms/fallback.mdx"
+        ],
+        "category": "cross-cutting",
+        "difficulty": "advanced"
     }
 ]

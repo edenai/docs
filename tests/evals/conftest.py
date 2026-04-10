@@ -17,8 +17,8 @@ EVALS_DIR = Path(__file__).resolve().parent
 CACHE_DIR = EVALS_DIR / ".cache"
 ANSWERS_CACHE = CACHE_DIR / "answers.json"
 
-with open(EVALS_DIR / "dataset.json") as _f:
-    DATASET_ENTRIES: list[dict] = json.load(_f)
+with open(EVALS_DIR / "dataset.json") as f:
+    DATASET_ENTRIES: list[dict] = json.load(f)
 
 
 # ---------------------------------------------------------------------------
@@ -33,11 +33,33 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         default=False,
         help="Re-fetch all Mintlify Ask AI answers (ignoring cache).",
     )
+    parser.addoption(
+        "--category",
+        action="store",
+        default=None,
+        choices=["llm", "expert-models", "integrations", "general", "cross-cutting"],
+        help="Filter tests by category.",
+    )
+    parser.addoption(
+        "--difficulty",
+        action="store",
+        default=None,
+        choices=["basic", "intermediate", "advanced"],
+        help="Filter tests by difficulty.",
+    )
 
 
 def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
     if "entry" in metafunc.fixturenames:
-        metafunc.parametrize("entry", DATASET_ENTRIES, ids=lambda e: e["id"])
+        entries = DATASET_ENTRIES
+        for opt, key in [
+            ("--category", "category"),
+            ("--difficulty", "difficulty"),
+        ]:
+            val = metafunc.config.getoption(opt)
+            if val:
+                entries = [e for e in entries if e[key] == val]
+        metafunc.parametrize("entry", entries, ids=lambda e: e["id"])
 
 
 # ---------------------------------------------------------------------------

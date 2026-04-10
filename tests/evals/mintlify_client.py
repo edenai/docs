@@ -7,6 +7,7 @@ parses the SSE streaming response into plain text.
 from __future__ import annotations
 
 import json
+import uuid
 
 import httpx
 
@@ -20,33 +21,57 @@ def ask_mintlify(
     api_key: str,
     domain: str = "docs.edenai.co",
     client: httpx.Client | None = None,
+    retries: int = 3,
+    retrieval_page_size: int = 10,
+    version_filter: str = "V3",
 ) -> str:
-    """Send a question to Mintlify Ask AI and return the answer text."""
+    """Send a question to Mintlify Ask AI and return the answer text.
+
+    Retries up to *retries* times if Mintlify returns an empty answer
+    (which happens when it gets stuck in a tool-call loop).
+
+    Parameters
+    ----------
+    retrieval_page_size:
+        Number of search results Mintlify uses to build its answer.
+        Higher values give the model more context (default 10,
+        Mintlify default is 5).
+    version_filter:
+        Documentation version filter (default ``"V3"``).
+    """
     url = MINTLIFY_ASSISTANT_URL.format(domain=domain)
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
-    payload = {
+    msg_id = uuid.uuid4().hex[:16]
+    payload: dict = {
         "fp": "qa-eval",
         "messages": [
             {
-                "id": "msg-1",
+                "id": msg_id,
                 "role": "user",
                 "parts": [{"type": "text", "text": question}],
             }
         ],
+        "retrievalPageSize": retrieval_page_size,
+        "filter": {"version": version_filter},
     }
 
-    if client is None:
-        with httpx.Client(timeout=60) as c:
-            resp = c.post(url, headers=headers, json=payload)
-            resp.raise_for_status()
-    else:
-        resp = client.post(url, headers=headers, json=payload)
+    def _post(c: httpx.Client) -> str:
+        resp = c.post(url, headers=headers, json=payload)
         resp.raise_for_status()
+        return _parse_streaming_response(resp.text)
 
-    return _parse_streaming_response(resp.text)
+    for attempt in range(1 + retries):
+        if client is None:
+            with httpx.Client(timeout=60) as c:
+                answer = _post(c)
+        else:
+            answer = _post(client)
+
+        if answer or attempt == retries:
+            return answer
 
 
 def _parse_streaming_response(raw: str) -> str:

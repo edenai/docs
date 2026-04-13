@@ -34,7 +34,7 @@ All Python snippets in the docs (under `v3/` and at the repo root) are automatic
 
 Evaluation pipeline for Mintlify Ask AI answer quality. Failures identify documentation improvements — we control the docs, not the LLM.
 
-- **21 test questions** in `tests/evals/dataset.json` organized by `category` and `difficulty`
+- **22 test questions** in `tests/evals/dataset.json` organized by `category` and `difficulty`
 - **3 metrics**: RetrievalAccuracy (did Mintlify find the right page?), AnswerRelevancy (did it answer the question?), ContextualRecall (does the doc have the info?)
 - **Filtering**: `--category=llm`, `--difficulty=advanced`
 - **Run**: `pytest tests/evals/ -n0` (requires `EDEN_AI_PRODUCTION_API_TOKEN`; first run also needs `MINTLIFY_API_KEY`)

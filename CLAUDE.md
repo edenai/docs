@@ -30,6 +30,17 @@ All Python snippets in the docs (under `v3/` and at the repo root) are automatic
 - Code inside function definitions must be indented (some snippets in the repo have had this bug)
 - Snippets later on a page may depend on `url`/`headers` defined in earlier snippets
 
+## Eval Pipeline (tests/evals/)
+
+Evaluation pipeline for Mintlify Ask AI answer quality. Failures identify documentation improvements — we control the docs, not the LLM.
+
+- **22 test questions** in `tests/evals/dataset.json` organized by `category` and `difficulty`
+- **3 metrics**: RetrievalAccuracy (did Mintlify find the right page?), AnswerRelevancy (did it answer the question?), ContextualRecall (does the doc have the info?)
+- **Filtering**: `--category=llm`, `--difficulty=advanced`
+- **Run**: `pytest tests/evals/ -n0` (requires `EDEN_AI_PRODUCTION_API_TOKEN`; first run also needs `MINTLIFY_API_KEY`)
+- Answers + retrieved paths are cached in `tests/evals/.cache/answers.json`; use `--refresh-answers` to re-fetch
+- See `tests/evals/README.md` for full setup and usage
+
 ## Linear Issue Tracking
 
 - Team: Eden AI Platform

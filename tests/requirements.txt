@@ -16,3 +16,6 @@ PyPDF2
 Pillow
 prometheus_client
 datadog
+# evals pipeline (evals/)
+deepeval>=2.0,<3.0
+httpx>=0.27,<1.0

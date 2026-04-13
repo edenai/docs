@@ -171,8 +171,8 @@
     },
     {
         "id": "q21",
-        "question": "Does streaming work with expert models (Universal AI endpoint)?",
-        "expected_output": "No, streaming is only available for LLM requests via POST /v3/llm/chat/completions with stream: true. The Universal AI endpoint (POST /v3/universal-ai) does not support streaming. For long-running expert model tasks, use the async endpoint POST /v3/universal-ai/async which returns a job_id for polling or webhook delivery.",
+        "question": "Does streaming work with Universal AI?",
+        "expected_output": "No, streaming is only available for LLM endpoints by setting stream: true. The Universal AI endpoint (POST /v3/universal-ai) does not support streaming. For long-running Universal AI tasks, use the async endpoint POST /v3/universal-ai/async which returns a job_id for polling or webhook delivery.",
         "source_doc": [
             "v3/overview/llms-vs-expert-models.mdx",
             "v3/llms/streaming.mdx"

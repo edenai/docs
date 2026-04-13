@@ -32,13 +32,13 @@ All Python snippets in the docs (under `v3/` and at the repo root) are automatic
 
 ## Eval Pipeline (tests/evals/)
 
-A deepeval-based LLM-as-a-judge pipeline that evaluates Mintlify Ask AI answer quality. Failures identify documentation gaps — we control the docs, not the LLM.
+Evaluation pipeline for Mintlify Ask AI answer quality. Failures identify documentation improvements — we control the docs, not the LLM.
 
-- **36 test questions** in `tests/evals/dataset.json` organized by `category` and `difficulty`
-- **6 metrics**: Faithfulness, AnswerRelevancy, ContextualRecall (deepeval built-in), DocCompleteness, Actionability, CrossReferenceAccuracy (custom GEval)
+- **21 test questions** in `tests/evals/dataset.json` organized by `category` and `difficulty`
+- **3 metrics**: RetrievalAccuracy (did Mintlify find the right page?), AnswerRelevancy (did it answer the question?), ContextualRecall (does the doc have the info?)
 - **Filtering**: `--category=llm`, `--difficulty=advanced`
 - **Run**: `pytest tests/evals/ -n0` (requires `EDEN_AI_PRODUCTION_API_TOKEN`; first run also needs `MINTLIFY_API_KEY`)
-- Answers are cached in `tests/evals/.cache/answers.json`; use `--refresh-answers` to re-fetch
+- Answers + retrieved paths are cached in `tests/evals/.cache/answers.json`; use `--refresh-answers` to re-fetch
 - See `tests/evals/README.md` for full setup and usage
 
 ## Linear Issue Tracking

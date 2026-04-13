@@ -1,19 +1,28 @@
 """Mintlify Ask AI client.
 
 Sends questions to the Mintlify discovery v2 assistant endpoint and
-parses the SSE streaming response into plain text.
+parses the SSE streaming response into plain text + retrieved page paths.
 """
 
 from __future__ import annotations
 
 import json
 import uuid
+from dataclasses import dataclass, field
 
 import httpx
 
 MINTLIFY_ASSISTANT_URL = (
     "https://api.mintlify.com/discovery/v2/assistant/{domain}/message"
 )
+
+
+@dataclass
+class MintlifyResponse:
+    """Answer text and the doc pages Mintlify retrieved to build it."""
+
+    answer: str = ""
+    retrieved_paths: list[str] = field(default_factory=list)
 
 
 def ask_mintlify(
@@ -24,8 +33,8 @@ def ask_mintlify(
     retries: int = 3,
     retrieval_page_size: int = 10,
     version_filter: str = "V3",
-) -> str:
-    """Send a question to Mintlify Ask AI and return the answer text.
+) -> MintlifyResponse:
+    """Send a question to Mintlify Ask AI and return the answer + retrieved paths.
 
     Retries up to *retries* times if Mintlify returns an empty answer
     (which happens when it gets stuck in a tool-call loop).
@@ -58,7 +67,7 @@ def ask_mintlify(
         "filter": {"version": version_filter},
     }
 
-    def _post(c: httpx.Client) -> str:
+    def _post(c: httpx.Client) -> MintlifyResponse:
         resp = c.post(url, headers=headers, json=payload)
         resp.raise_for_status()
         return _parse_streaming_response(resp.text)
@@ -66,23 +75,26 @@ def ask_mintlify(
     for attempt in range(1 + retries):
         if client is None:
             with httpx.Client(timeout=60) as c:
-                answer = _post(c)
+                result = _post(c)
         else:
-            answer = _post(client)
+            result = _post(client)
 
-        if answer or attempt == retries:
-            return answer
+        if result.answer or attempt == retries:
+            return result
+
+    return MintlifyResponse()
 
 
-def _parse_streaming_response(raw: str) -> str:
-    """Extract text content from Mintlify's SSE streaming response.
+def _parse_streaming_response(raw: str) -> MintlifyResponse:
+    """Extract text content and retrieved paths from Mintlify's SSE stream.
 
     Mintlify returns SSE events with these relevant types:
     - {"type":"text-delta","delta":"chunk"} — the actual answer text
+    - {"type":"tool-output-available","output":{"results":[...]}} — retrieved pages
     - {"type":"finish","finishReason":"stop"} — end of stream
-    Other types (start, start-step, tool-input-*, tool-result, etc.) are ignored.
     """
     parts: list[str] = []
+    retrieved_paths: list[str] = []
 
     for line in raw.splitlines():
         line = line.strip()
@@ -102,5 +114,11 @@ def _parse_streaming_response(raw: str) -> str:
             delta = chunk.get("delta", "")
             if delta:
                 parts.append(delta)
+        elif chunk.get("type") == "tool-output-available":
+            results = chunk.get("output", {}).get("results", [])
+            for r in results:
+                path = r.get("path", "")
+                if path and path not in retrieved_paths:
+                    retrieved_paths.append(path)
 
-    return "".join(parts)
+    return MintlifyResponse(answer="".join(parts), retrieved_paths=retrieved_paths)

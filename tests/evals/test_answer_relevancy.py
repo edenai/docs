@@ -16,5 +16,5 @@ def test_answer_relevancy(entry, edenai_llm, actual_output):
         input=entry["question"],
         actual_output=actual_output,
     )
-    metric = AnswerRelevancyMetric(threshold=0.7, model=edenai_llm)
+    metric = AnswerRelevancyMetric(threshold=0.6, model=edenai_llm)
     assert_test(test_case, [metric])

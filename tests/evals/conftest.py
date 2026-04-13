@@ -76,43 +76,60 @@ def edenai_llm() -> EdenAILLM:
 
 
 @pytest.fixture(scope="session")
-def mintlify_answers(request: pytest.FixtureRequest) -> dict[str, str]:
-    """Fetch (or load cached) Mintlify Ask AI answers for every question.
+def mintlify_cache(request: pytest.FixtureRequest) -> dict[str, dict]:
+    """Fetch (or load cached) Mintlify Ask AI responses for every question.
 
-    Answers are cached to ``evals/.cache/answers.json`` so metrics can be
-    re-run without hitting the Mintlify API each time.  Use
-    ``--refresh-answers`` to force a re-fetch.
+    Each entry is ``{"answer": str, "retrieved_paths": list[str]}``.
+    Cached to ``evals/.cache/answers.json``.  Use ``--refresh-answers``
+    to force a re-fetch.
     """
     refresh = request.config.getoption("--refresh-answers")
 
     if not refresh and ANSWERS_CACHE.exists():
         with open(ANSWERS_CACHE) as f:
-            return json.load(f)
+            cached = json.load(f)
+        # Migrate old format: plain string values → dict with answer key
+        if cached and isinstance(next(iter(cached.values())), str):
+            cached = {
+                qid: {"answer": text, "retrieved_paths": []}
+                for qid, text in cached.items()
+            }
+        return cached
 
     api_key = os.getenv("MINTLIFY_API_KEY")
     if not api_key:
         pytest.skip("MINTLIFY_API_KEY not set and no cached answers available")
 
-    answers: dict[str, str] = {}
+    cache: dict[str, dict] = {}
     with httpx.Client(timeout=60) as client:
         for entry in DATASET_ENTRIES:
             qid = entry["id"]
-            answers[qid] = ask_mintlify(entry["question"], api_key, client=client)
+            resp = ask_mintlify(entry["question"], api_key, client=client)
+            cache[qid] = {
+                "answer": resp.answer,
+                "retrieved_paths": resp.retrieved_paths,
+            }
 
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
     with open(ANSWERS_CACHE, "w") as f:
-        json.dump(answers, f, indent=2)
+        json.dump(cache, f, indent=2)
 
-    return answers
+    return cache
 
 
 @pytest.fixture
-def actual_output(entry: dict, mintlify_answers: dict[str, str]) -> str:
+def actual_output(entry: dict, mintlify_cache: dict[str, dict]) -> str:
     """Get the Mintlify answer for the current entry, skip if empty."""
-    answer = mintlify_answers[entry["id"]]
+    answer = mintlify_cache[entry["id"]]["answer"]
     if not answer:
         pytest.skip(f"Mintlify returned empty answer for {entry['id']}")
     return answer
+
+
+@pytest.fixture
+def retrieved_paths(entry: dict, mintlify_cache: dict[str, dict]) -> list[str]:
+    """Get the pages Mintlify retrieved for the current entry."""
+    return mintlify_cache[entry["id"]].get("retrieved_paths", [])
 
 
 @pytest.fixture(scope="session")

@@ -17,10 +17,6 @@ Base URL: `https://api.edenai.run/v3` — Auth: `Authorization: Bearer <API_KEY>
 | **LLMs** | `/v3/llm/chat/completions`, `/v3/llm/responses` + streaming | `provider/model` (e.g. `openai/gpt-4o`) |
 | **Expert Models** | `/v3/universal-ai` (sync), `/v3/universal-ai/async` (async + webhooks) | `feature/subfeature/provider[/model]` (e.g. `ocr/financial_parser/google`) |
 
-**LLM response** (OpenAI-compatible): `{"choices": [{"message": {"content": "..."}}], "usage": {...}}`
-
-**Expert Model response**: `{"status": "success", "cost": 0.0015, "output": {...}}`
-
 ## Terminology
 
 - **Expert Models**: User-facing name for specialized AI features accessed via `/v3/universal-ai`. Users may say "expert models", "universal AI", or name a feature directly (e.g. "OCR", "text moderation") — all refer to this endpoint. Feature categories: text, OCR, image, translation, audio, video.

@@ -27,16 +27,15 @@ Cline is a VS Code extension that gives you an autonomous AI agent capable of cr
 
 ## Configuration
 
-### Step 1: Open Cline Settings
+### Step 1: Open Cline 
 
-1. Click the **Cline icon** in the VS Code activity bar (or open the Command Palette with `Ctrl+Shift+P` / `Cmd+Shift+P` and run `Cline: Open Settings`)
-2. Click the **Settings gear icon** in the top-right corner of the Cline panel
+1. Click the **Cline icon** in the VS Code activity bar
+2. Select the third option **Select Bring my own API key** on the Cline panel
+3. Click on **Continue** 
 
-### Step 2: Select the API Provider
+### Step 2: Configure your provider
 
 In the API Provider dropdown, select **"OpenAI Compatible"**.
-
-### Step 3: Set the Base URL and API Key
 
 Fill in the following fields:
 
@@ -46,21 +45,9 @@ Fill in the following fields:
 | **API Key** | Your Eden AI API key |
 | **Model ID** | e.g. `anthropic/claude-sonnet-4-5` |
 
-Click **Save**.
+Click **Continue**.
 
-### Alternative: Edit settings.json directly
 
-You can also configure Cline by editing your VS Code `settings.json` (`Ctrl+Shift+P` → `Open User Settings (JSON)`):
-
-<CodeGroup>
-```json settings.json
-{
-  "cline.apiProvider": "openai",
-  "cline.openAiBaseUrl": "https://api.edenai.run/v3/llm",
-  "cline.openAiApiKey": "YOUR_EDEN_AI_API_KEY",
-  "cline.openAiModelId": "anthropic/claude-sonnet-4-5"
-}
-```
 </CodeGroup>
 
 ## Available Models
@@ -86,86 +73,18 @@ Use any model from Eden AI's catalog in the `provider/model` format:
 - `meta/llama-3.1-405b-instruct`
 - `mistral/mistral-large-latest`
 
-## Features
-
-### Autonomous Task Completion
-
-Cline can autonomously complete multi-step tasks:
-
-1. Open Cline from the activity bar
-2. Describe your task: *"Add a login endpoint to this Express app with JWT authentication"*
-3. Cline reads relevant files, writes code, and runs commands — asking for approval at each step
-
-### File Editing
-
-Cline proposes file changes as diffs you can review and accept or reject before they are applied.
-
-### Terminal Commands
-
-Cline can run shell commands (with your approval) to install dependencies, run tests, or start a dev server.
-
-### Context Mentions
-
-Reference specific files or folders directly in your prompt using `@`:
-
-- `@filename.ts` — attach a file to the context
-- `@problems` — include current VS Code diagnostics
-- `@url` — fetch a URL and include its content
-
-## Switching Models Mid-Task
-
-You can change the active model at any time from the Cline settings panel without restarting VS Code. This lets you use a cheaper model for exploration and a more powerful one for final implementation.
-
 ## Troubleshooting
 
 ### Authentication Errors (401)
 
 1. Confirm your Eden AI API key is correct — copy it from [app.edenai.run](https://app.edenai.run) → **API Keys**
 2. Make sure there are no leading/trailing spaces in the key
-3. Test the key directly:
-
-```bash
-curl -X POST https://api.edenai.run/v3/llm/chat/completions \
-  -H "Authorization: Bearer YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "anthropic/claude-sonnet-4-5",
-    "messages": [{"role": "user", "content": "ping"}]
-  }'
-```
-
-### Model Not Found
-
-Ensure you are using the `provider/model` format. For example:
-
-```
-# Correct
-anthropic/claude-sonnet-4-5
-
-# Incorrect
-claude-sonnet-4-5
-```
 
 ### Connection Issues
 
 1. Verify the base URL is exactly: `https://api.edenai.run/v3/llm`
 2. Check Eden AI status: [https://app-edenai.instatus.com](https://app-edenai.instatus.com)
 
-## Best Practices
-
-### Choose the Right Model for the Task
-
-- **Exploration / quick edits**: `anthropic/claude-haiku-4-5` or `openai/gpt-3.5-turbo` — low latency, low cost
-- **Standard feature work**: `anthropic/claude-sonnet-4-5` or `openai/gpt-4o` — best balance
-- **Complex refactors / architecture**: `anthropic/claude-opus-4-5` or `google/gemini-2.5-pro` — maximum reasoning
-
-### Review Before Approving
-
-Cline will always show you what it plans to do before acting. Review file diffs and terminal commands carefully, especially when working in production codebases.
-
-### Use Context Mentions
-
-Include specific files with `@filename` so Cline has accurate context and does not hallucinate APIs or function signatures that don't exist.
 
 ## Next Steps
 

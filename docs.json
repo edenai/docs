@@ -23,6 +23,11 @@
     "light": "#6aa3e0",
     "dark": "#2a5fa8"
   },
+  "seo": {
+    "metatags": {
+      "canonical": "https://edenai.co/docs"
+    }
+  },
   "navigation": {
     "versions": [
       {

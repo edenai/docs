@@ -10,7 +10,7 @@ See `README.md` for repository structure, local development setup, and publishin
 
 - Documentation files are `.mdx` (MDX = Markdown + JSX)
 - Code snippets are inline in `.mdx` files using `<CodeGroup>` for multi-language tabs
-- API endpoints: `https://api.edenai.run/v3/llm/...` (LLM) and `https://api.edenai.run/v3/universal-ai` (Universal AI)
+- API endpoints: `https://api.edenai.run/v3/...` (LLM) and `https://api.edenai.run/v3/universal-ai` (Universal AI)
 - Auth: `Authorization: Bearer <api_key>`
 - Model format: `provider/model` for LLM, `feature/subfeature/provider[/model]` for Universal AI
 - Token types: `api_token` (production) and `sandbox_api_token` (testing, no real provider calls)

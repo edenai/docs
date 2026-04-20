@@ -30,7 +30,7 @@ Set environment variables before running Claude Code:
 ```bash bash
 # Set Eden AI as the API endpoint
 export ANTHROPIC_API_KEY="YOUR_EDEN_AI_API_KEY"
-export ANTHROPIC_BASE_URL="https://api.edenai.run/v3/llm"
+export ANTHROPIC_BASE_URL="https://api.edenai.run/v3"
 
 # Run Claude Code
 claude-code
@@ -39,7 +39,7 @@ claude-code
 ```powershell PowerShell
 # Windows PowerShell
 $env:ANTHROPIC_API_KEY="YOUR_EDEN_AI_API_KEY"
-$env:ANTHROPIC_BASE_URL="https://api.edenai.run/v3/llm"
+$env:ANTHROPIC_BASE_URL="https://api.edenai.run/v3"
 
 claude-code
 ```
@@ -53,7 +53,7 @@ Create or edit the Claude Code configuration file:
 ```json ~/.config/claude-code/config.json
 {
   "api_key": "YOUR_EDEN_AI_API_KEY",
-  "base_url": "https://api.edenai.run/v3/llm",
+  "base_url": "https://api.edenai.run/v3",
   "model": "anthropic/claude-sonnet-4-5"
 }
 ```
@@ -105,7 +105,7 @@ Make the configuration permanent by adding to your shell profile:
 ```bash ~/.bashrc or ~/.zshrc
 # Eden AI configuration for Claude Code
 export ANTHROPIC_API_KEY="YOUR_EDEN_AI_API_KEY"
-export ANTHROPIC_BASE_URL="https://api.edenai.run/v3/llm"
+export ANTHROPIC_BASE_URL="https://api.edenai.run/v3"
 export ANTHROPIC_MODEL="anthropic/claude-sonnet-4-5"
 ```
 </CodeGroup>
@@ -199,7 +199,7 @@ If you need to pass custom headers (e.g., for analytics):
 ```json config.json
 {
   "api_key": "YOUR_EDEN_AI_API_KEY",
-  "base_url": "https://api.edenai.run/v3/llm",
+  "base_url": "https://api.edenai.run/v3",
   "model": "anthropic/claude-sonnet-4-5",
   "headers": {
     "X-Custom-Header": "value"
@@ -216,7 +216,7 @@ Adjust timeouts for longer requests:
 ```json config.json
 {
   "api_key": "YOUR_EDEN_AI_API_KEY",
-  "base_url": "https://api.edenai.run/v3/llm",
+  "base_url": "https://api.edenai.run/v3",
   "timeout": 120000
 }
 ```
@@ -234,7 +234,7 @@ If you see authentication errors:
 
 ```bash
 # Test your API key
-curl -X POST https://api.edenai.run/v3/llm/chat/completions \
+curl -X POST https://api.edenai.run/v3/chat/completions \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -261,7 +261,7 @@ claude-sonnet-4-5
 If you experience connection issues:
 
 1. Check your internet connection
-2. Verify the base URL is correct: `https://api.edenai.run/v3/llm`
+2. Verify the base URL is correct: `https://api.edenai.run/v3`
 3. Check Eden AI status: [https://app-edenai.instatus.com](https://app-edenai.instatus.com)
 
 ## Cost Tracking
@@ -306,7 +306,7 @@ Use Claude Code in Git hooks for automated code review:
 
 # Export Eden AI configuration
 export ANTHROPIC_API_KEY="YOUR_EDEN_AI_API_KEY"
-export ANTHROPIC_BASE_URL="https://api.edenai.run/v3/llm"
+export ANTHROPIC_BASE_URL="https://api.edenai.run/v3"
 
 # Get changed files
 changed_files=$(git diff --cached --name-only --diff-filter=ACM | grep '\.py$')

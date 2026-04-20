@@ -39,8 +39,8 @@ import json
 import requests
 from pathlib import Path
 
-MODELS_URL = "https://api.edenai.run/v3/llm/models"
-BASE_URL = "https://api.edenai.run/v3/llm"
+MODELS_URL = "https://api.edenai.run/v3/models"
+BASE_URL = "https://api.edenai.run/v3"
 
 models = requests.get(MODELS_URL).json()["data"]
 

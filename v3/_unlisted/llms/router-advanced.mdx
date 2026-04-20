@@ -48,7 +48,7 @@ class TieredRouter:
 
     def __init__(self, api_key: str):
         self.api_key = api_key
-        self.url = "https://api.edenai.run/v3/llm/chat/completions"
+        self.url = "https://api.edenai.run/v3/chat/completions"
 
     def _classify_query(self, message: str) -> Literal["budget", "balanced", "premium"]:
         """Classify query complexity (simple heuristic)."""
@@ -154,7 +154,7 @@ class BudgetAwareRouter:
     def __init__(self, api_key: str, daily_budget: float = 10.0):
         self.api_key = api_key
         self.daily_budget = daily_budget
-        self.url = "https://api.edenai.run/v3/llm/chat/completions"
+        self.url = "https://api.edenai.run/v3/chat/completions"
 
         # Track spending
         self.spending_today = 0.0
@@ -338,7 +338,7 @@ class ContextAwareRouter:
 
     def __init__(self, api_key: str):
         self.api_key = api_key
-        self.url = "https://api.edenai.run/v3/llm/chat/completions"
+        self.url = "https://api.edenai.run/v3/chat/completions"
 
     def chat(
         self,
@@ -432,7 +432,7 @@ class SmartConversation:
     ):
         self.api_key = api_key
         self.candidates = candidates
-        self.url = "https://api.edenai.run/v3/llm/chat/completions"
+        self.url = "https://api.edenai.run/v3/chat/completions"
         self.messages = []
         self.routing_history = []
 
@@ -594,7 +594,7 @@ tools = [
 ]
 
 # Chat with tools
-url = "https://api.edenai.run/v3/llm/chat/completions"
+url = "https://api.edenai.run/v3/chat/completions"
 headers = {
     "Authorization": "Bearer YOUR_API_KEY",
     "Content-Type": "application/json"
@@ -648,7 +648,7 @@ class CachedRouter:
 
     def __init__(self, api_key: str, cache_ttl_seconds: int = 3600):
         self.api_key = api_key
-        self.url = "https://api.edenai.run/v3/llm/chat/completions"
+        self.url = "https://api.edenai.run/v3/chat/completions"
         self.cache_ttl = timedelta(seconds=cache_ttl_seconds)
 
         # Cache: query_hash -> (model, timestamp)
@@ -780,7 +780,7 @@ async def routed_chat_async(
     candidates: list[str] = None
 ) -> dict:
     """Async chat with routing."""
-    url = "https://api.edenai.run/v3/llm/chat/completions"
+    url = "https://api.edenai.run/v3/chat/completions"
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json"
@@ -869,7 +869,7 @@ class ResilientRouter:
     ):
         self.api_key = api_key
         self.fallback_model = fallback_model
-        self.url = "https://api.edenai.run/v3/llm/chat/completions"
+        self.url = "https://api.edenai.run/v3/chat/completions"
 
     def chat(
         self,

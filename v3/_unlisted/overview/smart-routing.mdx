@@ -27,7 +27,7 @@ The simplest way to use smart routing is to set `model: "@edenai"`:
 ```python Python
 import requests
 
-url = "https://api.edenai.run/v3/llm/chat/completions"
+url = "https://api.edenai.run/v3/chat/completions"
 headers = {
     "Authorization": "Bearer YOUR_API_KEY",
     "Content-Type": "application/json"
@@ -47,7 +47,7 @@ print(response.json())
 ```
 
 ```javascript JavaScript
-const url = 'https://api.edenai.run/v3/llm/chat/completions';
+const url = 'https://api.edenai.run/v3/chat/completions';
 const headers = {
   'Authorization': 'Bearer YOUR_API_KEY',
   'Content-Type': 'application/json'
@@ -71,7 +71,7 @@ console.log(data);
 ```
 
 ```bash cURL
-curl -X POST https://api.edenai.run/v3/llm/chat/completions \
+curl -X POST https://api.edenai.run/v3/chat/completions \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -104,7 +104,7 @@ By default, smart routing considers all available models. You can customize the 
 ```python Python
 import requests
 
-url = "https://api.edenai.run/v3/llm/chat/completions"
+url = "https://api.edenai.run/v3/chat/completions"
 headers = {
     "Authorization": "Bearer YOUR_API_KEY",
     "Content-Type": "application/json"
@@ -141,7 +141,7 @@ const payload = {
   ]
 };
 
-const response = await fetch('https://api.edenai.run/v3/llm/chat/completions', {
+const response = await fetch('https://api.edenai.run/v3/chat/completions', {
   method: 'POST',
   headers: {
     'Authorization': 'Bearer YOUR_API_KEY',
@@ -152,7 +152,7 @@ const response = await fetch('https://api.edenai.run/v3/llm/chat/completions', {
 ```
 
 ```bash cURL
-curl -X POST https://api.edenai.run/v3/llm/chat/completions \
+curl -X POST https://api.edenai.run/v3/chat/completions \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -253,7 +253,7 @@ from openai import OpenAI
 
 client = OpenAI(
     api_key="YOUR_API_KEY",
-    base_url="https://api.edenai.run/v3/llm"
+    base_url="https://api.edenai.run/v3"
 )
 
 # Use smart routing with OpenAI SDK

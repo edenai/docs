@@ -2,7 +2,7 @@
     {
         "id": "q01",
         "question": "How do I make a chat completion request with Eden AI?",
-        "expected_output": "Send a POST request to https://api.edenai.run/v3/llm/chat/completions with an Authorization: Bearer header and Content-Type: application/json. The JSON body needs a 'model' field in provider/model format (e.g. openai/gpt-4) and a 'messages' array with role/content objects. The response follows the OpenAI format with choices[0].message.content containing the answer.",
+        "expected_output": "Send a POST request to https://api.edenai.run/v3/chat/completions with an Authorization: Bearer header and Content-Type: application/json. The JSON body needs a 'model' field in provider/model format (e.g. openai/gpt-4) and a 'messages' array with role/content objects. The response follows the OpenAI format with choices[0].message.content containing the answer.",
         "source_doc": "v3/llms/chat-completions.mdx",
         "category": "llm",
         "difficulty": "basic"
@@ -66,7 +66,7 @@
     {
         "id": "q09",
         "question": "How do I use Eden AI with Claude Code?",
-        "expected_output": "Set environment variables: ANTHROPIC_API_KEY to your Eden AI API key and ANTHROPIC_BASE_URL to https://api.edenai.run/v3/llm. Optionally set ANTHROPIC_MODEL to a provider/model string (e.g. 'anthropic/claude-sonnet-4-5').",
+        "expected_output": "Set environment variables: ANTHROPIC_API_KEY to your Eden AI API key and ANTHROPIC_BASE_URL to https://api.edenai.run/v3. Optionally set ANTHROPIC_MODEL to a provider/model string (e.g. 'anthropic/claude-sonnet-4-5').",
         "source_doc": "v3/integrations/claude-code.mdx",
         "category": "integrations",
         "difficulty": "basic"
@@ -130,7 +130,7 @@
     {
         "id": "q17",
         "question": "How do I migrate my existing OpenAI code to use Eden AI?",
-        "expected_output": "Change two things in your OpenAI client: set api_key to your Eden AI API key and base_url to https://api.edenai.run/v3/llm. Change model strings from 'gpt-4' to 'openai/gpt-4' (provider/model format). All OpenAI SDK methods (chat.completions.create, streaming, multi-turn, vision) work the same way. You can also use non-OpenAI models like 'anthropic/claude-sonnet-4-5'.",
+        "expected_output": "Change two things in your OpenAI client: set api_key to your Eden AI API key and base_url to https://api.edenai.run/v3. Change model strings from 'gpt-4' to 'openai/gpt-4' (provider/model format). All OpenAI SDK methods (chat.completions.create, streaming, multi-turn, vision) work the same way. You can also use non-OpenAI models like 'anthropic/claude-sonnet-4-5'.",
         "source_doc": "v3/integrations/openai-sdk-python.mdx",
         "category": "integrations",
         "difficulty": "intermediate"

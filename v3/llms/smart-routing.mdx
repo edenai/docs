@@ -8,10 +8,6 @@ Learn practical patterns for implementing smart routing with LLMs using Eden AI'
 
 Use `@edenai` as the model name to let the router automatically select the best available model. You can optionally provide `router_candidates` to restrict selection to a specific pool.
 
-**Related documentation:**
-- **[Router Getting Started](../router/getting-started)** - Core routing concepts and basics
-- **[Router Advanced Usage](../router/advanced-usage)** - Advanced patterns and optimization
-
 ## Basic Usage
 
 Let the system choose from all available models:
@@ -19,7 +15,7 @@ Let the system choose from all available models:
 ```python Python
 import requests
 
-url = "https://api.edenai.run/v3/llm/chat/completions"
+url = "https://api.edenai.run/v3/chat/completions"
 headers = {
     "Authorization": f"Bearer {API_KEY}",
     "Content-Type": "application/json"
@@ -40,7 +36,7 @@ Restrict routing to a specific set of models using `router_candidates`:
 ```python Python
 import requests
 
-url = "https://api.edenai.run/v3/llm/chat/completions"
+url = "https://api.edenai.run/v3/chat/completions"
 headers = {
     "Authorization": f"Bearer {API_KEY}",
     "Content-Type": "application/json"

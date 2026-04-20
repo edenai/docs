@@ -32,7 +32,7 @@ from openai import OpenAI
 
 client = OpenAI(
     api_key="YOUR_EDEN_AI_API_KEY",  # Get from https://app.edenai.run
-    base_url="https://api.edenai.run/v3/llm"
+    base_url="https://api.edenai.run/v3"
 )
 
 response = client.chat.completions.create(
@@ -83,7 +83,7 @@ from openai import OpenAI
 
 client = OpenAI(
     api_key="YOUR_EDEN_AI_API_KEY",
-    base_url="https://api.edenai.run/v3/llm"
+    base_url="https://api.edenai.run/v3"
 )
 
 messages = [
@@ -126,7 +126,7 @@ import requests
 
 client = OpenAI(
     api_key="YOUR_EDEN_AI_API_KEY",
-    base_url="https://api.edenai.run/v3/llm"
+    base_url="https://api.edenai.run/v3"
 )
 
 # First, upload the image to get a file_id
@@ -165,7 +165,7 @@ import openai
 
 client = OpenAI(
     api_key="YOUR_EDEN_AI_API_KEY",
-    base_url="https://api.edenai.run/v3/llm"
+    base_url="https://api.edenai.run/v3"
 )
 
 try:
@@ -199,7 +199,7 @@ from openai import OpenAI
 
 client = OpenAI(
     api_key=os.getenv("EDEN_AI_API_KEY"),
-    base_url="https://api.edenai.run/v3/llm"
+    base_url="https://api.edenai.run/v3"
 )
 ```
 

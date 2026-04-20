@@ -483,7 +483,7 @@ import requests
 
 def check_provider_availability():
     """Check which providers are currently available."""
-    url = "https://api.edenai.run/v3/llm/models"
+    url = "https://api.edenai.run/v3/models"
     headers = {"Authorization": "Bearer YOUR_API_KEY"}
 
     response = requests.get(url, headers=headers)

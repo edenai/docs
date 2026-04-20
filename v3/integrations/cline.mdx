@@ -1,0 +1,70 @@
+---
+title: "Cline"
+icon: "/integration-logo/cline-icondoc.svg"
+---
+
+Configure [Cline](https://github.com/cline/cline), the autonomous AI coding agent for VS Code, to use Eden AI for access to +300 LLM models.
+
+## Overview
+
+Cline is a VS Code extension that gives you an autonomous AI agent capable of creating files, running terminal commands, and completing multi-step coding tasks. By pointing it at Eden AI's OpenAI-compatible endpoint, you get:
+
+- **+300 LLM models**: Access OpenAI, Anthropic, Google, Cohere, and more through a single API key
+- **Cost savings**: Leverage Eden AI's competitive pricing across all providers
+- **Provider flexibility**: Switch models without leaving VS Code
+
+## Prerequisites
+
+- [VS Code](https://code.visualstudio.com) installed
+- [Cline](https://docs.cline.bot/getting-started/installing-cline) installed in VS Code
+- Eden AI API key from [https://app.edenai.run](https://app.edenai.run)
+
+## Configuration
+
+### Step 1: Open Cline 
+
+1. Click the **Cline icon** in the VS Code activity bar
+2. Select the third option **Bring my own API key** on the Cline panel
+3. Click on **Continue** 
+
+### Step 2: Configure your provider
+
+In the API Provider dropdown, select **"OpenAI Compatible"**.
+
+Fill in the following fields:
+
+| Field | Value |
+|---|---|
+| **Base URL** | `https://api.edenai.run/v3` |
+| **API Key** | Your Eden AI API key |
+| **Model ID** | e.g. `anthropic/claude-sonnet-4-5` |
+
+Click **Continue**.
+
+## Available Models
+
+Use any model from Eden AI's catalog in the `provider/model` format. A few examples covering different use cases:
+
+- `anthropic/claude-sonnet-4-5` — powerful, best for complex coding tasks
+- `google/gemini-2.5-flash` — fast and low-cost, good for quick iterations
+- `openai/gpt-4o-mini` — cheapest, suitable for simple edits
+
+Browse the full catalog with pricing and capabilities at [app.edenai.run/models](https://app.edenai.run/models).
+
+## Troubleshooting
+
+### Authentication Errors (401)
+
+1. Confirm your Eden AI API key is correct — copy it from [app.edenai.run](https://app.edenai.run) → **API Keys**
+2. Make sure there are no leading/trailing spaces in the key
+
+### Connection Issues
+
+1. Verify the base URL is exactly: `https://api.edenai.run/v3`
+2. Check Eden AI status: [https://app-edenai.instatus.com](https://app-edenai.instatus.com)
+
+
+## Next Steps
+
+- [Continue.dev](./continue-dev) - Inline AI code assistant for VS Code and JetBrains
+- [Claude Code](./claude-code) - Official Claude CLI

@@ -3,27 +3,21 @@ title: "Cline"
 icon: "/integration-logo/cline-icondoc.svg"
 ---
 
-Configure [Cline](https://github.com/cline/cline), the autonomous AI coding agent for VS Code, to use Eden AI for access to 500+ models.
+Configure [Cline](https://github.com/cline/cline), the autonomous AI coding agent for VS Code, to use Eden AI for access to +300 LLM models.
 
 ## Overview
 
 Cline is a VS Code extension that gives you an autonomous AI agent capable of creating files, running terminal commands, and completing multi-step coding tasks. By pointing it at Eden AI's OpenAI-compatible endpoint, you get:
 
-- **500+ models**: Access OpenAI, Anthropic, Google, Cohere, and more through a single API key
+- **+300 LLM models**: Access OpenAI, Anthropic, Google, Cohere, and more through a single API key
 - **Cost savings**: Leverage Eden AI's competitive pricing across all providers
 - **Provider flexibility**: Switch models without leaving VS Code
 
 ## Prerequisites
 
 - [VS Code](https://code.visualstudio.com) installed
+- [Cline](https://docs.cline.bot/getting-started/installing-cline) installed in VS Code
 - Eden AI API key from [https://app.edenai.run](https://app.edenai.run)
-
-## Installation
-
-1. Open VS Code
-2. Go to Extensions (`Ctrl+Shift+X` / `Cmd+Shift+X`)
-3. Search for **"Cline"**
-4. Click **Install**
 
 ## Configuration
 
@@ -41,7 +35,7 @@ Fill in the following fields:
 
 | Field | Value |
 |---|---|
-| **Base URL** | `https://api.edenai.run/v3/llm` |
+| **Base URL** | `https://api.edenai.run/v3` |
 | **API Key** | Your Eden AI API key |
 | **Model ID** | e.g. `anthropic/claude-sonnet-4-5` |
 
@@ -49,26 +43,13 @@ Click **Continue**.
 
 ## Available Models
 
-Use any model from Eden AI's catalog in the `provider/model` format:
+Use any model from Eden AI's catalog in the `provider/model` format. A few examples covering different use cases:
 
-### Anthropic
-- `anthropic/claude-sonnet-4-5` — best balance of speed and capability
-- `anthropic/claude-opus-4-5` — most powerful, complex tasks
-- `anthropic/claude-haiku-4-5` — fastest, cost-effective
+- `anthropic/claude-sonnet-4-5` — powerful, best for complex coding tasks
+- `google/gemini-2.5-flash` — fast and low-cost, good for quick iterations
+- `openai/gpt-4o-mini` — cheapest, suitable for simple edits
 
-### OpenAI
-- `openai/gpt-4o`
-- `openai/gpt-4-turbo`
-- `openai/gpt-3.5-turbo`
-
-### Google
-- `google/gemini-2.5-pro`
-- `google/gemini-2.5-flash`
-
-### Others
-- `cohere/command-r-plus`
-- `meta/llama-3.1-405b-instruct`
-- `mistral/mistral-large-latest`
+Browse the full catalog with pricing and capabilities at [app.edenai.run/models](https://app.edenai.run/models).
 
 ## Troubleshooting
 
@@ -79,7 +60,7 @@ Use any model from Eden AI's catalog in the `provider/model` format:
 
 ### Connection Issues
 
-1. Verify the base URL is exactly: `https://api.edenai.run/v3/llm`
+1. Verify the base URL is exactly: `https://api.edenai.run/v3`
 2. Check Eden AI status: [https://app-edenai.instatus.com](https://app-edenai.instatus.com)
 
 

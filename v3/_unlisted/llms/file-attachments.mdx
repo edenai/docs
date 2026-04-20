@@ -54,7 +54,7 @@ file_id = upload_response.json()["file_id"]
 print(f"Uploaded file ID: {file_id}")
 
 # Step 2: Use the file in LLM request
-llm_url = "https://api.edenai.run/v3/llm/chat/completions"
+llm_url = "https://api.edenai.run/v3/chat/completions"
 llm_headers = {
     "Authorization": "Bearer YOUR_API_KEY",
     "Content-Type": "application/json"
@@ -101,7 +101,7 @@ const {file_id} = await uploadResponse.json();
 console.log('Uploaded file ID:', file_id);
 
 // Step 2: Use the file in LLM request
-const llmUrl = 'https://api.edenai.run/v3/llm/chat/completions';
+const llmUrl = 'https://api.edenai.run/v3/chat/completions';
 const payload = {
   model: 'openai/gpt-4o',
   messages: [
@@ -137,7 +137,7 @@ Use publicly accessible file URLs:
 ```python Python
 import requests
 
-url = "https://api.edenai.run/v3/llm/chat/completions"
+url = "https://api.edenai.run/v3/chat/completions"
 headers = {
     "Authorization": "Bearer YOUR_API_KEY",
     "Content-Type": "application/json"
@@ -186,7 +186,7 @@ with open("contract.pdf", "rb") as f:
 # Create data URL
 data_url = f"data:application/pdf;base64,{file_data}"
 
-url = "https://api.edenai.run/v3/llm/chat/completions"
+url = "https://api.edenai.run/v3/chat/completions"
 headers = {
     "Authorization": "Bearer YOUR_API_KEY",
     "Content-Type": "application/json"
@@ -236,7 +236,7 @@ upload_response = requests.post(
 file_id = upload_response.json()["file_id"]
 
 # Request summary
-url = "https://api.edenai.run/v3/llm/chat/completions"
+url = "https://api.edenai.run/v3/chat/completions"
 headers = {
     "Authorization": "Bearer YOUR_API_KEY",
     "Content-Type": "application/json"
@@ -289,7 +289,7 @@ upload_response = requests.post(
 )
 file_id = upload_response.json()["file_id"]
 
-url = "https://api.edenai.run/v3/llm/chat/completions"
+url = "https://api.edenai.run/v3/chat/completions"
 headers = {
     "Authorization": "Bearer YOUR_API_KEY",
     "Content-Type": "application/json"
@@ -342,7 +342,7 @@ upload_response = requests.post(
 )
 file_id = upload_response.json()["file_id"]
 
-url = "https://api.edenai.run/v3/llm/chat/completions"
+url = "https://api.edenai.run/v3/chat/completions"
 headers = {
     "Authorization": "Bearer YOUR_API_KEY",
     "Content-Type": "application/json"
@@ -402,7 +402,7 @@ upload_response = requests.post(
 )
 file_id = upload_response.json()["file_id"]
 
-url = "https://api.edenai.run/v3/llm/chat/completions"
+url = "https://api.edenai.run/v3/chat/completions"
 headers = {
     "Authorization": "Bearer YOUR_API_KEY",
     "Content-Type": "application/json"
@@ -459,7 +459,7 @@ upload_response = requests.post(
 )
 file_id = upload_response.json()["file_id"]
 
-url = "https://api.edenai.run/v3/llm/chat/completions"
+url = "https://api.edenai.run/v3/chat/completions"
 headers = {
     "Authorization": "Bearer YOUR_API_KEY",
     "Content-Type": "application/json"
@@ -559,7 +559,7 @@ Files uploaded to `/v3/upload` persist for 7 days:
 ```python Python
 import requests
 
-url = "https://api.edenai.run/v3/llm/chat/completions"
+url = "https://api.edenai.run/v3/chat/completions"
 headers = {
     "Authorization": "Bearer YOUR_API_KEY",
     "Content-Type": "application/json"
@@ -694,7 +694,7 @@ for doc in ["doc1.pdf", "doc2.pdf", "doc3.pdf"]:
     file_ids.append(response.json()["file_id"])
 
 # Analyze all together
-url = "https://api.edenai.run/v3/llm/chat/completions"
+url = "https://api.edenai.run/v3/chat/completions"
 headers = {
     "Authorization": "Bearer YOUR_API_KEY",
     "Content-Type": "application/json"
@@ -741,7 +741,7 @@ upload_response = requests.post(
 )
 file_id = upload_response.json()["file_id"]
 
-url = "https://api.edenai.run/v3/llm/chat/completions"
+url = "https://api.edenai.run/v3/chat/completions"
 headers = {
     "Authorization": "Bearer YOUR_API_KEY",
     "Content-Type": "application/json"
@@ -854,7 +854,7 @@ def process_document_safe(file_path, prompt):
 
         # Process
         llm_response = requests.post(
-            "https://api.edenai.run/v3/llm/chat/completions",
+            "https://api.edenai.run/v3/chat/completions",
             headers={
                 "Authorization": "Bearer YOUR_API_KEY",
                 "Content-Type": "application/json"

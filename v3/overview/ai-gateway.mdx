@@ -103,7 +103,7 @@ import requests
 
 # LLM call
 response = requests.post(
-    "https://api.edenai.run/v3/llm/chat/completions",
+    "https://api.edenai.run/v3/chat/completions",
     headers={
         "Authorization": "Bearer YOUR_API_KEY",
         "Content-Type": "application/json"
@@ -117,7 +117,7 @@ print(response.json()["choices"][0]["message"]["content"])
 ```
 
 ```bash cURL
-curl -X POST https://api.edenai.run/v3/llm/chat/completions \
+curl -X POST https://api.edenai.run/v3/chat/completions \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -127,7 +127,7 @@ curl -X POST https://api.edenai.run/v3/llm/chat/completions \
 ```
 
 ```javascript JavaScript
-const response = await fetch('https://api.edenai.run/v3/llm/chat/completions', {
+const response = await fetch('https://api.edenai.run/v3/chat/completions', {
   method: 'POST',
   headers: {
     'Authorization': 'Bearer YOUR_API_KEY',

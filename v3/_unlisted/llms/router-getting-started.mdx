@@ -54,7 +54,7 @@ The simplest way to use smart routing is to set `model: "@edenai"` without speci
 ```python Python
 import requests
 
-url = "https://api.edenai.run/v3/llm/chat/completions"
+url = "https://api.edenai.run/v3/chat/completions"
 headers = {
 "Authorization": "Bearer YOUR_API_KEY",
 "Content-Type": "application/json"
@@ -80,7 +80,7 @@ print(content)
     ```
 
 ```javascript JavaScript
-const url = 'https://api.edenai.run/v3/llm/chat/completions';
+const url = 'https://api.edenai.run/v3/chat/completions';
 const headers = {
   'Authorization': 'Bearer YOUR_API_KEY',
   'Content-Type': 'application/json'
@@ -111,7 +111,7 @@ console.log(content);
     ```
 
 ```bash cURL
-curl -X POST https://api.edenai.run/v3/llm/chat/completions \
+curl -X POST https://api.edenai.run/v3/chat/completions \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -136,7 +136,7 @@ Restrict routing to specific models using `router_candidates`:
 ```python Python
 import requests
 
-url = "https://api.edenai.run/v3/llm/chat/completions"
+url = "https://api.edenai.run/v3/chat/completions"
 headers = {
 "Authorization": "Bearer YOUR_API_KEY",
 "Content-Type": "application/json"
@@ -227,7 +227,7 @@ Use the `/v3/llm/models` endpoint to list all available models:
 ```python Python
 import requests
 
-url = "https://api.edenai.run/v3/llm/models"
+url = "https://api.edenai.run/v3/models"
 headers = {"Authorization": "Bearer YOUR_API_KEY"}
 
 response = requests.get(url, headers=headers)
@@ -242,7 +242,7 @@ for model in models['data']:
     ```
 
 ```javascript JavaScript
-const url = 'https://api.edenai.run/v3/llm/models';
+const url = 'https://api.edenai.run/v3/models';
 const headers = {'Authorization': 'Bearer YOUR_API_KEY'};
 
 const response = await fetch(url, {headers});
@@ -267,7 +267,7 @@ from openai import OpenAI
 
 client = OpenAI(
     api_key="YOUR_EDEN_AI_KEY",
-    base_url="https://api.edenai.run/v3/llm"
+    base_url="https://api.edenai.run/v3"
 )
 
 # Default routing
@@ -287,7 +287,7 @@ from openai import OpenAI
 
 client = OpenAI(
     api_key="YOUR_EDEN_AI_KEY",
-    base_url="https://api.edenai.run/v3/llm"
+    base_url="https://api.edenai.run/v3"
 )
 
 # Custom candidates via extra_body
@@ -313,7 +313,7 @@ import OpenAI from 'openai';
 
 const client = new OpenAI({
   apiKey: process.env.EDEN_AI_KEY,
-  baseURL: 'https://api.edenai.run/v3/llm'
+  baseURL: 'https://api.edenai.run/v3'
 });
 
 // Custom candidates
@@ -395,7 +395,7 @@ import requests
 
 def chat_with_router(message: str):
     """Chat with router and handle errors."""
-    url = "https://api.edenai.run/v3/llm/chat/completions"
+    url = "https://api.edenai.run/v3/chat/completions"
     headers = {
         "Authorization": f"Bearer {API_KEY}",
         "Content-Type": "application/json"

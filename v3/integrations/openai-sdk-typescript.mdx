@@ -37,7 +37,7 @@ import OpenAI from 'openai';
 
 const client = new OpenAI({
   apiKey: 'YOUR_EDEN_AI_API_KEY',
-  baseURL: 'https://api.edenai.run/v3/llm',
+  baseURL: 'https://api.edenai.run/v3',
 });
 
 async function main() {
@@ -63,7 +63,7 @@ import OpenAI from 'openai';
 
 const client = new OpenAI({
   apiKey: 'YOUR_EDEN_AI_API_KEY',
-  baseURL: 'https://api.edenai.run/v3/llm',
+  baseURL: 'https://api.edenai.run/v3',
 });
 
 const stream = await client.chat.completions.create({
@@ -85,7 +85,7 @@ const OpenAI = require('openai');
 
 const client = new OpenAI({
   apiKey: 'YOUR_EDEN_AI_API_KEY',
-  baseURL: 'https://api.edenai.run/v3/llm',
+  baseURL: 'https://api.edenai.run/v3',
 });
 
 async function main() {
@@ -141,7 +141,7 @@ import type { ChatCompletionMessageParam } from 'openai/resources/chat/completio
 
 const client = new OpenAI({
   apiKey: process.env.EDEN_AI_API_KEY!,
-  baseURL: 'https://api.edenai.run/v3/llm',
+  baseURL: 'https://api.edenai.run/v3',
 });
 
 async function chat() {
@@ -199,7 +199,7 @@ import OpenAI from 'openai';
 
 const client = new OpenAI({
   apiKey: process.env.EDEN_AI_API_KEY!,
-  baseURL: 'https://api.edenai.run/v3/llm',
+  baseURL: 'https://api.edenai.run/v3',
 });
 
 const stream = await client.chat.completions.create({
@@ -237,7 +237,7 @@ import fetch from 'node-fetch';
 
 const client = new OpenAI({
   apiKey: process.env.EDEN_AI_API_KEY!,
-  baseURL: 'https://api.edenai.run/v3/llm',
+  baseURL: 'https://api.edenai.run/v3',
 });
 
 async function analyzeImage() {
@@ -295,7 +295,7 @@ import OpenAI from 'openai';
 
 const client = new OpenAI({
   apiKey: process.env.EDEN_AI_API_KEY!,
-  baseURL: 'https://api.edenai.run/v3/llm',
+  baseURL: 'https://api.edenai.run/v3',
 });
 
 async function safeChat() {
@@ -347,7 +347,7 @@ app.use(express.json());
 
 const client = new OpenAI({
   apiKey: process.env.EDEN_AI_API_KEY!,
-  baseURL: 'https://api.edenai.run/v3/llm',
+  baseURL: 'https://api.edenai.run/v3',
 });
 
 app.post('/api/chat', async (req, res) => {
@@ -494,7 +494,7 @@ import OpenAI from 'openai';
 
 const client = new OpenAI({
   apiKey: process.env.EDEN_AI_API_KEY!,
-  baseURL: 'https://api.edenai.run/v3/llm',
+  baseURL: 'https://api.edenai.run/v3',
 });
 ```
 </CodeGroup>
@@ -511,7 +511,7 @@ import type { ChatCompletionMessageParam } from 'openai/resources/chat/completio
 
 const client = new OpenAI({
   apiKey: process.env.EDEN_AI_API_KEY!,
-  baseURL: 'https://api.edenai.run/v3/llm',
+  baseURL: 'https://api.edenai.run/v3',
 });
 
 const rl = readline.createInterface({
@@ -589,7 +589,7 @@ Programmatically discover models:
 import fetch from 'node-fetch';
 
 async function listModels() {
-  const response = await fetch('https://api.edenai.run/v3/llm/models', {
+  const response = await fetch('https://api.edenai.run/v3/models', {
     headers: {
       Authorization: `Bearer ${process.env.EDEN_AI_API_KEY}`,
     },

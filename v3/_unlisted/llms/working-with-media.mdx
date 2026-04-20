@@ -39,7 +39,7 @@ The simplest method for publicly accessible images:
 ```python Python
 import requests
 
-url = "https://api.edenai.run/v3/llm/chat/completions"
+url = "https://api.edenai.run/v3/chat/completions"
 headers = {
     "Authorization": "Bearer YOUR_API_KEY",
     "Content-Type": "application/json"
@@ -72,7 +72,7 @@ print(result)
 ```
 
 ```javascript JavaScript
-const url = 'https://api.edenai.run/v3/llm/chat/completions';
+const url = 'https://api.edenai.run/v3/chat/completions';
 const headers = {
     'Authorization': 'Bearer YOUR_API_KEY',
     'Content-Type': 'application/json'
@@ -110,7 +110,7 @@ console.log(result);
 ```
 
 ```bash cURL
-curl -X POST https://api.edenai.run/v3/llm/chat/completions \
+curl -X POST https://api.edenai.run/v3/chat/completions \
     -H "Authorization: Bearer YOUR_API_KEY" \
     -H "Content-Type: application/json" \
     -d '{
@@ -140,7 +140,7 @@ For inline images or when URLs aren't available:
 import base64
 import requests
 
-url = "https://api.edenai.run/v3/llm/chat/completions"
+url = "https://api.edenai.run/v3/chat/completions"
 headers = {
     "Authorization": "Bearer YOUR_API_KEY",
     "Content-Type": "application/json"
@@ -226,7 +226,7 @@ file_id = upload_response.json()["file_id"]
 print(f"Uploaded file ID: {file_id}")
 
 # Step 2: Use the file in LLM request
-llm_url = "https://api.edenai.run/v3/llm/chat/completions"
+llm_url = "https://api.edenai.run/v3/chat/completions"
 llm_headers = {
     "Authorization": "Bearer YOUR_API_KEY",
     "Content-Type": "application/json"
@@ -280,7 +280,7 @@ upload_response = requests.post(
 file_id = upload_response.json()["file_id"]
 
 # Analyze the PDF with LLM
-llm_url = "https://api.edenai.run/v3/llm/chat/completions"
+llm_url = "https://api.edenai.run/v3/chat/completions"
 llm_headers = {
     "Authorization": "Bearer YOUR_API_KEY",
     "Content-Type": "application/json"
@@ -318,7 +318,7 @@ For inline document processing:
 import base64
 import requests
 
-url = "https://api.edenai.run/v3/llm/chat/completions"
+url = "https://api.edenai.run/v3/chat/completions"
 headers = {
     "Authorization": "Bearer YOUR_API_KEY",
     "Content-Type": "application/json"
@@ -362,7 +362,7 @@ Send multiple images in a single message:
 ```python Python
 import requests
 
-url = "https://api.edenai.run/v3/llm/chat/completions"
+url = "https://api.edenai.run/v3/chat/completions"
 headers = {
     "Authorization": "Bearer YOUR_API_KEY",
     "Content-Type": "application/json"
@@ -401,7 +401,7 @@ Combine different media types:
 ```python Python
 import requests
 
-url = "https://api.edenai.run/v3/llm/chat/completions"
+url = "https://api.edenai.run/v3/chat/completions"
 headers = {
     "Authorization": "Bearer YOUR_API_KEY",
     "Content-Type": "application/json"
@@ -443,7 +443,7 @@ result = response.json()
 ```python Python
 import requests
 
-url = "https://api.edenai.run/v3/llm/chat/completions"
+url = "https://api.edenai.run/v3/chat/completions"
 headers = {
     "Authorization": "Bearer YOUR_API_KEY",
     "Content-Type": "application/json"
@@ -486,7 +486,7 @@ import base64
 with open("receipt.jpg", "rb") as f:
     image_data = base64.b64encode(f.read()).decode('utf-8')
 
-url = "https://api.edenai.run/v3/llm/chat/completions"
+url = "https://api.edenai.run/v3/chat/completions"
 headers = {
     "Authorization": "Bearer YOUR_API_KEY",
     "Content-Type": "application/json"
@@ -535,7 +535,7 @@ upload_response = requests.post(upload_url, headers=upload_headers, files=files)
 file_id = upload_response.json()["file_id"]
 
 # Request summary
-llm_url = "https://api.edenai.run/v3/llm/chat/completions"
+llm_url = "https://api.edenai.run/v3/chat/completions"
 llm_headers = {
     "Authorization": "Bearer YOUR_API_KEY",
     "Content-Type": "application/json"
@@ -573,7 +573,7 @@ print(result)
 ```python Python
 import requests
 
-url = "https://api.edenai.run/v3/llm/chat/completions"
+url = "https://api.edenai.run/v3/chat/completions"
 headers = {
     "Authorization": "Bearer YOUR_API_KEY",
     "Content-Type": "application/json"
@@ -716,7 +716,7 @@ See [Vision Capabilities](./vision-capabilities) for detailed provider compariso
 ```python Python
 import requests
 
-url = "https://api.edenai.run/v3/llm/chat/completions"
+url = "https://api.edenai.run/v3/chat/completions"
 headers = {
     "Authorization": "Bearer YOUR_API_KEY",
     "Content-Type": "application/json"

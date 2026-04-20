@@ -106,7 +106,7 @@ Once uploaded, reference the file by its `file_id` in an LLM chat completion:
 ```python Python
 import requests
 
-url = "https://api.edenai.run/v3/llm/chat/completions"
+url = "https://api.edenai.run/v3/chat/completions"
 headers = {
     "Authorization": "Bearer YOUR_API_KEY",
     "Content-Type": "application/json"
@@ -235,7 +235,7 @@ Upload once, use in multiple requests:
 import requests
 
 upload_url = "https://api.edenai.run/v3/upload"
-llm_url = "https://api.edenai.run/v3/llm/chat/completions"
+llm_url = "https://api.edenai.run/v3/chat/completions"
 headers = {"Authorization": "Bearer YOUR_API_KEY"}
 files = {"file": open("document.pdf", "rb")}
 

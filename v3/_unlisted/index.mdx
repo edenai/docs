@@ -84,7 +84,7 @@ POST /v3/llm/chat/completions
 ```python Python
 import requests
 
-url = "https://api.edenai.run/v3/llm/chat/completions"
+url = "https://api.edenai.run/v3/chat/completions"
 headers = {
     "Authorization": "Bearer YOUR_API_KEY",
     "Content-Type": "application/json"
@@ -252,7 +252,7 @@ response = requests.post(
 import requests
 
 response = requests.post(
-    "https://api.edenai.run/v3/llm/chat/completions",
+    "https://api.edenai.run/v3/chat/completions",
     headers={"Authorization": "Bearer YOUR_API_KEY"},
     json={
         "model": "openai/gpt-4",

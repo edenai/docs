@@ -3,210 +3,257 @@ icon: "bell"
 title: "Webhooks"
 ---
 
-Webhooks let you receive results from async Universal AI jobs via HTTP callbacks instead of polling. When a job completes, Eden AI sends the result directly to your specified URL.
+Webhooks let you receive results from async Universal AI jobs via HTTP callbacks instead of polling. When a job completes, Eden AI sends a signed `POST` request to the URL you provided.
 
 ## How It Works
 
 1. Submit an async request with a `webhook_receiver` in the payload.
 2. Eden AI processes the job in the background.
-3. When the job finishes, Eden AI sends a `POST` request to your `webhook_receiver` with the result.
+3. On completion, Eden AI sends a signed `POST` request to your `webhook_receiver` with the result.
 
-This eliminates the need to repeatedly poll `GET /v3/universal-ai/async/{job_id}`.
+## Request Parameters
 
-## Sending an Async Request with a Webhook
+| Field                     | Type            | Required | Description                                                                                     |
+| ------------------------- | --------------- | -------- | ----------------------------------------------------------------------------------------------- |
+| `webhook_receiver`        | `string` (URL)  | no       | HTTPS URL that will receive the `POST` when the job completes or fails. Validated against SSRF. |
+| `user_webhook_parameters` | `object`        | no       | Free-form JSON object echoed back as `user_parameters` in the webhook payload. Useful for correlating the callback to your own records. |
 
-Add the `webhook_receiver` field to any async Universal AI request:
+## Webhook Headers
 
-<CodeGroup>
-```python Python
-import requests
+Every webhook request Eden AI sends includes these headers:
 
-url = "https://api.edenai.run/v3/universal-ai/async"
-headers = {
-    "Authorization": "Bearer YOUR_API_KEY",
-    "Content-Type": "application/json"
-}
-
-payload = {
-    "model": "ocr/ocr_async/amazon",
-    "input": {
-        "file": "YOUR_FILE_UUID_OR_URL"
-    },
-    "webhook_receiver": "https://your-server.com/webhooks/edenai"
-}
-
-response = requests.post(url, headers=headers, json=payload)
-result = response.json()
-print(result)  # Contains the job ID
-```
-
-```javascript JavaScript
-const url = 'https://api.edenai.run/v3/universal-ai/async';
-const headers = {
-  'Authorization': 'Bearer YOUR_API_KEY',
-  'Content-Type': 'application/json'
-};
-
-const payload = {
-  model: 'ocr/ocr_async/amazon',
-  input: {
-    file: 'YOUR_FILE_UUID_OR_URL'
-  },
-  webhook_receiver: 'https://your-server.com/webhooks/edenai'
-};
-
-const response = await fetch(url, {
-  method: 'POST',
-  headers: headers,
-  body: JSON.stringify(payload)
-});
-
-const result = await response.json();
-console.log(result);
-```
-
-```bash cURL
-curl -X POST https://api.edenai.run/v3/universal-ai/async \
-  -H "Authorization: Bearer YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "ocr/ocr_async/amazon",
-    "input": {"file": "YOUR_FILE_UUID_OR_URL"},
-    "webhook_receiver": "https://your-server.com/webhooks/edenai"
-  }'
-```
-</CodeGroup>
+| Header                    | Example value          | Description                                                            |
+| ------------------------- | ---------------------- | ---------------------------------------------------------------------- |
+| `Content-Type`            | `application/json`     | Body is always JSON.                                                   |
+| `User-Agent`              | `EdenAI/Ai-Features`   | Identifies the sender.                                                 |
+| `X-EdenAI-Webhook`        | `true`                 | Flag marking the request as an Eden AI webhook.                        |
+| `X-Edenai-Signature`      | `a8f3...` (hex)        | RSA PKCS1 v1.5 signature of the payload.                               |
+| `X-Edenai-Hash-Algorithm` | `SHA256`               | Hash algorithm used to produce the signature.                          |
 
 ## Webhook Payload
 
-When the job completes, Eden AI sends a `POST` request to your webhook URL with the job result as the JSON body:
-
 ```json
 {
+  "event": "async_job_completed",
   "job_id": "550e8400-e29b-41d4-a716-446655440000",
   "status": "success",
-  "cost": "0.0015",
-  "provider": "amazon",
   "feature": "ocr",
   "subfeature": "ocr_async",
-  "output": {
-    "raw_text": "Extracted text content...",
-    "pages": [...],
-    "number_of_pages": 3
-  },
-  "error": null
+  "provider": "amazon",
+  "model": null,
+  "created_at": "2026-04-21T12:00:00+00:00",
+  "finished_at": "2026-04-21T12:01:30+00:00",
+  "output": { "raw_text": "..." },
+  "user_parameters": { "internal_ref": "order-42" }
 }
 ```
 
-If the job fails, the payload includes error details:
+| Field               | Type                    | Description                                                                            |
+| ------------------- | ----------------------- | -------------------------------------------------------------------------------------- |
+| `event`             | `string`                | Always `"async_job_completed"`.                                                        |
+| `job_id`            | `string` (UUID)         | ID of the completed job.                                                               |
+| `status`            | `"success" \| "fail"`   | Final job status.                                                                      |
+| `feature`           | `string`                | Feature name (e.g. `"ocr"`, `"audio"`).                                                |
+| `subfeature`        | `string`                | Subfeature name (e.g. `"ocr_async"`).                                                  |
+| `provider`          | `string`                | Provider that produced the result.                                                     |
+| `model`             | `string \| null`        | Provider-specific model, if any.                                                       |
+| `created_at`        | `string` (ISO 8601)     | When the job was created.                                                              |
+| `finished_at`       | `string` (ISO 8601)     | When the job finished.                                                                 |
+| `output`            | `object`                | Normalized result. Present only on `status: "success"`.                                |
+| `error`             | `object`                | `{ "message": "..." }`. Present only on `status: "fail"`.                              |
+| `original_response` | `any`                   | Raw provider response. Only present when the request had `show_original_response: true`. |
+| `user_parameters`   | `object`                | Echo of `user_webhook_parameters`. Absent if not set.                                  |
 
-```json
-{
-  "job_id": "550e8400-e29b-41d4-a716-446655440000",
-  "status": "fail",
-  "cost": "0.0015",
-  "provider": "amazon",
-  "feature": "ocr",
-  "subfeature": "ocr_async",
-  "output": null,
-  "error": {
-    "message": "Provider error details",
-    "error_code": "PROVIDER_ERROR"
-  }
-}
-```
+## Signature Verification
 
-## Handling Webhooks
+Every webhook is signed with Eden AI's RSA private key so you can verify it was not forged or tampered with in transit.
 
-Your webhook endpoint should:
+<Tip>
+Ask Eden AI support for the webhook **public key** (`webhook_rsa.pub.pem`) and store it with your service configuration.
+</Tip>
 
-1. Accept `POST` requests with a JSON body.
-2. Return a `200` status code to acknowledge receipt.
-3. Process the result asynchronously if needed.
+The signature is built as follows:
 
-{/* skip-test */}
-<CodeGroup>
-```python Python (Flask)
-from flask import Flask, request, jsonify
+1. The payload is serialized with canonical JSON (sorted keys, 2-space indent, UTF-8).
+2. `sha256(canonical_json_bytes)` is computed and its **hex digest** is taken.
+3. That hex digest is signed with RSA PKCS1 v1.5 / SHA-256.
+4. The hex-encoded signature is sent in `X-Edenai-Signature`.
 
-app = Flask(__name__)
+To verify, reproduce the same canonical JSON before hashing — do **not** re-serialize with default formatting.
 
-@app.route("/webhooks/edenai", methods=["POST"])
-def handle_webhook():
-    payload = request.get_json()
+## Example
 
-    job_id = payload["job_id"]
-    status = payload["status"]
+<Tabs>
+  <Tab title="Python">
+    Dependencies: `pip install requests flask pycryptodome orjson`
 
-    if status == "success":
-        output = payload["output"]
-        # Process the result (e.g., store in database)
-        print(f"Job {job_id} completed: {output}")
-    else:
-        error = payload["error"]
-        print(f"Job {job_id} failed: {error['message']}")
+    **Sending the request:**
 
-    return jsonify({"received": True}), 200
-```
-</CodeGroup>
+    ```python
+    import requests
+
+    url = "https://api.edenai.run/v3/universal-ai/async"
+    headers = {
+        "Authorization": "Bearer YOUR_API_KEY",
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "model": "ocr/ocr_async/amazon",
+        "input": {"file": "YOUR_FILE_UUID_OR_URL"},
+        "webhook_receiver": "https://your-server.com/webhooks/edenai",
+        "user_webhook_parameters": {"internal_ref": "order-42"},
+    }
+    response = requests.post(url, headers=headers, json=payload)
+    print(response.json())  # Contains the job ID
+    ```
+
+    **Receiving and verifying the webhook (Flask):**
+
+    {/* skip-test */}
+    ```python
+    import hashlib
+    import orjson
+    from flask import Flask, request, abort, jsonify
+    from Crypto.Hash import SHA256
+    from Crypto.PublicKey import RSA
+    from Crypto.Signature import PKCS1_v1_5
+
+    app = Flask(__name__)
+
+    with open("edenai_webhook_rsa.pub.pem", "rb") as f:
+        EDENAI_PUBLIC_KEY = RSA.import_key(f.read())
+
+
+    def verify_signature(raw_body: bytes, signature_hex: str) -> bool:
+        payload = orjson.loads(raw_body)
+        canonical = orjson.dumps(
+            payload,
+            option=orjson.OPT_INDENT_2 | orjson.OPT_SORT_KEYS,
+        )
+        hash_hex = hashlib.sha256(canonical).hexdigest()
+        verifier = PKCS1_v1_5.new(EDENAI_PUBLIC_KEY)
+        digest = SHA256.new(data=hash_hex.encode("utf-8"))
+        try:
+            return verifier.verify(digest, bytes.fromhex(signature_hex))
+        except ValueError:
+            return False
+
+
+    @app.route("/webhooks/edenai", methods=["POST"])
+    def handle_webhook():
+        signature = request.headers.get("X-Edenai-Signature", "")
+        if not verify_signature(request.get_data(), signature):
+            abort(401, description="Invalid Eden AI webhook signature")
+
+        payload = request.get_json()
+        if payload["status"] == "success":
+            print(f"Job {payload['job_id']} completed: {payload['output']}")
+        else:
+            print(f"Job {payload['job_id']} failed: {payload['error']['message']}")
+        return jsonify({"received": True}), 200
+    ```
+  </Tab>
+
+  <Tab title="JavaScript">
+    Dependencies: `npm install express safe-stable-stringify`
+
+    **Sending the request:**
+
+    ```javascript
+    const url = "https://api.edenai.run/v3/universal-ai/async";
+    const headers = {
+      Authorization: "Bearer YOUR_API_KEY",
+      "Content-Type": "application/json",
+    };
+    const payload = {
+      model: "ocr/ocr_async/amazon",
+      input: { file: "YOUR_FILE_UUID_OR_URL" },
+      webhook_receiver: "https://your-server.com/webhooks/edenai",
+      user_webhook_parameters: { internal_ref: "order-42" },
+    };
+    const response = await fetch(url, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(payload),
+    });
+    console.log(await response.json()); // Contains the job ID
+    ```
+
+    **Receiving and verifying the webhook (Express):**
+
+    {/* skip-test */}
+    ```javascript
+    const express = require("express");
+    const crypto = require("crypto");
+    const stringify = require("safe-stable-stringify");
+    const fs = require("fs");
+
+    const app = express();
+    const EDENAI_PUBLIC_KEY = fs.readFileSync("edenai_webhook_rsa.pub.pem", "utf8");
+
+    function verifySignature(rawBody, signatureHex) {
+      const payload = JSON.parse(rawBody.toString("utf8"));
+      const canonical = stringify(payload, null, 2); // sorted keys + 2-space indent
+      const hashHex = crypto.createHash("sha256").update(canonical, "utf8").digest("hex");
+      const verifier = crypto.createVerify("RSA-SHA256");
+      verifier.update(hashHex, "utf8");
+      verifier.end();
+      try {
+        return verifier.verify(EDENAI_PUBLIC_KEY, Buffer.from(signatureHex, "hex"));
+      } catch {
+        return false;
+      }
+    }
+
+    app.use("/webhooks/edenai", express.raw({ type: "application/json" }));
+
+    app.post("/webhooks/edenai", (req, res) => {
+      const signature = req.header("X-Edenai-Signature") || "";
+      if (!verifySignature(req.body, signature)) {
+        return res.status(401).send("Invalid Eden AI webhook signature");
+      }
+      const payload = JSON.parse(req.body.toString("utf8"));
+      if (payload.status === "success") {
+        console.log(`Job ${payload.job_id} completed:`, payload.output);
+      } else {
+        console.log(`Job ${payload.job_id} failed: ${payload.error.message}`);
+      }
+      res.status(200).json({ received: true });
+    });
+
+    app.listen(3000);
+    ```
+  </Tab>
+</Tabs>
+
+<Warning>
+Do **not** re-serialize the parsed JSON with defaults (e.g. `JSON.stringify(obj)` or `json.dumps(obj)` without `sort_keys=True, indent=2`) — any difference in spacing, key ordering, or unicode escaping will make the signature fail to verify.
+</Warning>
+
+## Retry Behavior
+
+Eden AI retries webhook delivery up to **3 times** with exponential backoff (capped at 30 s) when the receiver returns a transient failure:
+
+| Outcome                       | Retried? |
+| ----------------------------- | -------- |
+| HTTP 2xx                      | --       |
+| HTTP 4xx                      | No       |
+| HTTP 5xx                      | Yes      |
+| Timeout (30 s per attempt)    | Yes      |
+| Connection / network error    | Yes      |
+
+<Tip>
+Keep your webhook handler idempotent — Eden AI may deliver the same `job_id` more than once if a retry races with a slow response from your server.
+</Tip>
 
 ## Webhook vs Polling
 
-| | Webhooks | Polling |
-|---|----------|---------|
-| **How it works** | Eden AI pushes the result to your URL | You repeatedly call `GET /v3/universal-ai/async/{job_id}` |
-| **Latency** | Immediate notification on completion | Depends on polling interval |
-| **Efficiency** | No wasted requests | Requires repeated API calls |
-| **Setup** | Requires a publicly accessible endpoint | Works from any client |
-
-<Tip>
-Use **webhooks** for production workflows where you need immediate notification. Use **polling** for quick scripts, local development, or when you don't have a public endpoint.
-</Tip>
-
-## Polling Approach (for Comparison)
-
-Without webhooks, you poll for results:
-
-{/* skip-test */}
-<CodeGroup>
-```python Python
-import requests
-import time
-
-url = "https://api.edenai.run/v3/universal-ai/async"
-headers = {
-    "Authorization": "Bearer YOUR_API_KEY",
-    "Content-Type": "application/json"
-}
-
-# Step 1: Submit the job
-payload = {
-    "model": "audio/speech_to_text_async/amazon",
-    "input": {
-        "file": "YOUR_FILE_UUID_OR_URL",
-        "language": "en"
-    }
-}
-
-response = requests.post(url, headers=headers, json=payload)
-job = response.json()
-job_id = job["job_id"]
-
-# Step 2: Poll until complete
-while True:
-    status_response = requests.get(
-        f"https://api.edenai.run/v3/universal-ai/async/{job_id}",
-        headers=headers
-    )
-    result = status_response.json()
-
-    if result["status"] in ("success", "fail"):
-        print(result)
-        break
-
-    time.sleep(5)  # Wait 5 seconds before checking again
-```
-</CodeGroup>
+|                    | Webhooks                                       | Polling                                                  |
+| ------------------ | ---------------------------------------------- | -------------------------------------------------------- |
+| **How it works**   | Eden AI pushes the result to your URL          | You repeatedly call `GET /v3/universal-ai/async/{job_id}` |
+| **Latency**        | Immediate notification on completion           | Depends on polling interval                              |
+| **Efficiency**     | No wasted requests                             | Requires repeated API calls                              |
+| **Setup**          | Requires a publicly accessible endpoint        | Works from any client                                    |
 
 ## Next Steps
 

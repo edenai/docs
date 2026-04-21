@@ -152,8 +152,7 @@
         "question": "What is the difference between the fallback syntax for LLMs and expert models?",
         "expected_output": "Both use a 'fallbacks' array in the request body, but the model string format differs. For LLMs: POST /v3/chat/completions, model and fallbacks use provider/model format (e.g. 'openai/gpt-4o'). For expert models: POST /v3/universal-ai, model and fallbacks use feature/subfeature/provider format (e.g. 'text/moderation/google'). All fallback providers must support the same feature.",
         "source_doc": [
-            "v3/llms/fallback.mdx",
-            "v3/expert-models/fallback.mdx"
+            "v3/general/fallback.mdx"
         ],
         "category": "cross-cutting",
         "difficulty": "advanced"

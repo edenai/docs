@@ -74,7 +74,8 @@
                       "v3/llms/structured-output",
                       "v3/llms/web-search",
                       "v3/llms/smart-routing",
-                      "v3/llms/streaming"
+                      "v3/llms/streaming",
+                      "v3/llms/image-generation"
                     ]
                   },
                   {

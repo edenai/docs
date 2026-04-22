@@ -11,9 +11,9 @@ Eden AI supports the OpenAI Responses API — a stateful alternative to chat com
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `POST` | `/v3/llm/responses` | Create a response |
-| `GET` | `/v3/llm/responses/{response_id}` | Retrieve a stored response |
-| `DELETE` | `/v3/llm/responses/{response_id}` | Delete a stored response |
+| `POST` | `/v3/responses` | Create a response |
+| `GET` | `/v3/responses/{response_id}` | Retrieve a stored response |
+| `DELETE` | `/v3/responses/{response_id}` | Delete a stored response |
 
 <Warning>
 **Provider-Dependent Behavior** — The Responses API is a passthrough to the underlying provider. Stateful features (server-side storage, response retrieval/deletion, and `previous_response_id` chaining) are only available when the provider natively supports the Responses API (e.g. OpenAI). For all other providers, responses are not stored and the retrieve/delete endpoints are not functional.

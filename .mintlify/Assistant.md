@@ -14,7 +14,7 @@ Base URL: `https://api.edenai.run/v3` — Auth: `Authorization: Bearer <API_KEY>
 
 | Surface | Endpoints | Model format |
 | --- | --- | --- |
-| **LLMs** | `/v3/llm/chat/completions`, `/v3/llm/responses` + streaming | `provider/model` (e.g. `openai/gpt-4o`) |
+| **LLMs** | `/v3/chat/completions`, `/v3/responses` + streaming | `provider/model` (e.g. `openai/gpt-4o`) |
 | **Expert Models** | `/v3/universal-ai` (sync), `/v3/universal-ai/async` (async + webhooks) | `feature/subfeature/provider[/model]` (e.g. `ocr/financial_parser/google`) |
 
 ## Terminology

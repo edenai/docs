@@ -10,7 +10,7 @@ Eden AI automatically handles fallback for LLM requests. If your primary model f
 Add a `fallbacks` array to your request with one or more backup models. If the primary `model` fails, Eden AI will try each fallback in order.
 
 <Info>
-All models (primary and fallbacks) must be valid models listed in the [Models](/v3/llms/models) page.
+All models (primary and fallbacks) must be valid models listed in the [Models](/v3/llms/listing-models) page.
 </Info>
 
 <CodeGroup>
@@ -57,7 +57,7 @@ curl -X POST https://api.edenai.run/v3/llm/chat/completions \
   <Card title="Expert Model Fallback" icon="microchip" href="/v3/expert-models/fallback">
     Fallback for Universal AI / expert model requests
   </Card>
-  <Card title="Models" icon="list" href="/v3/llms/models">
+  <Card title="Models" icon="list" href="/v3/llms/listing-models">
     Browse available LLM models
   </Card>
 </CardGroup>

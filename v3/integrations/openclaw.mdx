@@ -1,0 +1,130 @@
+---
+title: "OpenClaw"
+icon: "/integration-logo/openclaw-icondoc.svg"
+---
+
+Connect [OpenClaw](https://openclaw.ai) to Eden AI and route your agent through 500+ models with smart routing, automatic fallbacks, and a single API key.
+
+## Overview
+
+OpenClaw is a terminal-based AI coding agent. By pointing it at Eden AI, you get:
+
+- **500+ models**: Access OpenAI, Anthropic, Google, and more through a single API key
+- **Smart routing**: Use the `@edenai` model to automatically pick the best provider per request based on quality, latency, cost and live provider health
+- **Automatic fallbacks**: Requests reroute to healthy providers if one goes down
+
+Prefer a video walkthrough? Follow along on [YouTube](https://youtu.be/HxIAYOQT90Q).
+
+## Prerequisites
+
+- OpenClaw already installed — if not, see the [OpenClaw install guide](https://github.com/openclaw/openclaw)
+- Eden AI API key from [app.edenai.run](https://app.edenai.run) → **API Keys**
+
+## Setup
+
+### 1. Add Eden AI as a custom provider
+
+OpenClaw stores its config at `~/.openclaw/openclaw.json`. Open it and add the Eden AI provider with the `@edenai` smart-router model:
+
+```bash
+nano ~/.openclaw/openclaw.json
+```
+
+<CodeGroup>
+```json ~/.openclaw/openclaw.json
+{
+  "provider": {
+    "edenai": {
+      "name": "Eden AI",
+      "baseURL": "https://api.edenai.run/v3/llm",
+      "apiKey": "YOUR_EDEN_AI_API_KEY",
+      "models": [
+        {
+          "id": "@edenai",
+          "name": "@edenai (Custom Provider)",
+          "contextWindow": 128000,
+          "maxTokens": 16384,
+          "input": ["text", "image"],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "reasoning": false,
+          "compat": {
+            "requiresAssistantAfterToolResult": true,
+            "supportsTools": false
+          }
+        }
+      ]
+    }
+  }
+}
+```
+</CodeGroup>
+
+`@edenai` is Eden AI's smart router — for every request it picks the best-performing model based on quality, latency, cost and live provider health. [How smart routing works →](/v3/llms/smart-routing)
+
+### 2. Configure OpenClaw interactively
+
+Run the built-in wizard and select the provider you just added:
+
+```bash
+openclaw configure
+```
+
+Walk through:
+
+- **model** → select `@edenai (Custom Provider)`
+- **Gateway** → `https://api.edenai.run/v3/llm`
+- **channels** → configure any channels your setup uses
+
+### 3. Start OpenClaw
+
+```bash
+openclaw
+```
+
+Every LLM call now flows through Eden AI — with built-in fallbacks, unified billing, and per-request cost visibility.
+
+## Using specific models
+
+`@edenai` handles routing automatically, but you can target a specific model by replacing the `id` with a `provider/model` string:
+
+```json
+"id": "anthropic/claude-sonnet-4-5"
+```
+
+Common choices:
+
+| Model | Best for |
+|---|---|
+| `@edenai` | **Default** — smart routing across all providers |
+| `anthropic/claude-sonnet-4-5` | Balanced reasoning |
+| `anthropic/claude-opus-4-7` | Maximum capability |
+| `anthropic/claude-haiku-4-5` | Fast and cheap |
+| `openai/gpt-5` | OpenAI's frontier model |
+| `google/gemini-2.5-pro` | Long context, multimodal |
+
+Browse the full catalog at [app.edenai.run/models](https://app.edenai.run/models).
+
+## Troubleshooting
+
+### `401 Unauthorized`
+
+Verify your Eden AI key — grab a fresh one at [app.edenai.run](https://app.edenai.run) → **API Keys**. Check for leading/trailing spaces.
+
+### `model not found`
+
+Ensure the `id` uses the `provider/model` format (or `@edenai` for the smart router). No bare model names.
+
+### Connection issues
+
+Confirm the base URL is exactly `https://api.edenai.run/v3/llm` and check Eden AI status at [app-edenai.instatus.com](https://app-edenai.instatus.com).
+
+## Next Steps
+
+- [Claude Code](./claude-code) - Official Claude CLI
+- [OpenCode](./opencode) - Terminal-based AI coding assistant
+- [Cline](./cline) - Autonomous AI coding agent for VS Code

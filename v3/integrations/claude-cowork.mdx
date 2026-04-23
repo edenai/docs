@@ -1,0 +1,118 @@
+---
+title: "Claude Cowork"
+icon: "/integration-logo/claude-ai-icondoc.svg"
+---
+
+Configure [Claude Cowork](https://claude.com/product/cowork), Anthropic's agentic desktop AI for knowledge work, to route through Eden AI for access to +300 LLM models from a single gateway.
+
+## Overview
+
+Claude Cowork is Anthropic's desktop agent for researchers, analysts, legal, finance, and operations teams. It reads and edits local files, coordinates between apps, and chains tools to complete multi-step work. By pointing Cowork at Eden AI's Anthropic-compatible gateway you get:
+
+- **+300 LLM models** — Anthropic, OpenAI, Google, Cohere, and more behind one API key
+- **No Anthropic account required** — sign in to Cowork with your Eden AI key
+- **Centralized billing and usage tracking** — see every Cowork request in your Eden AI dashboard
+- **Cross-provider agent loops** — swap models without reinstalling Cowork
+
+## Prerequisites
+
+- [Claude Cowork](https://claude.com/product/cowork) installed on macOS or Windows
+- Eden AI API key from [https://app.edenai.run](https://app.edenai.run)
+
+## Configuration
+
+### Step 1 — Enable Developer Mode
+
+Open Claude Cowork and navigate to **Help > Troubleshooting > Enable Developer Mode**. This unlocks the third-party inference panel.
+
+### Step 2 — Open the Third-Party Inference panel
+
+From the new **Developer** menu, select **Configure Third-Party Inference**.
+
+### Step 3 — Point Cowork at Eden AI
+
+Fill in the configuration panel with these values:
+
+| Field | Value |
+|---|---|
+| **Gateway backend** | `Gateway (Anthropic-compatible)` |
+| **Base URL** | `https://api.edenai.run/v3/llm` |
+| **Auth scheme** | `bearer` |
+| **API key** | Your Eden AI API key |
+
+Click **Apply locally** to save the configuration, or **Export** to generate an `.mobileconfig` (macOS) or `.reg` (Windows) file for MDM / Group Policy deployment across your organization.
+
+### Step 4 — Restart and authenticate
+
+Restart Claude Cowork and choose **Continue with Gateway** at the sign-in screen. No Anthropic account is needed.
+
+### Step 5 — Pick a model
+
+The model picker will now list models from your Eden AI account. Use the `provider/model-name` format:
+
+- `anthropic/claude-sonnet-4-5` — recommended default
+- `anthropic/claude-opus-4-5` — deeper reasoning
+- `anthropic/claude-haiku-4-5` — fastest / cheapest
+- `openai/gpt-4o`, `openai/gpt-5.2`, `openai/gpt-5.4`
+- `google/gemini-2.5-pro`, `google/gemini-2.5-flash`
+
+Browse the full catalogue via the [List LLM Models](/v3/llms/listing-models) endpoint or the [Eden AI dashboard](https://app.edenai.run).
+
+## How requests are routed
+
+Cowork issues standard Anthropic Messages API calls to `POST /v1/messages`. Eden AI's gateway forwards them natively to the selected provider, preserving:
+
+- **Streaming** — native Anthropic SSE (`message_start`, `content_block_delta`, `message_stop`, …)
+- **Tool use** — `tool_use` / `tool_result` blocks for agentic loops
+- **Extended thinking** — `thinking` blocks passed through untouched
+- **Vision** — image content blocks in user messages
+- **Prompt caching** — `cache_creation_input_tokens` / `cache_read_input_tokens` reported in usage
+- **Token counting** — `POST /v1/messages/count_tokens`
+
+## Verify the configuration
+
+Before launching Cowork, you can sanity-check the gateway with `curl`:
+
+```bash cURL
+curl -X POST https://api.edenai.run/v3/llm/v1/messages \
+  -H "Authorization: Bearer YOUR_EDEN_AI_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-sonnet-4-5",
+    "max_tokens": 64,
+    "messages": [{"role": "user", "content": "Reply with: pong"}]
+  }'
+```
+
+A 200 response with `"type": "message"` confirms the endpoint is reachable with your key.
+
+## Troubleshooting
+
+### Authentication errors
+
+1. Confirm the API key has no trailing whitespace.
+2. Verify the **Auth scheme** is `bearer`, not a custom scheme.
+3. Check your remaining credits at [https://app.edenai.run](https://app.edenai.run).
+
+### Model not available in the picker
+
+Not every model is exposed through the Anthropic-compatible endpoint. Use the [List LLM Models](/v3/llms/listing-models) endpoint and look for models whose `endpoints` include `/v1/messages`.
+
+### Requests time out during agent loops
+
+Agentic sessions (especially with `thinking` enabled or large tool outputs) may take minutes. If Cowork reports timeouts, increase the per-request timeout in your organization's Cowork policy.
+
+## Enterprise deployment
+
+Cowork's **Export** button produces an MDM-ready configuration file (`.mobileconfig` on macOS, `.reg` on Windows) with the Eden AI gateway pre-filled. Distribute it through Jamf, Intune, or Group Policy to roll Eden AI out across your organization without touching individual machines.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Claude Code" icon="terminal" href="./claude-code">
+    Configure Anthropic's CLI coding agent to run through Eden AI
+  </Card>
+  <Card title="Listing LLM Models" icon="list" href="../llms/listing-models">
+    Discover which models are exposed on the Anthropic-compatible endpoint
+  </Card>
+</CardGroup>

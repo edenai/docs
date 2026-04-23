@@ -205,6 +205,7 @@
                         "expanded": false,
                         "pages": [
                           "v3/integrations/claude-code",
+                          "v3/integrations/claude-cowork",
                           "v3/integrations/cline",
                           "v3/integrations/continue-dev",
                           "v3/integrations/opencode"

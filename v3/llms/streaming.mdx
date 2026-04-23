@@ -36,7 +36,7 @@ from openai import OpenAI
 
 client = OpenAI(
     api_key="YOUR_EDEN_AI_API_KEY",
-    base_url="https://api.edenai.run/v3/llm"
+    base_url="https://api.edenai.run/v3"
 )
 
 stream = client.chat.completions.create(
@@ -61,7 +61,7 @@ print(f"\n\nComplete response: {full_content}")
 
 <CodeGroup>
 ```javascript JavaScript
-const url = 'https://api.edenai.run/v3/llm/chat/completions';
+const url = 'https://api.edenai.run/v3/chat/completions';
 const headers = {
   'Authorization': 'Bearer YOUR_API_KEY',
   'Content-Type': 'application/json'

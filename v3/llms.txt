@@ -25,7 +25,7 @@ Get your API token at: https://app.edenai.run/
 
 The V3 API provides a **unified, simplified interface** with just 4 main endpoint groups:
 
-1. **LLM** (`/v3/llm/`) - Chat completions with streaming
+1. **LLM** (`/v3/`) - Chat completions with streaming
 2. **Universal AI** (`/v3/universal-ai`) - Single endpoint for all non-LLM features
 3. **Upload** (`/v3/upload`) - Persistent file storage
 4. **Info** (`/v3/info/`) - Feature and provider discovery
@@ -41,7 +41,7 @@ The V3 API provides a **unified, simplified interface** with just 4 main endpoin
 
 ## 1. LLM Endpoint
 
-### POST /v3/llm/chat/completions
+### POST /v3/chat/completions
 
 OpenAI-compatible chat completions endpoint. **Always returns Server-Sent Events (SSE) streaming** for real-time responses.
 
@@ -193,7 +193,7 @@ data: [DONE]
 
 **Basic chat:**
 ```bash
-curl -X POST https://api.edenai.run/v3/llm/chat/completions \
+curl -X POST https://api.edenai.run/v3/chat/completions \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -290,7 +290,7 @@ curl -X POST https://api.edenai.run/v3/llm/chat/completions \
 }
 ```
 
-### GET /v3/llm/models
+### GET /v3/models
 
 List all available LLM models.
 
@@ -1736,7 +1736,7 @@ ocr_result = requests.post(
 
 # LLM analysis
 llm_result = requests.post(
-    "https://api.edenai.run/v3/llm/chat/completions",
+    "https://api.edenai.run/v3/chat/completions",
     headers={"Authorization": f"Bearer {API_KEY}"},
     json={
         "model": "openai/gpt-4",
@@ -1760,7 +1760,7 @@ For LLM endpoints, properly handle Server-Sent Events:
 import requests
 
 response = requests.post(
-    "https://api.edenai.run/v3/llm/chat/completions",
+    "https://api.edenai.run/v3/chat/completions",
     headers={"Authorization": f"Bearer {API_KEY}"},
     json={
         "model": "openai/gpt-4",

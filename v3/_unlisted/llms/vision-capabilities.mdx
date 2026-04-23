@@ -36,7 +36,7 @@ Eden AI V3 provides vision capabilities through multiple providers, each with un
 ```python Python
 import requests
 
-url = "https://api.edenai.run/v3/llm/chat/completions"
+url = "https://api.edenai.run/v3/chat/completions"
 headers = {
     "Authorization": "Bearer YOUR_API_KEY",
     "Content-Type": "application/json"
@@ -69,7 +69,7 @@ print(result)
     ```
 
 ```javascript JavaScript
-const url = 'https://api.edenai.run/v3/llm/chat/completions';
+const url = 'https://api.edenai.run/v3/chat/completions';
 const headers = {
   'Authorization': 'Bearer YOUR_API_KEY',
   'Content-Type': 'application/json'
@@ -108,7 +108,7 @@ console.log(result);
 ```python Python
 import requests
 
-url = "https://api.edenai.run/v3/llm/chat/completions"
+url = "https://api.edenai.run/v3/chat/completions"
 headers = {
     "Authorization": "Bearer YOUR_API_KEY",
     "Content-Type": "application/json"
@@ -152,7 +152,7 @@ Extract text from images with high accuracy:
 ```python Python
 import requests
 
-url = "https://api.edenai.run/v3/llm/chat/completions"
+url = "https://api.edenai.run/v3/chat/completions"
 headers = {
     "Authorization": "Bearer YOUR_API_KEY",
     "Content-Type": "application/json"
@@ -195,7 +195,7 @@ Identify objects, brands, and entities:
 ```python Python
 import requests
 
-url = "https://api.edenai.run/v3/llm/chat/completions"
+url = "https://api.edenai.run/v3/chat/completions"
 headers = {
     "Authorization": "Bearer YOUR_API_KEY",
     "Content-Type": "application/json"
@@ -236,7 +236,7 @@ Interpret data visualizations:
 ```python Python
 import requests
 
-url = "https://api.edenai.run/v3/llm/chat/completions"
+url = "https://api.edenai.run/v3/chat/completions"
 headers = {
     "Authorization": "Bearer YOUR_API_KEY",
     "Content-Type": "application/json"
@@ -284,7 +284,7 @@ Debug UI issues or analyze interfaces:
 ```python Python
 import requests
 
-url = "https://api.edenai.run/v3/llm/chat/completions"
+url = "https://api.edenai.run/v3/chat/completions"
 headers = {
     "Authorization": "Bearer YOUR_API_KEY",
     "Content-Type": "application/json"
@@ -331,7 +331,7 @@ Identify brands and logos:
 ```python Python
 import requests
 
-url = "https://api.edenai.run/v3/llm/chat/completions"
+url = "https://api.edenai.run/v3/chat/completions"
 headers = {
     "Authorization": "Bearer YOUR_API_KEY",
     "Content-Type": "application/json"
@@ -374,7 +374,7 @@ Compare and analyze multiple images:
 ```python Python
 import requests
 
-url = "https://api.edenai.run/v3/llm/chat/completions"
+url = "https://api.edenai.run/v3/chat/completions"
 headers = {
     "Authorization": "Bearer YOUR_API_KEY",
     "Content-Type": "application/json"
@@ -421,7 +421,7 @@ Analyze related images together:
 ```python Python
 import requests
 
-url = "https://api.edenai.run/v3/llm/chat/completions"
+url = "https://api.edenai.run/v3/chat/completions"
 headers = {
     "Authorization": "Bearer YOUR_API_KEY",
     "Content-Type": "application/json"
@@ -731,7 +731,7 @@ def resize_if_needed(image_path, max_size_mb=10):
 
 def analyze_image_with_retry(image_path, prompt):
     """Analyze image with automatic retry and resizing."""
-    url = "https://api.edenai.run/v3/llm/chat/completions"
+    url = "https://api.edenai.run/v3/chat/completions"
     headers = {
         "Authorization": "Bearer YOUR_API_KEY",
         "Content-Type": "application/json"

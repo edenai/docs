@@ -86,7 +86,7 @@ class BaselineChatbot:
             "content": message
         })
 
-        url = "https://api.edenai.run/v3/llm/chat/completions"
+        url = "https://api.edenai.run/v3/chat/completions"
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json"
@@ -231,7 +231,7 @@ class SmartRoutingChatbot:
             "content": message
         })
 
-        url = "https://api.edenai.run/v3/llm/chat/completions"
+        url = "https://api.edenai.run/v3/chat/completions"
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json"

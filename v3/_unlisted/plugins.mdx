@@ -28,7 +28,7 @@ Add the `plugins` field to your chat completion request:
 ```python Python
 import requests
 
-url = "https://api.edenai.run/v3/llm/chat/completions"
+url = "https://api.edenai.run/v3/chat/completions"
 headers = {
     "Authorization": "Bearer YOUR_API_KEY",
     "Content-Type": "application/json"
@@ -48,7 +48,7 @@ print(result["choices"][0]["message"]["content"])
 ```
 
 ```javascript JavaScript
-const url = 'https://api.edenai.run/v3/llm/chat/completions';
+const url = 'https://api.edenai.run/v3/chat/completions';
 const headers = {
   'Authorization': 'Bearer YOUR_API_KEY',
   'Content-Type': 'application/json'
@@ -73,7 +73,7 @@ console.log(result.choices[0].message.content);
 ```
 
 ```bash cURL
-curl -X POST https://api.edenai.run/v3/llm/chat/completions \
+curl -X POST https://api.edenai.run/v3/chat/completions \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -95,7 +95,7 @@ You can enable multiple plugins in a single request:
 ```python Python
 import requests
 
-url = "https://api.edenai.run/v3/llm/chat/completions"
+url = "https://api.edenai.run/v3/chat/completions"
 headers = {
     "Authorization": "Bearer YOUR_API_KEY",
     "Content-Type": "application/json"

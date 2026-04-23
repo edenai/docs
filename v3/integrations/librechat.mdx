@@ -70,14 +70,14 @@ Edit the `.env` file to add Eden AI configuration:
 ```bash .env
 # Eden AI Configuration
 OPENAI_API_KEY=YOUR_EDEN_AI_API_KEY
-OPENAI_REVERSE_PROXY=https://api.edenai.run/v3/llm
+OPENAI_REVERSE_PROXY=https://api.edenai.run/v3
 
 # Optional: Enable multiple endpoints
 ANTHROPIC_API_KEY=YOUR_EDEN_AI_API_KEY
-ANTHROPIC_REVERSE_PROXY=https://api.edenai.run/v3/llm
+ANTHROPIC_REVERSE_PROXY=https://api.edenai.run/v3
 
 GOOGLE_API_KEY=YOUR_EDEN_AI_API_KEY
-GOOGLE_REVERSE_PROXY=https://api.edenai.run/v3/llm
+GOOGLE_REVERSE_PROXY=https://api.edenai.run/v3
 
 # Application settings
 HOST=localhost
@@ -104,7 +104,7 @@ endpoints:
   custom:
     - name: "Eden AI"
       apiKey: "${OPENAI_API_KEY}"
-      baseURL: "https://api.edenai.run/v3/llm"
+      baseURL: "https://api.edenai.run/v3"
       models:
         default:
           - "anthropic/claude-sonnet-4-5"
@@ -148,7 +148,7 @@ endpoints:
   custom:
     - name: "Eden AI - Claude"
       apiKey: "${OPENAI_API_KEY}"
-      baseURL: "https://api.edenai.run/v3/llm"
+      baseURL: "https://api.edenai.run/v3"
       models:
         default:
           - "anthropic/claude-sonnet-4-5"
@@ -159,7 +159,7 @@ endpoints:
 
     - name: "Eden AI - OpenAI"
       apiKey: "${OPENAI_API_KEY}"
-      baseURL: "https://api.edenai.run/v3/llm"
+      baseURL: "https://api.edenai.run/v3"
       models:
         default:
           - "openai/gpt-4"
@@ -170,7 +170,7 @@ endpoints:
 
     - name: "Eden AI - Google"
       apiKey: "${OPENAI_API_KEY}"
-      baseURL: "https://api.edenai.run/v3/llm"
+      baseURL: "https://api.edenai.run/v3"
       models:
         default:
           - "google/gemini-2.5-pro"
@@ -200,7 +200,7 @@ endpoints:
   custom:
     - name: "Eden AI - Vision"
       apiKey: "${OPENAI_API_KEY}"
-      baseURL: "https://api.edenai.run/v3/llm"
+      baseURL: "https://api.edenai.run/v3"
       models:
         default:
           - "openai/gpt-4o"
@@ -232,7 +232,7 @@ endpoints:
   custom:
     - name: "Eden AI"
       apiKey: "${OPENAI_API_KEY}"
-      baseURL: "https://api.edenai.run/v3/llm"
+      baseURL: "https://api.edenai.run/v3"
       models:
         default:
           - "anthropic/claude-sonnet-4-5"
@@ -268,7 +268,7 @@ endpoints:
   custom:
     - name: "Eden AI"
       apiKey: "${OPENAI_API_KEY}"
-      baseURL: "https://api.edenai.run/v3/llm"
+      baseURL: "https://api.edenai.run/v3"
       models:
         default:
           - "anthropic/claude-sonnet-4-5"
@@ -376,7 +376,7 @@ services:
       - HOST=0.0.0.0
       - MONGO_URI=mongodb://mongodb:27017/LibreChat
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - OPENAI_REVERSE_PROXY=https://api.edenai.run/v3/llm
+      - OPENAI_REVERSE_PROXY=https://api.edenai.run/v3
     volumes:
       - ./librechat.yaml:/app/librechat.yaml
       - ./images:/app/client/public/images
@@ -425,7 +425,7 @@ If models don't show up in the interface:
 2. **Verify API key**:
    ```bash
    # Test Eden AI endpoint
-   curl -X POST https://api.edenai.run/v3/llm/chat/completions \
+   curl -X POST https://api.edenai.run/v3/chat/completions \
      -H "Authorization: Bearer YOUR_API_KEY" \
      -H "Content-Type: application/json" \
      -d '{

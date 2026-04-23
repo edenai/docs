@@ -32,7 +32,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 llm = ChatOpenAI(
     model="openai/gpt-4",
     api_key="YOUR_EDEN_AI_API_KEY",
-    base_url="https://api.edenai.run/v3/llm"
+    base_url="https://api.edenai.run/v3"
 )
 
 messages = [
@@ -56,7 +56,7 @@ const llm = new ChatOpenAI({
   modelName: "openai/gpt-4",
   openAIApiKey: "YOUR_EDEN_AI_API_KEY",
   configuration: {
-    baseURL: "https://api.edenai.run/v3/llm",
+    baseURL: "https://api.edenai.run/v3",
   },
 });
 
@@ -89,7 +89,7 @@ from langchain_core.prompts import ChatPromptTemplate
 llm = ChatOpenAI(
     model="openai/gpt-4",
     api_key="YOUR_EDEN_AI_API_KEY",
-    base_url="https://api.edenai.run/v3/llm"
+    base_url="https://api.edenai.run/v3"
 )
 
 prompt = ChatPromptTemplate.from_messages([
@@ -120,7 +120,7 @@ from langchain_core.output_parsers import StrOutputParser
 llm = ChatOpenAI(
     model="openai/gpt-4",
     api_key="YOUR_EDEN_AI_API_KEY",
-    base_url="https://api.edenai.run/v3/llm"
+    base_url="https://api.edenai.run/v3"
 )
 
 joke_prompt = ChatPromptTemplate.from_template("Tell me a joke about {topic}")
@@ -154,7 +154,7 @@ load_dotenv()
 llm = ChatOpenAI(
     model="openai/gpt-4",
     api_key=os.getenv("EDEN_AI_API_KEY"),
-    base_url="https://api.edenai.run/v3/llm"
+    base_url="https://api.edenai.run/v3"
 )
 ```
 

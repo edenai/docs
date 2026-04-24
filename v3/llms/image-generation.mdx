@@ -1,0 +1,198 @@
+---
+icon: "image"
+title: "Image Generation"
+---
+
+Generate and edit images through the chat completions endpoint using LLMs that natively support image output.
+
+## Overview
+
+Some LLMs can produce images directly as part of a chat response — no separate endpoint required. Instead of calling a dedicated image API, you send a normal chat completion request and the model returns a base64-encoded image in the assistant message.
+
+The main image-capable LLM available through Eden AI is Google's Gemini Flash Image family:
+
+| Model | Model string | Provider |
+|---|---|---|
+| **Gemini 2.5 / 3.1 Flash Image** | `google/gemini-2.5-flash-image`, `google/gemini-3.1-flash-image-preview` | Google |
+
+It supports:
+
+- **Text-to-image** — generate an image from a prompt
+- **Image editing** — modify a provided input photo
+
+The endpoint stays the same:
+
+```
+POST /v3/chat/completions
+```
+
+<Info>
+Image-capable LLMs are different from [Expert Model image generation](/v3/expert-models/features/image/generation) — which wraps dedicated image APIs like DALL-E or Stable Diffusion. Use LLM image generation when you want the model to reason about the prompt and output an image in the same turn.
+</Info>
+
+## Google Gemini Image Models
+
+Gemini image models accept a standard text prompt plus an optional `image_config` block that controls the output resolution and aspect ratio.
+
+### Text-to-image
+
+<CodeGroup>
+```python Python
+import requests
+
+url = "https://api.edenai.run/v3/chat/completions"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json",
+}
+
+payload = {
+    "model": "google/gemini-3.1-flash-image-preview",
+    "messages": [
+        {"role": "user", "content": "A nano banana dish in a fancy restaurant, cinematic lighting"}
+    ],
+    "image_config": {
+        "aspect_ratio": "16:9",
+        "image_size": "2K"
+    }
+}
+
+response = requests.post(url, headers=headers, json=payload)
+result = response.json()
+print(result["choices"][0]["message"]["content"])
+```
+
+```bash cURL
+curl -X POST https://api.edenai.run/v3/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "google/gemini-3.1-flash-image-preview",
+    "messages": [
+      {"role": "user", "content": "A nano banana dish in a fancy restaurant"}
+    ],
+    "image_config": {"aspect_ratio": "16:9", "image_size": "2K"}
+  }'
+```
+</CodeGroup>
+
+### Supported `image_config` values
+
+| Field | Description | Allowed values |
+|---|---|---|
+| `aspect_ratio` | Output shape | `1:1`, `16:9`, `9:16`, `4:3`, `3:4`, `21:9`, `2:3`, `3:2`, `4:5`, `5:4`, `1:4`, `4:1`, `1:8`, `8:1` |
+| `image_size` | Output resolution | `512` (Gemini 3.1 Flash only), `1K`, `2K`, `4K` |
+
+Allowed values vary slightly per model — check the [Gemini image generation docs](https://ai.google.dev/gemini-api/docs/image-generation) for per-model support.
+
+### Image editing (with input photo)
+
+Pass an existing image to the model alongside your edit instruction. Use the standard OpenAI multimodal content format:
+
+<CodeGroup>
+```python Python
+import base64
+import requests
+
+url = "https://api.edenai.run/v3/chat/completions"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json",
+}
+
+# Encode a local image as base64
+with open("input.jpg", "rb") as f:
+    image_b64 = base64.b64encode(f.read()).decode("utf-8")
+
+payload = {
+    "model": "google/gemini-3.1-flash-image-preview",
+    "messages": [
+        {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": "Turn this photo into a watercolor painting, keep the composition"},
+                {
+                    "type": "image_url",
+                    "image_url": {"url": f"data:image/jpeg;base64,{image_b64}"}
+                }
+            ]
+        }
+    ],
+    "image_config": {
+        "aspect_ratio": "1:1",
+        "image_size": "2K"
+    }
+}
+
+response = requests.post(url, headers=headers, json=payload)
+result = response.json()
+print(result["choices"][0]["message"]["content"])
+```
+{/* skip-test */}
+</CodeGroup>
+
+You can also pass a remote URL directly instead of base64:
+
+```json
+{
+  "type": "image_url",
+  "image_url": {"url": "https://example.com/photo.jpg"}
+}
+```
+
+## Response Format
+
+The generated image is returned as a **base64-encoded data URL** inside the assistant message content.
+
+```json
+{
+  "id": "chatcmpl-...",
+  "object": "chat.completion",
+  "model": "google/gemini-3.1-flash-image-preview",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUg..."
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 14,
+    "completion_tokens": 512,
+    "total_tokens": 526
+  },
+  "cost": 0.042
+}
+```
+
+### Saving the image to disk
+
+<CodeGroup>
+```python Python
+import base64
+import re
+
+content = result["choices"][0]["message"]["content"]
+# Strip the "data:image/...;base64," prefix if present
+match = re.match(r"data:image/\w+;base64,(.*)", content)
+image_b64 = match.group(1) if match else content
+
+with open("output.png", "wb") as f:
+    f.write(base64.b64decode(image_b64))
+```
+{/* skip-test */}
+</CodeGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Expert Image Generation" icon="palette" href="/v3/expert-models/features/image/generation">
+    Use dedicated image APIs like DALL-E or Stable Diffusion
+  </Card>
+  <Card title="Chat Completions" icon="comment-dots" href="/v3/llms/chat-completions">
+    Standard text chat completions reference
+  </Card>
+</CardGroup>

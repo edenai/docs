@@ -17,18 +17,14 @@ Prefer a video walkthrough? Follow along on [YouTube](https://youtu.be/HxIAYOQT9
 
 ## Prerequisites
 
-- OpenClaw already installed — if not, see the [OpenClaw install guide](https://github.com/openclaw/openclaw)
+- OpenClaw already installed. If not, see the [OpenClaw install guide](https://github.com/openclaw/openclaw)
 - Eden AI API key from [app.edenai.run](https://app.edenai.run) → **API Keys**
 
 ## Setup
 
 ### 1. Add Eden AI as a custom provider
 
-OpenClaw stores its config at `~/.openclaw/openclaw.json`. Open it and add the Eden AI provider with the `@edenai` smart-router model:
-
-```bash
-nano ~/.openclaw/openclaw.json
-```
+OpenClaw stores its config at `~/.openclaw/openclaw.json` (on Windows: `%USERPROFILE%\.openclaw\openclaw.json`). Open it in your editor of choice and add the Eden AI provider with the `@edenai` smart-router model:
 
 <CodeGroup>
 ```json ~/.openclaw/openclaw.json
@@ -54,7 +50,7 @@ nano ~/.openclaw/openclaw.json
           "reasoning": false,
           "compat": {
             "requiresAssistantAfterToolResult": true,
-            "supportsTools": false
+            "supportsTools": true
           }
         }
       ]
@@ -64,21 +60,28 @@ nano ~/.openclaw/openclaw.json
 ```
 </CodeGroup>
 
-`@edenai` is Eden AI's smart router — for every request it picks the best-performing model based on quality, latency, cost and live provider health. [How smart routing works →](/v3/llms/smart-routing)
+`@edenai` is Eden AI's smart router. For every request it picks the best-performing model based on quality, latency, cost and live provider health. [How smart routing works →](/v3/llms/smart-routing)
+
+<Note>
+A few notes on the config above:
+- **`name`** is just the display label shown in OpenClaw's model picker. If you later switch `id` to a specific model (e.g. `anthropic/claude-sonnet-4-5`), rename this field too so the picker doesn't show a stale label.
+- **`cost`** values are placeholders. Billing is handled on the Eden AI side through your API key, so OpenClaw's local cost tracking isn't used here. Check per-request cost in the [Eden AI dashboard](https://app.edenai.run).
+- **`supportsTools: true`** enables tool/function calling through Eden AI. Set it to `false` only if you want to restrict this provider to plain chat completions.
+</Note>
 
 ### 2. Configure OpenClaw interactively
 
-Run the built-in wizard and select the provider you just added:
+Run the built-in wizard:
 
 ```bash
 openclaw configure
 ```
 
-Walk through:
+In the **Model and auth** step, select `@edenai (Custom Provider)` — the provider you defined in Step 1. Accept the defaults for the remaining steps (Workspace, Gateway, Channels, etc.) unless you have specific local-networking or channel needs.
 
-- **model** → select `@edenai (Custom Provider)`
-- **Gateway** → `https://api.edenai.run/v3/llm`
-- **channels** → configure any channels your setup uses
+<Note>
+The wizard's **Gateway** step configures OpenClaw's *local* server (port, bind address, auth mode, tailscale exposure) — it does **not** ask for the Eden AI API URL. That's already set as `provider.edenai.baseURL` in Step 1.
+</Note>
 
 ### 3. Start OpenClaw
 
@@ -86,7 +89,7 @@ Walk through:
 openclaw
 ```
 
-Every LLM call now flows through Eden AI — with built-in fallbacks, unified billing, and per-request cost visibility.
+Every LLM call now flows through Eden AI, with built-in fallbacks, unified billing, and per-request cost visibility.
 
 ## Using specific models
 

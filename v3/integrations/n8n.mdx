@@ -1,0 +1,81 @@
+---
+title: "n8n"
+icon: "/integration-logo/n8n-icondoc.svg"
+---
+
+Connect [n8n](https://n8n.io) to Eden AI using the official community node, and plug +300 LLM models from 50+ providers into any AI Agent or Chain workflow.
+
+## Overview
+
+n8n is a workflow automation platform with native AI agent support. The **Eden AI Chat Model** community node lets you use Eden AI as the language model backend for any n8n AI node — no direct API wiring required.
+
+- **+300 LLM models**: OpenAI, Anthropic, Google, Mistral, and more through a single credential
+- **Automatic fallback**: define backup models that activate if the primary fails
+- **Web search**: give models real-time web access when the task needs it
+- **European hosting**: GDPR-compliant, transparent data routing
+
+## Setup
+
+### 1. Install the community node
+
+In your n8n instance, go to **Settings → Community Nodes** and install:
+
+```
+n8n-nodes-edenai
+```
+
+Restart n8n if prompted.
+
+### 2. Add your Eden AI credential
+
+In n8n, click the **+** button → select **Credential** → search for **Eden AI**.
+
+Paste your API key from [app.edenai.run](https://app.edenai.run) → **API Keys**.
+
+### 3. Add the node to a workflow
+
+In any workflow that uses an **AI Agent** or **Chain** node, click the **Model** sub-node slot and select **Eden AI Chat Model**.
+
+The node connects as a language model provider — n8n handles message formatting, memory, and tool calls automatically.
+
+## Configuration
+
+| Option | Description |
+|--------|-------------|
+| **Model** | Model in `provider/model` format. Loaded dynamically from Eden AI's catalog. |
+| **Fallback Models** | Comma-separated backup models (e.g. `openai/gpt-4o,anthropic/claude-haiku-4-5`). Retried in order if the primary fails. |
+| **Web Search** | Allow the model to retrieve real-time information from the web. |
+| **Web Search Context Size** | `low`, `medium`, or `high` — controls retrieval depth and cost. |
+| **Sampling Temperature** | Controls randomness (0–2). Lower = more deterministic. |
+| **Maximum Number of Tokens** | Max tokens to generate. Use `-1` for the model's default maximum. |
+| **Response Format** | `text` (default) or `json_object` (forces valid JSON output). |
+| **Top P** | Nucleus sampling threshold (0–1). Alter this *or* temperature, not both. |
+| **Frequency Penalty** | Reduces repetition of frequent tokens (-2 to 2). |
+| **Presence Penalty** | Encourages new topics by penalizing already-used tokens (-2 to 2). |
+| **Max Retries** | How many times to retry on failure (default: 2). |
+| **Timeout** | Request timeout in milliseconds (default: 360 000). |
+
+### Available models
+
+Pass any `provider/model` string as the model. The dropdown is populated live from Eden AI's catalog. Examples:
+
+- `openai/gpt-4o` — GPT-4o
+- `anthropic/claude-sonnet-4-5` — Claude Sonnet
+- `google/gemini-2.5-flash` — Gemini Flash
+- `mistral/mistral-large-latest` — Mistral Large
+
+Browse the full catalog with pricing and capabilities at [app.edenai.run/models](https://app.edenai.run/models).
+
+### JSON response format
+
+When **Response Format** is set to `json_object`, you must include the word `json` somewhere in the prompt. This is a requirement of the underlying model API.
+
+<Note>
+  JSON mode is only supported by models released after November 2023.
+</Note>
+
+## Next Steps
+
+- [LangChain](./langchain) - Build LLM applications in Python or TypeScript
+- [OpenAI SDK (Python)](./openai-sdk-python) - Direct API access with the OpenAI-compatible SDK
+- [OpenAI SDK (TypeScript)](./openai-sdk-typescript) - Direct API access in TypeScript

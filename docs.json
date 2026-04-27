@@ -25,7 +25,7 @@
   },
   "seo": {
     "metatags": {
-      "canonical": "https://edenai.co/docs"
+      "canonical": "https://www.edenai.co/docs"
     }
   },
   "navigation": {
@@ -39,168 +39,169 @@
               {
                 "group": "V3 Documentation",
                 "pages": [
-                  "index"]
-                },
+                  "index"
+                ]
+              },
+              {
+                "group": "Quick Start",
+                "icon": "bolt",
+                "expanded": true,
+                "pages": [
+                  "v3/quickstart/first-llm-call",
+                  "v3/quickstart/first-expert-model-call"
+                ]
+              },
+              {
+                "group": "Overview",
+                "icon": "book-open",
+                "expanded": true,
+                "pages": [
+                  "v3/overview/ai-gateway",
+                  "v3/overview/llms-vs-expert-models",
+                  "v3/overview/plans-prices"
+                ]
+              },
+              {
+                "group": "LLMs",
+                "icon": "brain",
+                "expanded": false,
+                "divider": true,
+                "pages": [
+                  "v3/llms/listing-models",
+                  "v3/llms/chat-completions",
+                  "v3/llms/responses",
+                  "v3/llms/file-upload",
+                  "v3/llms/fallback",
+                  "v3/llms/structured-output",
+                  "v3/llms/web-search",
+                  "v3/llms/smart-routing",
+                  "v3/llms/streaming"
+                ]
+              },
+              {
+                "group": "Expert Models",
+                "icon": "microchip",
+                "expanded": false,
+                "divider": true,
+                "pages": [
+                  "v3/expert-models/fallback",
+                  "v3/expert-models/webhooks",
+                  "v3/expert-models/listing-models",
+                  "v3/expert-models/provider-parameters",
                   {
-                    "group": "Quick Start",
-                    "icon": "bolt",
-                    "expanded": true,
-                    "pages": [
-                      "v3/quickstart/first-llm-call",
-                      "v3/quickstart/first-expert-model-call"
-                    ]
-                  },
-                  {
-                    "group": "Overview",
-                    "icon": "book-open",
-                    "expanded": true,
-                    "pages": [
-                      "v3/overview/ai-gateway",
-                      "v3/overview/llms-vs-expert-models",
-                      "v3/overview/plans-prices"
-                    ]
-                  },
-                  {
-                    "group": "LLMs",
-                    "icon": "brain",
-                    "expanded": false,
-                    "divider": true,
-                    "pages": [
-                      "v3/llms/listing-models",
-                      "v3/llms/chat-completions",
-                      "v3/llms/responses",
-                      "v3/llms/file-upload",
-                      "v3/llms/fallback",
-                      "v3/llms/structured-output",
-                      "v3/llms/web-search",
-                      "v3/llms/smart-routing",
-                      "v3/llms/streaming"
-                    ]
-                  },
-                  {
-                    "group": "Expert Models",
-                    "icon": "microchip",
-                    "expanded": false,
-                    "divider": true,
-                    "pages": [
-                      "v3/expert-models/fallback",
-                      "v3/expert-models/webhooks",
-                      "v3/expert-models/listing-models",
-                      "v3/expert-models/provider-parameters",
-                      {
-                        "group": "Text Features",
-                        "icon": "font",
-                        "expanded": false,
-                        "pages": [
-                          "v3/expert-models/features/text/ai-detection",
-                          "v3/expert-models/features/text/moderation",
-                          "v3/expert-models/features/text/spell-check",
-                          "v3/expert-models/features/text/topic-extraction",
-                          "v3/expert-models/features/text/named-entity-recognition",
-                          "v3/expert-models/features/text/plagia-detection"
-                        ]
-                      },
-                      {
-                        "group": "OCR Features",
-                        "icon": "file-lines",
-                        "expanded": false,
-                        "pages": [
-                          "v3/expert-models/features/ocr/ocr",
-                          "v3/expert-models/features/ocr/ocr-async",
-                          "v3/expert-models/features/ocr/ocr-tables-async",
-                          "v3/expert-models/features/ocr/identity-parser",
-                          "v3/expert-models/features/ocr/financial-parser",
-                          "v3/expert-models/features/ocr/resume-parser"
-                        ]
-                      },
-                      {
-                        "group": "Image Features",
-                        "icon": "image",
-                        "expanded": false,
-                        "pages": [
-                          "v3/expert-models/features/image/background-removal",
-                          "v3/expert-models/features/image/generation",
-                          "v3/expert-models/features/image/ai-detection",
-                          "v3/expert-models/features/image/object-detection",
-                          "v3/expert-models/features/image/face-detection",
-                          "v3/expert-models/features/image/explicit-content",
-                          "v3/expert-models/features/image/anonymization",
-                          "v3/expert-models/features/image/deepfake-detection",
-                          "v3/expert-models/features/image/face-compare",
-                          "v3/expert-models/features/image/logo-detection"
-                        ]
-                      },
-                      {
-                        "group": "Translation Features",
-                        "icon": "language",
-                        "expanded": false,
-                        "pages": [
-                          "v3/expert-models/features/translation/automatic-translation",
-                          "v3/expert-models/features/translation/document-translation"
-                        ]
-                      },
-                      {
-                        "group": "Audio Features",
-                        "icon": "volume-high",
-                        "expanded": false,
-                        "pages": [
-                          "v3/expert-models/features/audio/tts",
-                          "v3/expert-models/features/audio/speech-to-text-async"
-                        ]
-                      },
-                      {
-                        "group": "Video Generation Features",
-                        "icon": "video",
-                        "expanded": false,
-                        "pages": [
-                          "v3/expert-models/features/video/generation-async"
-                        ]
-                      }
-                    ]
-                  },
-                  {
-                    "group": "General",
-                    "icon": "gear",
-                    "expanded": false,
-                    "divider": true,
-                    "pages": [
-                      "v3/general/caching",
-                      "v3/general/buying-credits",
-                      "v3/general/sandbox",
-                      "v3/general/custom-api-keys",
-                      "v3/general/monitoring",
-                      "v3/general/users-organisation",
-                      "v3/general/support",
-                      "v3/general/byok"
-                    ]
-                  },
-                  {
-                    "group": "Data Governance",
-                    "icon": "shield-halved",
+                    "group": "Text Features",
+                    "icon": "font",
                     "expanded": false,
                     "pages": [
-                      "v3/data-governance/servers-location",
-                      "v3/data-governance/data-retention"
+                      "v3/expert-models/features/text/ai-detection",
+                      "v3/expert-models/features/text/moderation",
+                      "v3/expert-models/features/text/spell-check",
+                      "v3/expert-models/features/text/topic-extraction",
+                      "v3/expert-models/features/text/named-entity-recognition",
+                      "v3/expert-models/features/text/plagia-detection"
                     ]
                   },
                   {
-                    "group": "Integrations",
-                    "icon": "plug",
+                    "group": "OCR Features",
+                    "icon": "file-lines",
                     "expanded": false,
-                    "divider": true,
                     "pages": [
-                      "v3/integrations/openai-sdk-python",
-                      "v3/integrations/openai-sdk-typescript",
-                      "v3/integrations/claude-code",
-                      "v3/integrations/continue-dev",
-                      "v3/integrations/opencode",
-                      "v3/integrations/langchain",
-                      "v3/integrations/librechat",
-                      "v3/integrations/open-webui"
+                      "v3/expert-models/features/ocr/ocr",
+                      "v3/expert-models/features/ocr/ocr-async",
+                      "v3/expert-models/features/ocr/ocr-tables-async",
+                      "v3/expert-models/features/ocr/identity-parser",
+                      "v3/expert-models/features/ocr/financial-parser",
+                      "v3/expert-models/features/ocr/resume-parser"
+                    ]
+                  },
+                  {
+                    "group": "Image Features",
+                    "icon": "image",
+                    "expanded": false,
+                    "pages": [
+                      "v3/expert-models/features/image/background-removal",
+                      "v3/expert-models/features/image/generation",
+                      "v3/expert-models/features/image/ai-detection",
+                      "v3/expert-models/features/image/object-detection",
+                      "v3/expert-models/features/image/face-detection",
+                      "v3/expert-models/features/image/explicit-content",
+                      "v3/expert-models/features/image/anonymization",
+                      "v3/expert-models/features/image/deepfake-detection",
+                      "v3/expert-models/features/image/face-compare",
+                      "v3/expert-models/features/image/logo-detection"
+                    ]
+                  },
+                  {
+                    "group": "Translation Features",
+                    "icon": "language",
+                    "expanded": false,
+                    "pages": [
+                      "v3/expert-models/features/translation/automatic-translation",
+                      "v3/expert-models/features/translation/document-translation"
+                    ]
+                  },
+                  {
+                    "group": "Audio Features",
+                    "icon": "volume-high",
+                    "expanded": false,
+                    "pages": [
+                      "v3/expert-models/features/audio/tts",
+                      "v3/expert-models/features/audio/speech-to-text-async"
+                    ]
+                  },
+                  {
+                    "group": "Video Generation Features",
+                    "icon": "video",
+                    "expanded": false,
+                    "pages": [
+                      "v3/expert-models/features/video/generation-async"
                     ]
                   }
                 ]
               },
+              {
+                "group": "General",
+                "icon": "gear",
+                "expanded": false,
+                "divider": true,
+                "pages": [
+                  "v3/general/caching",
+                  "v3/general/buying-credits",
+                  "v3/general/sandbox",
+                  "v3/general/custom-api-keys",
+                  "v3/general/monitoring",
+                  "v3/general/users-organisation",
+                  "v3/general/support",
+                  "v3/general/byok"
+                ]
+              },
+              {
+                "group": "Data Governance",
+                "icon": "shield-halved",
+                "expanded": false,
+                "pages": [
+                  "v3/data-governance/servers-location",
+                  "v3/data-governance/data-retention"
+                ]
+              },
+              {
+                "group": "Integrations",
+                "icon": "plug",
+                "expanded": false,
+                "divider": true,
+                "pages": [
+                  "v3/integrations/openai-sdk-python",
+                  "v3/integrations/openai-sdk-typescript",
+                  "v3/integrations/claude-code",
+                  "v3/integrations/continue-dev",
+                  "v3/integrations/opencode",
+                  "v3/integrations/langchain",
+                  "v3/integrations/librechat",
+                  "v3/integrations/open-webui"
+                ]
+              }
+            ]
+          },
           {
             "tab": "V3 API Reference",
             "groups": [
@@ -226,7 +227,6 @@
           "v2/index"
         ]
       }
-    
     ]
   },
   "contextual": {

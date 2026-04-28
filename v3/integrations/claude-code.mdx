@@ -74,7 +74,7 @@ Verify the API key is loaded in your shell and that it has LLM access:
 ```bash
 echo $ANTHROPIC_API_KEY
 
-curl -X POST https://api.edenai.run/v3/llm/chat/completions \
+curl -X POST https://api.edenai.run/v3/chat/completions \
   -H "Authorization: Bearer $ANTHROPIC_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"model": "anthropic/claude-opus-4.7", "messages": [{"role": "user", "content": "ping"}]}'

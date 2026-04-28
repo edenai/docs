@@ -1,0 +1,113 @@
+---
+title: "Codex CLI"
+icon: "/integration-logo/codex-cli-icondoc.svg"
+---
+
+Configure [Codex CLI](https://github.com/openai/codex), OpenAI's open-source local coding agent, to use Eden AI for access to 500+ models behind a single API key.
+
+## Overview
+
+Codex CLI runs in your terminal and edits code in your project. Pointing it at Eden AI gives you:
+
+- **500+ models**: switch between Codex variants, Claude, Gemini, and more without reinstalling
+- **One API key**: unified billing and monitoring across providers
+- **Provider failover**: keep working when an upstream provider has an incident
+
+## Prerequisites
+
+- Codex CLI installed ([install instructions](https://github.com/openai/codex))
+- Eden AI API key from [app.edenai.run](https://app.edenai.run) → **API Keys**
+
+## Setup
+
+### 1. Configure `~/.codex/config.toml`
+
+Codex CLI reads its provider settings from `~/.codex/config.toml`. Add an `edenai` provider and point Codex at it:
+
+<CodeGroup>
+```toml ~/.codex/config.toml
+model_provider = "edenai"
+model = "openai/gpt-5.1-codex"
+model_reasoning_effort = "high"
+
+[model_providers.edenai]
+name = "Eden AI"
+base_url = "https://api.edenai.run/v3"
+env_key = "EDENAI_API_KEY"
+wire_api = "chat"
+```
+</CodeGroup>
+
+`wire_api = "chat"` routes Codex through Eden AI's OpenAI-compatible `/v3/chat/completions` endpoint.
+
+### 2. Export your API key
+
+<CodeGroup>
+```bash bash / zsh
+export EDENAI_API_KEY="YOUR_EDEN_AI_API_KEY"
+```
+
+```powershell PowerShell
+$env:EDENAI_API_KEY = "YOUR_EDEN_AI_API_KEY"
+```
+</CodeGroup>
+
+To make it permanent, add the `export` line to `~/.bashrc` or `~/.zshrc` and reload your shell.
+
+### 3. Launch Codex
+
+```bash
+codex
+```
+
+Codex now sends requests to Eden AI using the model you set in `config.toml`.
+
+## Switching models
+
+Eden AI uses the `provider/model` format. Update the `model` field in `~/.codex/config.toml` (or pass `--model` on the command line) to switch:
+
+<CodeGroup>
+```toml Codex variants
+model = "openai/gpt-5.1-codex"        # default
+model = "openai/gpt-5.1-codex-mini"   # cheaper, faster
+model = "openai/gpt-5.1-codex-max"    # largest context
+model = "openai/gpt-5.3-codex"        # latest
+```
+
+```toml Other providers
+model = "anthropic/claude-sonnet-4-5"
+model = "google/gemini-2.5-pro"
+model = "openai/gpt-4o"
+```
+</CodeGroup>
+
+Browse the full catalog via [List Models](/v3/llms/listing-models) or `GET https://api.edenai.run/v3/models`.
+
+## Troubleshooting
+
+### Authentication errors
+
+Verify the API key is loaded in your shell and that it has LLM access:
+
+```bash
+echo $EDENAI_API_KEY
+
+curl -X POST https://api.edenai.run/v3/chat/completions \
+  -H "Authorization: Bearer $EDENAI_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "openai/gpt-5.1-codex", "messages": [{"role": "user", "content": "ping"}]}'
+```
+
+### Model not found
+
+Use the full `provider/model` string (e.g. `openai/gpt-5.1-codex`, not `gpt-5.1-codex`). Confirm the ID is in the catalog returned by `GET /v3/models`.
+
+### Connection issues
+
+Confirm `base_url` is exactly `https://api.edenai.run/v3` — Codex appends `/chat/completions` itself. Check Eden AI status at [app-edenai.instatus.com](https://app-edenai.instatus.com).
+
+## Next Steps
+
+- [Claude Code](./claude-code) — Anthropic's official CLI on Eden AI
+- [OpenCode](./opencode) — terminal coding agent with auto-generated config
+- [Chat Completions](/v3/llms/chat-completions) — full reference for the underlying endpoint

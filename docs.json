@@ -25,7 +25,7 @@
   },
   "seo": {
     "metatags": {
-      "canonical": "https://edenai.co/docs"
+      "canonical": "https://www.edenai.co/docs"
     }
   },
   "navigation": {
@@ -206,7 +206,9 @@
                         "pages": [
                           "v3/integrations/claude-code",
                           "v3/integrations/cline",
+                          "v3/integrations/codex-cli",
                           "v3/integrations/continue-dev",
+                          "v3/integrations/openclaw",
                           "v3/integrations/opencode"
                         ]
                       },

@@ -192,6 +192,11 @@ print(result["choices"][0]["message"]["content"])
 | `top_p` | float | 1.0 | Nucleus sampling threshold |
 | `frequency_penalty` | float | 0.0 | Penalize repeated tokens (-2 to 2) |
 | `presence_penalty` | float | 0.0 | Penalize topic repetition (-2 to 2) |
+| `fallbacks` | array | - | Backup models tried if `model` fails. |
+
+<Tip>
+For details on the `fallbacks` field, see [Fallback](/v3/general/fallback).
+</Tip>
 
 ## Response Format
 

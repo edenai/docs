@@ -106,7 +106,7 @@
     {
         "id": "q14",
         "question": "How do I use webhooks to get async job results instead of polling?",
-        "expected_output": "Add a 'webhook_receiver' field with your endpoint URL to any async Universal AI request (POST /v3/universal-ai/async). When the job completes, Eden AI sends a POST to your URL with JSON containing job_id, status ('success' or 'fail'), cost, provider, feature, subfeature, output (on success), and error (on failure). Your endpoint must return 200 to acknowledge receipt.",
+        "expected_output": "Add a 'webhook_receiver' field (and optionally 'user_webhook_parameters' for correlation) to any async Universal AI request (POST /v3/universal-ai/async). On completion, Eden AI sends a signed POST to your URL with headers X-Edenai-Signature (RSA PKCS1 v1.5 signature of the payload), X-Edenai-Hash-Algorithm: SHA256, and X-Edenai-Webhook: true. The JSON payload contains event ('async_job_completed'), job_id, status ('success' or 'fail'), feature, subfeature, provider, model, created_at, finished_at, output (on success), error (on failure), and user_parameters (echo of user_webhook_parameters). Verify the signature using Eden AI's RSA public key over the canonical JSON of the payload, and return 200 to acknowledge receipt. Eden AI retries delivery up to 3 times with exponential backoff on 5xx responses, timeouts, or network errors, and does not retry on 4xx.",
         "source_doc": "v3/expert-models/webhooks.mdx",
         "category": "expert-models",
         "difficulty": "intermediate"
@@ -152,8 +152,7 @@
         "question": "What is the difference between the fallback syntax for LLMs and expert models?",
         "expected_output": "Both use a 'fallbacks' array in the request body, but the model string format differs. For LLMs: POST /v3/chat/completions, model and fallbacks use provider/model format (e.g. 'openai/gpt-4o'). For expert models: POST /v3/universal-ai, model and fallbacks use feature/subfeature/provider format (e.g. 'text/moderation/google'). All fallback providers must support the same feature.",
         "source_doc": [
-            "v3/llms/fallback.mdx",
-            "v3/expert-models/fallback.mdx"
+            "v3/general/fallback.mdx"
         ],
         "category": "cross-cutting",
         "difficulty": "advanced"

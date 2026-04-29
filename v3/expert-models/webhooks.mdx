@@ -26,7 +26,7 @@ Every webhook request Eden AI sends includes these headers:
 | ------------------------- | ---------------------- | ---------------------------------------------------------------------- |
 | `Content-Type`            | `application/json`     | Body is always JSON.                                                   |
 | `User-Agent`              | `EdenAI/Ai-Features`   | Identifies the sender.                                                 |
-| `X-EdenAI-Webhook`        | `true`                 | Flag marking the request as an Eden AI webhook.                        |
+| `X-Edenai-Webhook`        | `true`                 | Flag marking the request as an Eden AI webhook.                        |
 | `X-Edenai-Signature`      | `a8f3...` (hex)        | RSA PKCS1 v1.5 signature of the payload.                               |
 | `X-Edenai-Hash-Algorithm` | `SHA256`               | Hash algorithm used to produce the signature.                          |
 
@@ -160,23 +160,25 @@ To verify, reproduce the same canonical JSON before hashing — do **not** re-se
     **Sending the request:**
 
     ```javascript
-    const url = "https://api.edenai.run/v3/universal-ai/async";
-    const headers = {
-      Authorization: "Bearer YOUR_API_KEY",
-      "Content-Type": "application/json",
-    };
-    const payload = {
-      model: "ocr/ocr_async/amazon",
-      input: { file: "YOUR_FILE_UUID_OR_URL" },
-      webhook_receiver: "https://your-server.com/webhooks/edenai",
-      user_webhook_parameters: { internal_ref: "order-42" },
-    };
-    const response = await fetch(url, {
-      method: "POST",
-      headers,
-      body: JSON.stringify(payload),
-    });
-    console.log(await response.json()); // Contains the job ID
+    (async () => {
+      const url = "https://api.edenai.run/v3/universal-ai/async";
+      const headers = {
+        Authorization: "Bearer YOUR_API_KEY",
+        "Content-Type": "application/json",
+      };
+      const payload = {
+        model: "ocr/ocr_async/amazon",
+        input: { file: "YOUR_FILE_UUID_OR_URL" },
+        webhook_receiver: "https://your-server.com/webhooks/edenai",
+        user_webhook_parameters: { internal_ref: "order-42" },
+      };
+      const response = await fetch(url, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(payload),
+      });
+      console.log(await response.json()); // Contains the job ID
+    })();
     ```
 
     **Receiving and verifying the webhook (Express):**
@@ -232,14 +234,14 @@ Do **not** re-serialize the parsed JSON with defaults (e.g. `JSON.stringify(obj)
 
 ## Retry Behavior
 
-Eden AI retries webhook delivery up to **3 times** with exponential backoff (capped at 30 s) when the receiver returns a transient failure:
+Eden AI retries webhook delivery up to **3 times** with exponential backoff between attempts (max delay 30 s) when the receiver returns a transient failure. Each attempt has a per-request timeout of 30 s.
 
 | Outcome                       | Retried? |
 | ----------------------------- | -------- |
 | HTTP 2xx                      | --       |
 | HTTP 4xx                      | No       |
 | HTTP 5xx                      | Yes      |
-| Timeout (30 s per attempt)    | Yes      |
+| Per-request timeout (30 s)    | Yes      |
 | Connection / network error    | Yes      |
 
 <Tip>

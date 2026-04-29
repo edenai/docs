@@ -1989,7 +1989,7 @@ API_KEY = "your_api_key"
 BASE_URL = "https://api.edenai.run/v3"
 
 response = requests.post(
-    f"{BASE_URL}/llm/chat/completions",
+    f"{BASE_URL}/chat/completions",
     headers={"Authorization": f"Bearer {API_KEY}"},
     json={
         "model": "anthropic/claude-sonnet-4-5",

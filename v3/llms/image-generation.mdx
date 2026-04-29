@@ -88,7 +88,7 @@ Allowed values vary slightly per model — check the [Gemini image generation do
 ### Image editing (with input photo)
 
 Pass an existing image to the model alongside your edit instruction. Use the standard OpenAI multimodal content format:
-
+{/* skip-test */}
 <CodeGroup>
 ```python Python
 import base64
@@ -128,7 +128,7 @@ response = requests.post(url, headers=headers, json=payload)
 result = response.json()
 print(result["choices"][0]["message"]["content"])
 ```
-{/* skip-test */}
+
 </CodeGroup>
 
 You can also pass a remote URL directly instead of base64:
@@ -169,7 +169,7 @@ The generated image is returned as a **base64-encoded data URL** inside the assi
 ```
 
 ### Saving the image to disk
-
+{/* skip-test */}
 <CodeGroup>
 ```python Python
 import base64
@@ -183,7 +183,7 @@ image_b64 = match.group(1) if match else content
 with open("output.png", "wb") as f:
     f.write(base64.b64decode(image_b64))
 ```
-{/* skip-test */}
+
 </CodeGroup>
 
 ## Next Steps

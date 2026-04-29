@@ -33,7 +33,7 @@ docker run -d \
   --name open-webui \
   -p 3000:8080 \
   -v open-webui:/app/backend/data \
-  -e OPENAI_API_BASE_URL=https://api.edenai.run/v3/llm \
+  -e OPENAI_API_BASE_URL=https://api.edenai.run/v3 \
   -e OPENAI_API_KEY=YOUR_EDEN_AI_API_KEY \
   -e WEBUI_AUTH=False `# Disable authentication for single-user setup` \
   ghcr.io/open-webui/open-webui:main
@@ -57,7 +57,7 @@ services:
     ports:
       - "3000:8080"
     environment:
-      - OPENAI_API_BASE_URL=https://api.edenai.run/v3/llm
+      - OPENAI_API_BASE_URL=https://api.edenai.run/v3
       - OPENAI_API_KEY=${EDEN_AI_API_KEY}
       - WEBUI_SECRET_KEY=${WEBUI_SECRET_KEY}
     volumes:
@@ -125,7 +125,7 @@ Configure Open WebUI with environment variables:
 <CodeGroup>
 ```bash .env
 # Eden AI Configuration
-OPENAI_API_BASE_URL=https://api.edenai.run/v3/llm
+OPENAI_API_BASE_URL=https://api.edenai.run/v3
 OPENAI_API_KEY=your_eden_ai_api_key
 
 # Application Settings
@@ -169,7 +169,7 @@ services:
   open-webui:
     image: ghcr.io/open-webui/open-webui:main
     environment:
-      - OPENAI_API_BASE_URL=https://api.edenai.run/v3/llm
+      - OPENAI_API_BASE_URL=https://api.edenai.run/v3
       - OPENAI_API_KEY=${EDEN_AI_API_KEY}
       # Enable RAG
       - ENABLE_RAG_WEB_SEARCH=true
@@ -241,11 +241,11 @@ services:
     image: ghcr.io/open-webui/open-webui:main
     environment:
       # Eden AI as primary
-      - OPENAI_API_BASE_URL=https://api.edenai.run/v3/llm
+      - OPENAI_API_BASE_URL=https://api.edenai.run/v3
       - OPENAI_API_KEY=${EDEN_AI_API_KEY}
 
       # Additional endpoints (optional)
-      - OPENAI_API_BASE_URLS=https://api.edenai.run/v3/llm,https://api.openai.com/v1
+      - OPENAI_API_BASE_URLS=https://api.edenai.run/v3,https://api.openai.com/v1
       - OPENAI_API_KEYS=${EDEN_AI_API_KEY},${OPENAI_API_KEY}
 ```
 </CodeGroup>
@@ -413,7 +413,7 @@ services:
     ports:
       - "127.0.0.1:3000:8080"
     environment:
-      - OPENAI_API_BASE_URL=https://api.edenai.run/v3/llm
+      - OPENAI_API_BASE_URL=https://api.edenai.run/v3
       - OPENAI_API_KEY=${EDEN_AI_API_KEY}
       - WEBUI_SECRET_KEY=${WEBUI_SECRET_KEY}
       - ENABLE_SIGNUP=false
@@ -484,7 +484,7 @@ If models don't show up:
 
 3. **Test endpoint manually**:
    ```bash
-   curl -X POST https://api.edenai.run/v3/llm/chat/completions \
+   curl -X POST https://api.edenai.run/v3/chat/completions \
      -H "Authorization: Bearer YOUR_API_KEY" \
      -H "Content-Type: application/json" \
      -d '{

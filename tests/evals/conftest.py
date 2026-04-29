@@ -70,7 +70,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
 @pytest.fixture(scope="session")
 def edenai_llm() -> EdenAILLM:
     api_key = os.environ["EDEN_AI_PRODUCTION_API_TOKEN"]
-    base_url = os.getenv("EDEN_AI_BASE_URL", DEFAULT_BASE_URL) + "/v3/llm"
+    base_url = os.getenv("EDEN_AI_BASE_URL", DEFAULT_BASE_URL) + "/v3"
     model = os.getenv("EVAL_JUDGE_MODEL", DEFAULT_MODEL)
     return EdenAILLM(api_key=api_key, base_url=base_url, model=model)
 

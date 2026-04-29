@@ -17,7 +17,7 @@ All models (primary and fallbacks) must be valid models listed in the [Models](/
 ```python Python
 import requests
 
-url = "https://api.edenai.run/v3/llm/chat/completions"
+url = "https://api.edenai.run/v3/chat/completions"
 headers = {
     "Authorization": "Bearer YOUR_API_KEY",
     "Content-Type": "application/json",
@@ -39,7 +39,7 @@ print(response.json())
 ```
 
 ```bash cURL
-curl -X POST https://api.edenai.run/v3/llm/chat/completions \
+curl -X POST https://api.edenai.run/v3/chat/completions \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{

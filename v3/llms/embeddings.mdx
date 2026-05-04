@@ -187,7 +187,7 @@ Unknown top-level fields are forwarded to the underlying provider, so provider-s
 ## Batching
 
 Pass a list to `input` to embed multiple strings in one call. Items in `data` keep their `index` matching the input order — that's the property the [worked example](#worked-example-semantic-search) relies on. Batching is significantly cheaper and faster than one call per string.
-
+{/* skip-test */}
 ```python Python
 payload = {
     "model": model_id,

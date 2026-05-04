@@ -119,8 +119,8 @@ model_id = requests.get(
 query = "How do I track my API costs?"
 corpus = [
     "Eden AI returns a `cost` field on every response so you can track spend per call.",
-    "You can set a monthly budget cap from the dashboard under Plans & Pricing.",
-    "Smart routing picks an LLM automatically when you pass `@edenai` as the model.",
+    "You can cap spending by creating custom API keys with a per-token budget.",
+    "Smart routing with `@edenai` applies to chat/completions, not to embeddings.",
     "The /v3/models endpoint lists every available chat-completions model.",
     "To upload files for vision-capable LLMs, use the /v3/upload endpoint.",
 ]

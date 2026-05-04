@@ -29,7 +29,8 @@ Every API response includes the exact cost in USD:
 | Auto-refill credits | Yes | Yes |
 | Unlimited seats | Yes | Yes |
 | Chat support (48h working days) | Yes | Yes |
-| High rate limits & bulk discounts | -- | Yes |
+| Rate limit | 7 req/sec (15 on request) | Custom (higher) |
+| Bulk discounts | -- | Yes |
 | Private deployments | -- | Yes |
 | Custom latency & cost optimization | -- | Yes |
 | Dedicated support & SLA | -- | Yes |
@@ -48,6 +49,7 @@ The default plan -- pay as you go with no commitments. Includes:
 - **Auto-refill credits** -- never run out of credits unexpectedly
 - **Unlimited seats** -- invite your whole team at no extra cost
 - **Chat support** -- responses within 48 working hours
+- **Rate limit** -- 7 requests/second by default, upgradable to 15 req/sec on request
 
 Payment is handled via Stripe. You purchase credits and they are consumed as you make API calls.
 
@@ -55,7 +57,7 @@ Payment is handled via Stripe. You purchase credits and they are consumed as you
 
 For teams running AI at scale who need higher limits, dedicated infrastructure, and hands-on support. Everything in the Self-serve plan, plus:
 
-- **High rate limits & bulk discounts** -- increased throughput and volume-based pricing
+- **Higher rate limits & bulk discounts** -- beyond 15 req/sec, tailored to your workload, plus volume-based pricing
 - **Private deployments** -- dedicated infrastructure for your workloads
 - **Custom latency & cost optimization** -- tailored routing and performance tuning
 - **Dedicated support & SLA** -- guaranteed response times and a direct support channel

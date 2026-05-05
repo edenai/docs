@@ -12,11 +12,14 @@
     }
   },
   "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg",
+    "light": "/logo/dark.svg",
+    "dark": "/logo/light.svg",
     "href": "https://edenai.co"
   },
-  "favicon": "/images/favicon.png",
+  "favicon":{
+    "light":"/images/favicon-dark.png",
+    "dark":"/images/favicon.png"
+  } ,
   "ask": "Ask AI",
   "colors": {
     "primary": "#3d7cc9",

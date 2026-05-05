@@ -1,0 +1,42 @@
+---
+icon: "gauge-high"
+title: "Rate Limits"
+---
+
+Eden AI applies a per-account rate limit on requests to the API. The limit can be raised based on the volume and pattern of traffic you need to support.
+
+## Default Rate Limit
+
+Every account starts at **10 requests per second**. This applies to all endpoints under `https://api.edenai.run/v3/...` and is shared across your API keys.
+
+<Note>
+In an organization, the owner's rate limit is the ceiling for all members, and the owner can cap individual members below it.
+</Note>
+
+## Self-serve AI API
+
+If 10 req/sec is not enough for your workload, the limit can be **adjusted on request**. Reach out via the live chat with a short description of your use case and expected throughput, and we'll raise it for your account.
+
+See [Plans & Pricing](/v3/overview/plans-prices) for the full list of what's included in the Self-serve plan.
+
+## Advanced AI Platform
+
+The Advanced plan supports **significantly higher rate limits**, tailored to your workload. This is the right fit for teams running AI at scale, with sustained traffic or strict latency requirements.
+
+<Info>
+Interested in the Advanced AI Platform? [Contact sales through the live chat](https://www.edenai.co/contact) to discuss your throughput needs.
+</Info>
+
+## Next Steps
+
+<CardGroup cols={2}>
+
+<Card title="Plans & Pricing" icon="tag" href="/v3/overview/plans-prices">
+  Compare the Self-serve and Advanced plans.
+</Card>
+
+<Card title="Monitor Usage" icon="chart-line" href="/v3/general/monitoring">
+  Track your request volume and latency in real time.
+</Card>
+
+</CardGroup>

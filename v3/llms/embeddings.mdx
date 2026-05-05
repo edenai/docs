@@ -41,18 +41,14 @@ Models are identified as `provider/model` — the same format used everywhere el
 ```python Python
 import requests
 
-response = requests.get(
-    "https://api.edenai.run/v3/embeddings/models",
-    headers={"Authorization": "Bearer YOUR_API_KEY"},
-)
+response = requests.get("https://api.edenai.run/v3/embeddings/models")
 
 for model in response.json()["data"]:
     print(model["id"], "-", model.get("context_length"))
 ```
 
 ```bash cURL
-curl https://api.edenai.run/v3/embeddings/models \
-  -H "Authorization: Bearer YOUR_API_KEY"
+curl https://api.edenai.run/v3/embeddings/models
 ```
 </CodeGroup>
 
@@ -70,7 +66,6 @@ headers = {"Authorization": "Bearer YOUR_API_KEY"}
 
 model_id = requests.get(
     "https://api.edenai.run/v3/embeddings/models",
-    headers=headers,
 ).json()["data"][0]["id"]
 
 response = requests.post(
@@ -109,10 +104,9 @@ import numpy as np
 API_KEY = "YOUR_API_KEY"
 headers = {"Authorization": f"Bearer {API_KEY}"}
 
-# 1. Pick a model from the catalog.
+# 1. Pick a model from the catalog (no auth required for /models).
 model_id = requests.get(
     "https://api.edenai.run/v3/embeddings/models",
-    headers=headers,
 ).json()["data"][0]["id"]
 
 # 2. Define a query and a corpus of documents to search over.
@@ -157,7 +151,7 @@ The first hit should be the document about the `cost` field. Swap in your own co
 | `model` | string | yes | `provider/model` from `/v3/embeddings/models`. |
 | `input` | string \| string[] \| int[] \| int[][] | yes | Text to embed, or a batch. Pre-tokenized integer inputs are also accepted. |
 | `encoding_format` | `"float"` \| `"base64"` | no | Defaults to `"float"`. `"base64"` reduces wire payload size. |
-| `dimensions` | integer | no | Truncate the output vector. Only supported by models that advertise it (3-series). |
+| `dimensions` | integer | no | Truncate the output vector. Only supported by models that advertise it (e.g. OpenAI's `text-embedding-3-small` and `text-embedding-3-large`). |
 | `user` | string | no | End-user identifier for abuse tracking. |
 | `metadata` | object | no | Eden extension. Free-form metadata stored with the request. |
 
@@ -202,7 +196,7 @@ There is no single best embedding model — picking one is a tradeoff between qu
 - **Small / fast / cheap** (e.g. `*-small` variants) — good default for most semantic-search workloads. Lower latency, lower cost per token, vectors are smaller so storage and dot products are faster.
 - **Large / higher quality** (e.g. `*-large` variants) — meaningfully better recall on hard retrieval tasks (long technical docs, multilingual corpora). Costs more and produces larger vectors.
 - **Context length** — long-context embedding models let you embed entire documents without chunking. Most 8k-context models still need chunking for paragraphs above ~2k tokens.
-- **Dimensions** — some 3-series models support a `dimensions` parameter to truncate outputs. Smaller vectors save storage and speed up similarity search at a small recall cost.
+- **Dimensions** — some models (e.g. OpenAI's `text-embedding-3-small` and `text-embedding-3-large`) support a `dimensions` parameter to truncate outputs. Smaller vectors save storage and speed up similarity search at a small recall cost.
 - **Multilingual** — verify language support in the model's `capabilities` before using it for non-English corpora.
 
 A common pattern: prototype with a small model, then A/B test a larger model on your evaluation set before committing to the storage cost.

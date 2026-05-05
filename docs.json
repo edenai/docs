@@ -57,7 +57,8 @@
                     "pages": [
                       "v3/overview/ai-gateway",
                       "v3/overview/llms-vs-expert-models",
-                      "v3/overview/plans-prices"
+                      "v3/overview/plans-prices",
+                      "v3/overview/rate-limits"
                     ]
                   },
                   {

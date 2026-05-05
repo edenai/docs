@@ -1,0 +1,237 @@
+---
+title: "Embeddings"
+description: "Turn text into vectors with one OpenAI-compatible API. Run RAG, semantic search, clustering, and recommendations across 200+ models on Eden AI."
+icon: "vector-square"
+---
+
+Embeddings turn text into numerical vectors that capture meaning. They are the foundation for [RAG pipelines](#use-cases), semantic search, recommendations, and clustering.
+
+Eden AI exposes an OpenAI-compatible embeddings endpoint that works the same way across all supported providers — pick a model, send text, get vectors.
+
+## What are embeddings?
+
+An embedding is a list of floating-point numbers — a vector — that represents a piece of text in a high-dimensional space. The model is trained so that **texts with similar meaning land close together** in that space, and unrelated texts land far apart.
+
+Concretely, "cat" and "kitten" produce nearly identical vectors. "Cat" and "airplane" produce vectors that point in very different directions. The distance between two vectors (usually measured with cosine similarity) is a numerical proxy for how related the two texts are.
+
+You generate embeddings once for your corpus, store the vectors, and then compare new query vectors against the stored ones at lookup time. That's the entire shape of semantic search and RAG.
+
+## Use cases
+
+- **Retrieval-Augmented Generation (RAG)** — embed your docs, retrieve the most relevant chunks for a user question, feed them into an LLM.
+- **Semantic search** — match queries against documents by meaning, not keywords.
+- **Recommendations** — suggest similar products, articles, or songs based on description vectors.
+- **Clustering and topic discovery** — group thousands of texts by meaning without labels.
+- **Deduplication** — find near-duplicates that don't share exact wording.
+- **Anomaly detection** — flag inputs that look unlike anything in your corpus.
+- **Classification** — train a small classifier on top of frozen embeddings instead of fine-tuning a full model.
+
+## Endpoints
+
+```
+GET  /v3/embeddings/models     List available embedding models
+POST /v3/embeddings            Create embeddings
+```
+
+Models are identified as `provider/model` — the same format used everywhere else in V3.
+
+## List available models
+
+<CodeGroup>
+```python Python
+import requests
+
+response = requests.get(
+    "https://api.edenai.run/v3/embeddings/models",
+    headers={"Authorization": "Bearer YOUR_API_KEY"},
+)
+
+for model in response.json()["data"]:
+    print(model["id"], "-", model.get("context_length"))
+```
+
+```bash cURL
+curl https://api.edenai.run/v3/embeddings/models \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+</CodeGroup>
+
+Each item exposes `id`, `owned_by`, `context_length`, `pricing`, `capabilities`, and `regions`. Use any `id` as the `model` field below.
+
+## Create embeddings
+
+The example picks a model from the catalog at runtime so the snippet never goes stale.
+
+<CodeGroup>
+```python Python
+import requests
+
+headers = {"Authorization": "Bearer YOUR_API_KEY"}
+
+model_id = requests.get(
+    "https://api.edenai.run/v3/embeddings/models",
+    headers=headers,
+).json()["data"][0]["id"]
+
+response = requests.post(
+    "https://api.edenai.run/v3/embeddings",
+    headers={**headers, "Content-Type": "application/json"},
+    json={
+        "model": model_id,
+        "input": "The quick brown fox jumps over the lazy dog",
+    },
+).json()
+
+vector = response["data"][0]["embedding"]
+print(f"{model_id}: {len(vector)} dimensions, cost=${response['cost']}")
+```
+
+```bash cURL
+# Replace MODEL_ID with any id returned by GET /v3/embeddings/models
+curl https://api.edenai.run/v3/embeddings \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "MODEL_ID",
+    "input": "The quick brown fox jumps over the lazy dog"
+  }'
+```
+</CodeGroup>
+
+## Worked example: semantic search
+
+This is the smallest end-to-end example that demonstrates the full retrieval pattern: embed a query and a small corpus in **one batched call**, score with cosine similarity, return the top matches.
+
+```python Python
+import requests
+import numpy as np
+
+API_KEY = "YOUR_API_KEY"
+headers = {"Authorization": f"Bearer {API_KEY}"}
+
+# 1. Pick a model from the catalog.
+model_id = requests.get(
+    "https://api.edenai.run/v3/embeddings/models",
+    headers=headers,
+).json()["data"][0]["id"]
+
+# 2. Define a query and a corpus of documents to search over.
+query = "How do I track my API costs?"
+corpus = [
+    "Eden AI returns a `cost` field on every response so you can track spend per call.",
+    "You can cap spending by creating custom API keys with a per-token budget.",
+    "Smart routing with `@edenai` applies to chat/completions, not to embeddings.",
+    "The /v3/models endpoint lists every available chat-completions model.",
+    "To upload files for vision-capable LLMs, use the /v3/upload endpoint.",
+]
+
+# 3. Embed query + corpus in a single batched call. Eden returns vectors in input order.
+payload = {"model": model_id, "input": [query, *corpus]}
+response = requests.post(
+    "https://api.edenai.run/v3/embeddings",
+    headers={**headers, "Content-Type": "application/json"},
+    json=payload,
+).json()
+
+vectors = np.array([item["embedding"] for item in response["data"]])
+query_vec, corpus_vecs = vectors[0], vectors[1:]
+
+# 4. Cosine similarity = dot product of L2-normalized vectors.
+def normalize(v):
+    return v / np.linalg.norm(v, axis=-1, keepdims=True)
+
+scores = normalize(corpus_vecs) @ normalize(query_vec)
+ranking = np.argsort(scores)[::-1]
+
+print(f"Embedded {len(corpus) + 1} texts for ${response['cost']:.6f}\n")
+for rank, idx in enumerate(ranking[:3], start=1):
+    print(f"{rank}. ({scores[idx]:.3f}) {corpus[idx]}")
+```
+
+The first hit should be the document about the `cost` field. Swap in your own corpus, persist `corpus_vecs` to a vector database, and you have a working RAG retriever.
+
+## Request body
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `model` | string | yes | `provider/model` from `/v3/embeddings/models`. |
+| `input` | string \| string[] \| int[] \| int[][] | yes | Text to embed, or a batch. Pre-tokenized integer inputs are also accepted. |
+| `encoding_format` | `"float"` \| `"base64"` | no | Defaults to `"float"`. `"base64"` reduces wire payload size. |
+| `dimensions` | integer | no | Truncate the output vector. Only supported by models that advertise it (3-series). |
+| `user` | string | no | End-user identifier for abuse tracking. |
+| `metadata` | object | no | Eden extension. Free-form metadata stored with the request. |
+
+Unknown top-level fields are forwarded to the underlying provider, so provider-specific options can be passed through unchanged.
+
+## Response
+
+```json
+{
+  "object": "list",
+  "model": "<provider>/<model>",
+  "provider": "<provider>",
+  "data": [
+    {
+      "object": "embedding",
+      "index": 0,
+      "embedding": [0.0123, -0.0456, "..."]
+    }
+  ],
+  "usage": { "prompt_tokens": 9, "total_tokens": 9 },
+  "cost": 0.0000012
+}
+```
+
+`provider` and `cost` are Eden extensions on top of the OpenAI shape. When `encoding_format` is `"base64"`, each `embedding` is a base64-encoded string instead of a list.
+
+## Batching
+
+Pass a list to `input` to embed multiple strings in one call. Items in `data` keep their `index` matching the input order — that's the property the [worked example](#worked-example-semantic-search) relies on. Batching is significantly cheaper and faster than one call per string.
+{/* skip-test */}
+```python Python
+payload = {
+    "model": model_id,
+    "input": ["first sentence", "second sentence", "third sentence"],
+}
+```
+
+## Choosing a model
+
+There is no single best embedding model — picking one is a tradeoff between quality, dimension count, context length, language coverage, and price.
+
+- **Small / fast / cheap** (e.g. `*-small` variants) — good default for most semantic-search workloads. Lower latency, lower cost per token, vectors are smaller so storage and dot products are faster.
+- **Large / higher quality** (e.g. `*-large` variants) — meaningfully better recall on hard retrieval tasks (long technical docs, multilingual corpora). Costs more and produces larger vectors.
+- **Context length** — long-context embedding models let you embed entire documents without chunking. Most 8k-context models still need chunking for paragraphs above ~2k tokens.
+- **Dimensions** — some 3-series models support a `dimensions` parameter to truncate outputs. Smaller vectors save storage and speed up similarity search at a small recall cost.
+- **Multilingual** — verify language support in the model's `capabilities` before using it for non-English corpora.
+
+A common pattern: prototype with a small model, then A/B test a larger model on your evaluation set before committing to the storage cost.
+
+## Errors
+
+Common HTTP status codes returned by `/v3/embeddings`:
+
+| Status | Meaning |
+|---|---|
+| `400` | Invalid request — usually a missing `model`, malformed `input`, or unsupported parameter. |
+| `401` | Missing or invalid `Authorization: Bearer` token. |
+| `402` | Insufficient credits. Top up from the dashboard. |
+| `404` | The `model` id does not exist or is not enabled on your account. |
+| `429` | Rate limit exceeded — back off and retry, or switch to a model with more headroom. |
+| `5xx` | Upstream provider error. Configure a [fallback](/v3/general/fallback) to route to a backup model. |
+
+## Best practices
+
+- **Smart routing is not supported on embeddings.** Always pass a concrete `provider/model`, not `@edenai/...`. See [Smart routing](/v3/llms/smart-routing) for which endpoints support it.
+- **Compare vectors with cosine similarity.** It is the standard distance for embedding spaces. Normalize once at write time so retrieval is a single dot product.
+- **Re-index when you change models.** Vectors from different models are not compatible — store `(text, embedding, model_id)` together and re-embed if you switch.
+- **Cache embeddings.** They are deterministic for the same `(model, input)` pair, so caching by hash avoids re-billing for unchanged content.
+- **Chunk before embedding long documents.** Most models cap at 8k tokens; for retrieval, paragraph-sized chunks (~200–500 tokens) generally outperform whole-document embeddings.
+
+## Related
+
+- [List LLM models](/v3/llms/listing-models) — discover all chat-completion models.
+- [Smart routing](/v3/llms/smart-routing) — automatic provider selection (chat only).
+- [Fallback](/v3/general/fallback) — route to a backup model on errors.
+- [Plans & pricing](/v3/overview/plans-prices) — credits, budgets, and per-call costs.
+- [OpenAI SDK (Python)](/v3/integrations/openai-sdk-python) — call `/v3/embeddings` through the OpenAI client.

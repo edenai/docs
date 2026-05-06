@@ -1,0 +1,84 @@
+{/*
+  TechArticle JSON-LD snippet (schema.org).
+
+  Usage in any page .mdx:
+
+    import { TechArticleJsonLd } from "/snippets/json-ld.mdx";
+
+    <TechArticleJsonLd
+      url="https://www.edenai.co/docs/v3/quickstart/first-llm-call"
+      title="First LLM Call with Eden AI"
+      description="Learn how to make your first LLM API call using Eden AI..."
+      section="Quickstart"
+      topic="LLM API Integration"
+      level="Beginner"
+      prerequisites="You need an Eden AI account and an API key..."
+      keywords={["Eden AI", "LLM API", "AI API integration", "first API call", "large language model", "quickstart"]}
+      datePublished="2024-01-01T00:00:00Z"
+      dateModified="2026-04-23T00:00:00Z"
+      image="https://www.edenai.co/assets/logo.png"
+    />
+
+  We render the script via dangerouslySetInnerHTML so React doesn't escape the
+  JSON. Mintlify is built on Next.js — this is the standard pattern for JSON-LD
+  in React/Next apps.
+*/}
+
+export const TechArticleJsonLd = ({
+  url,
+  title,
+  description,
+  section,
+  topic,
+  level,
+  prerequisites,
+  keywords = [],
+  datePublished,
+  dateModified,
+  image,
+  locale = "en",
+}) => {
+  const data = {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "@id": `${url}#techarticle`,
+    mainEntityOfPage: { "@type": "WebPage", "@id": url },
+    headline: title,
+    name: title,
+    description,
+    url,
+    inLanguage: locale,
+    isPartOf: {
+      "@type": "WebSite",
+      name: "Eden AI Documentation",
+      url: "https://www.edenai.co/docs",
+    },
+    ...(section && { articleSection: section }),
+    ...(topic && { about: { "@type": "Thing", name: topic } }),
+    ...(level && { proficiencyLevel: level }),
+    ...(prerequisites && { dependencies: prerequisites }),
+    ...(keywords.length > 0 && { keywords }),
+    author: [
+      { "@type": "Organization", name: "Eden AI", url: "https://www.edenai.co/" },
+    ],
+    publisher: {
+      "@type": "Organization",
+      name: "Eden AI",
+      url: "https://www.edenai.co/",
+      logo: {
+        "@type": "ImageObject",
+        url: "https://www.edenai.co/assets/logo.png",
+      },
+    },
+    ...(datePublished && { datePublished }),
+    ...(dateModified && { dateModified }),
+    ...(image && { image: [image] }),
+  };
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
+    />
+  );
+};

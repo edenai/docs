@@ -1,7 +1,21 @@
 ---
 icon: "rotate-left"
 title: "Fallback"
+description: "Eden AI automatically handles fallback on both LLM and Universal AI / expert model requests."
 ---
+import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
+
+<TechArticleSchema
+  title={"Fallback"}
+  description={"Eden AI automatically handles fallback on both LLM and Universal AI / expert model requests."}
+  path="v3/general/fallback"
+  articleSection="General"
+  about={"API Configuration"}
+  proficiencyLevel="Intermediate"
+  keywords={["Eden AI", "AI API", "rate limits", "billing", "monitoring"]}
+  datePublished="2026-05-06T00:00:00Z"
+  dateModified="2026-05-06T00:00:00Z"
+/>
 
 Eden AI automatically handles fallback on both LLM and Universal AI / expert model requests. If your primary model or provider fails (provider outage, rate limit, error), Eden AI retries with the next item in your `fallbacks` list -- no retry logic needed on your side.
 

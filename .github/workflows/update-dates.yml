@@ -1,0 +1,40 @@
+name: Update Schema Dates
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths: ['**/*.mdx']
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    # Skip PRs from forks — they don't have write access to push back
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Update dateModified / datePublished
+        run: python scripts/update_schema_dates.py "${{ github.base_ref }}"
+
+      - name: Commit and push if anything changed
+        run: |
+          if [ -z "$(git status --porcelain '*.mdx')" ]; then
+            echo "No date updates to commit"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add '*.mdx'
+          git commit -m "chore: bump dateModified for changed docs"
+          git push

@@ -1,7 +1,21 @@
 ---
 title: "Named Entity Recognition"
-description: "Named Entity Recognition (also called entity identification or extraction) is an information extraction technique that automatically identifies named entities in a text and classifies them into..."
+description: "Named Entity Recognition (also called entity identification or extraction) is an information extraction technique that automatically identifies named entities in a text and classifies them into"
 ---
+
+import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
+
+<TechArticleSchema
+  title={`Named Entity Recognition`}
+  description={`Named Entity Recognition (also called entity identification or extraction) is an information extraction technique that automatically identifies named entities in a text and classifies them into`}
+  path="v3/expert-models/features/text/named-entity-recognition"
+  articleSection="Text Features"
+  about={`NLP API`}
+  proficiencyLevel="Intermediate"
+  keywords={[`Eden AI`, `AI API`, `text analysis`, `NLP`]}
+  datePublished="2026-05-06T00:00:00Z"
+  dateModified="2026-05-06T00:00:00Z"
+/>
 
 ## Endpoint
 
@@ -33,7 +47,7 @@ Model string pattern: `text/named_entity_recognition/{provider}[/{model}]`
 |----------|-------------|-------|
 | amazon | `text/named_entity_recognition/amazon` | $1 per 1,000,000 chars |
 | microsoft | `text/named_entity_recognition/microsoft` | $1 per 1,000,000 chars |
-| openai | `text/named_entity_recognition/openai` | $10 per 1,000,000 tokens |
+| openai | `text/named_entity_recognition/openai` | $40 per 1,000,000 chars |
 | openai (gpt-4o) | `text/named_entity_recognition/openai/gpt-4o` | $10 per 1,000,000 tokens |
 | tenstorrent | `text/named_entity_recognition/tenstorrent` | $1 per 1,000,000 chars |
 

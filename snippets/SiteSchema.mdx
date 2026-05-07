@@ -28,13 +28,17 @@ export const SiteSchema = () => {
       },
     ],
   };
-  const json = JSON.stringify(data).replace(/</g, "\\u003c");
-  return (
-    <div
-      style={{ display: "none" }}
-      dangerouslySetInnerHTML={{
-        __html: `<script type="application/ld+json">${json}</script>`,
-      }}
-    />
-  );
+  const json = JSON.stringify(data);
+  const schemaId = "site-schema-graph";
+  React.useEffect(() => {
+    if (typeof document === "undefined") return;
+    document.querySelectorAll(`script[data-schema-id="${schemaId}"]`).forEach((n) => n.remove());
+    const script = document.createElement("script");
+    script.type = "application/ld+json";
+    script.dataset.schemaId = schemaId;
+    script.textContent = json;
+    document.head.appendChild(script);
+    return () => script.remove();
+  }, [json]);
+  return null;
 };

@@ -65,10 +65,13 @@ export const TechArticleSchema = ({
   if (datePublished) data.datePublished = datePublished;
   if (dateModified) data.dateModified = dateModified;
   data.image = Array.isArray(resolvedImage) ? resolvedImage : [resolvedImage];
+  const json = JSON.stringify(data).replace(/</g, "\\u003c");
   return (
-    <script
-      type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
+    <div
+      style={{ display: "none" }}
+      dangerouslySetInnerHTML={{
+        __html: `<script type="application/ld+json">${json}</script>`,
+      }}
     />
   );
 };

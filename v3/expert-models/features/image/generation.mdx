@@ -34,10 +34,12 @@ Model string pattern: `image/generation/{provider}[/{model}]`
 
 ## Output
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| image | string | Yes |  |
-| image_resource_url | string | Yes |  |
+The response contains an `output.items` array with one entry per generated image (based on `num_images`).
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `output.items[].image` | string | Base64-encoded image |
+| `output.items[].image_resource_url` | string | Hosted URL of the generated image |
 
 
 ## Available Providers

@@ -73,15 +73,17 @@ console.log(await response.json());
 
 When you hit the discovery endpoints on `api.eu.edenai.run`, the response is automatically filtered to providers and models that are available in the EU.
 
+<Info>
+Discovery endpoints (`/v3/models`, `/v3/info`) are public — no API key needed to browse availability.
+</Info>
+
 <CodeGroup>
 ```bash LLMs
-curl https://api.eu.edenai.run/v3/models \
-  -H "Authorization: Bearer YOUR_API_KEY"
+curl https://api.eu.edenai.run/v3/models
 ```
 
 ```bash Expert Models
-curl https://api.eu.edenai.run/v3/info \
-  -H "Authorization: Bearer YOUR_API_KEY"
+curl https://api.eu.edenai.run/v3/info
 ```
 </CodeGroup>
 

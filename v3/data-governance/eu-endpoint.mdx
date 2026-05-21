@@ -105,16 +105,31 @@ If you call the EU endpoint with a model or provider that has not been cleared f
 
 **HTTP 451 — Unavailable For Legal Reasons**
 
+LLM endpoints (`/v3/chat/completions`, `/v3/embeddings`, …) return the error in OpenAI-compatible shape:
+
 ```json
 {
-  "detail": {
-    "error": "Provider or model not available in this region",
-    "message": "Provider(s)/model(s) openai/gpt-4o are not available on the EU endpoint."
+  "error": {
+    "message": "Provider(s)/model(s) google/gemini-3.5-flash are not available on the EU endpoint.",
+    "type": "request_forbidden",
+    "param": null,
+    "code": "region_not_allowed"
   }
 }
 ```
 
-The gate runs ahead of input validation and file fetching, so a rejected request never touches the upstream provider, never spends credits, and never leaves the EU boundary.
+Universal AI and expert-model endpoints (`/v3/universal-ai`) return the same status with the FastAPI envelope:
+
+```json
+{
+  "detail": {
+    "error": "Provider or model not available in this region",
+    "message": "Provider(s)/model(s) <provider/model> are not available on the EU endpoint."
+  }
+}
+```
+
+In both cases the gate runs ahead of input validation and file fetching, so a rejected request never touches the upstream provider, never spends credits, and never leaves the EU boundary. Detect the rejection programmatically via the HTTP 451 status, or via `code: "region_not_allowed"` on LLM responses.
 
 <Tip>
 The same check applies to every provider you list in the request — including `fallbacks` and any provider you pass via `model`. A single non-EU entry in the list will reject the whole call.

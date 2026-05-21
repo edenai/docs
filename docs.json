@@ -158,9 +158,74 @@
                     "icon": "video",
                     "expanded": false,
                     "pages": [
-                      "v3/data-governance/servers-location",
-                      "v3/data-governance/eu-endpoint",
-                      "v3/data-governance/data-retention"
+                      "v3/expert-models/features/video/generation-async"
+                    ]
+                  }
+                ]
+              },
+              {
+                "group": "General",
+                "icon": "gear",
+                "expanded": false,
+                "divider": true,
+                "pages": [
+                  "v3/general/fallback",
+                  "v3/general/caching",
+                  "v3/general/buying-credits",
+                  "v3/general/sandbox",
+                  "v3/general/custom-api-keys",
+                  "v3/general/monitoring",
+                  "v3/general/users-organisation",
+                  "v3/general/support",
+                  "v3/general/byok"
+                ]
+              },
+              {
+                "group": "Data Governance",
+                "icon": "shield-halved",
+                "expanded": false,
+                "pages": [
+                  "v3/data-governance/servers-location",
+                  "v3/data-governance/eu-endpoint",
+                  "v3/data-governance/data-retention"
+                ]
+              },
+              {
+                "group": "Integrations",
+                "icon": "plug",
+                "expanded": false,
+                "divider": true,
+                "pages": [
+                  {
+                    "group": "AI Frameworks",
+                    "icon": "code",
+                    "expanded": false,
+                    "pages": [
+                      "v3/integrations/openai-sdk-python",
+                      "v3/integrations/openai-sdk-typescript",
+                      "v3/integrations/langchain"
+                    ]
+                  },
+                  {
+                    "group": "Coding Agents",
+                    "icon": "robot",
+                    "expanded": false,
+                    "pages": [
+                      "v3/integrations/claude-code",
+                      "v3/integrations/cline",
+                      "v3/integrations/codex-cli",
+                      "v3/integrations/continue-dev",
+                      "v3/integrations/openclaw",
+                      "v3/integrations/opencode"
+                    ]
+                  },
+                  {
+                    "group": "Chat UI",
+                    "icon": "comments",
+                    "expanded": false,
+                    "pages": [
+                      "v3/integrations/librechat",
+                      "v3/integrations/open-webui"
                     ]
                   },
                   {

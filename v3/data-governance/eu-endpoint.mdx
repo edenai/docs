@@ -1,0 +1,143 @@
+---
+sidebarTitle: "EU Endpoint"
+title: "EU Endpoint"
+icon: "earth-europe"
+---
+
+Eden AI exposes a regional endpoint that routes your requests exclusively through providers and models cleared for European processing. Use it when your workload requires data residency in the EU or when your compliance posture forbids fallback to providers outside the region.
+
+## Base URLs
+
+| Region | Base URL |
+|---|---|
+| Global (default) | `https://api.edenai.run` |
+| EU | `https://api.eu.edenai.run` |
+
+Everything else — your API key, authentication header, request bodies, response shapes — is identical. You only swap the host.
+
+<Info>
+Your API key works on both endpoints. There is no separate EU key to issue.
+</Info>
+
+## Calling the EU endpoint
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://api.eu.edenai.run/v3/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "mistral/mistral-large-latest",
+    "messages": [{"role": "user", "content": [{"type": "text", "text": "Bonjour"}]}]
+  }'
+```
+
+```python Python
+import requests
+
+response = requests.post(
+    "https://api.eu.edenai.run/v3/chat/completions",
+    headers={
+        "Authorization": "Bearer YOUR_API_KEY",
+        "Content-Type": "application/json",
+    },
+    json={
+        "model": "mistral/mistral-large-latest",
+        "messages": [{"role": "user", "content": [{"type": "text", "text": "Bonjour"}]}],
+    },
+)
+
+print(response.status_code)
+print(response.json())
+```
+
+```javascript JavaScript
+const response = await fetch("https://api.eu.edenai.run/v3/chat/completions", {
+  method: "POST",
+  headers: {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    model: "mistral/mistral-large-latest",
+    messages: [{ role: "user", content: [{ type: "text", text: "Bonjour" }] }],
+  }),
+});
+
+console.log(response.status);
+console.log(await response.json());
+```
+</CodeGroup>
+
+## Discovering EU-available models
+
+When you hit the discovery endpoints on `api.eu.edenai.run`, the response is automatically filtered to providers and models that are available in the EU.
+
+<CodeGroup>
+```bash LLMs
+curl https://api.eu.edenai.run/v3/models \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+```bash Expert Models
+curl https://api.eu.edenai.run/v3/info \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+</CodeGroup>
+
+Each model entry carries a `regions` array so you can see at a glance which regions cover it:
+
+```json
+{
+  "id": "mistral/mistral-large-latest",
+  "object": "model",
+  "owned_by": "mistral",
+  "regions": [{ "code": "eu", "name": "Europe" }],
+  "capabilities": { "pdf": true, "reasoning": false, "web_search": false, "tool_calling": true }
+}
+```
+
+## Error: provider not available in the EU
+
+If you call the EU endpoint with a model or provider that has not been cleared for European processing, Eden AI rejects the request before any provider is contacted.
+
+**HTTP 451 — Unavailable For Legal Reasons**
+
+```json
+{
+  "detail": {
+    "error": "Provider or model not available in this region",
+    "message": "Provider(s)/model(s) openai/gpt-4o are not available on the EU endpoint."
+  }
+}
+```
+
+The gate runs ahead of input validation and file fetching, so a rejected request never touches the upstream provider, never spends credits, and never leaves the EU boundary.
+
+<Tip>
+The same check applies to every provider you list in the request — including `fallbacks` and any provider you pass via `model`. A single non-EU entry in the list will reject the whole call.
+</Tip>
+
+## Behavior notes
+
+- **Caching is region-scoped.** Cached responses on the global endpoint and the EU endpoint never share state.
+- **Sandbox works the same way.** Calls authenticated with `sandbox_api_token` honor the same regional filtering — point your sandbox traffic at `api.eu.edenai.run` to mirror the production routing.
+- **Fallback respects the region.** When a fallback list is provided, every entry must be EU-eligible. Non-EU fallbacks trigger a 451 the same way a non-EU primary does.
+- **No silent downgrade.** There is no automatic re-route from the EU endpoint to the global endpoint. If no EU-eligible provider exists for your request, the call fails — it does not leak out of the region.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="LLM Models" icon="brain" href="/v3/llms/listing-models">
+    Browse available LLM models and their regions
+  </Card>
+  <Card title="Expert Model Providers" icon="microchip" href="/v3/expert-models/listing-models">
+    Discover providers per feature in the EU
+  </Card>
+  <Card title="Servers Location" icon="location-dot" href="/v3/data-governance/servers-location">
+    Where Eden AI and its providers host data
+  </Card>
+  <Card title="Data Retention" icon="clock-rotate-left" href="/v3/data-governance/data-retention">
+    How long Eden AI keeps your data
+  </Card>
+</CardGroup>

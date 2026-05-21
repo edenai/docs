@@ -1,0 +1,81 @@
+export const TechArticleSchema = ({
+  title,
+  description,
+  path,
+  articleSection,
+  about,
+  proficiencyLevel = "Beginner",
+  dependencies,
+  keywords = [],
+  datePublished,
+  dateModified,
+  image,
+  inLanguage = "en",
+}) => {
+  const baseUrl = "https://www.edenai.co/docs";
+  const canonicalUrl = `${baseUrl}/${path}`.replace(/\/+$/, "");
+  const ogParams = new URLSearchParams({
+    division: articleSection || "",
+    title: title || "",
+    description: description || "",
+  });
+  const resolvedImage =
+    image ||
+    `https://edenai.mintlify.app/_mintlify/api/og?${ogParams.toString()}`;
+  const data = {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "@id": `${canonicalUrl}#techarticle`,
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": canonicalUrl,
+    },
+    headline: title,
+    name: title,
+    description: description,
+    url: canonicalUrl,
+    inLanguage: inLanguage,
+    isPartOf: {
+      "@type": "WebSite",
+      name: "Eden AI Documentation",
+      url: baseUrl,
+    },
+    author: [
+      {
+        "@type": "Organization",
+        name: "Eden AI",
+        url: "https://www.edenai.co/",
+      },
+    ],
+    publisher: {
+      "@type": "Organization",
+      name: "Eden AI",
+      url: "https://www.edenai.co/",
+      logo: {
+        "@type": "ImageObject",
+        url: "https://www.edenai.co/assets/logo.png",
+      },
+    },
+  };
+  if (articleSection) data.articleSection = articleSection;
+  if (about) data.about = { "@type": "Thing", name: about };
+  if (proficiencyLevel) data.proficiencyLevel = proficiencyLevel;
+  if (dependencies) data.dependencies = dependencies;
+  if (keywords && keywords.length) data.keywords = keywords;
+  if (datePublished) data.datePublished = datePublished;
+  if (dateModified) data.dateModified = dateModified;
+  data.image = Array.isArray(resolvedImage) ? resolvedImage : [resolvedImage];
+  const json = JSON.stringify(data);
+  const schemaId = `techarticle-${canonicalUrl}`;
+  React.useEffect(() => {
+    if (typeof document === "undefined") return;
+    document.querySelectorAll(`script[data-schema-id="${schemaId}"]`).forEach((n) => n.remove());
+    const script = document.createElement("script");
+    script.type = "application/ld+json";
+    script.dataset.schemaId = schemaId;
+    script.textContent = json;
+    document.head.appendChild(script);
+    return () => script.remove();
+  }, [json, schemaId]);
+  return null;
+};

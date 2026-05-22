@@ -1,0 +1,44 @@
+export const SiteSchema = () => {
+  const data = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "https://www.edenai.co/#organization",
+        name: "Eden AI",
+        url: "https://www.edenai.co/",
+        logo: {
+          "@type": "ImageObject",
+          url: "https://www.edenai.co/assets/logo.png",
+        },
+        sameAs: [
+          "https://github.com/edenai",
+          "https://www.linkedin.com/company/edenai",
+          "https://discord.gg/VYwTbMQc8u",
+          "https://www.youtube.com/@edenai2254",
+        ],
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://www.edenai.co/docs#website",
+        name: "Eden AI Documentation",
+        url: "https://www.edenai.co/docs",
+        publisher: { "@id": "https://www.edenai.co/#organization" },
+        inLanguage: "en",
+      },
+    ],
+  };
+  const json = JSON.stringify(data);
+  const schemaId = "site-schema-graph";
+  React.useEffect(() => {
+    if (typeof document === "undefined") return;
+    document.querySelectorAll(`script[data-schema-id="${schemaId}"]`).forEach((n) => n.remove());
+    const script = document.createElement("script");
+    script.type = "application/ld+json";
+    script.dataset.schemaId = schemaId;
+    script.textContent = json;
+    document.head.appendChild(script);
+    return () => script.remove();
+  }, [json]);
+  return null;
+};

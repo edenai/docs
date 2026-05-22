@@ -146,12 +146,22 @@ def escape_frontmatter(text: str) -> str:
     return text.replace("\\", "\\\\").replace('"', '\\"')
 
 
-def truncate_at_word(text: str, max_len: int) -> str:
-    """Truncate text at a word boundary, appending '...' if shortened."""
+def truncate_at_sentence(text: str, max_len: int) -> str:
+    """Truncate at the last complete sentence before max_len.
+
+    Falls back to a word boundary when no sentence ends within the limit.
+    Never appends an ellipsis — the result is meant to read as natural prose
+    so it works as a meta description and JSON-LD description without looking
+    auto-truncated.
+    """
+    text = text.strip()
     if len(text) <= max_len:
         return text
-    truncated = text[:max_len].rsplit(" ", 1)[0]
-    return truncated + "..."
+    window = text[:max_len]
+    boundaries = [m.end() for m in re.finditer(r"[.!?](?=\s|$)", window)]
+    if boundaries:
+        return window[: boundaries[-1]].strip()
+    return window.rsplit(" ", 1)[0].strip()
 
 
 _HTML_TAG_RE = re.compile(r"<[^>]+>")
@@ -403,6 +413,53 @@ curl -X POST {api_url} \\
 """
 
 
+# Section / about / keyword mapping for TechArticle schema (per feature category)
+_FEATURE_SCHEMA_META = {
+    "text":        ("Text Features",                "NLP API",          ["text analysis", "NLP"]),
+    "ocr":         ("OCR Features",                 "OCR API",          ["OCR", "document parsing"]),
+    "image":       ("Image Features",               "Image AI API",     ["image analysis", "computer vision"]),
+    "translation": ("Translation Features",         "Translation API",  ["translation", "multilingual"]),
+    "audio":       ("Audio Features",               "Audio AI API",     ["speech to text", "text to speech"]),
+    "video":       ("Video Generation Features",    "Video AI API",     ["video generation"]),
+}
+
+
+def _js_str(s: str) -> str:
+    """Render a string as a JS template literal for JSX expression slots.
+
+    MDX's JSX parser silently drops backslash-escaped quotes inside
+    double-quoted string literals (`{"foo \\"bar\\" baz"}`), so use
+    backtick template literals instead. Inside a template literal, only
+    backslash, backtick, and `${` need escaping.
+    """
+    escaped = s.replace("\\", "\\\\").replace("`", "\\`").replace("${", "\\${")
+    return "`" + escaped + "`"
+
+
+def _render_techarticle_schema(feature: str, sf_name: str, fullname: str, description: str) -> str:
+    """Render the TechArticleSchema MDX component for a feature page."""
+    section, about, extra_kw = _FEATURE_SCHEMA_META.get(
+        feature, ("Expert Models", "AI API", ["expert models"])
+    )
+    keywords = ["Eden AI", "AI API"] + extra_kw
+    keywords_js = "[" + ", ".join(_js_str(k) for k in keywords) + "]"
+    path = f"v3/expert-models/features/{feature}/{slug(sf_name)}"
+    return (
+        'import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";\n\n'
+        "<TechArticleSchema\n"
+        f"  title={{{_js_str(fullname)}}}\n"
+        f"  description={{{_js_str(description)}}}\n"
+        f'  path="{path}"\n'
+        f'  articleSection="{section}"\n'
+        f"  about={{{_js_str(about)}}}\n"
+        f'  proficiencyLevel="Intermediate"\n'
+        f"  keywords={{{keywords_js}}}\n"
+        f'  datePublished="2026-05-06T00:00:00Z"\n'
+        f'  dateModified="2026-05-06T00:00:00Z"\n'
+        "/>\n"
+    )
+
+
 def generate_subfeature_page(feature: str, subfeature_info: dict, detail: dict) -> str:
     """Generate the full MDX content for a single subfeature page."""
     sf_name = subfeature_info["name"]
@@ -420,14 +477,17 @@ def generate_subfeature_page(feature: str, subfeature_info: dict, detail: dict) 
 
     code_example = build_code_example(feature, sf_name, models, detail)
 
+    truncated_desc = truncate_at_sentence(description, 200)
     safe_title = escape_frontmatter(fullname)
-    safe_desc = escape_frontmatter(truncate_at_word(description, 200))
+    safe_desc = escape_frontmatter(truncated_desc)
+    schema_block = _render_techarticle_schema(feature, sf_name, fullname, truncated_desc)
 
     page = f"""---
 title: "{safe_title}"
 description: "{safe_desc}"
 ---
 
+{schema_block}
 ## Endpoint
 
 `{endpoint_method} {endpoint_path}` ({mode_label})
@@ -467,7 +527,7 @@ def generate_index_page(features: list[dict]) -> str:
             sf_fullname = sf.get("fullname", sf["name"])
             sf_desc = sf.get("description", "")
             # Truncate description for card
-            short_desc = truncate_at_word(sf_desc, 120)
+            short_desc = truncate_at_sentence(sf_desc, 120)
             card_items.append(
                 f'  <Card title="{sf_fullname}" icon="{icon}" href="/v3/expert-models/features/{fname}/{sf_slug}">\n'
                 f"    {short_desc}\n"

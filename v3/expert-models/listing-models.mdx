@@ -15,7 +15,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "expert models", "multi-provider"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-05-07T00:00:00Z"
+  dateModified="2026-05-22T00:00:00Z"
 />
 
 Use the `/v3/info` endpoints to discover all available expert model features, providers, and models.
@@ -92,6 +92,10 @@ for model in details.get("models", []):
 
 <Tip>
 You can also browse all features and providers visually in the [Eden AI model catalog](https://app.edenai.run/models).
+</Tip>
+
+<Tip icon="earth-europe">
+Need EU data residency? Hit `https://api.eu.edenai.run/v3/info` instead and the response is automatically filtered to EU-eligible providers and models. See [EU Endpoint](/v3/data-governance/eu-endpoint).
 </Tip>
 
 <Note>

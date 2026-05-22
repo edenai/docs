@@ -14,7 +14,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "LLM API", "chat completion", "OpenAI compatible"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-05-07T00:00:00Z"
+  dateModified="2026-05-22T00:00:00Z"
 />
 
 Use the `/v3/models` endpoint to retrieve all LLM models available through Eden AI, along with their capabilities: PDF support, reasoning, web search, and tool calling.
@@ -113,6 +113,10 @@ The `capabilities` object describes what each model supports:
 
 <Tip>
 You can also browse all features and providers visually in the [Eden AI model catalog](https://app.edenai.run/models).
+</Tip>
+
+<Tip icon="earth-europe">
+Need EU data residency? Hit `https://api.eu.edenai.run/v3/models` instead and the list is automatically filtered to EU-eligible models. See [EU Endpoint](/v3/data-governance/eu-endpoint).
 </Tip>
 
 <Note>

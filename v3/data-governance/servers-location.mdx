@@ -15,10 +15,14 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "GDPR", "data residency"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-05-07T00:00:00Z"
+  dateModified="2026-05-22T00:00:00Z"
 />
 
 Eden AI's infrastructure is hosted in secure European data centers to ensure optimal performance and compliance.
+
+<Tip icon="earth-europe">
+Need to keep your AI calls inside the EU? Use the dedicated **EU endpoint** (`api.eu.edenai.run`), which only routes requests through EU-eligible providers and models. See the [EU Endpoint](/v3/data-governance/eu-endpoint) page.
+</Tip>
 
 ## Provider Data Centers
 
@@ -27,4 +31,15 @@ When you make API calls through Eden AI, your data is processed by the underlyin
 <Note>
 To check the server location of a specific provider or model, refer to the [Eden AI model catalog](https://app.edenai.run/models).
 </Note>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="EU Endpoint" icon="earth-europe" href="/v3/data-governance/eu-endpoint">
+    Route requests through EU-eligible providers via api.eu.edenai.run
+  </Card>
+  <Card title="Data Retention" icon="clock-rotate-left" href="/v3/data-governance/data-retention">
+    How long Eden AI keeps your data
+  </Card>
+</CardGroup>
 

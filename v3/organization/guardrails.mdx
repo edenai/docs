@@ -1,0 +1,151 @@
+---
+icon: "shield-check"
+title: "Guardrails"
+description: "Guardrails are reusable usage policies that combine model/provider access rules with rate limits. Assign them to roles, members, or individual API tokens to control exactly which models can be used and how often."
+---
+import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
+
+<TechArticleSchema
+  title={"Guardrails"}
+  description={"Guardrails are reusable usage policies that combine model/provider access rules with rate limits. Assign them to roles, members, or individual API tokens to control exactly which models can be used and how often."}
+  path="v3/organization/guardrails"
+  articleSection="Organization"
+  about={"Access Control"}
+  proficiencyLevel="Intermediate"
+  keywords={["Eden AI", "guardrails", "usage policy", "access control", "rate limits", "model restrictions"]}
+  datePublished="2026-06-08T00:00:00Z"
+  dateModified="2026-06-08T00:00:00Z"
+/>
+
+A **guardrail** is a reusable usage policy that controls two things:
+
+- **Model access** — which providers and models can be called (allow / deny lists).
+- **Rate limits** — how many requests can be made over a given period.
+
+You define a guardrail once at the organisation level, then assign it to a **role**, a **member**, or an individual **API token**. This lets you, for example, give one team access only to a curated set of models, or cap a shared token to a low request rate.
+
+<Note>
+Guardrails are part of the advanced organisation features. See [plans and pricing](https://www.edenai.co/pricing) for availability.
+</Note>
+
+## How guardrails resolve
+
+A guardrail can be attached at several levels. When a request comes in, Eden AI resolves the policy **per field, most specific wins**:
+
+```
+token  →  user  →  role  →  organisation default
+```
+
+For each field (`model_rules` and `rate_limit`) independently, Eden AI uses the value from the most specific level that has it set. A level that leaves a field unset (`null`) inherits from the next level down. This means a token can override the model rules while still inheriting the rate limit from its role, for example.
+
+## Model rules
+
+`model_rules` is a JSON policy with a `default` action and an ordered list of `rules`. Rules are evaluated **in order, and the first match wins**; if nothing matches, the `default` applies.
+
+```json
+{
+  "default": "allow",
+  "rules": [
+    { "pattern": "openai/gpt-4o", "action": "deny" },
+    { "pattern": "anthropic/*",   "action": "allow" }
+  ]
+}
+```
+
+| Field | Values | Description |
+| --- | --- | --- |
+| `default` | `allow` \| `deny` | What happens when no rule matches. |
+| `rules[].pattern` | `provider/model` or `provider/*` | The model to match. `*` wildcards the model (and `*/*` matches everything). |
+| `rules[].action` | `allow` \| `deny` | Whether to permit or block matching requests. |
+| `rules[].features` | list of strings *(optional)* | Restrict the rule to specific features, e.g. `["llm/chat"]` or `["image/generation"]`. Omit to apply to all features. |
+
+A request that hits a `deny` rule is rejected with a `403 Forbidden`.
+
+<Tip>
+Two common patterns:
+- **Allow-list** — start with `"default": "deny"` and add `allow` rules for the exact models you permit.
+- **Deny-list** — start with `"default": "allow"` and add `deny` rules for models you want to block.
+</Tip>
+
+### Examples
+
+**Only allow Anthropic models:**
+
+```json
+{
+  "default": "deny",
+  "rules": [
+    { "pattern": "anthropic/*", "action": "allow" }
+  ]
+}
+```
+
+**Allow everything except a specific model, and only for chat:**
+
+```json
+{
+  "default": "allow",
+  "rules": [
+    { "pattern": "openai/gpt-4o", "action": "deny", "features": ["llm/chat"] }
+  ]
+}
+```
+
+## Rate limits
+
+The `rate_limit` field overrides how many requests are allowed over a period. It uses the format `N/period`, where `period` is `second`, `minute`, `hour`, or `day`:
+
+```
+10/second
+100/minute
+5000/hour
+```
+
+Leave `rate_limit` unset to inherit the rate from the next level (role → organisation default).
+
+## Managing guardrails
+
+You can create and assign guardrails from the [Eden AI dashboard](https://app.edenai.run/), or via the User Management API.
+
+Create a guardrail:
+
+```bash
+curl -X POST https://api.edenai.run/v2/user/guardrails/ \
+  -H "Authorization: Bearer <api_key>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Anthropic only",
+    "description": "Restrict this team to Anthropic models",
+    "model_rules": {
+      "default": "deny",
+      "rules": [{ "pattern": "anthropic/*", "action": "allow" }]
+    },
+    "rate_limit": "100/minute"
+  }'
+```
+
+Assign it to a member:
+
+```bash
+curl -X PUT https://api.edenai.run/v2/user/members/<email>/guardrail/ \
+  -H "Authorization: Bearer <api_key>" \
+  -H "Content-Type: application/json" \
+  -d '{ "guardrail_id": "<id>" }'
+```
+
+Assign it to a specific custom token:
+
+```bash
+curl -X PUT https://api.edenai.run/v2/user/members/<email>/tokens/<token_name>/guardrail/ \
+  -H "Authorization: Bearer <api_key>" \
+  -H "Content-Type: application/json" \
+  -d '{ "guardrail_id": "<id>" }'
+```
+
+Other endpoints: `GET /v2/user/guardrails/` (list), `GET|PUT|DELETE /v2/user/guardrails/<id>/` (manage a single guardrail). A guardrail that is still assigned to a role, member, or token cannot be deleted.
+
+## Related
+
+- [Users & Organisation](/v3/organization/users-organisation) — assign guardrails to roles via RBAC.
+- [Custom API Keys](/v3/general/custom-api-keys) — per-token budgets that pair well with per-token guardrails.
+- [Rate Limits](/v3/overview/rate-limits) — how default rate limiting works.

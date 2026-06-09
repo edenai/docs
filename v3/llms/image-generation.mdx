@@ -154,6 +154,7 @@ Unknown fields are forwarded to the provider unchanged.
 ```python Python
 import base64
 
+# Assuming `result` is the response from POST /v3/images/generations above
 image = result["data"][0]
 
 if image["b64_json"]:
@@ -168,7 +169,7 @@ else:
 </CodeGroup>
 
 <Warning>
-Provider-hosted `url`s are short-lived. If you need long retention, download the bytes yourself, or use [`/v3/universal-ai`](/v3/how-to/universal-ai/text-features) which stores results in Eden's S3 and returns a long-lived URL.
+Provider-hosted `url`s are short-lived. If you need long retention, download the bytes yourself, or use the `/v3/universal-ai` endpoint, which stores results in Eden's S3 and returns a long-lived URL.
 </Warning>
 
 ## Editing images

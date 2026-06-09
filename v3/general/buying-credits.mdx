@@ -54,6 +54,16 @@ When your balance drops below the threshold, credits are purchased automatically
 Auto-refill is strongly recommended for production applications. A depleted balance causes API requests to fail with a `402 Payment Required` error.
 </Tip>
 
+## Postpaid Billing (Monthly Invoice)
+
+By default, accounts are **prepaid**: you top up credits and usage draws them down. Larger teams can instead switch to **postpaid** billing, where usage accrues over the month and is settled by invoice (default payment terms: 30 days) rather than paid up front.
+
+Postpaid accounts can set an optional **monthly spend limit** to cap usage and avoid surprises. Once the limit is reached, further requests are blocked until the next billing period.
+
+<Note>
+Postpaid billing is arranged with the Eden AI team as part of an Advanced AI Platform / Enterprise plan. [Contact us](https://www.edenai.co/pricing) to enable it for your organisation.
+</Note>
+
 ## Checking Your Balance
 
 You can check your current credit balance in the [Eden AI dashboard](https://app.edenai.run/) or programmatically via the [monitoring endpoint](/v3/general/monitoring).

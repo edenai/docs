@@ -37,7 +37,7 @@ Image models are only available on `/v3/images/*`. Sending one to `/v3/chat/comp
 </Warning>
 
 <Info>
-This is different from [Expert Model image generation](/v3/expert-models/features/image/generation), which wraps Eden's feature API and uploads results to long-lived storage. Use the `/v3/images` endpoints when you want an OpenAI-compatible, drop-in image surface.
+This is different from [Expert Model image generation](/v3/expert-models/features/image/generation), which wraps Eden's feature API for providers like DALL-E and Stable Diffusion. Use the `/v3/images` endpoints when you want an OpenAI-compatible, drop-in image surface.
 </Info>
 
 ## Models
@@ -168,9 +168,9 @@ else:
 ```
 </CodeGroup>
 
-<Warning>
-Provider-hosted `url`s are short-lived. If you need long retention, download the bytes yourself, or use the `/v3/universal-ai` endpoint, which stores results in Eden's S3 and returns a long-lived URL.
-</Warning>
+<Note>
+Some providers return a hosted `url` instead of inline `b64_json`. Download the image if you want to keep it, since those URLs can expire.
+</Note>
 
 ## Editing images
 
@@ -219,13 +219,12 @@ curl https://api.edenai.run/v3/images/models \
 - **No streaming.** `stream: true` is forwarded to the provider but the partial-image pipeline is not wired up.
 - **No `@edenai` router or `fallbacks`.** Specify a single explicit `provider/model`.
 - **`/v3/images/variations` is not implemented.**
-- **`file_id` lookups resolve to a presigned URL.** Providers that require raw bytes (currently `openai/gpt-image-*`) will return a 400 — pass a `data:` URL for those.
 
 ## Next Steps
 
 <CardGroup cols={2}>
   <Card title="Expert Image Generation" icon="palette" href="/v3/expert-models/features/image/generation">
-    Use Eden's feature API for DALL-E, Stable Diffusion, and long-lived storage
+    Use Eden's feature API for DALL-E, Stable Diffusion, and more
   </Card>
   <Card title="Chat Completions" icon="comment-dots" href="/v3/llms/chat-completions">
     Standard text chat completions reference

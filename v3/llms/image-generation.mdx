@@ -15,7 +15,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "LLM API", "chat completion", "OpenAI compatible"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-06-09T00:00:00Z"
+  dateModified="2026-05-07T00:00:00Z"
 />
 
 Generate and edit images through the chat completions endpoint using LLMs that natively support image output.
@@ -28,7 +28,7 @@ The main image-capable LLM available through Eden AI is Google's Gemini Flash Im
 
 | Model | Model string | Provider |
 |---|---|---|
-| **Gemini 2.5 Flash Image / 3 Pro Image** | `google/gemini-2.5-flash-image`, `google/gemini-3-pro-image-preview` | Google |
+| **Gemini 2.5 / 3.1 Flash Image** | `google/gemini-2.5-flash-image`, `google/gemini-3.1-flash-image-preview` | Google |
 
 It supports:
 
@@ -62,7 +62,7 @@ headers = {
 }
 
 payload = {
-    "model": "google/gemini-2.5-flash-image",
+    "model": "google/gemini-3.1-flash-image-preview",
     "messages": [
         {"role": "user", "content": "A nano banana dish in a fancy restaurant, cinematic lighting"}
     ],
@@ -82,7 +82,7 @@ curl -X POST https://api.edenai.run/v3/chat/completions \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "google/gemini-2.5-flash-image",
+    "model": "google/gemini-3.1-flash-image-preview",
     "messages": [
       {"role": "user", "content": "A nano banana dish in a fancy restaurant"}
     ],
@@ -120,7 +120,7 @@ with open("input.jpg", "rb") as f:
     image_b64 = base64.b64encode(f.read()).decode("utf-8")
 
 payload = {
-    "model": "google/gemini-2.5-flash-image",
+    "model": "google/gemini-3.1-flash-image-preview",
     "messages": [
         {
             "role": "user",
@@ -163,7 +163,7 @@ The generated image is returned as a **base64-encoded data URL** inside the assi
 {
   "id": "chatcmpl-...",
   "object": "chat.completion",
-  "model": "google/gemini-2.5-flash-image",
+  "model": "google/gemini-3.1-flash-image-preview",
   "choices": [
     {
       "index": 0,

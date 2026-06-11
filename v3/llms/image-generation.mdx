@@ -1,185 +1,150 @@
 ---
 icon: "image"
 title: "Image Generation"
-description: "Generate and edit images through the chat completions endpoint using LLMs that natively support image output."
+description: "Generate and edit images with the OpenAI-compatible /v3/images endpoints."
 ---
 
 import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
 
 <TechArticleSchema
   title={"Image Generation"}
-  description={"Generate and edit images through the chat completions endpoint using LLMs that natively support image output."}
+  description={"Generate and edit images with the OpenAI-compatible /v3/images endpoints."}
   path="v3/llms/image-generation"
   articleSection="LLMs"
   about={"LLM API"}
   proficiencyLevel="Intermediate"
-  keywords={["Eden AI", "AI API", "LLM API", "chat completion", "OpenAI compatible"]}
+  keywords={["Eden AI", "AI API", "image generation", "image editing", "OpenAI compatible", "gpt-image", "gemini image"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-05-07T00:00:00Z"
+  dateModified="2026-06-11T00:00:00Z"
 />
 
-Generate and edit images through the chat completions endpoint using LLMs that natively support image output.
+Generate and edit images through Eden AI's OpenAI-compatible image endpoints. Point any OpenAI client at `https://api.edenai.run/v3` and the images API works as a drop-in replacement.
 
 ## Overview
 
-Some LLMs can produce images directly as part of a chat response — no separate endpoint required. Instead of calling a dedicated image API, you send a normal chat completion request and the model returns a base64-encoded image in the assistant message.
+Image models are served by dedicated image endpoints — **not** the chat completions endpoint:
 
-The main image-capable LLM available through Eden AI is Google's Gemini Flash Image family:
-
-| Model | Model string | Provider |
+| Method | Path | Purpose |
 |---|---|---|
-| **Gemini 2.5 / 3.1 Flash Image** | `google/gemini-2.5-flash-image`, `google/gemini-3.1-flash-image-preview` | Google |
+| `POST` | `/v3/images/generations` | Generate one or more images from a text prompt |
+| `POST` | `/v3/images/edits` | Edit an existing image with a prompt (optional mask) |
+| `GET`  | `/v3/images/models` | List the image models available in your region |
 
-It supports:
+Both endpoints return the standard OpenAI image shape — `data: [{ url \| b64_json }]` — plus Eden's `cost` (USD) and `provider` fields.
 
-- **Text-to-image** — generate an image from a prompt
-- **Image editing** — modify a provided input photo
-
-The endpoint stays the same:
-
-```
-POST /v3/chat/completions
-```
+<Warning>
+Image models are only available on `/v3/images/*`. Sending one to `/v3/chat/completions` returns `400 — Model(s) do not support /chat/completions`.
+</Warning>
 
 <Info>
-Image-capable LLMs are different from [Expert Model image generation](/v3/expert-models/features/image/generation) — which wraps dedicated image APIs like DALL-E or Stable Diffusion. Use LLM image generation when you want the model to reason about the prompt and output an image in the same turn.
+This is different from [Expert Model image generation](/v3/expert-models/features/image/generation), which wraps Eden's feature API for providers like DALL-E and Stable Diffusion. Use the `/v3/images` endpoints when you want an OpenAI-compatible, drop-in image surface.
 </Info>
 
-## Google Gemini Image Models
+## Models
 
-Gemini image models accept a standard text prompt plus an optional `image_config` block that controls the output resolution and aspect ratio.
+The image surface spans many providers. A few common model strings:
 
-### Text-to-image
+| Provider | Model string |
+|---|---|
+| Google | `google/gemini-2.5-flash-image`, `google/gemini-3-pro-image-preview`, `google/imagen-4.0-generate-001` |
+| OpenAI | `openai/gpt-image-1`, `openai/gpt-image-1-mini` |
+| Stability | `stabilityai/sd3.5-large` |
+| Amazon | `amazon/amazon.nova-canvas-v1:0` |
+
+Call `GET /v3/images/models` for the full, region-aware list (image models also appear in `GET /v3/models`, so the OpenAI SDK's `client.models.list()` returns them too).
+
+## Generating images
 
 <CodeGroup>
 ```python Python
 import requests
 
-url = "https://api.edenai.run/v3/chat/completions"
+url = "https://api.edenai.run/v3/images/generations"
 headers = {
     "Authorization": "Bearer YOUR_API_KEY",
     "Content-Type": "application/json",
 }
 
 payload = {
-    "model": "google/gemini-3.1-flash-image-preview",
-    "messages": [
-        {"role": "user", "content": "A nano banana dish in a fancy restaurant, cinematic lighting"}
-    ],
-    "image_config": {
-        "aspect_ratio": "16:9",
-        "image_size": "2K"
-    }
+    "model": "google/gemini-2.5-flash-image",
+    "prompt": "A nano banana dish in a fancy restaurant, cinematic lighting",
+    "size": "1024x1024",
+    "n": 1,
 }
 
 response = requests.post(url, headers=headers, json=payload)
 result = response.json()
-print(result["choices"][0]["message"]["content"])
+
+# Each item carries either a hosted `url` or an inline base64 `b64_json`
+image = result["data"][0]
+print(image["url"] or image["b64_json"][:60])
 ```
 
 ```bash cURL
-curl -X POST https://api.edenai.run/v3/chat/completions \
+curl -X POST https://api.edenai.run/v3/images/generations \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "google/gemini-3.1-flash-image-preview",
-    "messages": [
-      {"role": "user", "content": "A nano banana dish in a fancy restaurant"}
-    ],
-    "image_config": {"aspect_ratio": "16:9", "image_size": "2K"}
+    "model": "google/gemini-2.5-flash-image",
+    "prompt": "A nano banana dish in a fancy restaurant, cinematic lighting",
+    "size": "1024x1024",
+    "n": 1
   }'
 ```
 </CodeGroup>
 
-### Supported `image_config` values
-
-| Field | Description | Allowed values |
-|---|---|---|
-| `aspect_ratio` | Output shape | `1:1`, `16:9`, `9:16`, `4:3`, `3:4`, `21:9`, `2:3`, `3:2`, `4:5`, `5:4`, `1:4`, `4:1`, `1:8`, `8:1` |
-| `image_size` | Output resolution | `512` (Gemini 3.1 Flash only), `1K`, `2K`, `4K` |
-
-Allowed values vary slightly per model — check the [Gemini image generation docs](https://ai.google.dev/gemini-api/docs/image-generation) for per-model support.
-
-### Image editing (with input photo)
-
-Pass an existing image to the model alongside your edit instruction. Use the standard OpenAI multimodal content format:
+Because the surface is OpenAI-compatible, the official OpenAI SDK works unchanged — just set `base_url`:
 {/* skip-test */}
 <CodeGroup>
-```python Python
-import base64
-import requests
+```python OpenAI SDK
+from openai import OpenAI
 
-url = "https://api.edenai.run/v3/chat/completions"
-headers = {
-    "Authorization": "Bearer YOUR_API_KEY",
-    "Content-Type": "application/json",
-}
+client = OpenAI(base_url="https://api.edenai.run/v3", api_key="YOUR_API_KEY")
 
-# Encode a local image as base64
-with open("input.jpg", "rb") as f:
-    image_b64 = base64.b64encode(f.read()).decode("utf-8")
-
-payload = {
-    "model": "google/gemini-3.1-flash-image-preview",
-    "messages": [
-        {
-            "role": "user",
-            "content": [
-                {"type": "text", "text": "Turn this photo into a watercolor painting, keep the composition"},
-                {
-                    "type": "image_url",
-                    "image_url": {"url": f"data:image/jpeg;base64,{image_b64}"}
-                }
-            ]
-        }
-    ],
-    "image_config": {
-        "aspect_ratio": "1:1",
-        "image_size": "2K"
-    }
-}
-
-response = requests.post(url, headers=headers, json=payload)
-result = response.json()
-print(result["choices"][0]["message"]["content"])
+result = client.images.generate(
+    model="google/gemini-2.5-flash-image",
+    prompt="A nano banana dish in a fancy restaurant, cinematic lighting",
+    size="1024x1024",
+    n=1,
+)
+print(result.data[0].url or result.data[0].b64_json[:60])
 ```
-
 </CodeGroup>
 
-You can also pass a remote URL directly instead of base64:
+### Request parameters
+
+| Field | Required | Description |
+|---|---|---|
+| `model` | yes | `provider/model`, e.g. `google/gemini-2.5-flash-image` |
+| `prompt` | yes | Text description of the image to generate (1–32,000 chars) |
+| `n` | no | Number of images to generate (1–10) |
+| `size` | no | Output resolution, e.g. `1024x1024`, `1536x1024`, `auto`. Allowed values depend on the model |
+| `quality` | no | `standard`, `hd`, `auto` — accepted values depend on the model |
+| `response_format` | no | `url` or `b64_json`, forwarded to providers that honor it |
+
+Unknown fields are forwarded to the provider unchanged.
+
+## Response format
 
 ```json
 {
-  "type": "image_url",
-  "image_url": {"url": "https://example.com/photo.jpg"}
-}
-```
-
-## Response Format
-
-The generated image is returned as a **base64-encoded data URL** inside the assistant message content.
-
-```json
-{
-  "id": "chatcmpl-...",
-  "object": "chat.completion",
-  "model": "google/gemini-3.1-flash-image-preview",
-  "choices": [
+  "created": 1779792103,
+  "data": [
     {
-      "index": 0,
-      "message": {
-        "role": "assistant",
-        "content": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUg..."
-      },
-      "finish_reason": "stop"
+      "b64_json": "iVBORw0KGgoAAAANSUhEUg...",
+      "url": null,
+      "revised_prompt": null
     }
   ],
+  "output_format": "png",
+  "size": "1024x1024",
   "usage": {
-    "prompt_tokens": 14,
-    "completion_tokens": 512,
-    "total_tokens": 526
+    "total_tokens": 291,
+    "input_tokens": 19,
+    "output_tokens": 272
   },
-  "cost": 0.042
+  "cost": 0.010975,
+  "provider": "google"
 }
 ```
 
@@ -188,24 +153,78 @@ The generated image is returned as a **base64-encoded data URL** inside the assi
 <CodeGroup>
 ```python Python
 import base64
-import re
 
-content = result["choices"][0]["message"]["content"]
-# Strip the "data:image/...;base64," prefix if present
-match = re.match(r"data:image/\w+;base64,(.*)", content)
-image_b64 = match.group(1) if match else content
+# Assuming `result` is the response from POST /v3/images/generations above
+image = result["data"][0]
 
-with open("output.png", "wb") as f:
-    f.write(base64.b64decode(image_b64))
+if image["b64_json"]:
+    with open("output.png", "wb") as f:
+        f.write(base64.b64decode(image["b64_json"]))
+else:
+    # The provider returned a hosted URL instead of inline base64
+    import requests
+    with open("output.png", "wb") as f:
+        f.write(requests.get(image["url"]).content)
+```
+</CodeGroup>
+
+<Note>
+Some providers return a hosted `url` instead of inline `b64_json`. Download the image if you want to keep it, since those URLs can expire.
+</Note>
+
+## Editing images
+
+`POST /v3/images/edits` takes the same fields as generations plus an `images` array. Each entry sets exactly one of `file_id` (returned by Eden's `/v3/upload/...` endpoints) or `image_url` (an `https://` URL or a `data:image/...;base64,...` URL). An optional `mask` (same shape) marks the regions to edit.
+
+The endpoint dispatches on `Content-Type`: send `application/json` for the `images[]` form below, or `multipart/form-data` for the classic OpenAI SDK file-upload form.
+{/* skip-test */}
+<CodeGroup>
+```python Python
+import requests
+
+url = "https://api.edenai.run/v3/images/edits"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json",
+}
+
+payload = {
+    "model": "google/gemini-2.5-flash-image",
+    "prompt": "Add a small red hat",
+    "images": [
+        {"image_url": "https://example.com/photo.png"}
+    ],
+    "size": "1024x1024",
+}
+
+response = requests.post(url, headers=headers, json=payload)
+result = response.json()
+print(result["data"][0]["b64_json"][:60])
+```
+</CodeGroup>
+
+<Info>
+`image_url` with an `https://` URL works for providers that accept remote URLs (e.g. Gemini). For `openai/gpt-image-*`, pass a `data:` URL or upload the file via `/v3/upload/...` and reference it by `file_id` instead — those models do not accept remote URLs.
+</Info>
+
+## Listing image models
+
+```bash cURL
+curl https://api.edenai.run/v3/images/models \
+  -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
-</CodeGroup>
+## Limitations
+
+- **No streaming.** `stream: true` is forwarded to the provider but the partial-image pipeline is not wired up.
+- **No `@edenai` router or `fallbacks`.** Specify a single explicit `provider/model`.
+- **`/v3/images/variations` is not implemented.**
 
 ## Next Steps
 
 <CardGroup cols={2}>
   <Card title="Expert Image Generation" icon="palette" href="/v3/expert-models/features/image/generation">
-    Use dedicated image APIs like DALL-E or Stable Diffusion
+    Use Eden's feature API for DALL-E, Stable Diffusion, and more
   </Card>
   <Card title="Chat Completions" icon="comment-dots" href="/v3/llms/chat-completions">
     Standard text chat completions reference

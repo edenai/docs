@@ -1,0 +1,110 @@
+---
+icon: "shield-check"
+title: "Guardrails"
+description: "Guardrails are reusable usage policies that control which models your team can call and how often. Create them in the dashboard and attach them to roles, members, or API tokens."
+---
+import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
+
+<TechArticleSchema
+  title={"Guardrails"}
+  description={"Guardrails are reusable usage policies that control which models your team can call and how often. Create them in the dashboard and attach them to roles, members, or API tokens."}
+  path="v3/organization/guardrails"
+  articleSection="Organization"
+  about={"Access Control"}
+  proficiencyLevel="Intermediate"
+  keywords={["Eden AI", "guardrails", "usage policy", "access control", "rate limits", "model restrictions"]}
+  datePublished="2026-06-11T00:00:00Z"
+  dateModified="2026-06-11T00:00:00Z"
+/>
+
+A **guardrail** is a reusable usage policy that controls two things:
+
+- **Model access**: which providers and models can be called.
+- **Rate limits**: how many requests can be made over a given period.
+
+You create a guardrail once, then attach it to a **role**, a **member**, or an individual **API token**. For example, one team can be limited to a curated set of models, or a shared token can be capped to a low request rate.
+
+<Note>
+Guardrails are part of the advanced organisation features. See [plans and pricing](https://www.edenai.co/pricing) for availability.
+</Note>
+
+## Creating a guardrail
+
+<Steps>
+<Step title="Open Guardrails in Settings">
+In the [Eden AI dashboard](https://app.edenai.run/), go to **Settings** and, under **Organization**, select **Guardrails**.
+</Step>
+<Step title="Create a new guardrail">
+Click **+ Create Guardrail** and give it a **Name** and an optional **Description**.
+</Step>
+<Step title="Set a rate limit (optional)">
+In the **Rate Limit** field, enter a limit in the form `N/period`, for example `10/minute`. Leave it blank to inherit the rate from the next level up. See [Rate limits](#rate-limits) below.
+</Step>
+<Step title="Restrict models (optional)">
+Turn on **Enable model rules** to control which models can be used, then define your allow/deny rules. See [Model rules](#model-rules) below.
+</Step>
+<Step title="Save">
+Click **Create Guardrail**. It now appears in your guardrails list, ready to assign.
+</Step>
+</Steps>
+
+## Model rules
+
+When you enable model rules, a guardrail uses a **default action** plus a list of **exceptions**:
+
+- **Default**: `allow` or `deny` every model unless a rule says otherwise.
+- **Rules**: each rule targets a model by pattern and sets its action to `allow` or `deny`. Rules are checked in order and the first match wins; if none match, the default applies.
+
+Patterns can target a single model or a whole provider:
+
+| Pattern | Matches |
+| --- | --- |
+| `openai/gpt-4o` | One specific model |
+| `anthropic/*` | Every model from that provider |
+| `*/*` | Every model |
+
+Each rule can optionally be scoped to specific **features** (e.g. only `llm/chat`, or only `image/generation`). A request that hits a `deny` rule is rejected.
+
+<Tip>
+Two common setups:
+- **Allow-list**: set the default to **deny**, then add **allow** rules for only the models you permit.
+- **Deny-list**: set the default to **allow**, then add **deny** rules for the models you want to block.
+</Tip>
+
+## Rate limits
+
+The rate limit uses the format `N/period`, where `period` is `second`, `minute`, `hour`, or `day`:
+
+```
+10/second
+100/minute
+5000/hour
+```
+
+Leave the rate limit empty on a guardrail to inherit it from the next level up (role → organisation default).
+
+## Assigning a guardrail
+
+A guardrail does nothing until it's attached to something. You can assign it to:
+
+- **A role**: from **Settings → Roles & Permissions**, so everyone with that role inherits the policy.
+- **A member**: from **Settings → Members**, to apply it to one person.
+- **An API token**: to constrain a single key (for example a shared or CI token).
+
+When a request comes in, Eden AI resolves the policy **per field, most specific wins**:
+
+```
+token  →  member  →  role  →  organisation default
+```
+
+For each setting (model rules and rate limit) independently, Eden AI uses the value from the most specific level that has it set, and inherits the rest. So a token can override the model rules while still inheriting its role's rate limit.
+
+<Note>
+Guardrails can also be managed programmatically through the User Management API if you need to automate provisioning. See the [API Reference](https://www.edenai.co/docs) for the `guardrails` endpoints.
+</Note>
+
+## Related
+
+- [Users & Organisation](/v3/organization/users-organisation): roles, permissions, and members.
+- [Custom API Keys](/v3/general/custom-api-keys): per-token budgets that pair well with per-token guardrails.
+- [Rate Limits](/v3/overview/rate-limits): how default rate limiting works.

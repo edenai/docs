@@ -1,0 +1,89 @@
+---
+icon: "users"
+title: "Users & Organisation"
+description: "Eden AI provides team and organisation management features for companies that need structured access control, role-based permissions, and governance over their AI usage."
+---
+import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
+
+<TechArticleSchema
+  title={"Users & Organisation"}
+  description={"Eden AI provides team and organisation management features for companies that need structured access control, role-based permissions, and governance over their AI usage."}
+  path="v3/organization/users-organisation"
+  articleSection="Organization"
+  about={"API Configuration"}
+  proficiencyLevel="Intermediate"
+  keywords={["Eden AI", "AI API", "RBAC", "roles", "permissions", "organisation"]}
+  datePublished="2026-06-11T00:00:00Z"
+  dateModified="2026-06-11T00:00:00Z"
+/>
+
+Eden AI provides team and organisation management features for companies that need structured access control, role-based permissions, and governance over their AI usage.
+
+<Note>
+Advanced team and organisation features are available on the **Advanced AI Platform** plan. See [plans and pricing](https://www.edenai.co/pricing) for details.
+</Note>
+
+All organisation management lives under **Settings → Organization** in the [Eden AI dashboard](https://app.edenai.run/), which has sections for **General**, **Members**, **Roles & Permissions**, and **Guardrails**.
+
+## Members & Invitations
+
+Go to **Settings → Members** to manage your team. Click **Add member** to invite teammates by email. Eden AI creates an account for each collaborator and sends them an invitation. Members share the organisation's credit balance and can be given their own role and [guardrails](/v3/organization/guardrails).
+
+The organisation **owner** (the account that created the organisation) always has full access and is not affected by role restrictions.
+
+## Roles & Permissions
+
+Open **Settings → Roles & Permissions** to manage roles and what each one can do. Every member is assigned a role, and access to organisation management actions is checked against that role's permissions.
+
+### Permissions
+
+A role grants any combination of four permissions:
+
+| Permission | Grants |
+|------------|--------|
+| **Organization View** | View organisation members, roles, and settings |
+| **Organization Management** | Manage organisation settings, roles, and configuration |
+| **Members Management** | Invite/remove members, assign roles, view all members' usage history |
+| **Billing Management** | Manage billing settings and payment methods |
+
+### Default roles
+
+Every organisation comes with three built-in **System** roles:
+
+| Role | Permissions |
+|------|-------------|
+| **Manager** | Full access to all four permissions |
+| **Billing** | Organization View + Billing Management |
+| **Member** | Organization View (read-only), the default for new members |
+
+### Custom roles
+
+If the built-in roles don't fit, click **+ Create Role** to define a custom role with any combination of permissions. A custom role can also carry a [guardrail](/v3/organization/guardrails), so everyone with that role inherits the same model-access and rate-limit policy.
+
+## Guardrails
+
+Beyond who can manage the organisation, you can control **which models members can call and how often** using [guardrails](/v3/organization/guardrails): reusable usage policies that combine model/provider access rules with rate limits. Guardrails can be attached to a role, an individual member, or a single API token, and resolve most-specific-first (token → member → role → organisation default).
+
+## Single Sign-On & Directory Sync
+
+For enterprise teams, Eden AI supports:
+
+- **SSO**: enforce login through your identity provider (Okta, Azure AD, and others via WorkOS). Optionally require SSO for all members and route users by email domain.
+- **SCIM directory sync**: automatically provision and de-provision members from your IdP, and map IdP groups to Eden AI roles so role assignment stays in sync with your directory.
+
+Contact the Eden AI team to set up SSO and SCIM for your organisation.
+
+## Audit Logs
+
+When enabled, administrative actions (member invites and removals, role changes, RBAC and SSO configuration changes, API key lifecycle events) are recorded to your audit log for compliance and review.
+
+## Getting Started
+
+1. Contact the Eden AI team to upgrade to the [Advanced AI Platform plan](https://www.edenai.co/pricing).
+2. Create your organisation in the [Eden AI dashboard](https://app.edenai.run/).
+3. Invite team members from **Settings → Members**.
+4. Assign roles from **Settings → Roles & Permissions**, then attach [guardrails](/v3/organization/guardrails) as needed.
+
+<Tip>
+The **Self-serve AI API Gateway** plan already includes multiple API keys and unlimited seats. Combine with [Custom API Keys](/v3/general/custom-api-keys) to give each team member their own key with an individual budget.
+</Tip>

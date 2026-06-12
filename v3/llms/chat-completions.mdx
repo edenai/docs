@@ -14,7 +14,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "LLM API", "chat completion", "OpenAI compatible"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-05-07T00:00:00Z"
+  dateModified="2026-06-11T00:00:00Z"
 />
 
 Build conversational AI applications using Eden AI's OpenAI-compatible chat completions endpoint.
@@ -195,6 +195,65 @@ print(result["choices"][0]["message"]["content"])
 ```
 </CodeGroup>
 
+## Extended Thinking (Claude)
+
+For Anthropic **Claude** models, the `thinking` parameter enables extended reasoning: the model produces internal thinking content before its final answer, which can improve quality on complex tasks.
+
+```json
+{
+  "thinking": {
+    "type": "enabled",
+    "budget_tokens": 2000
+  }
+}
+```
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `type` | string | `enabled` or `disabled`. |
+| `budget_tokens` | integer | Maximum tokens Claude may spend thinking. Minimum **1024**, and it must be **greater than `max_completion_tokens`**. Counts toward your `max_tokens` limit. |
+
+<CodeGroup>
+```python Python
+import requests
+
+url = "https://api.edenai.run/v3/chat/completions"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+payload = {
+    "model": "anthropic/claude-sonnet-4-5",
+    "messages": [
+        {"role": "user", "content": "How many r's are in strawberry? Think it through."}
+    ],
+    "thinking": {
+        "type": "enabled",
+        "budget_tokens": 2000
+    }
+}
+
+response = requests.post(url, headers=headers, json=payload)
+print(response.json())
+```
+
+```bash cURL
+curl -X POST https://api.edenai.run/v3/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-sonnet-4-5",
+    "messages": [{"role": "user", "content": "Think it through: how many r in strawberry?"}],
+    "thinking": {"type": "enabled", "budget_tokens": 2000}
+  }'
+```
+</CodeGroup>
+
+<Note>
+Extended thinking is only supported on Anthropic Claude models. When `thinking` is enabled, `top_p` is ignored.
+</Note>
+
 ## Available Parameters
 
 | Parameter | Type | Default | Description |
@@ -207,6 +266,7 @@ print(result["choices"][0]["message"]["content"])
 | `top_p` | float | 1.0 | Nucleus sampling threshold |
 | `frequency_penalty` | float | 0.0 | Penalize repeated tokens (-2 to 2) |
 | `presence_penalty` | float | 0.0 | Penalize topic repetition (-2 to 2) |
+| `thinking` | object | - | Enable Claude's extended thinking. See [Extended Thinking](#extended-thinking-claude). |
 | `fallbacks` | array | - | Backup models tried if `model` fails. |
 
 <Tip>

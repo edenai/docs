@@ -31,6 +31,12 @@
       "canonical": "https://www.edenai.co/docs"
     }
   },
+  "redirects": [
+    {
+      "source": "/v3/general/users-organisation",
+      "destination": "/v3/organization/users-organisation"
+    }
+  ],
   "navigation": {
     "versions": [
       {
@@ -175,9 +181,18 @@
                   "v3/general/sandbox",
                   "v3/general/custom-api-keys",
                   "v3/general/monitoring",
-                  "v3/general/users-organisation",
                   "v3/general/support",
                   "v3/general/byok"
+                ]
+              },
+              {
+                "group": "Organization",
+                "icon": "building",
+                "expanded": false,
+                "divider": true,
+                "pages": [
+                  "v3/organization/users-organisation",
+                  "v3/organization/guardrails"
                 ]
               },
               {

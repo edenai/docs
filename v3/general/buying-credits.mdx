@@ -14,7 +14,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "rate limits", "billing", "monitoring"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-05-07T00:00:00Z"
+  dateModified="2026-06-11T00:00:00Z"
 />
 
 Eden AI uses a **pay-per-use credit system**. Every API response includes a `cost` field showing the charge in USD for that request, so you always know exactly what you are spending.
@@ -27,6 +27,17 @@ Eden AI uses a **pay-per-use credit system**. Every API response includes a `cos
 4. Complete the payment.
 
 Credits are added to your account immediately and are shared across all your API tokens.
+
+## Payment Methods
+
+You can add a card or PayPal to your account, or pay by bank transfer:
+
+| Method | Details |
+| --- | --- |
+| **Credit or debit card** | Visa, Mastercard, Amex · Apple Pay & Google Pay |
+| **PayPal** | Pay with your PayPal account |
+| **Bank transfer** | Wire transfer, no card required (pay at checkout) |
+| **AWS Marketplace** | Buy credits through your AWS account *(coming soon)* |
 
 ## Auto-Refill
 
@@ -42,6 +53,16 @@ When your balance drops below the threshold, credits are purchased automatically
 <Tip>
 Auto-refill is strongly recommended for production applications. A depleted balance causes API requests to fail with a `402 Payment Required` error.
 </Tip>
+
+## Postpaid Billing (Monthly Invoice)
+
+By default, accounts are **prepaid**: you top up credits and usage draws them down. Larger teams can instead switch to **postpaid** billing, where usage accrues over the month and is settled by invoice (default payment terms: 30 days) rather than paid up front.
+
+Postpaid accounts can set an optional **monthly spend limit** to cap usage and avoid surprises. Once the limit is reached, further requests are blocked until the next billing period.
+
+<Note>
+Postpaid billing is arranged with the Eden AI team as part of an Advanced AI Platform / Enterprise plan. [Contact us](https://www.edenai.co/pricing) to enable it for your organisation.
+</Note>
 
 ## Checking Your Balance
 

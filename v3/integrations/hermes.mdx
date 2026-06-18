@@ -29,7 +29,7 @@ Hermes Agent is an open-source, self-hosted AI agent from Nous Research. It runs
 - **Automatic fallbacks**: Configure a backup model that Hermes tries when the primary one fails
 
 <Note>
-Hermes is an **agent**, so every request it sends includes a `tools` (function-calling) parameter. Point it at a model that supports function calling — see [Choosing a model](#choosing-a-model). The `@edenai` smart router is **not** a safe default here because it may route to models without tool support. [More below.](#using-the-edenai-smart-router)
+Hermes is an **agent**, so every request it sends includes a `tools` (function-calling) parameter. Point it at a model that supports function calling — see [Choosing a model](#choosing-a-model).
 </Note>
 
 ## Prerequisites
@@ -115,10 +115,6 @@ Hermes requires **function calling**, so pick a model that supports it. Any `pro
 
 Browse the full catalog at [app.edenai.run/models](https://app.edenai.run/models).
 
-### Using the `@edenai` smart router
-
-Eden AI's [`@edenai` smart router](/v3/llms/smart-routing) automatically picks the best provider per request. However, Hermes always sends a `tools` parameter, and the smart router may select a model that does **not** support function calling — which returns a `400` error (see [Troubleshooting](#request-included-tools-parameter-)). For agent use, pin a function-calling model instead of relying on `@edenai`.
-
 ## Set up a fallback
 
 Hermes can fall back to a backup model when the primary one fails. Point it at a second Eden AI model:
@@ -135,7 +131,7 @@ Verify your Eden AI key — grab a fresh one at [app.edenai.run](https://app.ede
 
 ### `Request included tools parameter, but providers ... do not support function calling`
 
-The selected model can't do function calling, which Hermes requires. This is the common failure when `model.default` is `@edenai` (the smart router can pick a non-tool model). Switch to a function-calling model:
+The selected model can't do function calling, which Hermes requires. Switch to a function-calling model:
 
 ```bash
 hermes config set model.default anthropic/claude-sonnet-4-5

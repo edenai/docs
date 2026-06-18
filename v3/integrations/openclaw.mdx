@@ -1,14 +1,14 @@
 ---
 title: "OpenClaw"
 icon: "/integration-logo/openclaw-icondoc.svg"
-description: "Connect OpenClaw to Eden AI and route your agent through 500+ models with smart routing, automatic fallbacks, and a single API key."
+description: "Connect OpenClaw to Eden AI and route your agent through 500+ models with automatic fallbacks and a single API key."
 ---
 
 import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
 
 <TechArticleSchema
   title={"OpenClaw"}
-  description={"Connect OpenClaw to Eden AI and route your agent through 500+ models with smart routing, automatic fallbacks, and a single API key."}
+  description={"Connect OpenClaw to Eden AI and route your agent through 500+ models with automatic fallbacks and a single API key."}
   path="v3/integrations/openclaw"
   articleSection="Autonomous Agents"
   about={"AI Coding Assistants"}
@@ -18,14 +18,14 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   dateModified="2026-06-18T00:00:00Z"
 />
 
-Connect [OpenClaw](https://openclaw.ai) to Eden AI and route your agent through 500+ models with smart routing, automatic fallbacks, and a single API key.
+Connect [OpenClaw](https://openclaw.ai) to Eden AI and route your agent through 500+ models with automatic fallbacks and a single API key.
 
 ## Overview
 
 OpenClaw is a terminal-based AI coding agent. By pointing it at Eden AI, you get:
 
 - **500+ models**: Access OpenAI, Anthropic, Google, and more through a single API key
-- **Smart routing**: Use the `@edenai` model to automatically pick the best provider per request based on quality, latency, cost and live provider health
+- **One key, many providers**: Switch models by changing a single config value — no per-provider keys
 - **Automatic fallbacks**: Requests reroute to healthy providers if one goes down
 
 Prefer a video walkthrough? Follow along on [YouTube](https://youtu.be/HxIAYOQT90Q).
@@ -39,7 +39,7 @@ Prefer a video walkthrough? Follow along on [YouTube](https://youtu.be/HxIAYOQT9
 
 ### 1. Add Eden AI as a custom provider
 
-OpenClaw stores its config at `~/.openclaw/openclaw.json` (on Windows: `%USERPROFILE%\.openclaw\openclaw.json`). Open it in your editor of choice and add the Eden AI provider with the `@edenai` smart-router model:
+OpenClaw stores its config at `~/.openclaw/openclaw.json` (on Windows: `%USERPROFILE%\.openclaw\openclaw.json`). Open it in your editor of choice and add the Eden AI provider with a function-calling model:
 
 <CodeGroup>
 ```json ~/.openclaw/openclaw.json
@@ -51,8 +51,8 @@ OpenClaw stores its config at `~/.openclaw/openclaw.json` (on Windows: `%USERPRO
       "apiKey": "YOUR_EDEN_AI_API_KEY",
       "models": [
         {
-          "id": "@edenai",
-          "name": "@edenai (Custom Provider)",
+          "id": "anthropic/claude-sonnet-4-5",
+          "name": "Eden AI — Claude Sonnet 4.5",
           "contextWindow": 128000,
           "maxTokens": 16384,
           "input": ["text", "image"],
@@ -75,11 +75,11 @@ OpenClaw stores its config at `~/.openclaw/openclaw.json` (on Windows: `%USERPRO
 ```
 </CodeGroup>
 
-`@edenai` is Eden AI's smart router. For every request it picks the best-performing model based on quality, latency, cost and live provider health. [How smart routing works →](/v3/llms/smart-routing)
+Use any `provider/model` from the Eden AI catalog. Pick one that supports function calling, since OpenClaw sends tools with every request.
 
 <Note>
 A few notes on the config above:
-- **`name`** is just the display label shown in OpenClaw's model picker. If you later switch `id` to a specific model (e.g. `anthropic/claude-sonnet-4-5`), rename this field too so the picker doesn't show a stale label.
+- **`name`** is just the display label shown in OpenClaw's model picker. If you switch `id` to another model, rename this field too so the picker doesn't show a stale label.
 - **`cost`** values are placeholders. Billing is handled on the Eden AI side through your API key, so OpenClaw's local cost tracking isn't used here. Check per-request cost in the [Eden AI dashboard](https://app.edenai.run).
 - **`supportsTools: true`** enables tool/function calling through Eden AI. Set it to `false` only if you want to restrict this provider to plain chat completions.
 </Note>
@@ -92,7 +92,7 @@ Run the built-in wizard:
 openclaw configure
 ```
 
-In the **Model and auth** step, select `@edenai (Custom Provider)` — the provider you defined in Step 1. Accept the defaults for the remaining steps (Workspace, Gateway, Channels, etc.) unless you have specific local-networking or channel needs.
+In the **Model and auth** step, select `Eden AI — Claude Sonnet 4.5` — the provider you defined in Step 1. Accept the defaults for the remaining steps (Workspace, Gateway, Channels, etc.) unless you have specific local-networking or channel needs.
 
 <Note>
 The wizard's **Gateway** step configures OpenClaw's *local* server (port, bind address, auth mode, tailscale exposure) — it does **not** ask for the Eden AI API URL. That's already set as `provider.edenai.baseURL` in Step 1.
@@ -108,18 +108,17 @@ Every LLM call now flows through Eden AI, with built-in fallbacks, unified billi
 
 ## Using specific models
 
-`@edenai` handles routing automatically, but you can target a specific model by replacing the `id` with a `provider/model` string:
+Target any model by setting the `id` to a `provider/model` string:
 
 ```json
-"id": "anthropic/claude-sonnet-4-5"
+"id": "anthropic/claude-opus-4-7"
 ```
 
 Common choices:
 
 | Model | Best for |
 |---|---|
-| `@edenai` | **Default** — smart routing across all providers |
-| `anthropic/claude-sonnet-4-5` | Balanced reasoning |
+| `anthropic/claude-sonnet-4-5` | **Recommended default** — balanced reasoning, reliable tool calling |
 | `anthropic/claude-opus-4-7` | Maximum capability |
 | `anthropic/claude-haiku-4-5` | Fast and cheap |
 | `openai/gpt-5` | OpenAI's frontier model |
@@ -135,7 +134,7 @@ Verify your Eden AI key — grab a fresh one at [app.edenai.run](https://app.ede
 
 ### `model not found`
 
-Ensure the `id` uses the `provider/model` format (or `@edenai` for the smart router). No bare model names.
+Ensure the `id` uses the `provider/model` format (e.g. `anthropic/claude-sonnet-4-5`). No bare model names.
 
 ### Connection issues
 

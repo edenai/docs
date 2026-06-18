@@ -230,8 +230,16 @@
                       "v3/integrations/cline",
                       "v3/integrations/codex-cli",
                       "v3/integrations/continue-dev",
-                      "v3/integrations/openclaw",
                       "v3/integrations/opencode"
+                    ]
+                  },
+                  {
+                    "group": "Autonomous Agents",
+                    "icon": "robot-astromech",
+                    "expanded": false,
+                    "pages": [
+                      "v3/integrations/hermes",
+                      "v3/integrations/openclaw"
                     ]
                   },
                   {

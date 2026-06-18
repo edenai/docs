@@ -1,0 +1,156 @@
+---
+title: "Hermes Agent"
+icon: "/integration-logo/hermes-icondoc.svg"
+description: "Connect Hermes Agent to Eden AI and run the self-hosted, persistent agent on 500+ models with automatic fallbacks and a single API key."
+---
+
+import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
+
+<TechArticleSchema
+  title={"Hermes Agent"}
+  description={"Connect Hermes Agent to Eden AI and run the self-hosted, persistent agent on 500+ models with automatic fallbacks and a single API key."}
+  path="v3/integrations/hermes"
+  articleSection="Autonomous Agents"
+  about={"AI Coding Assistants"}
+  proficiencyLevel="Intermediate"
+  keywords={["Eden AI", "AI API", "Hermes Agent", "Nous Research"]}
+  datePublished="2026-06-15T00:00:00Z"
+  dateModified="2026-06-18T00:00:00Z"
+/>
+
+Connect [Hermes Agent](https://hermes-agent.nousresearch.com) to Eden AI and run the self-hosted, persistent agent on 500+ models with automatic fallbacks and a single API key.
+
+## Overview
+
+Hermes Agent is an open-source, self-hosted AI agent from Nous Research. It runs as a persistent background process with its own memory and evolving skills, and reaches you across the CLI and 20+ messaging platforms. Because Hermes talks to any OpenAI-compatible endpoint, you can point it at Eden AI and get:
+
+- **500+ models**: Access OpenAI, Anthropic, Google, and more through a single API key
+- **One key, many providers**: Switch models by changing a single config value — no per-provider keys
+- **Automatic fallbacks**: Configure a backup model that Hermes tries when the primary one fails
+
+<Note>
+Hermes is an **agent**, so every request it sends includes a `tools` (function-calling) parameter. Point it at a model that supports function calling — see [Choosing a model](#choosing-a-model). The `@edenai` smart router is **not** a safe default here because it may route to models without tool support. [More below.](#using-the-edenai-smart-router)
+</Note>
+
+## Prerequisites
+
+- Hermes Agent already installed. If not, run the one-line installer:
+
+<CodeGroup>
+```bash macOS / Linux / WSL2
+curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
+```
+
+```powershell Windows
+iex (irm https://hermes-agent.nousresearch.com/install.ps1)
+```
+</CodeGroup>
+
+- Eden AI API key from [app.edenai.run](https://app.edenai.run) → **API Keys**
+
+## Setup
+
+### 1. Point Hermes at Eden AI
+
+Configure the `custom` provider with the Eden AI base URL and a function-calling model. Use the built-in `config set` commands — no manual file editing required:
+
+```bash
+hermes config set model.provider custom
+hermes config set model.base_url https://api.edenai.run/v3
+hermes config set model.default anthropic/claude-sonnet-4-5
+```
+
+This writes to Hermes' config file (`hermes config path` prints its location — `~/.hermes/config.yaml` on macOS/Linux, `%LOCALAPPDATA%\hermes\config.yaml` on Windows). The result looks like:
+
+<CodeGroup>
+```yaml config.yaml
+model:
+  provider: custom
+  base_url: https://api.edenai.run/v3
+  default: anthropic/claude-sonnet-4-5
+```
+</CodeGroup>
+
+### 2. Add your API key
+
+Hermes derives the key's environment-variable name from the base URL host, so `api.edenai.run` maps to **`EDENAI_API_KEY`**. Add it to Hermes' secrets file (`hermes config env-path` prints its location):
+
+<CodeGroup>
+```bash .env
+EDENAI_API_KEY=YOUR_EDEN_AI_API_KEY
+```
+</CodeGroup>
+
+<Note>
+- **`base_url`** must be `https://api.edenai.run/v3` (no trailing `/chat/completions` — the OpenAI-compatible client appends that for you).
+- Keep the key in the `.env` file, not in `config.yaml`. Any environment variable named `EDENAI_API_KEY` works too.
+- Billing is handled on the Eden AI side through your API key. Check per-request cost in the [Eden AI dashboard](https://app.edenai.run).
+</Note>
+
+### 3. Start Hermes
+
+```bash
+hermes chat
+```
+
+For a one-shot, non-interactive run (handy for scripts or a quick smoke test):
+
+```bash
+hermes chat -Q -q "Reply with exactly one word: pong"
+```
+
+Every LLM call now flows through Eden AI, with unified billing and per-request cost visibility.
+
+## Choosing a model
+
+Hermes requires **function calling**, so pick a model that supports it. Any `provider/model` string from the Eden AI catalog works — set it with `hermes config set model.default <model>` or per-session with `hermes chat -m <model>`.
+
+| Model | Best for |
+|---|---|
+| `anthropic/claude-sonnet-4-5` | **Recommended default** — balanced reasoning, reliable tool calling |
+| `anthropic/claude-opus-4-7` | Maximum capability |
+| `anthropic/claude-haiku-4-5` | Fast and cheap |
+| `openai/gpt-5` | OpenAI's frontier model |
+| `google/gemini-2.5-pro` | Long context, multimodal |
+
+Browse the full catalog at [app.edenai.run/models](https://app.edenai.run/models).
+
+### Using the `@edenai` smart router
+
+Eden AI's [`@edenai` smart router](/v3/llms/smart-routing) automatically picks the best provider per request. However, Hermes always sends a `tools` parameter, and the smart router may select a model that does **not** support function calling — which returns a `400` error (see [Troubleshooting](#request-included-tools-parameter-)). For agent use, pin a function-calling model instead of relying on `@edenai`.
+
+## Set up a fallback
+
+Hermes can fall back to a backup model when the primary one fails. Point it at a second Eden AI model:
+
+```bash
+hermes fallback
+```
+
+## Troubleshooting
+
+### `401` / `Custom token not found`
+
+Verify your Eden AI key — grab a fresh one at [app.edenai.run](https://app.edenai.run) → **API Keys**. Confirm `EDENAI_API_KEY` is set in Hermes' `.env` (`hermes config env-path`) and has no leading/trailing spaces.
+
+### `Request included tools parameter, but providers ... do not support function calling`
+
+The selected model can't do function calling, which Hermes requires. This is the common failure when `model.default` is `@edenai` (the smart router can pick a non-tool model). Switch to a function-calling model:
+
+```bash
+hermes config set model.default anthropic/claude-sonnet-4-5
+```
+
+### `model not found`
+
+Ensure `model.default` uses the `provider/model` format (e.g. `anthropic/claude-sonnet-4-5`). No bare model names.
+
+### Connection issues
+
+Confirm `base_url` is exactly `https://api.edenai.run/v3` and check Eden AI status at [app-edenai.instatus.com](https://app-edenai.instatus.com).
+
+## Next Steps
+
+- [OpenClaw](./openclaw) - Self-hosted terminal-based AI agent
+- [OpenCode](./opencode) - Terminal-based AI coding assistant
+- [Claude Code](./claude-code) - Official Claude CLI

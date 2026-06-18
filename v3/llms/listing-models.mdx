@@ -14,7 +14,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "LLM API", "chat completion", "OpenAI compatible"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-05-22T00:00:00Z"
+  dateModified="2026-06-18T00:00:00Z"
 />
 
 Use the `/v3/models` endpoint to retrieve all LLM models available through Eden AI, along with their capabilities: PDF support, reasoning, web search, and tool calling.
@@ -99,6 +99,17 @@ data.forEach(model => console.log(model.id));
 ```
 
 Each model `id` is used directly as the `model` parameter in your requests.
+
+## Model aliases
+
+Some models are available under a **stable alias** — a version-agnostic name that always points to the current release — alongside dated snapshot IDs:
+
+- **Stable alias:** `deepseek/deepseek-chat`, `deepseek/deepseek-reasoner`
+- **Dated snapshot:** `anthropic/claude-opus-4-5-20251101`
+
+Use the **stable alias** when you want your integration to keep working as providers ship new versions. **Pin a dated snapshot** when you need a fixed, reproducible model. Either form works as the `model` parameter.
+
+The `/v3/models` catalog is deduplicated: when a provider exposes both a stable alias and the dated snapshots it resolves to, the list keeps the canonical stable name (falling back to the newest snapshot when no clean alias exists).
 
 ## Capabilities
 

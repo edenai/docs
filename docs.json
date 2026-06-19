@@ -230,6 +230,7 @@
                       "v3/integrations/cline",
                       "v3/integrations/codex-cli",
                       "v3/integrations/continue-dev",
+                      "v3/integrations/github-copilot",
                       "v3/integrations/opencode"
                     ]
                   },

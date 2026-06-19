@@ -15,7 +15,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "Claude Code"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-05-07T00:00:00Z"
+  dateModified="2026-06-19T00:00:00Z"
 />
 
 Configure [Claude Code](https://github.com/anthropics/claude-code), Anthropic's official CLI coding agent, to use Eden AI for access to 500+ models behind a single API key.
@@ -41,19 +41,19 @@ Claude Code runs in your terminal and edits code in your project. Pointing it at
 ```bash bash / zsh
 export ANTHROPIC_API_KEY="YOUR_EDEN_AI_API_KEY"
 export ANTHROPIC_BASE_URL="https://api.edenai.run/v3"
-export ANTHROPIC_MODEL="anthropic/claude-opus-4.7"
+export ANTHROPIC_MODEL="anthropic/claude-opus-4-8"
 export ANTHROPIC_DEFAULT_HAIKU_MODEL="anthropic/claude-haiku-4-5"
 export ANTHROPIC_DEFAULT_SONNET_MODEL="anthropic/claude-sonnet-4-6"
-export ANTHROPIC_DEFAULT_OPUS_MODEL="anthropic/claude-opus-4-7"
+export ANTHROPIC_DEFAULT_OPUS_MODEL="anthropic/claude-opus-4-8"
 ```
 
 ```powershell PowerShell
 $env:ANTHROPIC_API_KEY = "YOUR_EDEN_AI_API_KEY"
 $env:ANTHROPIC_BASE_URL = "https://api.edenai.run/v3"
-$env:ANTHROPIC_MODEL = "anthropic/claude-opus-4.7"
+$env:ANTHROPIC_MODEL = "anthropic/claude-opus-4-8"
 $env:ANTHROPIC_DEFAULT_HAIKU_MODEL="anthropic/claude-haiku-4-5"
 $env:ANTHROPIC_DEFAULT_SONNET_MODEL="anthropic/claude-sonnet-4-6"
-$env:ANTHROPIC_DEFAULT_OPUS_MODEL="anthropic/claude-opus-4-7"
+$env:ANTHROPIC_DEFAULT_OPUS_MODEL="anthropic/claude-opus-4-8"
 ```
 </CodeGroup>
 
@@ -73,7 +73,7 @@ Eden AI uses the `provider/model` format. Update the `ANTHROPIC_MODEL` environme
 
 <CodeGroup>
 ```bash Claude variants
-export ANTHROPIC_MODEL="anthropic/claude-opus-4.7"     # default
+export ANTHROPIC_MODEL="anthropic/claude-opus-4-8"     # default
 export ANTHROPIC_MODEL="anthropic/claude-sonnet-4-5"   # cheaper, faster
 export ANTHROPIC_MODEL="anthropic/claude-haiku-4-5"    # fastest
 ```
@@ -98,12 +98,12 @@ echo $ANTHROPIC_API_KEY
 curl -X POST https://api.edenai.run/v3/chat/completions \
   -H "Authorization: Bearer $ANTHROPIC_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"model": "anthropic/claude-opus-4.7", "messages": [{"role": "user", "content": "ping"}]}'
+  -d '{"model": "anthropic/claude-opus-4-8", "messages": [{"role": "user", "content": "ping"}]}'
 ```
 
 ### Model not found
 
-Use the full `provider/model` string (e.g. `anthropic/claude-opus-4.7`, not `claude-opus-4.7`). Confirm the ID is in the catalog returned by `GET /v3/models`.
+Use the full `provider/model` string (e.g. `anthropic/claude-opus-4-8`, not `claude-opus-4-8`). Confirm the ID is in the catalog returned by `GET /v3/models`.
 
 ### Connection issues
 

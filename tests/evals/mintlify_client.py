@@ -28,7 +28,7 @@ class MintlifyResponse:
 def ask_mintlify(
     question: str,
     api_key: str,
-    domain: str = "docs.edenai.co",
+    domain: str = "edenai",
     client: httpx.Client | None = None,
     retries: int = 3,
     retrieval_page_size: int = 10,

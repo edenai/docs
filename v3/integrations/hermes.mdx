@@ -11,7 +11,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   description={"Connect Hermes Agent to Eden AI and run the self-hosted, persistent agent on 500+ models with automatic fallbacks and a single API key."}
   path="v3/integrations/hermes"
   articleSection="Autonomous Agents"
-  about={"AI Coding Assistants"}
+  about={"Autonomous AI Agents"}
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "Hermes Agent", "Nous Research"]}
   datePublished="2026-06-18T00:00:00Z"
@@ -108,7 +108,7 @@ Hermes requires **function calling**, so pick a model that supports it. Any `pro
 | Model | Best for |
 |---|---|
 | `anthropic/claude-sonnet-4-5` | **Recommended default** — balanced reasoning, reliable tool calling |
-| `anthropic/claude-opus-4-7` | Maximum capability |
+| `anthropic/claude-opus-4-8` | Maximum capability |
 | `anthropic/claude-haiku-4-5` | Fast and cheap |
 | `openai/gpt-5` | OpenAI's frontier model |
 | `google/gemini-2.5-pro` | Long context, multimodal |
@@ -117,10 +117,10 @@ Browse the full catalog at [app.edenai.run/models](https://app.edenai.run/models
 
 ## Set up a fallback
 
-Hermes can fall back to a backup model when the primary one fails. Point it at a second Eden AI model:
+Hermes can fall back to a backup model when the primary one fails. Add a second Eden AI model to the fallback chain:
 
 ```bash
-hermes fallback
+hermes fallback add
 ```
 
 ## Troubleshooting

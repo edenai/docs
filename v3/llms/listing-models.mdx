@@ -109,7 +109,7 @@ Some models are available under a **stable alias** — a version-agnostic name t
 
 Use the **stable alias** when you want your integration to keep working as providers ship new versions. **Pin a dated snapshot** when you need a fixed, reproducible model. Either form works as the `model` parameter.
 
-The `/v3/models` catalog is deduplicated: when a provider exposes both a stable alias and the dated snapshots it resolves to, the list keeps the canonical stable name (falling back to the newest snapshot when no clean alias exists).
+The catalog lists both forms when a provider exposes them, so you may see a stable alias (e.g. `anthropic/claude-opus-4-5`) and one or more dated snapshots (e.g. `anthropic/claude-opus-4-5-20251101`) side by side. Use the stable alias to always get the latest version, or a dated snapshot to pin to a specific release.
 
 ## Capabilities
 

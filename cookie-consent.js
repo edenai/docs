@@ -136,6 +136,23 @@
     });
   }
 
+  // Persistent "Manage cookies" entry point (GDPR: withdrawing consent must be
+  // as easy as giving it). Any link to #manage-cookies — e.g. the footer link
+  // declared in docs.json — re-opens the preferences modal. Capture phase so it
+  // wins over Mintlify's own anchor handling.
+  document.addEventListener(
+    "click",
+    function (e) {
+      var trigger =
+        e.target.closest && e.target.closest('a[href$="#manage-cookies"]');
+      if (!trigger) return;
+      e.preventDefault();
+      e.stopPropagation();
+      if (window.CookieConsent) window.CookieConsent.showPreferences();
+    },
+    true
+  );
+
   loadCss(CDN + ".css");
   loadScript(CDN + ".umd.js", init);
 })();

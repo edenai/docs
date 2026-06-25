@@ -39,12 +39,18 @@
   }
 
   // Mirror the consent choice into the localStorage key Mintlify reads.
+  // Storage access can throw (private mode, disabled storage, quota); on failure
+  // the key stays unset, so telemetry simply remains disabled.
   function syncMintlifyConsent() {
     var cc = window.CookieConsent;
-    if (cc && cc.acceptedCategory("analytics")) {
-      localStorage.setItem(STORAGE_KEY, STORAGE_VALUE);
-    } else {
-      localStorage.removeItem(STORAGE_KEY);
+    try {
+      if (cc && cc.acceptedCategory("analytics")) {
+        localStorage.setItem(STORAGE_KEY, STORAGE_VALUE);
+      } else {
+        localStorage.removeItem(STORAGE_KEY);
+      }
+    } catch (e) {
+      /* storage unavailable; telemetry stays disabled */
     }
   }
 
@@ -59,7 +65,14 @@
       },
       categories: {
         necessary: { enabled: true, readOnly: true },
-        analytics: {}
+        analytics: {
+          // On withdrawal, delete Hotjar's first-party cookies (_hjid,
+          // _hjSession_*, _hjSessionUser_*, etc.) so rejecting analytics
+          // actually removes them rather than leaving them behind.
+          autoClear: {
+            cookies: [{ name: /^_hj/ }]
+          }
+        }
       },
       language: {
         default: "en",

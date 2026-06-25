@@ -1,0 +1,10 @@
+/* Brand the cookie-consent banner to match the Eden AI docs palette.
+   vanilla-cookieconsent exposes its theming via CSS variables on #cc-main. */
+#cc-main {
+  --cc-btn-primary-bg: #3d7cc9;
+  --cc-btn-primary-hover-bg: #2a5fa8;
+  --cc-btn-primary-border-color: #3d7cc9;
+  --cc-btn-primary-hover-border-color: #2a5fa8;
+  --cc-toggle-on-bg: #3d7cc9;
+  --cc-link-color: #3d7cc9;
+}

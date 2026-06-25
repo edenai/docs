@@ -9,6 +9,10 @@
     },
     "intercom": {
       "appId": "we8gfv17"
+    },
+    "cookies": {
+      "key": "edenai-cookie-consent",
+      "value": "accepted"
     }
   },
   "logo": {
@@ -325,6 +329,21 @@
       "linkedin": "https://www.linkedin.com/company/edenai",
       "discord": "https://discord.gg/VYwTbMQc8u",
       "youtube": "https://www.youtube.com/@edenai2254"
-    }
+    },
+    "links": [
+      {
+        "header": "Legal",
+        "items": [
+          {
+            "label": "Privacy Policy",
+            "href": "https://www.edenai.co/privacy"
+          },
+          {
+            "label": "Manage cookies",
+            "href": "#manage-cookies"
+          }
+        ]
+      }
+    ]
   }
 }

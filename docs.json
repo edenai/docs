@@ -9,6 +9,10 @@
     },
     "intercom": {
       "appId": "we8gfv17"
+    },
+    "cookies": {
+      "key": "edenai-cookie-consent",
+      "value": "accepted"
     }
   },
   "logo": {

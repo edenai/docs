@@ -38,13 +38,45 @@
     document.head.appendChild(s);
   }
 
-  // Mirror the consent choice into the localStorage key Mintlify reads.
+  // Delete Hotjar's first-party cookies + storage. Hotjar sets cookies on the
+  // parent domain (e.g. ".mintlify.app" on preview, ".edenai.co" on prod), so a
+  // same-host delete misses them — we expire across every plausible domain
+  // scope: no-domain, the host, the dotted host, and the registrable domain.
+  function clearHotjar() {
+    var host = location.hostname;
+    var domains = ["", host, "." + host];
+    var parts = host.split(".");
+    if (parts.length > 2) domains.push("." + parts.slice(-2).join("."));
+    document.cookie.split(";").forEach(function (entry) {
+      var name = entry.split("=")[0].trim();
+      if (!/^_hj/.test(name)) return;
+      domains.forEach(function (d) {
+        document.cookie =
+          name +
+          "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/" +
+          (d ? ";domain=" + d : "");
+      });
+    });
+    try {
+      [localStorage, sessionStorage].forEach(function (store) {
+        Object.keys(store).forEach(function (k) {
+          if (/^_hj/.test(k)) store.removeItem(k);
+        });
+      });
+    } catch (e) {
+      /* storage unavailable */
+    }
+  }
+
+  // Mirror the consent choice into the localStorage key Mintlify reads, and
+  // actively wipe Hotjar data whenever analytics is not (or no longer) accepted.
   // Storage access can throw (private mode, disabled storage, quota); on failure
   // the key stays unset, so telemetry simply remains disabled.
   function syncMintlifyConsent() {
     var cc = window.CookieConsent;
+    var accepted = cc && cc.acceptedCategory("analytics");
     try {
-      if (cc && cc.acceptedCategory("analytics")) {
+      if (accepted) {
         localStorage.setItem(STORAGE_KEY, STORAGE_VALUE);
       } else {
         localStorage.removeItem(STORAGE_KEY);
@@ -52,6 +84,7 @@
     } catch (e) {
       /* storage unavailable; telemetry stays disabled */
     }
+    if (!accepted) clearHotjar();
   }
 
   function init() {

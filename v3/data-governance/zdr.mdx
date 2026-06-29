@@ -19,7 +19,13 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   dateModified="2026-06-29T00:00:00Z"
 />
 
-When you call a model through Eden AI, your request is forwarded to the underlying provider, whose own policy governs what happens to it. Eden AI stores no request or response content by default and never trains on your data (see [Data Retention](/v3/data-governance/data-retention)).
+When you call a model through Eden AI, your request is forwarded to the underlying provider, whose own policy governs what happens to it.
+
+## How Eden AI handles your data
+
+Eden AI stores no request or response content by default, and never trains on your data. You can choose to have us store your request **metadata** by enabling log retention in your [profile settings](https://app.edenai.run/settings/api-keys). See [Data Retention](/v3/data-governance/data-retention) for details.
+
+## How each provider handles your data
 
 The tables below summarise, for every LLM provider on Eden AI, whether the provider may train on your data (**Trains?**), whether **Zero Data Retention** — nothing stored — is available (**ZDR**), and how long data is kept otherwise (**Retention**). When ZDR is in effect, retention is **None**. Providers are grouped by whether they can be reached on the [EU endpoint](/v3/data-governance/eu-endpoint).
 

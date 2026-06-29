@@ -19,15 +19,21 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   dateModified="2026-06-29T00:00:00Z"
 />
 
-When you call a model through Eden AI, your request is forwarded to the underlying provider, whose own policy governs what happens to it. Eden AI stores no request or response content by default and never trains on your data (see [Data Retention](/v3/data-governance/data-retention)).
+When you call a model through Eden AI, your request is forwarded to the underlying provider, whose own policy governs what happens to it.
 
-The tables below summarise, for every LLM provider on Eden AI, whether the provider may train on your data (**Trains?**), whether **Zero Data Retention** — nothing stored — is available (**ZDR**), and how long data is kept otherwise (**Retention**). When ZDR is in effect, retention is **None**. Providers are grouped by whether they can be reached on the [EU endpoint](/v3/data-governance/eu-endpoint).
+## How Eden AI handles your data
+
+Eden AI stores no request or response content by default, and never trains on your data. You can choose to have us store your request **metadata** by enabling log retention in your [profile settings](https://app.edenai.run/settings/api-keys). See [Data Retention](/v3/data-governance/data-retention) for details.
+
+## How each provider handles your data
+
+The tables below summarise, for every provider on Eden AI — both LLMs and Expert Models — whether the provider may train on your data (**Trains?**), whether **Zero Data Retention** — nothing stored — is available (**ZDR**), and how long data is kept otherwise (**Retention**). When ZDR is in effect, retention is **None**. A **ZDR** of **Yes** includes providers that offer it on request. Providers are grouped by whether they can be reached on the [EU endpoint](/v3/data-governance/eu-endpoint).
 
 <Note>
   This information was last updated on 29 June 2026.
 </Note>
 
-## Available on the EU endpoint
+## LLMs — available on the EU endpoint
 
 These providers can be routed through the [EU endpoint](/v3/data-governance/eu-endpoint) (`api.eu.edenai.run`), which keeps processing in the EU. Confirm the current list any time with `api.eu.edenai.run/v3/models`.
 
@@ -45,7 +51,7 @@ These providers can be routed through the [EU endpoint](/v3/data-governance/eu-e
 
 **Regions** — Amazon Bedrock routes to `eu-west-1` (Ireland); Google to the EU multi-region (Vertex); Microsoft Azure to an EU Data Zone; Mistral, OVHcloud and Scaleway are EU-hosted; Databricks, Nebius and Qwen are served from EU-region routing on this endpoint.
 
-## Other providers (global routing only)
+## LLMs — other providers (global routing only)
 
 These are available only on the global endpoint (`api.edenai.run`).
 
@@ -69,9 +75,65 @@ These are available only on the global endpoint (`api.edenai.run`).
 | Together | No | **Yes** | None |
 | xAI | No | No | 30 days |
 
+## Expert Models — available on the EU endpoint
+
+Beyond LLMs, Eden AI routes **Expert Models** (OCR, document parsing, translation, speech, image and video). These run on a different set of providers. Confirm the current list with `api.eu.edenai.run/v3/info`.
+
+| Provider | Trains? | ZDR | Retention |
+|---|---|---|---|
+| Amazon (AWS AI) | May train (opt-out) | No | Not stated |
+| API4AI | Not stated | Not stated | Not stated |
+| Clipdrop | May train | **Yes** | Not stated |
+| DeepL | No | **Yes** | None |
+| Eagle Doc | No | Not stated | Not stated |
+| Extracta | No | **Yes** | User-controlled |
+| Gladia | No | **Yes** | Configurable |
+| Google (Cloud AI) | No | **Yes** | Varies |
+| Klippa | No | **Yes** | None |
+| Microsoft (Azure AI) | No | **Yes** | Varies (≤24h) |
+| Mindee | No | **Yes** | ≤24h |
+| Mistral | No | **Yes** | 30 days |
+| ModernMT | No | No | 10 years |
+| PhotoRoom | No | **Yes** | None |
+| ProWritingAid | No | **Yes** | None |
+| Senseloaf | Not stated | Not stated | Not stated |
+| Sightengine | No | **Yes** | Not stated |
+| Winston AI | No | Not stated | Not stated |
+
+## Expert Models — other providers (global routing only)
+
+| Provider | Trains? | ZDR | Retention |
+|---|---|---|---|
+| Affinda | Yes | **Yes** | Account lifetime |
+| AssemblyAI | May train (opt-out) | No | ≤72h |
+| Base64.ai | No | **Yes** | None |
+| ByteDance | Not stated | Not stated | Not stated |
+| Clarifai | No | **Yes** | Account lifetime |
+| Deepgram | May train (opt-out) | No | Not stated |
+| ElevenLabs | Yes (opt-out) | No | ≤3 years |
+| Face++ | Not stated | No | Not stated |
+| Leonardo | No | **Yes** | Account lifetime |
+| LOVO | Not stated | Not stated | ~30 days |
+| MiniMax | May train | Not stated | Not stated |
+| OpenAI | No | No | 30 days |
+| Picsart | Not stated | Not stated | Not stated |
+| PixVerse | Yes (opt-out) | No | Not stated |
+| Replicate | Not stated | **Yes** | 1 hour |
+| Resemble | No | **Yes** | Not stated |
+| Sapling | Not stated | **Yes** | Configurable |
+| SentiSight | Not stated | Not stated | Not stated |
+| Stability AI | Yes (opt-out) | Not stated | ≤1 year |
+| Tabscanner | Not stated | Not stated | Not stated |
+| Tenstorrent | Not stated | Not stated | Not stated |
+| Veryfi | No | No | Account lifetime |
+
 ## EU data residency
 
-To keep data in the EU, use the [EU endpoint](/v3/data-governance/eu-endpoint) (`api.eu.edenai.run`), which routes only through the EU-eligible providers in the first table. Pin your `model` and `fallbacks` to those providers, and confirm the live list with `api.eu.edenai.run/v3/models`.
+To keep data in the EU, use the [EU endpoint](/v3/data-governance/eu-endpoint) (`api.eu.edenai.run`), which routes only through the EU-eligible providers in the "available on the EU endpoint" tables above. Pin your `model` and `fallbacks` to those providers, and confirm the live lists with `api.eu.edenai.run/v3/models` (LLMs) and `api.eu.edenai.run/v3/info` (Expert Models).
+
+## Guardrails
+
+You can create a guardrail restricted to providers that offer Zero Data Retention, so the content it screens is never stored. The list of ZDR providers is reviewed and updated every month as providers' policies change.
 
 ## Reduce your data exposure
 

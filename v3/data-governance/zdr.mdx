@@ -1,0 +1,88 @@
+---
+sidebarTitle: "Provider Data & ZDR"
+title: "Provider Data Use & Zero Data Retention"
+icon: "user-shield"
+description: "Whether each AI provider trains on your data, how long they keep it, and which ones offer Zero Data Retention (ZDR), for every model available through Eden AI."
+---
+
+import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
+
+<TechArticleSchema
+  title={"Provider Data Use & Zero Data Retention"}
+  description={"Whether each AI provider trains on your data, how long they keep it, and which ones offer Zero Data Retention (ZDR), for every model available through Eden AI."}
+  path="v3/data-governance/zdr"
+  articleSection="Data Governance"
+  about={"Data Compliance"}
+  proficiencyLevel="Intermediate"
+  keywords={["Eden AI", "AI API", "ZDR", "Zero Data Retention", "data privacy", "GDPR", "model training"]}
+  datePublished="2026-06-29T00:00:00Z"
+  dateModified="2026-06-29T00:00:00Z"
+/>
+
+When you call a model through Eden AI, your request is forwarded to the underlying provider, whose own policy governs what happens to it. Eden AI stores no request or response content by default and never trains on your data (see [Data Retention](/v3/data-governance/data-retention)).
+
+The tables below summarise, for every LLM provider on Eden AI, whether the provider may train on your data (**Trains?**), whether **Zero Data Retention** — nothing stored — is available (**ZDR**), and how long data is kept otherwise (**Retention**). When ZDR is in effect, retention is **None**. Providers are grouped by whether they can be reached on the [EU endpoint](/v3/data-governance/eu-endpoint).
+
+<Warning>
+  Based on each provider's published API terms as of 29 June 2026. Providers change their terms — confirm with the provider (and your own DPA) before making compliance-critical decisions. The EU-endpoint list is generated live from `api.eu.edenai.run/v3/models` and can change.
+</Warning>
+
+## Available on the EU endpoint
+
+These providers can be routed through the [EU endpoint](/v3/data-governance/eu-endpoint) (`api.eu.edenai.run`), which keeps processing in the EU. Confirm the current list any time with `api.eu.edenai.run/v3/models`.
+
+| Provider | Trains? | ZDR | Retention |
+|---|---|---|---|
+| Amazon Bedrock | No | **Yes** | None |
+| Databricks | No | No | Up to 30 days |
+| Google (Vertex / EU route) | No | **Yes** | None |
+| Microsoft Azure | No | No | Up to 30 days |
+| Mistral | No | **Yes** | None |
+| Nebius | No | **Yes** | None |
+| OVHcloud | No | No | None |
+| Qwen | No | **Yes** | None |
+| Scaleway | No | No | None |
+
+**Regions** — Amazon Bedrock routes to `eu-west-1` (Ireland); Google to the EU multi-region (Vertex); Microsoft Azure to an EU Data Zone; Mistral, OVHcloud and Scaleway are EU-hosted; Databricks, Nebius and Qwen are served from EU-region routing on this endpoint.
+
+- **Google (EU route)** runs on Google's EU-resident Vertex infrastructure: training is off, EU data residency applies, and Eden AI routes it under Zero Data Retention, so no request content is stored ([Vertex data residency](https://cloud.google.com/vertex-ai/generative-ai/docs/learn/data-residency)). On the global endpoint, Google uses the AI Studio route instead — see the next table.
+- **Mistral** is called under Zero Data Retention through Eden AI and hosts data in the EU by default; it does not train on the plan tier Eden AI uses (only Free/Pro consumer plans are trained on). On non-EU routes, only request metadata — never content — is retained ([training](https://help.mistral.ai/en/articles/347617), [ZDR](https://help.mistral.ai/en/articles/347612)).
+- **Microsoft Azure** keeps prompts/responses up to 30 days for abuse monitoring; Zero Data Retention (Microsoft's Limited Access "Modified Abuse Monitoring") is not currently enabled through Eden AI ([Azure data privacy](https://learn.microsoft.com/en-us/azure/ai-foundry/responsible-ai/openai/data-privacy), [abuse monitoring](https://learn.microsoft.com/en-us/azure/ai-foundry/openai/concepts/abuse-monitoring)).
+
+## Other providers (global routing only)
+
+These are available only on the global endpoint (`api.edenai.run`).
+
+| Provider | Trains? | ZDR | Retention |
+|---|---|---|---|
+| Anthropic | No | No | 30 days |
+| ByteDance | No | No | Not specified |
+| Cerebras | No | **Yes** | None |
+| Cloudflare | No | No | None |
+| Cohere | No | No | 30 days |
+| DashScope (legacy) | No | No | None |
+| DeepInfra | No | **Yes** | None |
+| DeepSeek | May train | No | Account lifetime |
+| Fireworks | No | **Yes** | None |
+| Google (AI Studio) | No | No | Up to ~55 days |
+| Groq | No | **Yes** | None |
+| Lilac | No | No | None |
+| MiniMax | May train | No | Not stated |
+| OpenAI | No | No | 30 days |
+| Perplexity | No | **Yes** | None |
+| Together | No | **Yes** | None |
+| xAI | No | No | 30 days |
+
+- **Anthropic** and **OpenAI** don't train on API data and keep it ~30 days for abuse monitoring; Zero Data Retention is not currently enabled for these through Eden AI ([Anthropic ZDR](https://platform.claude.com/docs/en/docs/build-with-claude/zero-data-retention), [OpenAI data controls](https://platform.openai.com/docs/guides/your-data)).
+- **Google (AI Studio)** is the standard Gemini API route used on the global endpoint: no training, but abuse-monitoring logs are kept up to ~55 days (up to 90 for Maps grounding) and it is not zero-retention by default ([Gemini ZDR](https://ai.google.dev/gemini-api/docs/zdr), [logging policy](https://ai.google.dev/gemini-api/docs/logs-policy)). For an EU-resident, ZDR-eligible Google route, use the EU endpoint.
+- **DashScope** is a legacy/frozen route; new Alibaba models are served through **Qwen** (which is EU-eligible).
+
+## EU data residency
+
+To keep data in the EU, use the [EU endpoint](/v3/data-governance/eu-endpoint) (`api.eu.edenai.run`), which routes only through the EU-eligible providers in the first table. Pin your `model` and `fallbacks` to those providers, and confirm the live list with `api.eu.edenai.run/v3/models`.
+
+## Reduce your data exposure
+
+- **EU endpoint**: restrict processing to the EU-eligible providers above.
+- **Zero Data Retention** (nothing stored): Amazon Bedrock, Google (Vertex/EU route), Mistral, Nebius, Qwen, Cerebras, DeepInfra, Fireworks, Groq, Perplexity, Together. Pin your `model` and `fallbacks` to these.
+- **Logs off by default**: Eden AI stores no content unless you enable log retention.

@@ -206,7 +206,8 @@
                 "pages": [
                   "v3/data-governance/servers-location",
                   "v3/data-governance/eu-endpoint",
-                  "v3/data-governance/data-retention"
+                  "v3/data-governance/data-retention",
+                  "v3/data-governance/zdr"
                 ]
               },
               {

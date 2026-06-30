@@ -1,0 +1,178 @@
+---
+title: "GitHub Copilot"
+icon: "github"
+description: "Configure GitHub Copilot — VS Code chat, agent mode, and the Copilot CLI — to use Eden AI for access to 500+ models behind a single API key."
+---
+
+import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
+
+<TechArticleSchema
+  title={"GitHub Copilot"}
+  description={"Configure GitHub Copilot — VS Code chat, agent mode, and the Copilot CLI — to use Eden AI for access to 500+ models behind a single API key."}
+  path="v3/integrations/github-copilot"
+  articleSection="Coding Agents"
+  about={"AI Coding Assistants"}
+  proficiencyLevel="Intermediate"
+  keywords={["Eden AI", "AI API", "GitHub Copilot", "BYOK", "OpenAI compatible"]}
+  datePublished="2026-06-19T00:00:00Z"
+  dateModified="2026-06-19T00:00:00Z"
+/>
+
+Configure [GitHub Copilot](https://github.com/features/copilot), via its **Bring Your Own Key (BYOK)** support, to use Eden AI for access to 500+ models behind a single API key.
+
+## Overview
+
+GitHub Copilot's BYOK feature lets you point its chat experience at any OpenAI-compatible endpoint. Routing it through Eden AI gives you:
+
+- **500+ models**: switch between Claude, GPT, Gemini, and more without leaving Copilot
+- **One API key**: unified billing and monitoring across providers
+- **Provider failover**: keep working when an upstream provider has an incident
+
+<Warning>
+  BYOK powers **Copilot Chat**, **agent mode**, and the **Copilot CLI**. It does **not** apply to inline code completions (ghost text), semantic search, or embeddings — those keep running on GitHub's own infrastructure and still require a GitHub account.
+</Warning>
+
+## Prerequisites
+
+- An active **GitHub Copilot** subscription (Individual, Business, or Enterprise)
+- For the chat path: **VS Code** with the GitHub Copilot extension
+- For the CLI path: the **Copilot CLI** ([install & BYOK docs](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/use-byok-models))
+- Eden AI API key from [app.edenai.run](https://app.edenai.run) → **API Keys**
+
+## VS Code Copilot Chat
+
+### 1. Open the Language Models editor
+
+Open the Command Palette and run **Chat: Manage Language Models**, or click the model picker in the Chat view and choose **Manage Models…**.
+
+### 2. Add Eden AI as a Custom Endpoint
+
+Select **Add Models → Custom Endpoint**, then:
+
+1. Enter a **group name** (e.g. `Eden AI`)
+2. Provide a **display name** and paste your **Eden AI API key**
+3. For **API type**, choose **Chat Completions**
+
+The key is stored securely by VS Code — it is not written into the config file.
+
+### 3. Declare your models in `chatLanguageModels.json`
+
+VS Code opens `chatLanguageModels.json` so you can list the Eden AI models to expose. Set each entry's `url` to Eden AI's chat completions endpoint and use the `provider/model` ID format:
+
+<CodeGroup>
+```json chatLanguageModels.json
+[
+  {
+    "id": "anthropic/claude-sonnet-4-5",
+    "name": "Claude Sonnet 4.5 (Eden AI)",
+    "url": "https://api.edenai.run/v3/chat/completions",
+    "toolCalling": true,
+    "vision": true,
+    "maxInputTokens": 200000,
+    "maxOutputTokens": 8192
+  },
+  {
+    "id": "openai/gpt-4o",
+    "name": "GPT-4o (Eden AI)",
+    "url": "https://api.edenai.run/v3/chat/completions",
+    "toolCalling": true,
+    "vision": true,
+    "maxInputTokens": 128000,
+    "maxOutputTokens": 16384
+  }
+]
+```
+</CodeGroup>
+
+Set `"toolCalling": true` for any model you want to use in **agent mode**.
+
+### 4. Use it
+
+Reload the window, open Copilot Chat, and pick your Eden AI model from the model picker. It is now available in chat and agent mode.
+
+## Copilot CLI
+
+The Copilot CLI reads BYOK settings from environment variables. Set them before launching:
+
+<CodeGroup>
+```bash bash / zsh
+export COPILOT_PROVIDER_TYPE="openai"
+export COPILOT_PROVIDER_BASE_URL="https://api.edenai.run/v3"
+export COPILOT_PROVIDER_API_KEY="YOUR_EDEN_AI_API_KEY"
+export COPILOT_MODEL="anthropic/claude-sonnet-4-5"
+```
+
+```powershell PowerShell
+$env:COPILOT_PROVIDER_TYPE = "openai"
+$env:COPILOT_PROVIDER_BASE_URL = "https://api.edenai.run/v3"
+$env:COPILOT_PROVIDER_API_KEY = "YOUR_EDEN_AI_API_KEY"
+$env:COPILOT_MODEL = "anthropic/claude-sonnet-4-5"
+```
+</CodeGroup>
+
+Then launch the CLI:
+
+```bash
+copilot
+```
+
+Keep `COPILOT_PROVIDER_TYPE` set to `openai` because Eden AI is OpenAI-compatible — leave it as `openai` even when the model itself is from Anthropic or Google. The CLI appends `/chat/completions` to the base URL itself, so `COPILOT_PROVIDER_BASE_URL` ends at `/v3`. Use a model that supports **tool calling and streaming** (most chat models on Eden AI do).
+
+## Organization-wide BYOK (Enterprise)
+
+Enterprise and Business administrators can configure an OpenAI-compatible provider for the whole organization (public preview) instead of per-developer setup. Add a provider of type **OpenAI**, set the base URL to `https://api.edenai.run/v3`, and supply your Eden AI key. See GitHub's [BYOK documentation](https://docs.github.com/en/copilot/how-tos/copilot-sdk/authenticate-copilot-sdk/bring-your-own-key).
+
+## Switching models
+
+Eden AI uses the `provider/model` format. In VS Code, add more entries to `chatLanguageModels.json`; in the CLI, change `COPILOT_MODEL`:
+
+<CodeGroup>
+```bash Popular choices
+export COPILOT_MODEL="anthropic/claude-sonnet-4-5"   # strong general coding
+export COPILOT_MODEL="openai/gpt-4o"                 # fast, multimodal
+export COPILOT_MODEL="google/gemini-2.5-pro"         # long context
+```
+</CodeGroup>
+
+Browse the full catalog via [List Models](/v3/llms/listing-models) or `GET https://api.edenai.run/v3/models`.
+
+## What BYOK covers
+
+| Feature                         | Uses Eden AI?                 |
+| ------------------------------- | ----------------------------- |
+| Copilot Chat                    | ✅                             |
+| Agent mode / custom agents      | ✅ (model needs tool calling)  |
+| Copilot CLI                     | ✅                             |
+| Inline completions (ghost text) | ❌ GitHub-hosted               |
+| Semantic search / embeddings    | ❌ GitHub-hosted               |
+
+## Troubleshooting
+
+### Authentication errors
+
+Verify your key works against Eden AI directly:
+
+```bash
+curl -X POST https://api.edenai.run/v3/chat/completions \
+  -H "Authorization: Bearer YOUR_EDEN_AI_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "anthropic/claude-sonnet-4-5", "messages": [{"role": "user", "content": "ping"}]}'
+```
+
+### Model not found
+
+Use the full `provider/model` string (e.g. `anthropic/claude-sonnet-4-5`, not `claude-sonnet-4-5`). Confirm the ID is in the catalog returned by `GET /v3/models`.
+
+### Model doesn't appear in VS Code
+
+Make sure you chose **Chat Completions** as the API type, that `chatLanguageModels.json` is valid JSON, and reload the window. **Custom Endpoint** requires a recent VS Code build (it replaced the older "OpenAI Compatible" option) — update VS Code if you don't see it.
+
+### Connection issues
+
+Confirm the base URL is exactly `https://api.edenai.run/v3` (and the VS Code `url` field is `https://api.edenai.run/v3/chat/completions`). Check Eden AI status at [app-edenai.instatus.com](https://app-edenai.instatus.com).
+
+## Next Steps
+
+- [Continue.dev](./continue-dev) — open-source IDE assistant on Eden AI
+- [Claude Code](./claude-code) — Anthropic's official CLI on Eden AI
+- [Chat Completions](/v3/llms/chat-completions) — full reference for the underlying endpoint

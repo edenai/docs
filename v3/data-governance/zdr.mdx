@@ -124,5 +124,5 @@ To keep data in the EU, use the [EU endpoint](/v3/data-governance/eu-endpoint) (
 ## Reduce your data exposure
 
 - **EU endpoint**: restrict processing to the EU-eligible providers above.
-- **Zero Data Retention** (nothing stored): Amazon Bedrock, Google (Vertex/EU route), Mistral, Nebius, Qwen, Cerebras, DeepInfra, Fireworks, Groq, Perplexity, Together. Pin your `model` and `fallbacks` to these.
+- **Zero Data Retention** (nothing stored): for LLMs, pin your `model` and `fallbacks` to Amazon Bedrock, Google (Vertex/EU route), Mistral, Nebius, Qwen, Cerebras, DeepInfra, Fireworks, Groq, Perplexity, or Together. For Expert Models, pick a provider marked **Yes** in the table above.
 - **Logs off by default**: Eden AI stores no content unless you enable log retention.

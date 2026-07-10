@@ -15,7 +15,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "Claude Code"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-05-07T00:00:00Z"
+  dateModified="2026-07-10T00:00:00Z"
 />
 
 Configure [Claude Code](https://github.com/anthropics/claude-code), Anthropic's official CLI coding agent, to use Eden AI for access to 500+ models behind a single API key.
@@ -41,23 +41,27 @@ Claude Code runs in your terminal and edits code in your project. Pointing it at
 ```bash bash / zsh
 export ANTHROPIC_API_KEY="YOUR_EDEN_AI_API_KEY"
 export ANTHROPIC_BASE_URL="https://api.edenai.run/v3"
-export ANTHROPIC_MODEL="anthropic/claude-opus-4.7"
-export ANTHROPIC_DEFAULT_HAIKU_MODEL="anthropic/claude-haiku-4-5"
-export ANTHROPIC_DEFAULT_SONNET_MODEL="anthropic/claude-sonnet-4-6"
-export ANTHROPIC_DEFAULT_OPUS_MODEL="anthropic/claude-opus-4-7"
+export ANTHROPIC_MODEL="anthropic/claude-opus-latest"
+export ANTHROPIC_DEFAULT_HAIKU_MODEL="anthropic/claude-haiku-latest"
+export ANTHROPIC_DEFAULT_SONNET_MODEL="anthropic/claude-sonnet-latest"
+export ANTHROPIC_DEFAULT_OPUS_MODEL="anthropic/claude-opus-latest"
 ```
 
 ```powershell PowerShell
 $env:ANTHROPIC_API_KEY = "YOUR_EDEN_AI_API_KEY"
 $env:ANTHROPIC_BASE_URL = "https://api.edenai.run/v3"
-$env:ANTHROPIC_MODEL = "anthropic/claude-opus-4-7"
-$env:ANTHROPIC_DEFAULT_HAIKU_MODEL="anthropic/claude-haiku-4-5"
-$env:ANTHROPIC_DEFAULT_SONNET_MODEL="anthropic/claude-sonnet-4-6"
-$env:ANTHROPIC_DEFAULT_OPUS_MODEL="anthropic/claude-opus-4-7"
+$env:ANTHROPIC_MODEL = "anthropic/claude-opus-latest"
+$env:ANTHROPIC_DEFAULT_HAIKU_MODEL="anthropic/claude-haiku-latest"
+$env:ANTHROPIC_DEFAULT_SONNET_MODEL="anthropic/claude-sonnet-latest"
+$env:ANTHROPIC_DEFAULT_OPUS_MODEL="anthropic/claude-opus-latest"
 ```
 </CodeGroup>
 
 To make it permanent, add the `export` lines to `~/.bashrc` or `~/.zshrc` and reload your shell.
+
+<Tip>
+The `-latest` aliases always resolve to the newest model in each tier, so your config never goes stale. To pin an exact version instead, use a specific ID such as `anthropic/claude-opus-4-8`. Browse every ID via [List Models](/v3/llms/listing-models).
+</Tip>
 
 ### 2. Launch Claude Code
 
@@ -73,8 +77,8 @@ Eden AI uses the `provider/model` format. Update the `ANTHROPIC_MODEL` environme
 
 <CodeGroup>
 ```bash Claude variants
-export ANTHROPIC_MODEL="anthropic/claude-opus-4-7"     # default
-export ANTHROPIC_MODEL="anthropic/claude-sonnet-4-5"   # cheaper, faster
+export ANTHROPIC_MODEL="anthropic/claude-opus-4-8"     # most capable
+export ANTHROPIC_MODEL="anthropic/claude-sonnet-5"     # balanced
 export ANTHROPIC_MODEL="anthropic/claude-haiku-4-5"    # fastest
 ```
 
@@ -85,6 +89,37 @@ export ANTHROPIC_MODEL="google/gemini-2.5-pro"
 </CodeGroup>
 
 Browse the full catalog via [List Models](/v3/llms/listing-models) or `GET https://api.edenai.run/v3/models`.
+
+## Model pools and routing
+
+Instead of pinning a single model, you can let Eden AI pick the best model for each request or fail over automatically when a provider has an incident.
+
+### Automatic routing with `@edenai`
+
+Set the model to `@edenai` and Eden AI's router selects the best available model from its default pool on every request. This works directly in Claude Code, since it only needs the model name:
+
+<CodeGroup>
+```bash bash / zsh
+export ANTHROPIC_MODEL="@edenai"
+```
+
+```powershell PowerShell
+$env:ANTHROPIC_MODEL = "@edenai"
+```
+</CodeGroup>
+
+<Note>
+Smart routing is tuned for general prompts. Claude Code is an agentic tool that leans heavily on tool calling, so for real coding sessions we recommend pinning a strong model (for example `anthropic/claude-opus-4-8`) or restricting the pool to tool-capable models.
+</Note>
+
+### Custom pools and fallbacks
+
+To restrict routing to a specific pool or declare an ordered failover list, you pass these as request-body fields:
+
+- **`router_candidates`**: a custom pool that `@edenai` chooses from. See [Smart Routing](/v3/llms/smart-routing).
+- **`fallbacks`**: models tried in order if the primary fails. See [Fallback](/v3/general/fallback).
+
+Claude Code only forwards the model name, not extra body fields, so use `router_candidates` and `fallbacks` through the API or an SDK directly rather than Claude Code's environment variables.
 
 ## Troubleshooting
 
@@ -98,12 +133,12 @@ echo $ANTHROPIC_API_KEY
 curl -X POST https://api.edenai.run/v3/chat/completions \
   -H "Authorization: Bearer $ANTHROPIC_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"model": "anthropic/claude-opus-4.7", "messages": [{"role": "user", "content": "ping"}]}'
+  -d '{"model": "anthropic/claude-opus-4-8", "messages": [{"role": "user", "content": "ping"}]}'
 ```
 
 ### Model not found
 
-Use the full `provider/model` string (e.g. `anthropic/claude-opus-4.7`, not `claude-opus-4.7`). Confirm the ID is in the catalog returned by `GET /v3/models`.
+Use the full `provider/model` string (e.g. `anthropic/claude-opus-4-8`, not `claude-opus-4-8`). Confirm the ID is in the catalog returned by `GET /v3/models`.
 
 ### Connection issues
 

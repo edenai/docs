@@ -16,7 +16,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "ZDR", "Zero Data Retention", "data privacy", "GDPR", "model training"]}
   datePublished="2026-06-29T00:00:00Z"
-  dateModified="2026-06-30T00:00:00Z"
+  dateModified="2026-07-01T00:00:00Z"
 />
 
 When you call a model through Eden AI, your request is forwarded to the underlying provider, whose own policy governs what happens to it.
@@ -30,7 +30,7 @@ Eden AI stores no request or response content by default, and never trains on yo
 The tables below show, for each provider on Eden AI, whether it may train on your data (**Trains?**), whether **Zero Data Retention** (nothing stored) is available (**ZDR**), and how long data is kept otherwise (**Retention**). When ZDR is in effect, retention is **None**.
 
 <Note>
-  This information was last updated on 30 June 2026.
+  This information was last updated on 1 July 2026.
 </Note>
 
 ### LLM providers
@@ -41,28 +41,28 @@ The tables below show, for each provider on Eden AI, whether it may train on you
 | Anthropic | No | No | 30 days |
 | ByteDance | No | No | Not specified |
 | Cerebras | No | **Yes** | None |
-| Cloudflare | No | No | None |
+| Cloudflare | No | **Yes** | None |
 | Cohere | No | No | 30 days |
 | DashScope (legacy) | No | No | None |
-| Databricks | No | No | Up to 30 days |
+| Databricks | No | **Yes** | None |
 | DeepInfra | No | **Yes** | None |
 | DeepSeek | May train | No | No auto-deletion |
 | Fireworks | No | **Yes** | None |
 | Google (AI Studio) | No | No | Up to ~55 days |
 | Google (Vertex) | No | **Yes** | None |
 | Groq | No | **Yes** | None |
-| Lilac | No | No | None |
-| Microsoft Azure | No | No | Up to 30 days |
+| Lilac | No | **Yes** | None |
+| Microsoft Azure | No | **Yes** | None |
 | MiniMax | May train | No | Not stated |
 | Mistral | No | **Yes** | None |
 | Nebius | No | **Yes** | None |
 | OpenAI | No | No | 30 days |
-| OVHcloud | No | No | None |
+| OVHcloud | No | **Yes** | None |
 | Perplexity | No | **Yes** | None |
 | Qwen | No | **Yes** | None |
-| Scaleway | No | No | None |
+| Scaleway | No | **Yes** | None |
 | Together | No | **Yes** | None |
-| xAI | No | No | 30 days |
+| xAI | No | **Yes** | None |
 
 ### Expert Model providers
 
@@ -110,6 +110,6 @@ This is a separate question from retention: it is about *where* your data is pro
 
 ## Reduce your data exposure
 
-- **Zero Data Retention** (nothing stored): for LLMs, pin your `model` and `fallbacks` to Amazon Bedrock, Google (Vertex), Mistral, Nebius, Qwen, Cerebras, DeepInfra, Fireworks, Groq, Perplexity, or Together. For Expert Models, pick a provider marked **Yes** in the table above.
+- **Zero Data Retention** (nothing stored): for LLMs, pin your `model` and `fallbacks` to Amazon Bedrock, Cerebras, Cloudflare, Databricks, DeepInfra, Fireworks, Google (Vertex), Groq, Lilac, Microsoft Azure, Mistral, Nebius, OVHcloud, Perplexity, Qwen, Scaleway, Together, or xAI. For Expert Models, pick a provider marked **Yes** in the table above.
 - **EU processing**: use the EU endpoint (see EU data residency above).
 - **Logs off by default**: Eden AI stores no content unless you enable log retention.

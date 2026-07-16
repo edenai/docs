@@ -1,0 +1,134 @@
+---
+title: "Lynkr"
+icon: "/integration-logo/lynkr-icondoc.svg"
+description: "Use Lynkr with Eden AI to route your gateway to 500+ AI models with tier-based cost optimisation."
+---
+
+import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
+
+<TechArticleSchema
+  title={"Lynkr"}
+  description={"Use Lynkr with Eden AI to route your gateway to 500+ AI models with tier-based cost optimisation."}
+  path="v3/integrations/lynkr"
+  articleSection="AI Gateway"
+  about={"LLM Gateway Integration"}
+  proficiencyLevel="Intermediate"
+  keywords={["Eden AI", "AI API", "Lynkr", "LLM Gateway", "Routing"]}
+  datePublished="2026-07-16T00:00:00Z"
+  dateModified="2026-07-16T00:00:00Z"
+/>
+
+Use Lynkr with Eden AI to route your gateway to 500+ AI models with tier-based cost optimisation.
+
+## Overview
+
+Lynkr is an open-source LLM gateway that cuts costs with **tier-based routing** — it scores each request 0–100 and sends it to the cheapest model that can handle it. Eden AI is a built-in Lynkr provider, so you reach models from OpenAI, Anthropic, Google, Mistral and 500+ more behind one key, with EU-based, GDPR-aligned inference and unified billing.
+
+## Installation
+
+<CodeGroup>
+```bash npm
+npm install -g lynkr
+```
+
+```bash Homebrew
+brew tap fast-editor/lynkr
+brew install lynkr
+```
+
+```bash Install script
+curl -fsSL https://raw.githubusercontent.com/Fast-Editor/Lynkr/main/install.sh | bash
+```
+</CodeGroup>
+
+## Quick Start
+
+Initialise Lynkr, point it at Eden AI, and start the gateway:
+
+<CodeGroup>
+```bash Terminal
+lynkr init                       # scaffold a .env
+export EDENAI_API_KEY=your-edenai-key
+export MODEL_PROVIDER=edenai      # send all requests to Eden AI
+lynkr start                       # OpenAI-compatible endpoint on port 8081
+```
+</CodeGroup>
+
+```bash curl
+curl -X POST http://localhost:8081/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "mistral/mistral-small-latest",
+    "messages": [{"role": "user", "content": "Hello from Lynkr + Eden AI"}]
+  }'
+```
+
+## Configuration
+
+Lynkr reads provider credentials from environment variables (or a `.env` file):
+
+<CodeGroup>
+```bash .env
+EDENAI_API_KEY=your-edenai-key
+EDENAI_MODEL=openai/gpt-4o-mini                       # default model (provider/model naming)
+EDENAI_EMBEDDINGS_MODEL=openai/text-embedding-ada-002
+EDENAI_ENDPOINT=https://api.edenai.run/v3/chat/completions
+```
+</CodeGroup>
+
+### Routing modes
+
+**Static** — every request goes to Eden AI:
+
+<CodeGroup>
+```bash Static
+export MODEL_PROVIDER=edenai
+```
+</CodeGroup>
+
+**Tier-based (recommended for cost)** — set all four tiers to Eden AI models; Lynkr routes by request complexity:
+
+<CodeGroup>
+```bash Tier-based
+export TIER_SIMPLE=edenai:mistral/mistral-small-latest
+export TIER_MEDIUM=edenai:openai/gpt-4o-mini
+export TIER_HARD=edenai:anthropic/claude-sonnet-4-5
+export TIER_EXPERT=edenai:openai/gpt-4o
+```
+</CodeGroup>
+
+## Available Models
+
+Use the `provider/model` format for any Eden AI model:
+
+**OpenAI**
+- `openai/gpt-4o`
+- `openai/gpt-4o-mini`
+
+**Anthropic**
+- `anthropic/claude-sonnet-4-5`
+- `anthropic/claude-haiku-4-5`
+
+**Google**
+- `google/gemini-2.5-pro`
+- `google/gemini-2.5-flash`
+
+**Mistral**
+- `mistral/mistral-large-latest`
+- `mistral/mistral-small-latest`
+
+## Environment Variables
+
+<CodeGroup>
+```bash .env
+EDENAI_API_KEY=your_api_key_here
+EDENAI_MODEL=openai/gpt-4o-mini
+EDENAI_ENDPOINT=https://api.edenai.run/v3/chat/completions
+```
+</CodeGroup>
+
+## Next Steps
+
+- [Chat Completions](/v3/llms/chat-completions) - Core LLM endpoint
+- [List LLM Models](/v3/llms/listing-models) - Browse available providers and models
+- [OpenAI SDK (Python)](/v3/integrations/openai-sdk-python) - Direct SDK usage

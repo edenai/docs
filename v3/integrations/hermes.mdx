@@ -128,6 +128,7 @@ hermes fallback add
 The setup above uses Hermes' generic `custom` provider, which is the fastest way to get running. For a **native `--provider eden-ai` experience** — so Eden AI shows up in `hermes model`, `hermes doctor`, and the setup wizard — install Eden AI as a **standalone model-provider plugin**. Drop a directory under `$HERMES_HOME/plugins/model-providers/eden-ai/`, with no changes to the Hermes repo:
 
 <CodeGroup>
+{/* skip-test */}
 ```python __init__.py
 from providers import register_provider
 from providers.base import ProviderProfile

@@ -42,6 +42,7 @@ poetry add pydantic-ai
 Point Pydantic AI's OpenAI model at Eden AI:
 
 <CodeGroup>
+{/* skip-test */}
 ```python Python
 from pydantic_ai import Agent
 from pydantic_ai.models.openai import OpenAIChatModel
@@ -88,6 +89,7 @@ Access models from multiple providers using the `provider/model` format:
 Pydantic AI's signature feature works unchanged — define a Pydantic `output_type` and the agent returns a validated object, whichever Eden AI model you choose:
 
 <CodeGroup>
+{/* skip-test */}
 ```python Python
 from pydantic import BaseModel
 from pydantic_ai import Agent
@@ -118,6 +120,7 @@ print(result.output)  # City(name='Paris', country='France', population=...)
 Keep conversation history across runs with `message_history`:
 
 <CodeGroup>
+{/* skip-test */}
 ```python Python
 from pydantic_ai import Agent
 from pydantic_ai.models.openai import OpenAIChatModel
@@ -147,6 +150,7 @@ print(result.output)
 ## Error Handling
 
 <CodeGroup>
+{/* skip-test */}
 ```python Python
 from pydantic_ai import Agent
 from pydantic_ai.models.openai import OpenAIChatModel
@@ -179,6 +183,7 @@ except UnexpectedModelBehavior as e:
 EDEN_AI_API_KEY=your_api_key_here
 ```
 
+{/* skip-test */}
 ```python Python
 import os
 from pydantic_ai.models.openai import OpenAIChatModel

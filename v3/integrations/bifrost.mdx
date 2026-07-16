@@ -66,7 +66,7 @@ Add Eden AI as a Custom Provider in your `config.json`, then point any request a
 curl -X POST http://localhost:8080/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "edenai/openai/gpt-4o",
+    "model": "edenai/openai/gpt-5.5",
     "messages": [{"role": "user", "content": "Hello! How are you?"}]
   }'
 ```
@@ -79,20 +79,20 @@ You can also add the provider at runtime via `POST /api/providers` or from the B
 Call any Eden AI model through Bifrost as `edenai/<provider>/<model>`:
 
 **OpenAI**
-- `edenai/openai/gpt-4o`
-- `edenai/openai/gpt-4o-mini`
+- `edenai/openai/gpt-5.5`
+- `edenai/openai/gpt-5-mini`
 
 **Anthropic**
-- `edenai/anthropic/claude-sonnet-4-5`
+- `edenai/anthropic/claude-sonnet-5`
 - `edenai/anthropic/claude-haiku-4-5`
 
 **Google**
 - `edenai/google/gemini-2.5-pro`
-- `edenai/google/gemini-2.5-flash`
+- `edenai/google/gemini-3.5-flash`
 
 **Mistral**
-- `edenai/mistral/mistral-large-latest`
-- `edenai/mistral/mistral-small-latest`
+- `edenai/mistral/mistral-large-2512`
+- `edenai/mistral/mistral-small-2603`
 
 ## Routing & Fallbacks
 

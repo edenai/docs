@@ -58,7 +58,7 @@ lynkr start                       # OpenAI-compatible endpoint on port 8081
 curl -X POST http://localhost:8081/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "mistral/mistral-small-latest",
+    "model": "mistral/mistral-small-2603",
     "messages": [{"role": "user", "content": "Hello from Lynkr + Eden AI"}]
   }'
 ```
@@ -70,7 +70,7 @@ Lynkr reads provider credentials from environment variables (or a `.env` file):
 <CodeGroup>
 ```bash .env
 EDENAI_API_KEY=your-edenai-key
-EDENAI_MODEL=openai/gpt-4o-mini                       # default model (provider/model naming)
+EDENAI_MODEL=openai/gpt-5-mini                       # default model (provider/model naming)
 EDENAI_EMBEDDINGS_MODEL=openai/text-embedding-ada-002
 EDENAI_ENDPOINT=https://api.edenai.run/v3/chat/completions
 ```
@@ -90,10 +90,10 @@ export MODEL_PROVIDER=edenai
 
 <CodeGroup>
 ```bash Tier-based
-export TIER_SIMPLE=edenai:mistral/mistral-small-latest
-export TIER_MEDIUM=edenai:openai/gpt-4o-mini
-export TIER_HARD=edenai:anthropic/claude-sonnet-4-5
-export TIER_EXPERT=edenai:openai/gpt-4o
+export TIER_SIMPLE=edenai:mistral/mistral-small-2603
+export TIER_MEDIUM=edenai:openai/gpt-5-mini
+export TIER_HARD=edenai:anthropic/claude-sonnet-5
+export TIER_EXPERT=edenai:openai/gpt-5.5
 ```
 </CodeGroup>
 
@@ -102,27 +102,27 @@ export TIER_EXPERT=edenai:openai/gpt-4o
 Use the `provider/model` format for any Eden AI model:
 
 **OpenAI**
-- `openai/gpt-4o`
-- `openai/gpt-4o-mini`
+- `openai/gpt-5.5`
+- `openai/gpt-5-mini`
 
 **Anthropic**
-- `anthropic/claude-sonnet-4-5`
+- `anthropic/claude-sonnet-5`
 - `anthropic/claude-haiku-4-5`
 
 **Google**
 - `google/gemini-2.5-pro`
-- `google/gemini-2.5-flash`
+- `google/gemini-3.5-flash`
 
 **Mistral**
-- `mistral/mistral-large-latest`
-- `mistral/mistral-small-latest`
+- `mistral/mistral-large-2512`
+- `mistral/mistral-small-2603`
 
 ## Environment Variables
 
 <CodeGroup>
 ```bash .env
 EDENAI_API_KEY=your_api_key_here
-EDENAI_MODEL=openai/gpt-4o-mini
+EDENAI_MODEL=openai/gpt-5-mini
 EDENAI_ENDPOINT=https://api.edenai.run/v3/chat/completions
 ```
 </CodeGroup>

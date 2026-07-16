@@ -1,0 +1,96 @@
+---
+title: "Pi"
+icon: "/integration-logo/pi-icondoc.svg"
+description: "Use Pi with Eden AI to power your coding agent (and Flue) with 500+ AI models through one API."
+---
+
+import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
+
+<TechArticleSchema
+  title={"Pi"}
+  description={"Use Pi with Eden AI to power your coding agent (and Flue) with 500+ AI models through one API."}
+  path="v3/integrations/pi"
+  articleSection="Coding Agents"
+  about={"Coding Agent Integration"}
+  proficiencyLevel="Intermediate"
+  keywords={["Eden AI", "AI API", "Pi", "Flue", "Coding Agent"]}
+  datePublished="2026-07-16T00:00:00Z"
+  dateModified="2026-07-16T00:00:00Z"
+/>
+
+Use Pi with Eden AI to power your coding agent (and Flue) with 500+ AI models through one API.
+
+## Overview
+
+Pi is an MIT-licensed coding agent whose model catalog also powers Flue. Pi lets extensions register custom model providers, so you can add Eden AI with a small extension — no fork, no core change — and reach models from OpenAI, Anthropic, Google, Cohere, Meta and more behind one key, with EU-based, GDPR-aligned inference. The same provider flows through to Flue.
+
+## Installation
+
+<CodeGroup>
+```bash Install script
+curl -fsSL https://pi.dev/install.sh | sh
+```
+
+```bash npm
+npm install -g --ignore-scripts @earendil-works/pi-coding-agent
+```
+</CodeGroup>
+
+## Quick Start
+
+Register Eden AI as a custom provider from a Pi extension:
+
+<CodeGroup>
+```typescript extension.ts
+import { pi } from "@earendil-works/pi-coding-agent";
+
+pi.registerProvider("edenai", {
+  name: "Eden AI",
+  api: "openai-completions",
+  baseUrl: "https://api.edenai.run/v3",
+  apiKey: process.env.EDEN_AI_API_KEY,
+  models: [
+    "openai/gpt-4o",
+    "openai/gpt-4o-mini",
+    "anthropic/claude-sonnet-4-5",
+    "mistral/mistral-small-latest",
+  ],
+});
+```
+</CodeGroup>
+
+Then select any `edenai/<model>` in Pi. The same catalog is available in Flue.
+
+## Available Models
+
+Access models from multiple providers using the `provider/model` format:
+
+**OpenAI**
+- `openai/gpt-4o`
+- `openai/gpt-4o-mini`
+
+**Anthropic**
+- `anthropic/claude-sonnet-4-5`
+- `anthropic/claude-haiku-4-5`
+
+**Google**
+- `google/gemini-2.5-pro`
+- `google/gemini-2.5-flash`
+
+**Mistral**
+- `mistral/mistral-large-latest`
+- `mistral/mistral-small-latest`
+
+## Environment Variables
+
+<CodeGroup>
+```bash .env
+EDEN_AI_API_KEY=your_api_key_here
+```
+</CodeGroup>
+
+## Next Steps
+
+- [Chat Completions](/v3/llms/chat-completions) - Core LLM endpoint
+- [List LLM Models](/v3/llms/listing-models) - Browse available providers and models
+- [OpenAI SDK (Python)](/v3/integrations/openai-sdk-python) - Direct SDK usage

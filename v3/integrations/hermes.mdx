@@ -15,7 +15,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "Hermes Agent", "Nous Research"]}
   datePublished="2026-06-19T00:00:00Z"
-  dateModified="2026-06-19T00:00:00Z"
+  dateModified="2026-07-16T00:00:00Z"
 />
 
 Connect [Hermes Agent](https://hermes-agent.nousresearch.com) to Eden AI and run the self-hosted, persistent agent on 500+ models with automatic fallbacks and a single API key.
@@ -121,6 +121,50 @@ Hermes can fall back to a backup model when the primary one fails. Add a second 
 
 ```bash
 hermes fallback add
+```
+
+## First-class provider plugin (optional)
+
+The setup above uses Hermes' generic `custom` provider, which is the fastest way to get running. For a **native `--provider eden-ai` experience** — so Eden AI shows up in `hermes model`, `hermes doctor`, and the setup wizard — install Eden AI as a **standalone model-provider plugin**. Drop a directory under `$HERMES_HOME/plugins/model-providers/eden-ai/`, with no changes to the Hermes repo:
+
+<CodeGroup>
+```python __init__.py
+from providers import register_provider
+from providers.base import ProviderProfile
+
+eden_ai = ProviderProfile(
+    name="eden-ai",
+    aliases=("edenai",),
+    display_name="Eden AI",
+    description="Eden AI — 500+ models via one OpenAI-compatible API (EU/GDPR)",
+    signup_url="https://app.edenai.run",
+    env_vars=("EDENAI_API_KEY",),
+    base_url="https://api.edenai.run/v3",
+    auth_type="api_key",
+    default_aux_model="mistral/mistral-small-latest",
+    fallback_models=(
+        "anthropic/claude-sonnet-4-5",
+        "openai/gpt-4o",
+        "mistral/mistral-small-latest",
+    ),
+)
+
+register_provider(eden_ai)
+```
+
+```yaml plugin.yaml
+name: eden-ai
+kind: model-provider
+version: 1.0.0
+description: Eden AI — 500+ models via one OpenAI-compatible API (EU/GDPR)
+author: Eden AI
+```
+</CodeGroup>
+
+Hermes then auto-wires credential resolution, the `--provider eden-ai` flag, the `hermes model` picker (models fetched from `{base_url}/models`), and the `hermes doctor` health check. Select it with:
+
+```bash
+hermes chat --provider eden-ai
 ```
 
 ## Troubleshooting

@@ -43,7 +43,7 @@ Eden AI is a built-in preset, so you only need a key. Configure it interactively
 <CodeGroup>
 ```bash Interactive
 ocr config provider   # select "edenai"
-ocr config model      # pick an Eden AI model, e.g. anthropic/claude-sonnet-4-5
+ocr config model      # pick an Eden AI model, e.g. anthropic/claude-sonnet-5
 ```
 </CodeGroup>
 
@@ -53,7 +53,7 @@ Or write the config directly (scripts / CI):
 ```bash CLI
 ocr config set provider edenai
 ocr config set providers.edenai.api_key YOUR_EDEN_AI_API_KEY
-ocr config set providers.edenai.model anthropic/claude-sonnet-4-5
+ocr config set providers.edenai.model anthropic/claude-sonnet-5
 ```
 </CodeGroup>
 
@@ -64,20 +64,20 @@ The `edenai` preset supplies the base URL (`https://api.edenai.run/v3`) and the 
 Pick any Eden AI model using the `provider/model` format:
 
 **OpenAI**
-- `openai/gpt-4o`
-- `openai/gpt-4o-mini`
+- `openai/gpt-5.5`
+- `openai/gpt-5-mini`
 
 **Anthropic**
-- `anthropic/claude-sonnet-4-5`
-- `anthropic/claude-opus-4-5`
+- `anthropic/claude-sonnet-5`
+- `anthropic/claude-opus-4-8`
 
 **Google**
 - `google/gemini-2.5-pro`
-- `google/gemini-2.5-flash`
+- `google/gemini-3.5-flash`
 
 **Mistral**
-- `mistral/mistral-large-latest`
-- `mistral/mistral-small-latest`
+- `mistral/mistral-large-2512`
+- `mistral/mistral-small-2603`
 
 ## Environment Variables
 

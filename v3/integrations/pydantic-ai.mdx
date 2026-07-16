@@ -1,0 +1,206 @@
+---
+title: "Pydantic AI"
+icon: "/integration-logo/pydantic-ai-icondoc.svg"
+description: "Use Pydantic AI with Eden AI to build type-safe agents on 500+ AI models through one API."
+---
+
+import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
+
+<TechArticleSchema
+  title={"Pydantic AI"}
+  description={"Use Pydantic AI with Eden AI to build type-safe agents on 500+ AI models through one API."}
+  path="v3/integrations/pydantic-ai"
+  articleSection="AI Frameworks"
+  about={"LLM Framework Integration"}
+  proficiencyLevel="Intermediate"
+  keywords={["Eden AI", "AI API", "Pydantic AI", "Python", "Agents"]}
+  datePublished="2026-07-16T00:00:00Z"
+  dateModified="2026-07-16T00:00:00Z"
+/>
+
+Use Pydantic AI with Eden AI to build type-safe agents on 500+ AI models through one API.
+
+## Overview
+
+Pydantic AI is a type-safe, structured-output agent framework for Python. It works with any OpenAI-compatible endpoint through `OpenAIChatModel` + `OpenAIProvider`, so you can point it at Eden AI's V3 API and access models from OpenAI, Anthropic, Google, Cohere, Meta, and more — behind one key, with EU-based, GDPR-aligned inference.
+
+## Installation
+
+<CodeGroup>
+```bash pip
+pip install pydantic-ai
+```
+
+```bash poetry
+poetry add pydantic-ai
+```
+
+</CodeGroup>
+
+## Quick Start
+
+Point Pydantic AI's OpenAI model at Eden AI:
+
+<CodeGroup>
+{/* skip-test */}
+```python Python
+from pydantic_ai import Agent
+from pydantic_ai.models.openai import OpenAIChatModel
+from pydantic_ai.providers.openai import OpenAIProvider
+
+model = OpenAIChatModel(
+    "openai/gpt-4o",
+    provider=OpenAIProvider(
+        api_key="YOUR_EDEN_AI_API_KEY",  # Get from https://app.edenai.run
+        base_url="https://api.edenai.run/v3",
+    ),
+)
+
+agent = Agent(model)
+result = agent.run_sync("Hello! How are you?")
+print(result.output)
+```
+</CodeGroup>
+
+## Available Models
+
+Access models from multiple providers using the `provider/model` format:
+
+**OpenAI**
+- `openai/gpt-4o`
+- `openai/gpt-4o-mini`
+- `openai/gpt-4-turbo`
+
+**Anthropic**
+- `anthropic/claude-sonnet-4-5`
+- `anthropic/claude-opus-4-5`
+- `anthropic/claude-haiku-4-5`
+
+**Google**
+- `google/gemini-2.5-pro`
+- `google/gemini-2.5-flash`
+
+**Mistral**
+- `mistral/mistral-large-latest`
+- `mistral/mistral-small-latest`
+
+## Structured Output
+
+Pydantic AI's signature feature works unchanged — define a Pydantic `output_type` and the agent returns a validated object, whichever Eden AI model you choose:
+
+<CodeGroup>
+{/* skip-test */}
+```python Python
+from pydantic import BaseModel
+from pydantic_ai import Agent
+from pydantic_ai.models.openai import OpenAIChatModel
+from pydantic_ai.providers.openai import OpenAIProvider
+
+class City(BaseModel):
+    name: str
+    country: str
+    population: int
+
+model = OpenAIChatModel(
+    "anthropic/claude-sonnet-4-5",
+    provider=OpenAIProvider(
+        api_key="YOUR_EDEN_AI_API_KEY",
+        base_url="https://api.edenai.run/v3",
+    ),
+)
+
+agent = Agent(model, output_type=City)
+result = agent.run_sync("Tell me about the capital of France.")
+print(result.output)  # City(name='Paris', country='France', population=...)
+```
+</CodeGroup>
+
+## Multi-Turn Conversations
+
+Keep conversation history across runs with `message_history`:
+
+<CodeGroup>
+{/* skip-test */}
+```python Python
+from pydantic_ai import Agent
+from pydantic_ai.models.openai import OpenAIChatModel
+from pydantic_ai.providers.openai import OpenAIProvider
+
+model = OpenAIChatModel(
+    "anthropic/claude-sonnet-4-5",
+    provider=OpenAIProvider(
+        api_key="YOUR_EDEN_AI_API_KEY",
+        base_url="https://api.edenai.run/v3",
+    ),
+)
+agent = Agent(model, system_prompt="You are a helpful assistant.")
+
+result = agent.run_sync("What is the capital of France?")
+print(result.output)
+
+# Continue the conversation with prior context
+result = agent.run_sync(
+    "What's its population?",
+    message_history=result.all_messages(),
+)
+print(result.output)
+```
+</CodeGroup>
+
+## Error Handling
+
+<CodeGroup>
+{/* skip-test */}
+```python Python
+from pydantic_ai import Agent
+from pydantic_ai.models.openai import OpenAIChatModel
+from pydantic_ai.providers.openai import OpenAIProvider
+from pydantic_ai.exceptions import ModelHTTPError, UnexpectedModelBehavior
+
+model = OpenAIChatModel(
+    "openai/gpt-4o",
+    provider=OpenAIProvider(
+        api_key="YOUR_EDEN_AI_API_KEY",
+        base_url="https://api.edenai.run/v3",
+    ),
+)
+agent = Agent(model)
+
+try:
+    result = agent.run_sync("Hello!")
+    print(result.output)
+except ModelHTTPError as e:
+    print(f"Model HTTP error (auth, rate limit, bad request): {e}")
+except UnexpectedModelBehavior as e:
+    print(f"Unexpected model behavior: {e}")
+```
+</CodeGroup>
+
+## Environment Variables
+
+<CodeGroup>
+```bash .env
+EDEN_AI_API_KEY=your_api_key_here
+```
+
+{/* skip-test */}
+```python Python
+import os
+from pydantic_ai.models.openai import OpenAIChatModel
+from pydantic_ai.providers.openai import OpenAIProvider
+
+model = OpenAIChatModel(
+    "openai/gpt-4o",
+    provider=OpenAIProvider(
+        api_key=os.getenv("EDEN_AI_API_KEY"),
+        base_url="https://api.edenai.run/v3",
+    ),
+)
+```
+</CodeGroup>
+
+## Next Steps
+
+- [Chat Completions](/v3/llms/chat-completions) - Core LLM endpoint
+- [List LLM Models](/v3/llms/listing-models) - Browse available providers and models
+- [OpenAI SDK (Python)](/v3/integrations/openai-sdk-python) - Direct SDK usage

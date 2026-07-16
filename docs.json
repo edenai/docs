@@ -227,6 +227,15 @@
                     ]
                   },
                   {
+                    "group": "AI Gateway",
+                    "icon": "network-wired",
+                    "expanded": false,
+                    "pages": [
+                      "v3/integrations/bifrost",
+                      "v3/integrations/lynkr"
+                    ]
+                  },
+                  {
                     "group": "Coding Agents",
                     "icon": "robot",
                     "expanded": false,

@@ -223,7 +223,8 @@
                     "pages": [
                       "v3/integrations/openai-sdk-python",
                       "v3/integrations/openai-sdk-typescript",
-                      "v3/integrations/langchain"
+                      "v3/integrations/langchain",
+                      "v3/integrations/aisuite"
                     ]
                   },
                   {

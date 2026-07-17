@@ -1,0 +1,146 @@
+---
+title: "aisuite"
+icon: "/integration-logo/aisuite-icondoc.svg"
+description: "Use aisuite with Eden AI to call 500+ AI models through one unified, OpenAI-style interface."
+---
+
+import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
+
+<TechArticleSchema
+  title={"aisuite"}
+  description={"Use aisuite with Eden AI to call 500+ AI models through one unified, OpenAI-style interface."}
+  path="v3/integrations/aisuite"
+  articleSection="AI Frameworks"
+  about={"LLM Framework Integration"}
+  proficiencyLevel="Intermediate"
+  keywords={["Eden AI", "AI API", "aisuite", "Python", "Andrew Ng"]}
+  datePublished="2026-07-17T00:00:00Z"
+  dateModified="2026-07-17T00:00:00Z"
+/>
+
+Use aisuite with Eden AI to call 500+ AI models through one unified, OpenAI-style interface.
+
+## Overview
+
+[aisuite](https://github.com/andrewyng/aisuite) is a lightweight Python library (from Andrew Ng's team) that gives you a single, OpenAI-style Chat Completions interface across many providers — swap providers by changing one string. **Eden AI is a built-in aisuite provider**, so you reach models from OpenAI, Anthropic, Google, Mistral, Cohere, Meta and more behind one key, with EU-based, GDPR-aligned inference.
+
+You select a model with the `provider:model_id` syntax. For Eden AI, the provider is `edenai` and the model id follows Eden AI's `provider/model` scheme — for example `edenai:anthropic/claude-sonnet-5`.
+
+## Installation
+
+Eden AI is OpenAI-compatible, so aisuite talks to it through the `openai` SDK — install both:
+
+<CodeGroup>
+```bash pip
+pip install aisuite openai
+```
+
+```bash poetry
+poetry add aisuite openai
+```
+</CodeGroup>
+
+## Quick Start
+
+Set your key, then point aisuite at Eden AI by prefixing any model with `edenai:`:
+
+<CodeGroup>
+```bash .env
+EDENAI_API_KEY=your_api_key_here
+```
+
+{/* skip-test */}
+```python Python
+import aisuite as ai
+
+client = ai.Client()
+
+response = client.chat.completions.create(
+    model="edenai:anthropic/claude-sonnet-5",  # edenai:<provider>/<model>
+    messages=[
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": "Hello! How are you?"},
+    ],
+)
+
+print(response.choices[0].message.content)
+```
+</CodeGroup>
+
+The `edenai` provider automatically uses the Eden AI base URL (`https://api.edenai.run/v3`) and reads your key from the `EDENAI_API_KEY` environment variable.
+
+## Switching models
+
+aisuite's core benefit: change providers by changing one string. Every Eden AI model is reachable the same way — no per-provider SDKs, no code changes:
+
+<CodeGroup>
+{/* skip-test */}
+```python Python
+import aisuite as ai
+
+client = ai.Client()
+messages = [{"role": "user", "content": "Write a haiku about the sea."}]
+
+for model in [
+    "edenai:openai/gpt-5.5",
+    "edenai:anthropic/claude-sonnet-5",
+    "edenai:mistral/mistral-large-2512",
+]:
+    response = client.chat.completions.create(model=model, messages=messages)
+    print(model, "->", response.choices[0].message.content)
+```
+</CodeGroup>
+
+## Available Models
+
+Use the `edenai:<provider>/<model>` format for any Eden AI model:
+
+**OpenAI**
+- `edenai:openai/gpt-5.5`
+- `edenai:openai/gpt-5-mini`
+
+**Anthropic**
+- `edenai:anthropic/claude-sonnet-5`
+- `edenai:anthropic/claude-opus-4-8`
+- `edenai:anthropic/claude-haiku-4-5`
+
+**Google**
+- `edenai:google/gemini-2.5-pro`
+- `edenai:google/gemini-3.5-flash`
+
+**Mistral**
+- `edenai:mistral/mistral-large-2512`
+- `edenai:mistral/mistral-small-2603`
+
+## Passing configuration explicitly
+
+Prefer not to use environment variables? Pass the key through the aisuite client config instead:
+
+<CodeGroup>
+{/* skip-test */}
+```python Python
+import aisuite as ai
+
+client = ai.Client({"edenai": {"api_key": "YOUR_EDENAI_API_KEY"}})
+
+response = client.chat.completions.create(
+    model="edenai:mistral/mistral-large-2512",
+    messages=[{"role": "user", "content": "Say hello in French."}],
+)
+print(response.choices[0].message.content)
+```
+</CodeGroup>
+
+## Environment Variables
+
+<CodeGroup>
+```bash .env
+EDENAI_API_KEY=your_api_key_here
+```
+</CodeGroup>
+
+## Next Steps
+
+- [Chat Completions](/v3/llms/chat-completions) - Core LLM endpoint
+- [List LLM Models](/v3/llms/listing-models) - Browse available providers and models
+- [OpenAI SDK (Python)](/v3/integrations/openai-sdk-python) - Direct SDK usage

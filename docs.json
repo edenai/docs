@@ -224,7 +224,17 @@
                       "v3/integrations/openai-sdk-python",
                       "v3/integrations/openai-sdk-typescript",
                       "v3/integrations/langchain",
+                      "v3/integrations/pydantic-ai",
                       "v3/integrations/aisuite"
+                    ]
+                  },
+                  {
+                    "group": "AI Gateway",
+                    "icon": "network-wired",
+                    "expanded": false,
+                    "pages": [
+                      "v3/integrations/bifrost",
+                      "v3/integrations/lynkr"
                     ]
                   },
                   {
@@ -236,7 +246,9 @@
                       "v3/integrations/cline",
                       "v3/integrations/codex-cli",
                       "v3/integrations/continue-dev",
-                      "v3/integrations/opencode"
+                      "v3/integrations/opencode",
+                      "v3/integrations/open-code-review",
+                      "v3/integrations/pi"
                     ]
                   },
                   {

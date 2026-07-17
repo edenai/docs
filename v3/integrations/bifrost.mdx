@@ -1,0 +1,115 @@
+---
+title: "Bifrost"
+icon: "/integration-logo/bifrost-icondoc.svg"
+description: "Use Bifrost with Eden AI to route to 500+ AI models through one OpenAI-compatible gateway."
+---
+
+import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
+
+<TechArticleSchema
+  title={"Bifrost"}
+  description={"Use Bifrost with Eden AI to route to 500+ AI models through one OpenAI-compatible gateway."}
+  path="v3/integrations/bifrost"
+  articleSection="AI Gateway"
+  about={"LLM Gateway Integration"}
+  proficiencyLevel="Intermediate"
+  keywords={["Eden AI", "AI API", "Bifrost", "LLM Gateway", "Go"]}
+  datePublished="2026-07-16T00:00:00Z"
+  dateModified="2026-07-16T00:00:00Z"
+/>
+
+Use Bifrost with Eden AI to route to 500+ AI models through one OpenAI-compatible gateway.
+
+## Overview
+
+Bifrost is a high-performance open-source LLM gateway (Go) that adds routing, fallbacks, load-balancing and governance across providers. Because Eden AI is fully OpenAI-compatible, you add it through Bifrost's **Custom Provider** configuration — no build and no fork — and route to models from OpenAI, Anthropic, Google, Cohere, Meta and more behind one key, with EU-based, GDPR-aligned inference.
+
+## Installation
+
+<CodeGroup>
+```bash Docker
+docker run -p 8080:8080 -v $(pwd)/data:/app/data maximhq/bifrost
+```
+
+```bash npx
+npx -y @maximhq/bifrost
+```
+</CodeGroup>
+
+## Quick Start
+
+Add Eden AI as a Custom Provider in your `config.json`, then point any request at it:
+
+<CodeGroup>
+```json config.json
+{
+  "providers": {
+    "edenai": {
+      "keys": [
+        { "name": "edenai-key", "value": "env.EDEN_AI_API_KEY", "models": ["*"], "weight": 1.0 }
+      ],
+      "network_config": { "base_url": "https://api.edenai.run/v3" },
+      "custom_provider_config": {
+        "base_provider_type": "openai",
+        "allowed_requests": {
+          "chat_completion": true,
+          "chat_completion_stream": true,
+          "embedding": true
+        }
+      }
+    }
+  }
+}
+```
+
+```bash curl
+curl -X POST http://localhost:8080/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "edenai/openai/gpt-5.5",
+    "messages": [{"role": "user", "content": "Hello! How are you?"}]
+  }'
+```
+</CodeGroup>
+
+You can also add the provider at runtime via `POST /api/providers` or from the Bifrost web UI under **Model Providers** — no restart needed.
+
+## Available Models
+
+Call any Eden AI model through Bifrost as `edenai/<provider>/<model>`:
+
+**OpenAI**
+- `edenai/openai/gpt-5.5`
+- `edenai/openai/gpt-5-mini`
+
+**Anthropic**
+- `edenai/anthropic/claude-sonnet-5`
+- `edenai/anthropic/claude-haiku-4-5`
+
+**Google**
+- `edenai/google/gemini-2.5-pro`
+- `edenai/google/gemini-3.5-flash`
+
+**Mistral**
+- `edenai/mistral/mistral-large-2512`
+- `edenai/mistral/mistral-small-2603`
+
+## Routing & Fallbacks
+
+Because Eden AI is a standard Bifrost provider, it participates in Bifrost's reliability features — weighted keys, load-balancing and provider fallbacks. Add Eden AI alongside other providers and let Bifrost route or fall back to it as needed, all through the same OpenAI-compatible endpoint.
+
+## Environment Variables
+
+Bifrost reads the key referenced as `env.EDEN_AI_API_KEY` in `config.json` from the environment:
+
+<CodeGroup>
+```bash .env
+EDEN_AI_API_KEY=your_api_key_here
+```
+</CodeGroup>
+
+## Next Steps
+
+- [Chat Completions](/v3/llms/chat-completions) - Core LLM endpoint
+- [List LLM Models](/v3/llms/listing-models) - Browse available providers and models
+- [OpenAI SDK (Python)](/v3/integrations/openai-sdk-python) - Direct SDK usage

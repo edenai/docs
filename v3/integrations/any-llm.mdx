@@ -1,0 +1,164 @@
+---
+title: "any-llm"
+icon: "/integration-logo/any-llm-icondoc.svg"
+description: "Use any-llm (Mozilla AI) with Eden AI to call 500+ AI models through one unified Python interface."
+---
+
+import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
+
+<TechArticleSchema
+  title={"any-llm"}
+  description={"Use any-llm (Mozilla AI) with Eden AI to call 500+ AI models through one unified Python interface."}
+  path="v3/integrations/any-llm"
+  articleSection="AI Frameworks"
+  about={"LLM Framework Integration"}
+  proficiencyLevel="Intermediate"
+  keywords={["Eden AI", "AI API", "any-llm", "Mozilla AI", "Python"]}
+  datePublished="2026-07-20T00:00:00Z"
+  dateModified="2026-07-20T00:00:00Z"
+/>
+
+Use any-llm (Mozilla AI) with Eden AI to call 500+ AI models through one unified Python interface.
+
+## Overview
+
+[any-llm](https://github.com/mozilla-ai/any-llm) is a lightweight Python library from **Mozilla AI** that lets you talk to any LLM provider through a single `completion()` interface — swap providers by changing one string. **Eden AI is a built-in any-llm provider**, so you reach models from OpenAI, Anthropic, Google, Mistral and 500+ more behind one key, with EU-based, GDPR-aligned inference.
+
+You select a model with the `provider:model_id` syntax. For Eden AI, the provider is `edenai` and the model id follows Eden AI's `provider/model` scheme — for example `edenai:anthropic/claude-sonnet-5`.
+
+## Installation
+
+Install any-llm with the Eden AI provider extra:
+
+<CodeGroup>
+```bash pip
+pip install 'any-llm-sdk[edenai]'
+```
+
+```bash uv
+uv add 'any-llm-sdk[edenai]'
+```
+</CodeGroup>
+
+## Quick Start
+
+Set your key, then point any-llm at Eden AI by prefixing any model with `edenai:`:
+
+<CodeGroup>
+```bash .env
+EDENAI_API_KEY=your_api_key_here
+```
+
+{/* skip-test */}
+```python Python
+from any_llm import completion
+
+response = completion(
+    model="edenai:anthropic/claude-sonnet-5",  # edenai:<provider>/<model>
+    messages=[{"role": "user", "content": "Hello! How are you?"}],
+)
+
+print(response.choices[0].message.content)
+```
+</CodeGroup>
+
+The `edenai` provider automatically uses the Eden AI base URL (`https://api.edenai.run/v3`) and reads your key from the `EDENAI_API_KEY` environment variable.
+
+## Switching models
+
+any-llm's core benefit: change providers by changing one string. Every Eden AI model is reachable the same way:
+
+<CodeGroup>
+{/* skip-test */}
+```python Python
+from any_llm import completion
+
+messages = [{"role": "user", "content": "Write a haiku about the sea."}]
+
+for model in [
+    "edenai:openai/gpt-5.5",
+    "edenai:anthropic/claude-sonnet-5",
+    "edenai:mistral/mistral-large-2512",
+]:
+    response = completion(model=model, messages=messages)
+    print(model, "->", response.choices[0].message.content)
+```
+</CodeGroup>
+
+## Streaming
+
+Eden AI supports streaming through any-llm — pass `stream=True`:
+
+<CodeGroup>
+{/* skip-test */}
+```python Python
+from any_llm import completion
+
+stream = completion(
+    model="edenai:mistral/mistral-small-2603",
+    messages=[{"role": "user", "content": "Count from one to five."}],
+    stream=True,
+)
+
+for chunk in stream:
+    delta = chunk.choices[0].delta.content
+    if delta:
+        print(delta, end="", flush=True)
+```
+</CodeGroup>
+
+## Available Models
+
+Use the `edenai:<provider>/<model>` format for any Eden AI model:
+
+**OpenAI**
+- `edenai:openai/gpt-5.5`
+- `edenai:openai/gpt-5-mini`
+
+**Anthropic**
+- `edenai:anthropic/claude-sonnet-5`
+- `edenai:anthropic/claude-opus-4-8`
+- `edenai:anthropic/claude-haiku-4-5`
+
+**Google**
+- `edenai:google/gemini-2.5-pro`
+- `edenai:google/gemini-3.5-flash`
+
+**Mistral**
+- `edenai:mistral/mistral-large-2512`
+- `edenai:mistral/mistral-small-2603`
+
+## Embeddings
+
+The Eden AI provider also supports embeddings:
+
+<CodeGroup>
+{/* skip-test */}
+```python Python
+from any_llm import embedding
+
+response = embedding(
+    model="edenai:openai/text-embedding-3-small",
+    inputs="The quick brown fox jumps over the lazy dog.",
+)
+
+print(response.data[0].embedding[:5])
+```
+</CodeGroup>
+
+## Environment Variables
+
+<CodeGroup>
+```bash .env
+EDENAI_API_KEY=your_api_key_here
+# Optional — override the endpoint:
+EDENAI_API_BASE=https://api.edenai.run/v3
+```
+</CodeGroup>
+
+## Next Steps
+
+- [Chat Completions](/v3/llms/chat-completions) - Core LLM endpoint
+- [List LLM Models](/v3/llms/listing-models) - Browse available providers and models
+- [aisuite](/v3/integrations/aisuite) - Another unified LLM interface
+- [OpenAI SDK (Python)](/v3/integrations/openai-sdk-python) - Direct SDK usage

@@ -14,7 +14,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "rate limits", "billing", "monitoring"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-05-07T00:00:00Z"
+  dateModified="2026-07-21T00:00:00Z"
 />
 
 Custom API keys let you create additional tokens beyond your main account key. Each token can have its own budget, expiration, and type, giving you fine-grained control over access and spending.
@@ -122,6 +122,66 @@ curl -X POST https://api.edenai.run/v2/user/custom_token/ \
 
 When `active_balance` is `true`, every API call deducts from the token's balance. Once it reaches $0, the token stops working.
 
+## Periodic Budget Reset
+
+By default a token budget is **one-time**: once spent, it stays at $0 until you top it up manually. You can instead have the budget **reinitialize automatically** each day, week, or month by setting `balance_reset_period` together with `balance_reset_amount` (the amount the balance is restored to at the start of each period).
+
+### In the dashboard
+
+On the [API Keys](https://app.edenai.run/settings/api-keys) page, create or edit a key and turn on **Spending Limit**. Set the **Reset allowance** (the amount restored each period) and choose a **Resets** frequency — **Daily**, **Weekly**, **Monthly**, or **Never**. A separate **Current balance** field shows what's available right now; editing the allowance only takes effect at the next reset.
+
+### Through the API
+
+<CodeGroup>
+```python Python
+import requests
+
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+response = requests.post(
+    "https://api.edenai.run/v2/user/custom_token/",
+    headers=headers,
+    json={
+        "name": "team-daily",
+        "token_type": "api_token",
+        "balance_reset_amount": "10.00",
+        "balance_reset_period": "daily"
+    }
+)
+```
+
+```bash cURL
+curl -X POST https://api.edenai.run/v2/user/custom_token/ \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "team-daily",
+    "balance_reset_amount": "10.00",
+    "balance_reset_period": "daily"
+  }'
+```
+</CodeGroup>
+
+| Field | Values | Meaning |
+|-------|--------|---------|
+| `balance_reset_period` | `none`, `daily`, `weekly`, `monthly` | How often the balance is restored. `none` (default) = one-time budget. |
+| `balance_reset_amount` | positive amount | The value the balance is reset to each period. Required whenever the period is not `none`. |
+
+Behaviour to know:
+
+- Setting a reset period **automatically enforces the budget** (`active_balance` becomes `true`) — you don't have to set it separately.
+- `balance_reset_amount` is the reset **target**, kept separate from the live `balance` (the amount remaining right now). They are not the same field.
+- A new periodic token **starts the period full**: if you don't pass a starting `balance`, it begins at `balance_reset_amount`. Passing an explicit `balance` lets a key start partway through a period.
+- Resets run at **midnight Europe/Paris time**: daily every night, weekly on Monday, monthly on the 1st.
+- Setting the period back to `none` clears `balance_reset_amount` and returns the token to a one-time budget.
+
+<Note>
+This per-token reset is distinct from the **per-member budget cap** you can set on a [guardrail](/v3/organization/guardrails#budget-cap). A token budget is a hard cap on one key (it stops at $0); a member budget is a soft periodic spend cap that follows a person across all their keys.
+</Note>
+
 ## List All Tokens
 
 <CodeGroup>
@@ -155,6 +215,7 @@ Use clear naming conventions like `env-project-purpose` (e.g., `prod-billing-api
 </Tip>
 
 - **Set budgets on non-production tokens** to prevent accidental overspending during development.
+- **Use a periodic reset** (`balance_reset_period`) for recurring allowances — e.g. a $10/day CI key — instead of topping up manually.
 - **Use sandbox tokens for CI/CD** to validate integrations without incurring costs.
 - **Rotate tokens periodically** — create a new token, migrate your application, then delete the old one.
 - **Set expiration dates** on temporary tokens (e.g., for contractors or short-term projects).

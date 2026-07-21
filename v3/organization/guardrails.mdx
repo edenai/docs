@@ -1,28 +1,29 @@
 ---
 icon: "shield-check"
 title: "Guardrails"
-description: "Guardrails are reusable usage policies that control which models your team can call and how often. Create them in the dashboard and attach them to roles, members, or API tokens."
+description: "Guardrails are reusable usage policies that control which models your team can call, how often, and how much a member can spend. Create them in the dashboard and attach them to roles, members, or API tokens."
 ---
 import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
 
 <TechArticleSchema
   title={"Guardrails"}
-  description={"Guardrails are reusable usage policies that control which models your team can call and how often. Create them in the dashboard and attach them to roles, members, or API tokens."}
+  description={"Guardrails are reusable usage policies that control which models your team can call, how often, and how much a member can spend. Create them in the dashboard and attach them to roles, members, or API tokens."}
   path="v3/organization/guardrails"
   articleSection="Organization"
   about={"Access Control"}
   proficiencyLevel="Intermediate"
-  keywords={["Eden AI", "guardrails", "usage policy", "access control", "rate limits", "model restrictions"]}
+  keywords={["Eden AI", "guardrails", "usage policy", "access control", "rate limits", "model restrictions", "budget cap", "spending limit"]}
   datePublished="2026-06-11T00:00:00Z"
-  dateModified="2026-06-11T00:00:00Z"
+  dateModified="2026-07-21T00:00:00Z"
 />
 
-A **guardrail** is a reusable usage policy that controls two things:
+A **guardrail** is a reusable usage policy that controls:
 
 - **Model access**: which providers and models can be called.
 - **Rate limits**: how many requests can be made over a given period.
+- **Member budget**: a spending cap for a member over a period (see [Budget cap](#budget-cap)).
 
-You create a guardrail once, then attach it to a **role**, a **member**, or an individual **API token**. For example, one team can be limited to a curated set of models, or a shared token can be capped to a low request rate.
+You create a guardrail once, then attach it to a **role**, a **member**, or an individual **API token**. For example, one team can be limited to a curated set of models, a shared token can be capped to a low request rate, or a member can be given a monthly spending cap.
 
 <Note>
 Guardrails are part of the advanced organisation features. See [plans and pricing](https://www.edenai.co/pricing) for availability.
@@ -42,6 +43,9 @@ In the **Rate Limit** field, enter a limit in the form `N/period`, for example `
 </Step>
 <Step title="Restrict models (optional)">
 Turn on **Enable model rules** to control which models can be used, then define your allow/deny rules. See [Model rules](#model-rules) below.
+</Step>
+<Step title="Set a member budget (optional)">
+Enter a **Budget** amount and a **period** (daily, weekly, or monthly) to cap how much a member can spend. See [Budget cap](#budget-cap) below.
 </Step>
 <Step title="Save">
 Click **Create Guardrail**. It now appears in your guardrails list, ready to assign.
@@ -83,6 +87,28 @@ The rate limit uses the format `N/period`, where `period` is `second`, `minute`,
 
 Leave the rate limit empty on a guardrail to inherit it from the next level up (role → organisation default).
 
+## Budget cap
+
+A guardrail can cap how much a **member** spends over a recurring period. In the **Create/Edit Guardrail** dialog, turn on **Member budget** ("Cap each member's spend across all their API keys"), then set a **Budget** amount (in USD) and a **Per** period:
+
+| Period | Window |
+| --- | --- |
+| `daily` | Resets each day |
+| `weekly` | Resets each week |
+| `monthly` | Resets each month |
+
+Both fields are set together — a budget needs a period, and a period needs an amount. Leave them empty to apply no spend cap.
+
+How it behaves:
+
+- **Per member, not shared.** The cap applies to each member the guardrail resolves to individually — it is not a shared pool across the team.
+- **Soft cap.** The check happens before each request. A request already in flight can push spend past the cap; the *next* request is the one that gets blocked. The limit is a spending guardrail, not a hard cutoff mid-request.
+- **Counts real usage only.** [Sandbox](/v3/general/sandbox) calls and calls made with your own provider keys ([BYOK](/v3/general/byok)) don't count toward the budget. Refunds credit it back.
+
+<Note>
+The budget only applies when a guardrail is attached to a **role** or a **member**. A budget set on a guardrail that is attached to an **API token** is ignored — use a [token budget](/v3/general/custom-api-keys) to cap a single key instead.
+</Note>
+
 ## Assigning a guardrail
 
 A guardrail does nothing until it's attached to something. You can assign it to:
@@ -97,7 +123,9 @@ When a request comes in, Eden AI resolves the policy **per field, most specific 
 token  →  member  →  role  →  organisation default
 ```
 
-For each setting (model rules and rate limit) independently, Eden AI uses the value from the most specific level that has it set, and inherits the rest. So a token can override the model rules while still inheriting its role's rate limit.
+For **model rules** and **rate limit** independently, Eden AI uses the value from the most specific level that has it set, and inherits the rest. So a token can override the model rules while still inheriting its role's rate limit.
+
+The **member budget** resolves differently: only the **member** and **role** levels are considered (token budgets are handled separately, on the token itself), and the budget amount and period are always taken together from the most specific level that sets them — they are never mixed across levels.
 
 <Note>
 Guardrails can also be managed programmatically through the User Management API if you need to automate provisioning. See the [API Reference](https://www.edenai.co/docs) for the `guardrails` endpoints.
@@ -106,5 +134,5 @@ Guardrails can also be managed programmatically through the User Management API 
 ## Related
 
 - [Users & Organisation](/v3/organization/users-organisation): roles, permissions, and members.
-- [Custom API Keys](/v3/general/custom-api-keys): per-token budgets that pair well with per-token guardrails.
+- [Custom API Keys](/v3/general/custom-api-keys): per-token budgets, which cap a single key rather than a member.
 - [Rate Limits](/v3/overview/rate-limits): how default rate limiting works.

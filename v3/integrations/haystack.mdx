@@ -1,0 +1,170 @@
+---
+title: "Haystack"
+icon: "/integration-logo/haystack-icondoc.svg"
+description: "Use Eden AI with Haystack (deepset) to build LLM and RAG pipelines on 500+ AI models through one EU-hosted API key."
+---
+
+import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
+
+<TechArticleSchema
+  title={"Haystack"}
+  description={"Use Eden AI with Haystack (deepset) to build LLM and RAG pipelines on 500+ AI models through one EU-hosted API key."}
+  path="v3/integrations/haystack"
+  articleSection="AI Frameworks"
+  about={"LLM Framework Integration"}
+  proficiencyLevel="Intermediate"
+  keywords={["Eden AI", "AI API", "Haystack", "deepset", "RAG", "Python"]}
+  datePublished="2026-07-21T00:00:00Z"
+  dateModified="2026-07-21T00:00:00Z"
+/>
+
+Use Eden AI with Haystack (deepset) to build LLM and RAG pipelines on 500+ AI models through one EU-hosted API key.
+
+## Overview
+
+[Haystack](https://haystack.deepset.ai/) is deepset's open-source Python framework for building production LLM applications, RAG pipelines and agents. **Eden AI ships as an official Haystack integration** (the `edenai-haystack` package), so your pipelines reach models from OpenAI, Anthropic, Google, Mistral and 500+ more behind one key, with EU-based, GDPR-aligned inference.
+
+The integration provides three components:
+
+- `EdenAIChatGenerator` for chat completion
+- `EdenAITextEmbedder` to embed a query string
+- `EdenAIDocumentEmbedder` to embed documents for indexing
+
+Models use Eden AI's `provider/model` naming convention, for example `anthropic/claude-sonnet-4-5` or `mistral/mistral-large-latest`.
+
+## Installation
+
+<CodeGroup>
+```bash pip
+pip install edenai-haystack
+```
+
+```bash uv
+uv add edenai-haystack
+```
+</CodeGroup>
+
+## Quick Start
+
+Set your key, then generate a chat response with the `EdenAIChatGenerator`:
+
+<CodeGroup>
+```bash .env
+EDENAI_API_KEY=your_api_key_here
+```
+
+{/* skip-test */}
+```python Python
+from haystack.dataclasses import ChatMessage
+from haystack_integrations.components.generators.edenai import EdenAIChatGenerator
+
+generator = EdenAIChatGenerator(model="mistral/mistral-large-latest")
+
+response = generator.run([ChatMessage.from_user("What is Eden AI?")])
+print(response["replies"][0].text)
+```
+</CodeGroup>
+
+The generator reads your key from the `EDENAI_API_KEY` environment variable by default.
+
+## Switching models
+
+Change providers by changing the `model` string. Every Eden AI model is reachable the same way:
+
+<CodeGroup>
+{/* skip-test */}
+```python Python
+from haystack.dataclasses import ChatMessage
+from haystack_integrations.components.generators.edenai import EdenAIChatGenerator
+
+messages = [ChatMessage.from_user("Write a haiku about the sea.")]
+
+for model in [
+    "openai/gpt-4o-mini",
+    "anthropic/claude-sonnet-4-5",
+    "mistral/mistral-large-latest",
+]:
+    generator = EdenAIChatGenerator(model=model)
+    print(model, "->", generator.run(messages)["replies"][0].text)
+```
+</CodeGroup>
+
+## Streaming
+
+Pass a `streaming_callback` to stream tokens as they are generated:
+
+<CodeGroup>
+{/* skip-test */}
+```python Python
+from haystack.components.generators.utils import print_streaming_chunk
+from haystack.dataclasses import ChatMessage
+from haystack_integrations.components.generators.edenai import EdenAIChatGenerator
+
+generator = EdenAIChatGenerator(
+    model="mistral/mistral-large-latest",
+    streaming_callback=print_streaming_chunk,
+)
+generator.run([ChatMessage.from_user("Count from one to five.")])
+```
+</CodeGroup>
+
+## Embeddings and RAG
+
+Use `EdenAITextEmbedder` to embed a query and `EdenAIDocumentEmbedder` to embed documents, so you can build a fully sovereign RAG stack (retrieval and generation) on EU-hosted models:
+
+<CodeGroup>
+{/* skip-test */}
+```python Python
+from haystack import Document
+from haystack.document_stores.in_memory import InMemoryDocumentStore
+from haystack.components.retrievers.in_memory import InMemoryEmbeddingRetriever
+from haystack_integrations.components.embedders.edenai import (
+    EdenAIDocumentEmbedder,
+    EdenAITextEmbedder,
+)
+
+document_store = InMemoryDocumentStore(embedding_similarity_function="cosine")
+
+# Index documents with their embeddings
+documents = [Document(content="Eden AI is a unified API for 500+ AI models.")]
+doc_embedder = EdenAIDocumentEmbedder(model="openai/text-embedding-3-small")
+document_store.write_documents(doc_embedder.run(documents)["documents"])
+
+# Embed the query and retrieve
+text_embedder = EdenAITextEmbedder(model="openai/text-embedding-3-small")
+retriever = InMemoryEmbeddingRetriever(document_store=document_store)
+query_embedding = text_embedder.run("What is Eden AI?")["embedding"]
+print(retriever.run(query_embedding=query_embedding)["documents"])
+```
+</CodeGroup>
+
+## Available Models
+
+Use the `provider/model` format for any Eden AI model:
+
+**Chat**
+- `openai/gpt-4o-mini`
+- `anthropic/claude-sonnet-4-5`
+- `mistral/mistral-large-latest`
+- `google/gemini-2.5-flash`
+
+**Embeddings**
+- `openai/text-embedding-3-small`
+- `mistral/mistral-embed`
+
+Browse the full list in the [Eden AI models catalog](https://www.edenai.co/models).
+
+## Environment Variables
+
+<CodeGroup>
+```bash .env
+EDENAI_API_KEY=your_api_key_here
+```
+</CodeGroup>
+
+## Next Steps
+
+- [Chat Completions](/v3/llms/chat-completions) - Core LLM endpoint
+- [List LLM Models](/v3/llms/listing-models) - Browse available providers and models
+- [aisuite](/v3/integrations/aisuite) - Another unified LLM interface
+- [LangChain](/v3/integrations/langchain) - Build LLM apps with LangChain

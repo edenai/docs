@@ -225,7 +225,8 @@
                       "v3/integrations/openai-sdk-typescript",
                       "v3/integrations/langchain",
                       "v3/integrations/pydantic-ai",
-                      "v3/integrations/aisuite"
+                      "v3/integrations/aisuite",
+                      "v3/integrations/haystack"
                     ]
                   },
                   {

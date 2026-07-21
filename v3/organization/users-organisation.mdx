@@ -62,7 +62,7 @@ If the built-in roles don't fit, click **+ Create Role** to define a custom role
 
 ## Guardrails
 
-Beyond who can manage the organisation, you can control **which models members can call, how often, and how much they can spend** using [guardrails](/v3/organization/guardrails): reusable usage policies that combine model/provider access rules, rate limits, and per-member budget caps. Guardrails can be attached to a role, an individual member, or a single API token, and resolve most-specific-first (token → member → role → organisation default).
+Beyond who can manage the organisation, you can control **which models members can call, how often, and how much they can spend** using [guardrails](/v3/organization/guardrails): reusable usage policies that combine model/provider access rules, rate limits, and per-member budget caps. Guardrails can be attached to a role, an individual member, or a single API token. Model rules and rate limits resolve most-specific-first (token → member → role → organisation default); the per-member budget cap resolves at the member and role levels only (budgets set on a token-attached guardrail are ignored).
 
 ## Single Sign-On & Directory Sync
 

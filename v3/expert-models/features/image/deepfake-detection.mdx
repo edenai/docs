@@ -1,15 +1,15 @@
 ---
 title: "Deepfake Detection"
-description: ""
+description: "Detect whether a face in a real photo has been swapped or manipulated (face-swap deepfakes). For fully AI-generated images, use AI Image Detection instead."
 ---
 
 import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
 
 <TechArticleSchema
   title={`Deepfake Detection`}
-  description={``}
+  description={`Detect whether a face in a real photo has been swapped or manipulated (face-swap deepfakes). For fully AI-generated images, use AI Image Detection instead.`}
   path="v3/expert-models/features/image/deepfake-detection"
-  articleSection="Image Features"
+  articleSection={`Image Features`}
   about={`Image AI API`}
   proficiencyLevel="Intermediate"
   keywords={[`Eden AI`, `AI API`, `image analysis`, `computer vision`]}
@@ -42,7 +42,8 @@ Model string pattern: `image/deepfake_detection/{provider}[/{model}]`
 
 | Provider | Model String | Price |
 |----------|-------------|-------|
-| sightengine | `image/deepfake_detection/sightengine` | $0.002 per image |
+| resemble | `image/deepfake_detection/resemble` | $0.04 per image |
+| sightengine | `image/deepfake_detection/sightengine` | $0.0145 per image |
 
 
 ## Quick Start
@@ -59,7 +60,7 @@ headers = {
 }
 
 payload = {
-    "model": "image/deepfake_detection/sightengine",
+    "model": "image/deepfake_detection/resemble",
     "input": {
         "file": "YOUR_FILE_UUID_OR_URL"
     }
@@ -74,7 +75,7 @@ curl -X POST https://api.edenai.run/v3/universal-ai \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "image/deepfake_detection/sightengine",
+    "model": "image/deepfake_detection/resemble",
     "input": {"file": "YOUR_FILE_UUID_OR_URL"}
   }'
 ```

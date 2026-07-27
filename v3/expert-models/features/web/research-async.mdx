@@ -9,10 +9,10 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   title={`Deep Research`}
   description={`Run deep, multi-step web research on a query and return a synthesized answer with sources. Runs as an async job.`}
   path="v3/expert-models/features/web/research-async"
-  articleSection="Expert Models"
-  about={`AI API`}
+  articleSection={`Web Features`}
+  about={`Web Data API`}
   proficiencyLevel="Intermediate"
-  keywords={[`Eden AI`, `AI API`, `expert models`]}
+  keywords={[`Eden AI`, `AI API`, `web scraping`, `web search`]}
   datePublished="2026-07-27T00:00:00Z"
   dateModified="2026-07-27T00:00:00Z"
 />
@@ -56,6 +56,7 @@ Model string pattern: `web/research_async/{provider}[/{model}]`
 | Provider | Model String | Price |
 |----------|-------------|-------|
 | firecrawl | `web/research_async/firecrawl` | $0.0038 per token |
+| linkup | `web/research_async/linkup` | $0.001 per token |
 
 
 ## Quick Start

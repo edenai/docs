@@ -1,0 +1,100 @@
+---
+title: "open-connector"
+icon: "/integration-logo/open-connector-icondoc.svg"
+description: "Use open-connector with Eden AI to expose 500+ AI models through a self-hosted gateway with SDK, CLI, MCP and HTTP access."
+---
+
+import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
+
+<TechArticleSchema
+  title={"open-connector"}
+  description={"Use open-connector with Eden AI to expose 500+ AI models through a self-hosted gateway with SDK, CLI, MCP and HTTP access."}
+  path="v3/integrations/open-connector"
+  articleSection="AI Gateway"
+  about={"LLM Gateway Integration"}
+  proficiencyLevel="Intermediate"
+  keywords={["Eden AI", "AI API", "open-connector", "LLM Gateway", "MCP"]}
+  datePublished="2026-07-27T00:00:00Z"
+  dateModified="2026-07-27T00:00:00Z"
+/>
+
+Use open-connector with Eden AI to expose 500+ AI models through a self-hosted gateway with SDK, CLI, MCP and HTTP access.
+
+## Overview
+
+[open-connector](https://github.com/oomol-lab/open-connector) is an open-source gateway connecting 1000+ SaaS providers to AI agents via SDK, CLI, MCP and HTTP. Eden AI ships as a **built-in connector**, so any agent wired through open-connector reaches models from OpenAI, Anthropic, Google, Mistral and more behind one key, with EU-based, GDPR-aligned inference and per-request cost visibility.
+
+## Installation
+
+open-connector is a self-hosted gateway, distributed as a Docker image:
+
+<CodeGroup>
+```bash Docker
+docker compose up
+```
+</CodeGroup>
+
+This pulls `ghcr.io/oomol-lab/open-connector:latest` and serves the console and API at `http://localhost:3000`.
+
+## Quick Start
+
+Store your Eden AI key as a connection credential, then call the `edenai` service:
+
+<CodeGroup>
+```bash Add credential
+curl -s -X PUT http://localhost:3000/api/connections/edenai \
+  -H 'content-type: application/json' \
+  -d '{"authType":"api_key","values":{"apiKey":"your_api_key_here"}}'
+```
+
+```bash Call Eden AI
+curl -s -X POST http://localhost:3000/v1/actions/edenai.create_chat_completion \
+  -H 'content-type: application/json' \
+  -d '{
+    "input": {
+      "model": "openai/gpt-5.5",
+      "messages": [{"role": "user", "content": "Hello! How are you?"}]
+    }
+  }'
+```
+</CodeGroup>
+
+The base URL (`https://api.edenai.run/v3`) is built into the connector — no extra configuration needed. The response includes the standard OpenAI-compatible fields plus a top-level `cost` field with the Eden AI billed cost.
+
+## Available Models
+
+The `edenai` service exposes `edenai.list_models` and `edenai.create_chat_completion`. Use the `provider/model` format for any Eden AI model:
+
+**OpenAI**
+- `openai/gpt-5.5`
+- `openai/gpt-5-mini`
+
+**Anthropic**
+- `anthropic/claude-sonnet-5`
+- `anthropic/claude-haiku-4-5`
+
+**Google**
+- `google/gemini-2.5-pro`
+- `google/gemini-3.5-flash`
+
+**Mistral**
+- `mistral/mistral-large-2512`
+- `mistral/mistral-small-2603`
+
+## Credentials
+
+Unlike most integrations, open-connector stores the Eden AI key as a **connection credential** through its API rather than an environment variable:
+
+<CodeGroup>
+```bash Update credential
+curl -s -X PUT http://localhost:3000/api/connections/edenai \
+  -H 'content-type: application/json' \
+  -d '{"authType":"api_key","values":{"apiKey":"your_api_key_here"}}'
+```
+</CodeGroup>
+
+## Next Steps
+
+- [Lynkr](/v3/integrations/lynkr) - Another self-hosted LLM gateway
+- [Bifrost](/v3/integrations/bifrost) - Custom-provider LLM gateway
+- [Chat Completions](/v3/llms/chat-completions) - Core LLM endpoint

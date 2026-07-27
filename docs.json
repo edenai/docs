@@ -226,7 +226,8 @@
                       "v3/integrations/langchain",
                       "v3/integrations/pydantic-ai",
                       "v3/integrations/aisuite",
-                      "v3/integrations/haystack"
+                      "v3/integrations/haystack",
+                      "v3/integrations/atomic-agents"
                     ]
                   },
                   {
@@ -235,7 +236,8 @@
                     "expanded": false,
                     "pages": [
                       "v3/integrations/bifrost",
-                      "v3/integrations/lynkr"
+                      "v3/integrations/lynkr",
+                      "v3/integrations/open-connector"
                     ]
                   },
                   {
@@ -267,7 +269,8 @@
                     "expanded": false,
                     "pages": [
                       "v3/integrations/librechat",
-                      "v3/integrations/open-webui"
+                      "v3/integrations/open-webui",
+                      "v3/integrations/deeptutor"
                     ]
                   },
                   {

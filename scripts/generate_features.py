@@ -42,6 +42,7 @@ _ICON_KEYWORDS = {
     "translation": "language",
     "audio": "volume-high",
     "speech": "volume-high",
+    "web": "globe",
 }
 
 # ---------------------
@@ -126,6 +127,17 @@ def _common_word_prefix(strings: list[str]) -> str:
         else:
             break
     return " ".join(prefix_words)
+
+
+def feature_section_name(feature: dict) -> str:
+    """Label for a feature category: nav group title and JSON-LD articleSection.
+
+    Single source of truth for both. Previously the nav derived this from the API
+    while the schema block hardcoded it, so they silently drifted apart — video
+    became "Video Features" in the nav the moment it gained a second subfeature
+    while its pages still claimed "Video Generation Features".
+    """
+    return f"{derive_display_name(feature)} Features"
 
 
 def derive_icon(feature_name: str) -> str:
@@ -431,14 +443,20 @@ curl -X POST {api_url} \\
 """
 
 
-# Section / about / keyword mapping for TechArticle schema (per feature category)
+# `about` / keyword mapping for the TechArticle schema, per feature category.
+# These are SEO concepts with no counterpart in /v3/info (it exposes only name,
+# fullname, description and subfeatures per category, and fullname just repeats
+# name), so they are maintained by hand. articleSection is NOT listed here — it
+# is derived via feature_section_name() so it cannot drift from the nav label.
+# A category missing from this map still generates; it just gets generic values.
 _FEATURE_SCHEMA_META = {
-    "text":        ("Text Features",                "NLP API",          ["text analysis", "NLP"]),
-    "ocr":         ("OCR Features",                 "OCR API",          ["OCR", "document parsing"]),
-    "image":       ("Image Features",               "Image AI API",     ["image analysis", "computer vision"]),
-    "translation": ("Translation Features",         "Translation API",  ["translation", "multilingual"]),
-    "audio":       ("Audio Features",               "Audio AI API",     ["speech to text", "text to speech"]),
-    "video":       ("Video Generation Features",    "Video AI API",     ["video generation"]),
+    "text":        ("NLP API",          ["text analysis", "NLP"]),
+    "ocr":         ("OCR API",          ["OCR", "document parsing"]),
+    "image":       ("Image AI API",     ["image analysis", "computer vision"]),
+    "translation": ("Translation API",  ["translation", "multilingual"]),
+    "audio":       ("Audio AI API",     ["speech to text", "text to speech"]),
+    "video":       ("Video AI API",     ["video generation", "video analysis"]),
+    "web":         ("Web Data API",     ["web scraping", "web search"]),
 }
 
 
@@ -475,11 +493,11 @@ def _existing_schema_dates(feature: str, sf_name: str) -> tuple[str | None, str 
     return find("datePublished"), find("dateModified")
 
 
-def _render_techarticle_schema(feature: str, sf_name: str, fullname: str, description: str) -> str:
+def _render_techarticle_schema(
+    feature: str, sf_name: str, fullname: str, description: str, section: str
+) -> str:
     """Render the TechArticleSchema MDX component for a feature page."""
-    section, about, extra_kw = _FEATURE_SCHEMA_META.get(
-        feature, ("Expert Models", "AI API", ["expert models"])
-    )
+    about, extra_kw = _FEATURE_SCHEMA_META.get(feature, ("AI API", ["expert models"]))
     keywords = ["Eden AI", "AI API"] + extra_kw
     keywords_js = "[" + ", ".join(_js_str(k) for k in keywords) + "]"
     path = f"v3/expert-models/features/{feature}/{slug(sf_name)}"
@@ -504,7 +522,9 @@ def _render_techarticle_schema(feature: str, sf_name: str, fullname: str, descri
     )
 
 
-def generate_subfeature_page(feature: str, subfeature_info: dict, detail: dict) -> str:
+def generate_subfeature_page(
+    feature: str, subfeature_info: dict, detail: dict, section: str
+) -> str:
     """Generate the full MDX content for a single subfeature page."""
     sf_name = subfeature_info["name"]
     fullname = subfeature_info.get("fullname", sf_name)
@@ -524,7 +544,9 @@ def generate_subfeature_page(feature: str, subfeature_info: dict, detail: dict) 
     truncated_desc = truncate_at_sentence(description, 200)
     safe_title = escape_frontmatter(fullname)
     safe_desc = escape_frontmatter(truncated_desc)
-    schema_block = _render_techarticle_schema(feature, sf_name, fullname, truncated_desc)
+    schema_block = _render_techarticle_schema(
+        feature, sf_name, fullname, truncated_desc, section
+    )
 
     page = f"""---
 title: "{safe_title}"
@@ -607,13 +629,12 @@ def _build_feature_subgroups(features: list[dict]) -> list[dict]:
     subgroups = []
     for feat in features:
         fname = feat["name"]
-        display = derive_display_name(feat)
         subpages = []
         for sf in feat.get("subfeatures", []):
             sf_slug = slug(sf["name"])
             subpages.append(f"v3/expert-models/features/{fname}/{sf_slug}")
         subgroups.append({
-            "group": f"{display} Features",
+            "group": feature_section_name(feat),
             "icon": derive_icon(fname),
             "expanded": False,
             "pages": subpages,
@@ -750,7 +771,7 @@ def main() -> None:
                 print(f"    Warning: could not fetch detail for {fname}/{sf_name}: {e}")
                 detail = {}
 
-            content = generate_subfeature_page(fname, sf, detail)
+            content = generate_subfeature_page(fname, sf, detail, feature_section_name(feat))
             (feat_dir / f"{sf_slug}.mdx").write_text(content)
     print("  Generating index page...")
     index_content = generate_index_page(features)

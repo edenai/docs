@@ -173,10 +173,16 @@ def strip_html(text: str) -> str:
     return _HTML_TAG_RE.sub("", text)
 
 
+# The /v3/info API returns some unit names in French; normalise them so the
+# published pricing tables read in English.
+_UNIT_ALIASES = {"seconde": "second", "secondes": "second"}
+
+
 def format_price(price: float, quantity: int, unit_type: str) -> str:
     """Return a human-readable price string."""
     if price == 0:
         return "Free"
+    unit_type = _UNIT_ALIASES.get(unit_type, unit_type)
     if quantity == 1:
         return f"${price:g} per {unit_type}"
     return f"${price:g} per {quantity:,} {unit_type}s"

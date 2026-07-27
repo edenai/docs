@@ -14,6 +14,7 @@ import re
 import shutil
 import tempfile
 import urllib.request
+from datetime import datetime, timezone
 from pathlib import Path
 
 # --------------------------
@@ -436,6 +437,27 @@ def _js_str(s: str) -> str:
     return "`" + escaped + "`"
 
 
+def _existing_schema_dates(feature: str, sf_name: str) -> tuple[str | None, str | None]:
+    """Read datePublished / dateModified back off an already-generated page.
+
+    The generator must not mint these itself. `update-dates.yml` owns
+    dateModified and bumps it only when a page's content actually changed, so
+    regenerating with a fixed date would drag the freshness signal backwards on
+    every page on every run.
+    """
+    path = FEATURES_DIR / feature / f"{slug(sf_name)}.mdx"
+    try:
+        text = path.read_text()
+    except OSError:
+        return None, None
+
+    def find(key: str) -> str | None:
+        match = re.search(rf'{key}="([^"]*)"', text)
+        return match.group(1) if match else None
+
+    return find("datePublished"), find("dateModified")
+
+
 def _render_techarticle_schema(feature: str, sf_name: str, fullname: str, description: str) -> str:
     """Render the TechArticleSchema MDX component for a feature page."""
     section, about, extra_kw = _FEATURE_SCHEMA_META.get(
@@ -444,6 +466,11 @@ def _render_techarticle_schema(feature: str, sf_name: str, fullname: str, descri
     keywords = ["Eden AI", "AI API"] + extra_kw
     keywords_js = "[" + ", ".join(_js_str(k) for k in keywords) + "]"
     path = f"v3/expert-models/features/{feature}/{slug(sf_name)}"
+    # Preserve the dates already on the page; only a brand-new page gets today's.
+    today = f"{datetime.now(timezone.utc):%Y-%m-%d}T00:00:00Z"
+    date_published, date_modified = _existing_schema_dates(feature, sf_name)
+    date_published = date_published or today
+    date_modified = date_modified or date_published
     return (
         'import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";\n\n'
         "<TechArticleSchema\n"
@@ -454,8 +481,8 @@ def _render_techarticle_schema(feature: str, sf_name: str, fullname: str, descri
         f"  about={{{_js_str(about)}}}\n"
         f'  proficiencyLevel="Intermediate"\n'
         f"  keywords={{{keywords_js}}}\n"
-        f'  datePublished="2026-05-06T00:00:00Z"\n'
-        f'  dateModified="2026-05-06T00:00:00Z"\n'
+        f'  datePublished="{date_published}"\n'
+        f'  dateModified="{date_modified}"\n'
         "/>\n"
     )
 

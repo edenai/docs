@@ -13,7 +13,9 @@ import os
 import re
 import shutil
 import tempfile
+import urllib.error
 import urllib.request
+from datetime import datetime, timezone
 from pathlib import Path
 
 # --------------------------
@@ -41,6 +43,7 @@ _ICON_KEYWORDS = {
     "translation": "language",
     "audio": "volume-high",
     "speech": "volume-high",
+    "web": "globe",
 }
 
 # ---------------------
@@ -58,6 +61,12 @@ def fetch_json(url: str) -> dict:
 def fetch_all_features() -> list[dict]:
     data = fetch_json(INFO_ENDPOINT)
     return data.get("features", [])
+
+
+# Failures we accept from fetch_subfeature_detail. Anything else — a bug here, an
+# unexpected response shape — must propagate rather than reach the keep-the-old-page
+# path, where it would be swallowed and the run would still report success.
+_FETCH_ERRORS = (urllib.error.URLError, TimeoutError, json.JSONDecodeError)
 
 
 def fetch_subfeature_detail(feature: str, subfeature: str) -> dict:
@@ -127,6 +136,17 @@ def _common_word_prefix(strings: list[str]) -> str:
     return " ".join(prefix_words)
 
 
+def feature_section_name(feature: dict) -> str:
+    """Label for a feature category: nav group title and JSON-LD articleSection.
+
+    Single source of truth for both. Previously the nav derived this from the API
+    while the schema block hardcoded it, so they silently drifted apart — video
+    became "Video Features" in the nav the moment it gained a second subfeature
+    while its pages still claimed "Video Generation Features".
+    """
+    return f"{derive_display_name(feature)} Features"
+
+
 def derive_icon(feature_name: str) -> str:
     """Pick an icon based on keyword matching against the feature name."""
     name_lower = feature_name.lower()
@@ -172,13 +192,21 @@ def strip_html(text: str) -> str:
     return _HTML_TAG_RE.sub("", text)
 
 
+# The /v3/info API returns some unit names in French; normalise them so the
+# published pricing tables read in English.
+_UNIT_ALIASES = {"seconde": "second", "secondes": "second"}
+
+
 def format_price(price: float, quantity: int, unit_type: str) -> str:
     """Return a human-readable price string."""
     if price == 0:
         return "Free"
+    unit_type = _UNIT_ALIASES.get(unit_type.strip().lower(), unit_type.strip())
     if quantity == 1:
         return f"${price:g} per {unit_type}"
-    return f"${price:g} per {quantity:,} {unit_type}s"
+    # Don't double the plural if the API already sends one ("tokens" -> "tokenss").
+    plural = unit_type if unit_type.endswith("s") else f"{unit_type}s"
+    return f"${price:g} per {quantity:,} {plural}"
 
 
 def provider_from_model(model_str: str) -> str:
@@ -275,15 +303,31 @@ def build_input_json(fields: list[dict], required_only: bool = False) -> dict[st
 # MDX generation
 # --------------------
 
+def _cell(text: str) -> str:
+    """Escape a value for use inside a Markdown table cell.
+
+    An unescaped pipe ends the cell early and shifts every later column left,
+    which corrupts the row silently. A union type such as
+    `array[file_input | object]` pushed "Required" into the type column and the
+    description into a phantom fifth column that renderers drop.
+
+    A newline is worse: it terminates the row mid-sentence and ends the table,
+    dumping the remainder into the page as loose prose. Two live descriptions do
+    this today (the tts `voice` field and explicit_content `subcategory`), so
+    collapse all whitespace runs before escaping.
+    """
+    return " ".join(str(text).split()).replace("|", "\\|")
+
+
 def _render_fields_rows(fields: list[dict], depth: int = 0) -> list[str]:
     """Recursively render schema fields as table rows, expanding nested objects."""
     rows = []
     indent = "&nbsp;&nbsp;&nbsp;&nbsp;" * depth  # visual indentation per nesting level
     for f in fields:
-        name = f.get("name", "")
-        ftype = f.get("type", "")
+        name = _cell(f.get("name", ""))
+        ftype = _cell(f.get("type", ""))
         required = "Yes" if f.get("required") else "No"
-        desc = strip_html(f.get("description", ""))
+        desc = _cell(strip_html(f.get("description", "")))
 
         if ftype == "array" and "items" in f:
             item_type = f["items"].get("type", "")
@@ -292,7 +336,7 @@ def _render_fields_rows(fields: list[dict], depth: int = 0) -> list[str]:
                 rows.append(f"| {indent}**{name}** | array[object] | {required} | {desc} |")
                 rows.extend(_render_fields_rows(nested_fields, depth=depth + 1))
             else:
-                ftype = f"array[{item_type}]" if item_type else "array"
+                ftype = f"array[{_cell(item_type)}]" if item_type else "array"
                 rows.append(f"| {indent}{name} | {ftype} | {required} | {desc} |")
         elif ftype == "object" and "fields" in f:
             rows.append(f"| {indent}**{name}** | object | {required} | {desc} |")
@@ -333,7 +377,7 @@ def render_providers_table(models: list[dict]) -> str:
             pricing.get("price_unit_quantity", 1),
             pricing.get("price_unit_type", "request"),
         )
-        lines.append(f"| {label} | `{model_str}` | {price_str} |")
+        lines.append(f"| {_cell(label)} | `{_cell(model_str)}` | {_cell(price_str)} |")
     return "\n".join(lines) + "\n"
 
 
@@ -413,14 +457,20 @@ curl -X POST {api_url} \\
 """
 
 
-# Section / about / keyword mapping for TechArticle schema (per feature category)
+# `about` / keyword mapping for the TechArticle schema, per feature category.
+# These are SEO concepts with no counterpart in /v3/info (it exposes only name,
+# fullname, description and subfeatures per category, and fullname just repeats
+# name), so they are maintained by hand. articleSection is NOT listed here — it
+# is derived via feature_section_name() so it cannot drift from the nav label.
+# A category missing from this map still generates; it just gets generic values.
 _FEATURE_SCHEMA_META = {
-    "text":        ("Text Features",                "NLP API",          ["text analysis", "NLP"]),
-    "ocr":         ("OCR Features",                 "OCR API",          ["OCR", "document parsing"]),
-    "image":       ("Image Features",               "Image AI API",     ["image analysis", "computer vision"]),
-    "translation": ("Translation Features",         "Translation API",  ["translation", "multilingual"]),
-    "audio":       ("Audio Features",               "Audio AI API",     ["speech to text", "text to speech"]),
-    "video":       ("Video Generation Features",    "Video AI API",     ["video generation"]),
+    "text":        ("NLP API",          ["text analysis", "NLP"]),
+    "ocr":         ("OCR API",          ["OCR", "document parsing"]),
+    "image":       ("Image AI API",     ["image analysis", "computer vision"]),
+    "translation": ("Translation API",  ["translation", "multilingual"]),
+    "audio":       ("Audio AI API",     ["speech to text", "text to speech"]),
+    "video":       ("Video AI API",     ["video generation", "video analysis"]),
+    "web":         ("Web Data API",     ["web scraping", "web search"]),
 }
 
 
@@ -436,31 +486,61 @@ def _js_str(s: str) -> str:
     return "`" + escaped + "`"
 
 
-def _render_techarticle_schema(feature: str, sf_name: str, fullname: str, description: str) -> str:
+def _existing_schema_dates(feature: str, sf_name: str) -> tuple[str | None, str | None]:
+    """Read datePublished / dateModified back off an already-generated page.
+
+    The generator must not mint these itself. `update-dates.yml` owns
+    dateModified and bumps it only when a page's content actually changed, so
+    regenerating with a fixed date would drag the freshness signal backwards on
+    every page on every run.
+    """
+    path = FEATURES_DIR / feature / f"{slug(sf_name)}.mdx"
+    try:
+        text = path.read_text()
+    except OSError:
+        return None, None
+
+    def find(key: str) -> str | None:
+        match = re.search(rf'{key}="([^"]*)"', text)
+        return match.group(1) if match else None
+
+    return find("datePublished"), find("dateModified")
+
+
+def _render_techarticle_schema(
+    feature: str, sf_name: str, fullname: str, description: str, section: str
+) -> str:
     """Render the TechArticleSchema MDX component for a feature page."""
-    section, about, extra_kw = _FEATURE_SCHEMA_META.get(
-        feature, ("Expert Models", "AI API", ["expert models"])
-    )
+    about, extra_kw = _FEATURE_SCHEMA_META.get(feature, ("AI API", ["expert models"]))
     keywords = ["Eden AI", "AI API"] + extra_kw
     keywords_js = "[" + ", ".join(_js_str(k) for k in keywords) + "]"
     path = f"v3/expert-models/features/{feature}/{slug(sf_name)}"
+    # Preserve the dates already on the page; only a brand-new page gets today's.
+    today = f"{datetime.now(timezone.utc):%Y-%m-%d}T00:00:00Z"
+    date_published, date_modified = _existing_schema_dates(feature, sf_name)
+    # An existing page missing datePublished must not be stamped with today: that
+    # would date publication after modification. Fall back to its dateModified.
+    date_published = date_published or date_modified or today
+    date_modified = date_modified or date_published
     return (
         'import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";\n\n'
         "<TechArticleSchema\n"
         f"  title={{{_js_str(fullname)}}}\n"
         f"  description={{{_js_str(description)}}}\n"
         f'  path="{path}"\n'
-        f'  articleSection="{section}"\n'
+        f"  articleSection={{{_js_str(section)}}}\n"
         f"  about={{{_js_str(about)}}}\n"
         f'  proficiencyLevel="Intermediate"\n'
         f"  keywords={{{keywords_js}}}\n"
-        f'  datePublished="2026-05-06T00:00:00Z"\n'
-        f'  dateModified="2026-05-06T00:00:00Z"\n'
+        f'  datePublished="{date_published}"\n'
+        f'  dateModified="{date_modified}"\n'
         "/>\n"
     )
 
 
-def generate_subfeature_page(feature: str, subfeature_info: dict, detail: dict) -> str:
+def generate_subfeature_page(
+    feature: str, subfeature_info: dict, detail: dict, section: str
+) -> str:
     """Generate the full MDX content for a single subfeature page."""
     sf_name = subfeature_info["name"]
     fullname = subfeature_info.get("fullname", sf_name)
@@ -480,7 +560,9 @@ def generate_subfeature_page(feature: str, subfeature_info: dict, detail: dict) 
     truncated_desc = truncate_at_sentence(description, 200)
     safe_title = escape_frontmatter(fullname)
     safe_desc = escape_frontmatter(truncated_desc)
-    schema_block = _render_techarticle_schema(feature, sf_name, fullname, truncated_desc)
+    schema_block = _render_techarticle_schema(
+        feature, sf_name, fullname, truncated_desc, section
+    )
 
     page = f"""---
 title: "{safe_title}"
@@ -563,18 +645,34 @@ def _build_feature_subgroups(features: list[dict]) -> list[dict]:
     subgroups = []
     for feat in features:
         fname = feat["name"]
-        display = derive_display_name(feat)
         subpages = []
         for sf in feat.get("subfeatures", []):
             sf_slug = slug(sf["name"])
             subpages.append(f"v3/expert-models/features/{fname}/{sf_slug}")
         subgroups.append({
-            "group": f"{display} Features",
+            "group": feature_section_name(feat),
             "icon": derive_icon(fname),
             "expanded": False,
             "pages": subpages,
         })
     return subgroups
+
+
+def _find_group(node: object, name: str) -> dict | None:
+    """Depth-first search the navigation tree for a group dict named `name`."""
+    if isinstance(node, dict):
+        if node.get("group") == name:
+            return node
+        for value in node.values():
+            found = _find_group(value, name)
+            if found is not None:
+                return found
+    elif isinstance(node, list):
+        for item in node:
+            found = _find_group(item, name)
+            if found is not None:
+                return found
+    return None
 
 
 def update_docs_json(features: list[dict]) -> None:
@@ -584,39 +682,32 @@ def update_docs_json(features: list[dict]) -> None:
 
     feature_subgroups = _build_feature_subgroups(features)
 
-    # Find V3 Documentation tab → its groups → Expert Models group
     versions = docs.get("navigation", {}).get("versions", [])
-    for version in versions:
-        if version.get("version") != "V3":
-            continue
-        tabs = version.get("tabs", [])
-        for tab in tabs:
-            if tab.get("tab") != "V3 Documentation":
-                continue
-            groups = tab.get("groups", [])
-            for group in groups:
-                if group.get("group") != "V3 Documentation":
-                    continue
-                pages = group.get("pages", [])
+    v3 = next((v for v in versions if v.get("version") == "V3"), None)
+    if v3 is None:
+        raise SystemExit("ERROR: docs.json has no V3 version in navigation.")
 
-                # Remove old standalone "AI Features" entry if present
-                pages[:] = [
-                    p for p in pages
-                    if not (isinstance(p, dict) and p.get("group") == "AI Features")
-                ]
+    # Remove the old standalone "AI Features" entry if present. Scoped to the
+    # V3 Documentation group on purpose — the V3 API Reference tab has its own
+    # legitimate "AI Features" group that must survive.
+    v3_docs_group = _find_group(v3.get("tabs", []), "V3 Documentation")
+    if v3_docs_group is not None:
+        pages = v3_docs_group.get("pages", [])
+        pages[:] = [
+            p for p in pages
+            if not (isinstance(p, dict) and p.get("group") == "AI Features")
+        ]
 
-                # Find the Expert Models group and replace its feature subgroups
-                for p in pages:
-                    if isinstance(p, dict) and p.get("group") == "Expert Models":
-                        expert_pages = p.get("pages", [])
-                        # Keep non-feature pages (e.g. fallback, webhooks, listing-models)
-                        static_pages = [
-                            ep for ep in expert_pages
-                            if isinstance(ep, str)
-                        ]
-                        # Replace with static pages + new feature subgroups
-                        p["pages"] = static_pages + feature_subgroups
-                        break
+    # "Expert Models" has sat at more than one depth in docs.json over time, so
+    # search for it instead of assuming a fixed nesting. Quietly skipping the
+    # update is what previously let new feature pages ship with no nav entry.
+    expert = _find_group(v3.get("tabs", []), "Expert Models")
+    if expert is None:
+        raise SystemExit("ERROR: docs.json has no 'Expert Models' group; cannot update feature nav.")
+
+    # Keep non-feature pages (e.g. webhooks, listing-models, provider-parameters)
+    static_pages = [ep for ep in expert.get("pages", []) if isinstance(ep, str)]
+    expert["pages"] = static_pages + feature_subgroups
 
     # Atomic write: write to temp file then replace, so a crash can't corrupt docs.json
     fd, tmp_path = tempfile.mkstemp(dir=DOCS_JSON_PATH.parent, suffix=".json")
@@ -689,15 +780,28 @@ def main() -> None:
             sf_slug = slug(sf_name)
             print(f"  Generating {fname}/{sf_slug}.mdx ...")
 
+            page_path = feat_dir / f"{sf_slug}.mdx"
+
             # Fetch detailed schema
             try:
                 detail = fetch_subfeature_detail(fname, sf_name)
-            except Exception as e:
-                print(f"    Warning: could not fetch detail for {fname}/{sf_name}: {e}")
-                detail = {}
+            except _FETCH_ERRORS as e:
+                # Never overwrite a good page with a gutted one. Without the
+                # detail response there are no input/output fields, so the page
+                # would publish "_No schema information available._" and lose its
+                # schema tables — a transient API hiccup would otherwise open a
+                # PR that silently strips documentation.
+                if page_path.exists():
+                    print(f"    Warning: could not fetch detail for {fname}/{sf_name}: {e}")
+                    print(f"    Keeping existing {page_path.relative_to(DOCS_ROOT)} unchanged.")
+                    continue
+                raise SystemExit(
+                    f"ERROR: no detail for {fname}/{sf_name} and no existing page to keep ({e}). "
+                    "Aborting rather than publishing a page with no schema."
+                ) from e
 
-            content = generate_subfeature_page(fname, sf, detail)
-            (feat_dir / f"{sf_slug}.mdx").write_text(content)
+            content = generate_subfeature_page(fname, sf, detail, feature_section_name(feat))
+            page_path.write_text(content)
     print("  Generating index page...")
     index_content = generate_index_page(features)
     (FEATURES_DIR / "index.mdx").write_text(index_content)

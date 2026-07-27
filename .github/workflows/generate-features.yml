@@ -34,6 +34,13 @@ jobs:
         if: steps.changes.outputs.changed == 'true'
         uses: peter-evans/create-pull-request@v6
         with:
+          # Use a PAT so the branch push runs as a bypass-eligible actor.
+          # GITHUB_TOKEN authenticates as github-actions[bot] (Write role),
+          # which the `agent-block` ruleset rejects when creating or
+          # force-pushing branches outside refs/heads/edenai-assistant/**.
+          # The PAT must belong to a user/app with Triage, Maintain, or Admin
+          # role (the ruleset's bypass list). Same fix as update-dates.yml.
+          token: ${{ secrets.DOCS_BOT_PAT || secrets.GITHUB_TOKEN }}
           commit-message: "docs: update auto-generated AI feature pages"
           branch: auto/update-feature-docs
           title: "docs: update AI feature documentation"

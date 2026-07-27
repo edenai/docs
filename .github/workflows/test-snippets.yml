@@ -11,11 +11,17 @@ on:
 # These tests create shared, named resources on one Eden AI account (custom
 # tokens, uploaded files), so two runs of the same ref must not overlap.
 # update-dates.yml pushes a dateModified bump to every .mdx PR, which starts a
-# second run seconds after the first — superseding the earlier run avoids the
-# collision instead of losing a coin flip.
+# second run seconds after the first, so serialise them per ref.
+#
+# Deliberately NOT cancel-in-progress: cleanup happens in pytest_sessionfinish,
+# so cancelling a started run orphans the tokens and uploaded file it created.
+# The next run then snapshots those as pre-existing and never deletes them,
+# leaking a little account state on every .mdx PR. Queuing costs one extra
+# minute of CI and always runs cleanup. (A still-pending run carries no
+# resources, so GitHub replacing it is harmless.)
 concurrency:
   group: test-snippets-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   execute:

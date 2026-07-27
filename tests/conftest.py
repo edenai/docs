@@ -79,8 +79,12 @@ def pytest_sessionstart(session: pytest.Session) -> None:
             try:
                 create_custom_token(**token_spec)
             except requests.HTTPError as exc:
-                # token may already exist
-                if not exc.response or exc.response.status_code != 400:
+                # Token may already exist — another run on the same account can
+                # create it first. Test `is None` explicitly: Response.__bool__
+                # returns self.ok, so a 400 response is falsy and `not
+                # exc.response` was short-circuiting to True, re-raising the one
+                # case this handler exists to swallow.
+                if exc.response is None or exc.response.status_code != 400:
                     raise
 
     path = _shared_state_path(session.config)

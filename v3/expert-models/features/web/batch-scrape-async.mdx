@@ -1,0 +1,101 @@
+---
+title: "Batch Web Scraping"
+description: "Scrape many URLs in one request and return each page's content. Runs as an async job."
+---
+
+import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
+
+<TechArticleSchema
+  title={`Batch Web Scraping`}
+  description={`Scrape many URLs in one request and return each page's content. Runs as an async job.`}
+  path="v3/expert-models/features/web/batch-scrape-async"
+  articleSection="Expert Models"
+  about={`AI API`}
+  proficiencyLevel="Intermediate"
+  keywords={[`Eden AI`, `AI API`, `expert models`]}
+  datePublished="2026-07-27T00:00:00Z"
+  dateModified="2026-07-27T00:00:00Z"
+/>
+
+## Endpoint
+
+`POST /v3/universal-ai/async` (async)
+
+Model string pattern: `web/batch_scrape_async/{provider}[/{model}]`
+
+## Input
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| urls | array[string] | Yes | Explicit list of URLs to scrape (async job) |
+
+
+## Output
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| **pages** | array[object] | No |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;url | string | Yes |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;content | string | No |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;title | string | No |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;description | string | No |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;status_code | int | No |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;links | array[string] | No |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;**images** | array[object] | No |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;url | string | Yes |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;description | string | No |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;width | int | No |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;height | int | No |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;raw_html | string | No |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;summary | string | No |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;published_date | string | No |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;author | string | No |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;favicon | string | No |  |
+| failed_results | array[dict] | No |  |
+| usage | dict | No |  |
+
+
+## Available Providers
+
+| Provider | Model String | Price |
+|----------|-------------|-------|
+| firecrawl | `web/batch_scrape_async/firecrawl` | $0.0038 per token |
+
+
+## Quick Start
+
+
+> This is an **async** feature. The initial response returns a job ID. Poll `GET /v3/universal-ai/async/{job_id}` until the job completes.
+
+<CodeGroup>
+```python Python
+import requests
+
+url = "https://api.edenai.run/v3/universal-ai/async"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+payload = {
+    "model": "web/batch_scrape_async/firecrawl",
+    "input": {
+        "urls": ["value1", "value2"]
+    }
+}
+
+response = requests.post(url, headers=headers, json=payload)
+print(response.json())
+```
+
+```bash cURL
+curl -X POST https://api.edenai.run/v3/universal-ai/async \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "web/batch_scrape_async/firecrawl",
+    "input": {"urls": ["value1", "value2"]}
+  }'
+```
+</CodeGroup>
+

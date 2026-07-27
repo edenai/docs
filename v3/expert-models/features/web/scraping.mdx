@@ -1,0 +1,97 @@
+---
+title: "Web Scraping"
+description: "Fetch a single URL and return its clean content as markdown, text, or HTML, with optional JavaScript rendering."
+---
+
+import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
+
+<TechArticleSchema
+  title={`Web Scraping`}
+  description={`Fetch a single URL and return its clean content as markdown, text, or HTML, with optional JavaScript rendering.`}
+  path="v3/expert-models/features/web/scraping"
+  articleSection="Expert Models"
+  about={`AI API`}
+  proficiencyLevel="Intermediate"
+  keywords={[`Eden AI`, `AI API`, `expert models`]}
+  datePublished="2026-07-27T00:00:00Z"
+  dateModified="2026-07-27T00:00:00Z"
+/>
+
+## Endpoint
+
+`POST /v3/universal-ai` (sync)
+
+Model string pattern: `web/scraping/{provider}[/{model}]`
+
+## Input
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| url | string | Yes | URL of the web page to scrape |
+
+
+## Output
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| url | string | Yes |  |
+| content | string | No |  |
+| title | string | No |  |
+| description | string | No |  |
+| status_code | int | No |  |
+| links | array[string] | No |  |
+| **images** | array[object] | No |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;url | string | Yes |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;description | string | No |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;width | int | No |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;height | int | No |  |
+| raw_html | string | No |  |
+| summary | string | No |  |
+| published_date | string | No |  |
+| author | string | No |  |
+| favicon | string | No |  |
+| usage | dict | No |  |
+
+
+## Available Providers
+
+| Provider | Model String | Price |
+|----------|-------------|-------|
+| firecrawl | `web/scraping/firecrawl` | $0.0038 per token |
+
+
+## Quick Start
+
+
+<CodeGroup>
+```python Python
+import requests
+
+url = "https://api.edenai.run/v3/universal-ai"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+payload = {
+    "model": "web/scraping/firecrawl",
+    "input": {
+        "url": "example"
+    }
+}
+
+response = requests.post(url, headers=headers, json=payload)
+print(response.json())
+```
+
+```bash cURL
+curl -X POST https://api.edenai.run/v3/universal-ai \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "web/scraping/firecrawl",
+    "input": {"url": "example"}
+  }'
+```
+</CodeGroup>
+

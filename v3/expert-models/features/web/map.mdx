@@ -1,0 +1,87 @@
+---
+title: "Site Map"
+description: "Discover and return the list of URLs on a site (a sitemap-style link map)."
+---
+
+import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
+
+<TechArticleSchema
+  title={`Site Map`}
+  description={`Discover and return the list of URLs on a site (a sitemap-style link map).`}
+  path="v3/expert-models/features/web/map"
+  articleSection="Expert Models"
+  about={`AI API`}
+  proficiencyLevel="Intermediate"
+  keywords={[`Eden AI`, `AI API`, `expert models`]}
+  datePublished="2026-07-27T00:00:00Z"
+  dateModified="2026-07-27T00:00:00Z"
+/>
+
+## Endpoint
+
+`POST /v3/universal-ai` (sync)
+
+Model string pattern: `web/map/{provider}[/{model}]`
+
+## Input
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| url | string | Yes | Root URL to map (discover its links) |
+
+
+## Output
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| url | string | Yes |  |
+| **links** | array[object] | No |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;url | string | Yes |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;title | string | No |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;description | string | No |  |
+| base_url | string | No |  |
+| usage | dict | No |  |
+
+
+## Available Providers
+
+| Provider | Model String | Price |
+|----------|-------------|-------|
+| firecrawl | `web/map/firecrawl` | $0.0038 per token |
+
+
+## Quick Start
+
+
+<CodeGroup>
+```python Python
+import requests
+
+url = "https://api.edenai.run/v3/universal-ai"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+payload = {
+    "model": "web/map/firecrawl",
+    "input": {
+        "url": "example"
+    }
+}
+
+response = requests.post(url, headers=headers, json=payload)
+print(response.json())
+```
+
+```bash cURL
+curl -X POST https://api.edenai.run/v3/universal-ai \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "web/map/firecrawl",
+    "input": {"url": "example"}
+  }'
+```
+</CodeGroup>
+

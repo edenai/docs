@@ -170,6 +170,20 @@
                     "pages": [
                       "v3/expert-models/features/video/generation-async"
                     ]
+                  },
+                  {
+                    "group": "Web Features",
+                    "icon": "globe",
+                    "expanded": false,
+                    "pages": [
+                      "v3/expert-models/features/web/scraping",
+                      "v3/expert-models/features/web/map",
+                      "v3/expert-models/features/web/search",
+                      "v3/expert-models/features/web/crawl-async",
+                      "v3/expert-models/features/web/batch-scrape-async",
+                      "v3/expert-models/features/web/structured-extraction-async",
+                      "v3/expert-models/features/web/research-async"
+                    ]
                   }
                 ]
               },

@@ -282,15 +282,26 @@ def build_input_json(fields: list[dict], required_only: bool = False) -> dict[st
 # MDX generation
 # --------------------
 
+def _cell(text: str) -> str:
+    """Escape a value for use inside a Markdown table cell.
+
+    An unescaped pipe ends the cell early and shifts every later column left,
+    which corrupts the row silently. A union type such as
+    `array[file_input | object]` pushed "Required" into the type column and the
+    description into a phantom fifth column that renderers drop.
+    """
+    return str(text).replace("|", "\\|")
+
+
 def _render_fields_rows(fields: list[dict], depth: int = 0) -> list[str]:
     """Recursively render schema fields as table rows, expanding nested objects."""
     rows = []
     indent = "&nbsp;&nbsp;&nbsp;&nbsp;" * depth  # visual indentation per nesting level
     for f in fields:
-        name = f.get("name", "")
-        ftype = f.get("type", "")
+        name = _cell(f.get("name", ""))
+        ftype = _cell(f.get("type", ""))
         required = "Yes" if f.get("required") else "No"
-        desc = strip_html(f.get("description", ""))
+        desc = _cell(strip_html(f.get("description", "")))
 
         if ftype == "array" and "items" in f:
             item_type = f["items"].get("type", "")
@@ -299,7 +310,7 @@ def _render_fields_rows(fields: list[dict], depth: int = 0) -> list[str]:
                 rows.append(f"| {indent}**{name}** | array[object] | {required} | {desc} |")
                 rows.extend(_render_fields_rows(nested_fields, depth=depth + 1))
             else:
-                ftype = f"array[{item_type}]" if item_type else "array"
+                ftype = f"array[{_cell(item_type)}]" if item_type else "array"
                 rows.append(f"| {indent}{name} | {ftype} | {required} | {desc} |")
         elif ftype == "object" and "fields" in f:
             rows.append(f"| {indent}**{name}** | object | {required} | {desc} |")
@@ -340,7 +351,7 @@ def render_providers_table(models: list[dict]) -> str:
             pricing.get("price_unit_quantity", 1),
             pricing.get("price_unit_type", "request"),
         )
-        lines.append(f"| {label} | `{model_str}` | {price_str} |")
+        lines.append(f"| {_cell(label)} | `{_cell(model_str)}` | {_cell(price_str)} |")
     return "\n".join(lines) + "\n"
 
 

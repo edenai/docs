@@ -1,0 +1,94 @@
+---
+title: "DeepTutor"
+icon: "/integration-logo/deeptutor-icondoc.svg"
+description: "Use DeepTutor with Eden AI to run your self-hosted study and research app on 500+ AI models through one API."
+---
+
+import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
+
+<TechArticleSchema
+  title={"DeepTutor"}
+  description={"Use DeepTutor with Eden AI to run your self-hosted study and research app on 500+ AI models through one API."}
+  path="v3/integrations/deeptutor"
+  articleSection="Chat UI"
+  about={"AI Study & Research App Integration"}
+  proficiencyLevel="Beginner"
+  keywords={["Eden AI", "AI API", "DeepTutor", "RAG", "Study"]}
+  datePublished="2026-07-27T00:00:00Z"
+  dateModified="2026-07-27T00:00:00Z"
+/>
+
+Use DeepTutor with Eden AI to run your self-hosted study and research app on 500+ AI models through one API.
+
+## Overview
+
+[DeepTutor](https://github.com/HKUDS/DeepTutor) is a self-hosted AI study and research app — chat, quizzes, and RAG knowledge bases. Eden AI is registered as a **built-in gateway provider** in DeepTutor's model registry, so your whole instance can run on models from OpenAI, Anthropic, Google, Mistral and more behind one key, with EU-based, GDPR-aligned inference.
+
+## Installation
+
+<CodeGroup>
+```bash pip
+mkdir -p my-deeptutor && cd my-deeptutor
+pip install -U deeptutor
+```
+</CodeGroup>
+
+## Quick Start
+
+Select Eden AI as the LLM provider when the setup wizard prompts for one:
+
+<CodeGroup>
+```bash Terminal
+deeptutor init     # prompts for LLM provider / base URL / API key / model
+deeptutor start    # starts backend + frontend
+```
+</CodeGroup>
+
+Open the frontend URL printed in the terminal (default `http://127.0.0.1:3782`). Already running an instance? Add or change the provider later from **Settings → Models** in the web UI instead of re-running `init` — DeepTutor auto-detects Eden AI from the base URL.
+
+## Configuration
+
+DeepTutor's provider registry stores the profile in `data/user/settings/model_catalog.json`:
+
+| Field | Value |
+|---|---|
+| Provider | `edenai` |
+| Base URL | `https://api.edenai.run/v3` |
+| API key | `EDENAI_API_KEY` |
+| Model | `provider/model`, e.g. `anthropic/claude-sonnet-5` |
+
+## Available Models
+
+Use the `provider/model` format for any Eden AI model:
+
+**OpenAI**
+- `openai/gpt-5.5`
+- `openai/gpt-5-mini`
+
+**Anthropic**
+- `anthropic/claude-sonnet-5`
+- `anthropic/claude-haiku-4-5`
+
+**Google**
+- `google/gemini-2.5-pro`
+- `google/gemini-3.5-flash`
+
+**Mistral**
+- `mistral/mistral-large-2512`
+- `mistral/mistral-small-2603`
+
+## Environment Variables
+
+<CodeGroup>
+```bash .env
+EDENAI_API_KEY=your_api_key_here
+```
+</CodeGroup>
+
+DeepTutor reads this key itself once the Eden AI provider is configured — it does not need to be exported manually in most setups (the Settings UI writes it into `model_catalog.json`).
+
+## Next Steps
+
+- [Open WebUI](/v3/integrations/open-webui) - Another self-hosted chat interface
+- [Chat Completions](/v3/llms/chat-completions) - Core LLM endpoint
+- [List LLM Models](/v3/llms/listing-models) - Browse available providers and models

@@ -1,0 +1,128 @@
+---
+title: "Atomic Agents"
+icon: "/integration-logo/atomic-agents-icondoc.svg"
+description: "Use Atomic Agents with Eden AI to build agents on 500+ AI models through an OpenAI-compatible, Instructor-powered interface."
+---
+
+import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
+
+<TechArticleSchema
+  title={"Atomic Agents"}
+  description={"Use Atomic Agents with Eden AI to build agents on 500+ AI models through an OpenAI-compatible, Instructor-powered interface."}
+  path="v3/integrations/atomic-agents"
+  articleSection="AI Frameworks"
+  about={"Agent Framework Integration"}
+  proficiencyLevel="Intermediate"
+  keywords={["Eden AI", "AI API", "Atomic Agents", "Python", "Instructor"]}
+  datePublished="2026-07-27T00:00:00Z"
+  dateModified="2026-07-27T00:00:00Z"
+/>
+
+Use Atomic Agents with Eden AI to build agents on 500+ AI models through an OpenAI-compatible, Instructor-powered interface.
+
+## Overview
+
+[Atomic Agents](https://github.com/Eigenwise/atomic-agents) is a lightweight, modular Python framework for building AI agents on composable, schema-driven building blocks (via [Instructor](https://github.com/instructor-ai/instructor) and Pydantic). Atomic Agents works with Eden AI out of the box through its existing OpenAI-compatible client, so your agents reach models from OpenAI, Anthropic, Google, Mistral and more behind one key, with EU-based, GDPR-aligned inference.
+
+## Installation
+
+Eden AI reuses the OpenAI client and Instructor that Atomic Agents already relies on:
+
+<CodeGroup>
+```bash pip
+pip install atomic-agents openai instructor
+```
+
+```bash poetry
+poetry add atomic-agents openai instructor
+```
+</CodeGroup>
+
+## Quick Start
+
+Wrap an OpenAI client pointed at Eden AI with Instructor — the same pattern used for any other OpenAI-compatible provider — and pass it to your agent:
+
+<CodeGroup>
+```bash .env
+EDENAI_API_KEY=your_api_key_here
+```
+
+{/* skip-test */}
+```python Python
+import os
+import instructor
+from openai import OpenAI
+from atomic_agents.agents.base_agent import BaseAgent, BaseAgentConfig
+
+client = instructor.from_openai(
+    OpenAI(
+        base_url="https://api.edenai.run/v3",
+        api_key=os.getenv("EDENAI_API_KEY"),
+    )
+)
+
+agent = BaseAgent(
+    config=BaseAgentConfig(
+        client=client,
+        model="anthropic/claude-sonnet-5",  # <provider>/<model>
+    )
+)
+
+response = agent.run(agent.input_schema(chat_message="Hello! How are you?"))
+print(response.chat_message)
+```
+</CodeGroup>
+
+Both Instructor `TOOLS` and `JSON` modes work unchanged with Eden AI.
+
+## Switching models
+
+Change the `model` string on `BaseAgentConfig` to reach any Eden AI model — no per-provider SDKs, no code changes:
+
+<CodeGroup>
+{/* skip-test */}
+```python Python
+for model in [
+    "openai/gpt-5.5",
+    "anthropic/claude-sonnet-5",
+    "mistral/mistral-large-2512",
+]:
+    agent = BaseAgent(config=BaseAgentConfig(client=client, model=model))
+    response = agent.run(agent.input_schema(chat_message="Write a haiku about the sea."))
+    print(model, "->", response.chat_message)
+```
+</CodeGroup>
+
+## Available Models
+
+Use the `provider/model` format for any Eden AI model:
+
+**OpenAI**
+- `openai/gpt-5.5`
+- `openai/gpt-5-mini`
+
+**Anthropic**
+- `anthropic/claude-sonnet-5`
+- `anthropic/claude-haiku-4-5`
+
+**Google**
+- `google/gemini-2.5-pro`
+- `google/gemini-3.5-flash`
+
+**Mistral**
+- `mistral/mistral-large-2512`
+- `mistral/mistral-small-2603`
+
+## Environment Variables
+
+<CodeGroup>
+```bash .env
+EDENAI_API_KEY=your_api_key_here
+```
+</CodeGroup>
+
+## Next Steps
+
+- [aisuite](/v3/integrations/aisuite) - Another OpenAI-style multi-provider interface
+- [Chat Completions](/v3/llms/chat-completions) - Core LLM endpoint
+- [List LLM Models](/v3/llms/listing-models) - Browse available providers and models

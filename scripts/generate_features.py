@@ -197,7 +197,9 @@ def format_price(price: float, quantity: int, unit_type: str) -> str:
     unit_type = _UNIT_ALIASES.get(unit_type, unit_type)
     if quantity == 1:
         return f"${price:g} per {unit_type}"
-    return f"${price:g} per {quantity:,} {unit_type}s"
+    # Don't double the plural if the API already sends one ("tokens" -> "tokenss").
+    plural = unit_type if unit_type.endswith("s") else f"{unit_type}s"
+    return f"${price:g} per {quantity:,} {plural}"
 
 
 def provider_from_model(model_str: str) -> str:
@@ -301,8 +303,13 @@ def _cell(text: str) -> str:
     which corrupts the row silently. A union type such as
     `array[file_input | object]` pushed "Required" into the type column and the
     description into a phantom fifth column that renderers drop.
+
+    A newline is worse: it terminates the row mid-sentence and ends the table,
+    dumping the remainder into the page as loose prose. Two live descriptions do
+    this today (the tts `voice` field and explicit_content `subcategory`), so
+    collapse all whitespace runs before escaping.
     """
-    return str(text).replace("|", "\\|")
+    return " ".join(str(text).split()).replace("|", "\\|")
 
 
 def _render_fields_rows(fields: list[dict], depth: int = 0) -> list[str]:
@@ -764,15 +771,28 @@ def main() -> None:
             sf_slug = slug(sf_name)
             print(f"  Generating {fname}/{sf_slug}.mdx ...")
 
+            page_path = feat_dir / f"{sf_slug}.mdx"
+
             # Fetch detailed schema
             try:
                 detail = fetch_subfeature_detail(fname, sf_name)
             except Exception as e:
-                print(f"    Warning: could not fetch detail for {fname}/{sf_name}: {e}")
-                detail = {}
+                # Never overwrite a good page with a gutted one. Without the
+                # detail response there are no input/output fields, so the page
+                # would publish "_No schema information available._" and lose its
+                # schema tables — a transient API hiccup would otherwise open a
+                # PR that silently strips documentation.
+                if page_path.exists():
+                    print(f"    Warning: could not fetch detail for {fname}/{sf_name}: {e}")
+                    print(f"    Keeping existing {page_path.relative_to(DOCS_ROOT)} unchanged.")
+                    continue
+                raise SystemExit(
+                    f"ERROR: no detail for {fname}/{sf_name} and no existing page to keep ({e}). "
+                    "Aborting rather than publishing a page with no schema."
+                )
 
             content = generate_subfeature_page(fname, sf, detail, feature_section_name(feat))
-            (feat_dir / f"{sf_slug}.mdx").write_text(content)
+            page_path.write_text(content)
     print("  Generating index page...")
     index_content = generate_index_page(features)
     (FEATURES_DIR / "index.mdx").write_text(index_content)

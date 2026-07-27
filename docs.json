@@ -116,6 +116,20 @@
                     ]
                   },
                   {
+                    "group": "Web Features",
+                    "icon": "globe",
+                    "expanded": false,
+                    "pages": [
+                      "v3/expert-models/features/web/scraping",
+                      "v3/expert-models/features/web/map",
+                      "v3/expert-models/features/web/search",
+                      "v3/expert-models/features/web/crawl-async",
+                      "v3/expert-models/features/web/batch-scrape-async",
+                      "v3/expert-models/features/web/structured-extraction-async",
+                      "v3/expert-models/features/web/research-async"
+                    ]
+                  },
+                  {
                     "group": "OCR Features",
                     "icon": "file-lines",
                     "expanded": false,
@@ -142,7 +156,8 @@
                       "v3/expert-models/features/image/anonymization",
                       "v3/expert-models/features/image/deepfake-detection",
                       "v3/expert-models/features/image/face-compare",
-                      "v3/expert-models/features/image/logo-detection"
+                      "v3/expert-models/features/image/logo-detection",
+                      "v3/expert-models/features/image/face-recognition"
                     ]
                   },
                   {
@@ -164,25 +179,12 @@
                     ]
                   },
                   {
-                    "group": "Video Generation Features",
+                    "group": "Video Features",
                     "icon": "video",
                     "expanded": false,
                     "pages": [
-                      "v3/expert-models/features/video/generation-async"
-                    ]
-                  },
-                  {
-                    "group": "Web Features",
-                    "icon": "globe",
-                    "expanded": false,
-                    "pages": [
-                      "v3/expert-models/features/web/scraping",
-                      "v3/expert-models/features/web/map",
-                      "v3/expert-models/features/web/search",
-                      "v3/expert-models/features/web/crawl-async",
-                      "v3/expert-models/features/web/batch-scrape-async",
-                      "v3/expert-models/features/web/structured-extraction-async",
-                      "v3/expert-models/features/web/research-async"
+                      "v3/expert-models/features/video/generation-async",
+                      "v3/expert-models/features/video/deepfake-detection-async"
                     ]
                   }
                 ]

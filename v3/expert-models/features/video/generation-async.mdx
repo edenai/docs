@@ -9,12 +9,12 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   title={`Video Generation`}
   description={`The Video Generation API enables easy creation of high-quality videos from text,and images, perfect for marketing, education, and more—all through one integration.`}
   path="v3/expert-models/features/video/generation-async"
-  articleSection="Video Generation Features"
+  articleSection={`Video Features`}
   about={`Video AI API`}
   proficiencyLevel="Intermediate"
-  keywords={[`Eden AI`, `AI API`, `video generation`]}
+  keywords={[`Eden AI`, `AI API`, `video generation`, `video analysis`]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-05-07T00:00:00Z"
+  dateModified="2026-07-27T00:00:00Z"
 />
 
 ## Endpoint
@@ -30,9 +30,8 @@ Model string pattern: `video/generation_async/{provider}[/{model}]`
 | text | string | Yes | Text prompt describing the content and style of the video to generate |
 | file | file_input | No | Initial keyframe image (JPEG or PNG) file ID from /v3/upload or direct file URL |
 | duration | int | No | Length of the generated video in seconds |
-| fps | int | No | Frames per second of the generated video |
 | dimension | string | No | Video resolution in 'widthxheight' format (e.g., '1280x720') |
-| seed | int | No | Random seed for generation reproducibility (0 to 2,147,483,646) |
+| seed | int | No | Random seed for generation reproducibility (0 to 2,147,483,646). Omit for varied output. |
 
 
 ## Output
@@ -41,29 +40,40 @@ Model string pattern: `video/generation_async/{provider}[/{model}]`
 |-------|------|----------|-------------|
 | video | string | Yes |  |
 | video_resource_url | string | Yes |  |
+| usage | dict | No |  |
 
 
 ## Available Providers
 
 | Provider | Model String | Price |
 |----------|-------------|-------|
-| amazon (amazon.nova-reel-v1:0) | `video/generation_async/amazon/amazon.nova-reel-v1:0` | $0.08 per seconde |
-| amazon (amazon.nova-reel-v1:1) | `video/generation_async/amazon/amazon.nova-reel-v1:1` | $0.08 per seconde |
+| amazon (amazon.nova-reel-v1:0) | `video/generation_async/amazon/amazon.nova-reel-v1:0` | $0.08 per second |
+| amazon (amazon.nova-reel-v1:1) | `video/generation_async/amazon/amazon.nova-reel-v1:1` | $0.08 per second |
 | amazon | `video/generation_async/amazon` | $0.5 per request |
-| bytedance | `video/generation_async/bytedance` | $1.8 per 1,000,000 tokens |
-| bytedance (seedance-1-0-lite-t2v-250428) | `video/generation_async/bytedance/seedance-1-0-lite-t2v-250428` | $1.8 per 1,000,000 tokens |
-| bytedance (seedance-1-0-pro-250528) | `video/generation_async/bytedance/seedance-1-0-pro-250528` | $0.62 per request |
+| bytedance | `video/generation_async/bytedance` | $0.05 per second |
+| bytedance (seedance-1-0-pro-250528) | `video/generation_async/bytedance/seedance-1-0-pro-250528` | $2.5 per 1,000,000 tokens |
+| bytedance (seedance-1-0-pro-fast-251015) | `video/generation_async/bytedance/seedance-1-0-pro-fast-251015` | $0.022 per second |
+| bytedance (seedance-1-5-pro-251215) | `video/generation_async/bytedance/seedance-1-5-pro-251215` | $1.2 per 1,000,000 tokens |
+| bytedance (seedance-2-0-260128) | `video/generation_async/bytedance/seedance-2-0-260128` | $0.147 per second |
 | google | `video/generation_async/google` | $3.6 per request |
-| google (veo-3.0-fast-generate-001) | `video/generation_async/google/veo-3.0-fast-generate-001` | $0.15 per seconde |
-| google (veo-3.0-generate-001) | `video/generation_async/google/veo-3.0-generate-001` | $0.4 per seconde |
-| google (veo-3.1-generate-preview) | `video/generation_async/google/veo-3.1-generate-preview` | $0.4 per seconde |
+| google (veo-3.0-fast-generate-001) | `video/generation_async/google/veo-3.0-fast-generate-001` | $0.12 per second |
+| google (veo-3.0-generate-001) | `video/generation_async/google/veo-3.0-generate-001` | $0.4 per second |
+| google (veo-3.1-fast-generate-preview) | `video/generation_async/google/veo-3.1-fast-generate-preview` | $0.1 per second |
+| google (veo-3.1-generate-preview) | `video/generation_async/google/veo-3.1-generate-preview` | $0.6 per second |
+| google (veo-3.1-lite-generate-preview) | `video/generation_async/google/veo-3.1-lite-generate-preview` | $0.05 per second |
 | minimax | `video/generation_async/minimax` | $0.56 per request |
 | minimax (MiniMax-Hailuo-02) | `video/generation_async/minimax/MiniMax-Hailuo-02` | $0.28 per request |
-| minimax (MiniMax-Hailuo-2.3) | `video/generation_async/minimax/MiniMax-Hailuo-2.3` | $0.28 per request |
+| minimax (MiniMax-Hailuo-2.3) | `video/generation_async/minimax/MiniMax-Hailuo-2.3` | $0.084 per request |
 | minimax (S2V-01) | `video/generation_async/minimax/S2V-01` | $0.65 per request |
 | minimax (T2V/I2V-01-Director) | `video/generation_async/minimax/T2V/I2V-01-Director` | $0.43 per request |
 | openai | `video/generation_async/openai` | $5 per request |
-| openai (sora-2) | `video/generation_async/openai/sora-2` | $0.1 per seconde |
+| openai (sora-2) | `video/generation_async/openai/sora-2` | $0.1 per second |
+| openai (sora-2-pro) | `video/generation_async/openai/sora-2-pro` | $0.3 per second |
+| pixverse (c1) | `video/generation_async/pixverse/c1` | $0.004 per token |
+| pixverse | `video/generation_async/pixverse` | $0.004 per token |
+| pixverse (v5) | `video/generation_async/pixverse/v5` | $0.004 per token |
+| pixverse (v5.5) | `video/generation_async/pixverse/v5.5` | $0.004 per token |
+| pixverse (v6) | `video/generation_async/pixverse/v6` | $0.004 per token |
 
 
 ## Quick Start

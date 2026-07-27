@@ -9,12 +9,12 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   title={`Explicit Content Detection`}
   description={`Explicit Content Detection detects adult only content in images, that is generally inappropriate for people under the age of 18 and includes nudity, sexual activity, pornography, violence, gore`}
   path="v3/expert-models/features/image/explicit-content"
-  articleSection="Image Features"
+  articleSection={`Image Features`}
   about={`Image AI API`}
   proficiencyLevel="Intermediate"
   keywords={[`Eden AI`, `AI API`, `image analysis`, `computer vision`]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-05-07T00:00:00Z"
+  dateModified="2026-07-27T00:00:00Z"
 />
 
 ## Endpoint
@@ -41,71 +41,7 @@ Model string pattern: `image/explicit_content/{provider}[/{model}]`
 | &nbsp;&nbsp;&nbsp;&nbsp;likelihood | int | Yes |  |
 | &nbsp;&nbsp;&nbsp;&nbsp;likelihood_score | float | Yes |  |
 | &nbsp;&nbsp;&nbsp;&nbsp;category | enum | Yes | The category of the detected content. Possible values include: 'Toxic', 'Content', 'Sexual', 'Violence', 'DrugAndAlcohol', 'Finance', 'HateAndExtremism', 'Safe', 'Other'. |
-| &nbsp;&nbsp;&nbsp;&nbsp;subcategory | string | Yes | The subcategory of content. Possible values:
-
-Toxic Subcategories:
-- Insult
-- Obscene
-- Derogatory
-- Profanity
-- Threat
-- Toxic
-
-Content Subcategories:
-- MiddleFinger
-- PublicSafety
-- Health
-- Explicit
-- QRCode
-- Medical
-- Politics
-- Legal
-
-Sexual Subcategories:
-- SexualActivity
-- SexualSituations
-- Nudity
-- PartialNudity
-- Suggestive
-- AdultToys
-- RevealingClothes
-- Sexual
-
-Violence Subcategories:
-- GraphicViolenceOrGore
-- PhysicalViolence
-- WeaponViolence
-- Violence
-
-Drug and Alcohol Subcategories:
-- DrugProducts
-- DrugUse
-- Tobacco
-- Smoking
-- Alcohol
-- Drinking
-
-Finance Subcategories:
-- Gambling
-- Finance
-- MoneyContent
-
-Hate and Extremism Subcategories:
-- Hate
-- Harassment
-- Threatening
-- Extremist
-- Racy
-
-Safe Subcategories:
-- Safe
-- NotSafe
-
-Other Subcategories:
-- Spoof
-- Religion
-- Offensive
-- Other |
+| &nbsp;&nbsp;&nbsp;&nbsp;subcategory | string | Yes | The subcategory of content. Possible values: Toxic Subcategories: - Insult - Obscene - Derogatory - Profanity - Threat - Toxic Content Subcategories: - MiddleFinger - PublicSafety - Health - Explicit - QRCode - Medical - Politics - Legal Sexual Subcategories: - SexualActivity - SexualSituations - Nudity - PartialNudity - Suggestive - AdultToys - RevealingClothes - Sexual Violence Subcategories: - GraphicViolenceOrGore - PhysicalViolence - WeaponViolence - Violence Drug and Alcohol Subcategories: - DrugProducts - DrugUse - Tobacco - Smoking - Alcohol - Drinking Finance Subcategories: - Gambling - Finance - MoneyContent Hate and Extremism Subcategories: - Hate - Harassment - Threatening - Extremist - Racy Safe Subcategories: - Safe - NotSafe Other Subcategories: - Spoof - Religion - Offensive - Other |
 
 
 ## Available Providers

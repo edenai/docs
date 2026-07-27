@@ -8,6 +8,15 @@ on:
       - '*.mdx'
       - 'tests/**'
 
+# These tests create shared, named resources on one Eden AI account (custom
+# tokens, uploaded files), so two runs of the same ref must not overlap.
+# update-dates.yml pushes a dateModified bump to every .mdx PR, which starts a
+# second run seconds after the first — superseding the earlier run avoids the
+# collision instead of losing a coin flip.
+concurrency:
+  group: test-snippets-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   execute:
     name: Execution Tests

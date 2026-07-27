@@ -604,6 +604,23 @@ def _build_feature_subgroups(features: list[dict]) -> list[dict]:
     return subgroups
 
 
+def _find_group(node: object, name: str) -> dict | None:
+    """Depth-first search the navigation tree for a group dict named `name`."""
+    if isinstance(node, dict):
+        if node.get("group") == name:
+            return node
+        for value in node.values():
+            found = _find_group(value, name)
+            if found is not None:
+                return found
+    elif isinstance(node, list):
+        for item in node:
+            found = _find_group(item, name)
+            if found is not None:
+                return found
+    return None
+
+
 def update_docs_json(features: list[dict]) -> None:
     """Read docs.json, update the feature subgroups inside Expert Models, write back."""
     with open(DOCS_JSON_PATH, "r") as f:
@@ -611,39 +628,32 @@ def update_docs_json(features: list[dict]) -> None:
 
     feature_subgroups = _build_feature_subgroups(features)
 
-    # Find V3 Documentation tab → its groups → Expert Models group
     versions = docs.get("navigation", {}).get("versions", [])
-    for version in versions:
-        if version.get("version") != "V3":
-            continue
-        tabs = version.get("tabs", [])
-        for tab in tabs:
-            if tab.get("tab") != "V3 Documentation":
-                continue
-            groups = tab.get("groups", [])
-            for group in groups:
-                if group.get("group") != "V3 Documentation":
-                    continue
-                pages = group.get("pages", [])
+    v3 = next((v for v in versions if v.get("version") == "V3"), None)
+    if v3 is None:
+        raise SystemExit("ERROR: docs.json has no V3 version in navigation.")
 
-                # Remove old standalone "AI Features" entry if present
-                pages[:] = [
-                    p for p in pages
-                    if not (isinstance(p, dict) and p.get("group") == "AI Features")
-                ]
+    # Remove the old standalone "AI Features" entry if present. Scoped to the
+    # V3 Documentation group on purpose — the V3 API Reference tab has its own
+    # legitimate "AI Features" group that must survive.
+    v3_docs_group = _find_group(v3.get("tabs", []), "V3 Documentation")
+    if v3_docs_group is not None:
+        pages = v3_docs_group.get("pages", [])
+        pages[:] = [
+            p for p in pages
+            if not (isinstance(p, dict) and p.get("group") == "AI Features")
+        ]
 
-                # Find the Expert Models group and replace its feature subgroups
-                for p in pages:
-                    if isinstance(p, dict) and p.get("group") == "Expert Models":
-                        expert_pages = p.get("pages", [])
-                        # Keep non-feature pages (e.g. fallback, webhooks, listing-models)
-                        static_pages = [
-                            ep for ep in expert_pages
-                            if isinstance(ep, str)
-                        ]
-                        # Replace with static pages + new feature subgroups
-                        p["pages"] = static_pages + feature_subgroups
-                        break
+    # "Expert Models" has sat at more than one depth in docs.json over time, so
+    # search for it instead of assuming a fixed nesting. Quietly skipping the
+    # update is what previously let new feature pages ship with no nav entry.
+    expert = _find_group(v3.get("tabs", []), "Expert Models")
+    if expert is None:
+        raise SystemExit("ERROR: docs.json has no 'Expert Models' group; cannot update feature nav.")
+
+    # Keep non-feature pages (e.g. webhooks, listing-models, provider-parameters)
+    static_pages = [ep for ep in expert.get("pages", []) if isinstance(ep, str)]
+    expert["pages"] = static_pages + feature_subgroups
 
     # Atomic write: write to temp file then replace, so a crash can't corrupt docs.json
     fd, tmp_path = tempfile.mkstemp(dir=DOCS_JSON_PATH.parent, suffix=".json")

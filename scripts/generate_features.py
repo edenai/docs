@@ -13,6 +13,7 @@ import os
 import re
 import shutil
 import tempfile
+import urllib.error
 import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
@@ -60,6 +61,12 @@ def fetch_json(url: str) -> dict:
 def fetch_all_features() -> list[dict]:
     data = fetch_json(INFO_ENDPOINT)
     return data.get("features", [])
+
+
+# Failures we accept from fetch_subfeature_detail. Anything else — a bug here, an
+# unexpected response shape — must propagate rather than reach the keep-the-old-page
+# path, where it would be swallowed and the run would still report success.
+_FETCH_ERRORS = (urllib.error.URLError, TimeoutError, json.JSONDecodeError)
 
 
 def fetch_subfeature_detail(feature: str, subfeature: str) -> dict:
@@ -194,7 +201,7 @@ def format_price(price: float, quantity: int, unit_type: str) -> str:
     """Return a human-readable price string."""
     if price == 0:
         return "Free"
-    unit_type = _UNIT_ALIASES.get(unit_type, unit_type)
+    unit_type = _UNIT_ALIASES.get(unit_type.strip().lower(), unit_type.strip())
     if quantity == 1:
         return f"${price:g} per {unit_type}"
     # Don't double the plural if the API already sends one ("tokens" -> "tokenss").
@@ -511,7 +518,9 @@ def _render_techarticle_schema(
     # Preserve the dates already on the page; only a brand-new page gets today's.
     today = f"{datetime.now(timezone.utc):%Y-%m-%d}T00:00:00Z"
     date_published, date_modified = _existing_schema_dates(feature, sf_name)
-    date_published = date_published or today
+    # An existing page missing datePublished must not be stamped with today: that
+    # would date publication after modification. Fall back to its dateModified.
+    date_published = date_published or date_modified or today
     date_modified = date_modified or date_published
     return (
         'import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";\n\n'
@@ -519,7 +528,7 @@ def _render_techarticle_schema(
         f"  title={{{_js_str(fullname)}}}\n"
         f"  description={{{_js_str(description)}}}\n"
         f'  path="{path}"\n'
-        f'  articleSection="{section}"\n'
+        f"  articleSection={{{_js_str(section)}}}\n"
         f"  about={{{_js_str(about)}}}\n"
         f'  proficiencyLevel="Intermediate"\n'
         f"  keywords={{{keywords_js}}}\n"
@@ -776,7 +785,7 @@ def main() -> None:
             # Fetch detailed schema
             try:
                 detail = fetch_subfeature_detail(fname, sf_name)
-            except Exception as e:
+            except _FETCH_ERRORS as e:
                 # Never overwrite a good page with a gutted one. Without the
                 # detail response there are no input/output fields, so the page
                 # would publish "_No schema information available._" and lose its
@@ -789,7 +798,7 @@ def main() -> None:
                 raise SystemExit(
                     f"ERROR: no detail for {fname}/{sf_name} and no existing page to keep ({e}). "
                     "Aborting rather than publishing a page with no schema."
-                )
+                ) from e
 
             content = generate_subfeature_page(fname, sf, detail, feature_section_name(feat))
             page_path.write_text(content)

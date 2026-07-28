@@ -106,7 +106,7 @@ Each model `id` is used directly as the `model` parameter in your requests.
 
 ## Model aliases
 
-Some models are available under a **stable alias** — a version-agnostic name that always points to the current release — alongside versioned or dated snapshot IDs:
+Some models are available under a **stable alias**, a version-agnostic name that always points to the current release, alongside versioned or dated snapshot IDs:
 
 - **Stable alias:** `google/gemini-flash-latest`, `anthropic/claude-sonnet-latest`, `deepseek/deepseek-chat`
 - **Versioned snapshot:** `anthropic/claude-opus-4-5-20251101`
@@ -132,9 +132,11 @@ The `capabilities` object describes what each model supports:
 | `supports_system_messages` | Model accepts system messages |
 | `supports_computer_use` | Model supports computer-use tooling |
 | `supports_parallel_function_calling` | Model can call multiple tools in one turn |
-| `supports_assistant_prefill` | Model accepts a prefilled assistant message |
+| `supports_assistant_prefill` | Model accepts a pre-filled assistant message |
+| `supports_native_streaming` | Model supports native streaming responses |
+| `supports_embedding_image_input` | Model accepts image input for embeddings |
 
-Some models expose extra provider-specific keys (e.g. `supports_pdf_input`, `supports_audio_input`), and a few return `"capabilities": null` — treat a missing key or a `null` object as "not supported".
+Some models expose extra provider-specific keys (e.g. `supports_pdf_input`, `supports_audio_input`), and a few return `"capabilities": null`. Treat a missing key or a `null` object as "not supported".
 
 <Tip>
 You can also browse all features and providers visually in the [Eden AI model catalog](https://app.edenai.run/models).

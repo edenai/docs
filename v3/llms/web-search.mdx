@@ -113,7 +113,7 @@ response = requests.get(
 web_search_models = [
     model["id"]
     for model in response.json()["data"]
-    if model["capabilities"] and model["capabilities"]["supports_web_search"]
+    if (model.get("capabilities") or {}).get("supports_web_search")
 ]
 print(web_search_models)
 ```

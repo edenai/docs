@@ -14,7 +14,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "LLM API", "chat completion", "OpenAI compatible"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-05-07T00:00:00Z"
+  dateModified="2026-07-28T00:00:00Z"
 />
 
 Web search lets LLMs access real-time information from the internet when generating responses. Instead of relying solely on training data, the model can search the web to ground its answers with up-to-date facts, links, and sources.
@@ -40,7 +40,7 @@ headers = {
 }
 
 payload = {
-    "model": "openai/gpt-5.2",
+    "model": "google/gemini-flash-latest",
     "messages": [
         {"role": "user", "content": "What are the latest developments in AI regulation in 2025?"}
     ],
@@ -62,7 +62,7 @@ const headers = {
 };
 
 const payload = {
-  model: 'openai/gpt-4o',
+  model: 'google/gemini-flash-latest',
   messages: [
     { role: 'user', content: 'What are the latest developments in AI regulation in 2025?' }
   ],
@@ -86,7 +86,7 @@ curl -X POST https://api.edenai.run/v3/chat/completions \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-4o",
+    "model": "google/gemini-flash-latest",
     "messages": [
       {"role": "user", "content": "What are the latest developments in AI regulation in 2025?"}
     ],
@@ -99,7 +99,30 @@ curl -X POST https://api.edenai.run/v3/chat/completions \
 
 ## Supported Models
 
-Not all models support web search. Use the [List LLM Models](/v3/llms/listing-models) endpoint to find models where `capabilities.web_search` is `true`.
+Not all models support web search. Use the [List LLM Models](/v3/llms/listing-models) endpoint to find models where `capabilities.supports_web_search` is `true`:
+
+<CodeGroup>
+```python Python
+import requests
+
+response = requests.get("https://api.edenai.run/v3/models")
+
+web_search_models = [
+    model["id"]
+    for model in response.json()["data"]
+    if (model.get("capabilities") or {}).get("supports_web_search")
+]
+print(web_search_models)
+```
+</CodeGroup>
+
+<Tip>
+You can also browse models visually in the [Eden AI model catalog](https://app.edenai.run/models) and filter by capability, including web search.
+</Tip>
+
+<Warning>
+**OpenAI models:** on `/v3/chat/completions`, web search only runs on the dedicated search variants (e.g. `openai/gpt-4o-search-preview`, `openai/gpt-5-search-api`). Other OpenAI models either reject `web_search_options` with a `400` error or accept the request without performing any search. To use web search with regular OpenAI models, call them through the [Responses API](/v3/llms/responses) instead.
+</Warning>
 
 ## Parameters
 
@@ -124,7 +147,7 @@ headers = {
 }
 
 payload = {
-    "model": "google/gemini-2.5-flash",
+    "model": "google/gemini-flash-latest",
     "messages": [
         {
             "role": "system",

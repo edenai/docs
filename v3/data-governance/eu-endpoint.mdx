@@ -139,7 +139,12 @@ Each model entry carries a `regions` array so you can see at a glance which regi
   "object": "model",
   "owned_by": "mistral",
   "regions": [{ "code": "eu", "name": "Europe" }],
-  "capabilities": { "pdf": true, "reasoning": false, "web_search": false, "tool_calling": true }
+  "capabilities": {
+    "input_modalities": ["text", "image", "file"],
+    "supports_reasoning": false,
+    "supports_web_search": false,
+    "supports_function_calling": true
+  }
 }
 ```
 

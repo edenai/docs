@@ -105,10 +105,7 @@ Not all models support web search. Use the [List LLM Models](/v3/llms/listing-mo
 ```python Python
 import requests
 
-response = requests.get(
-    "https://api.edenai.run/v3/models",
-    headers={"Authorization": "Bearer YOUR_API_KEY"}
-)
+response = requests.get("https://api.edenai.run/v3/models")
 
 web_search_models = [
     model["id"]
@@ -118,6 +115,10 @@ web_search_models = [
 print(web_search_models)
 ```
 </CodeGroup>
+
+<Tip>
+You can also browse models visually in the [Eden AI model catalog](https://app.edenai.run/models) and filter by capability, including web search.
+</Tip>
 
 <Warning>
 **OpenAI models:** on `/v3/chat/completions`, web search only runs on the dedicated search variants (e.g. `openai/gpt-4o-search-preview`, `openai/gpt-5-search-api`). Other OpenAI models either reject `web_search_options` with a `400` error or accept the request without performing any search. To use web search with regular OpenAI models, call them through the [Responses API](/v3/llms/responses) instead.

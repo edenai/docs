@@ -39,6 +39,10 @@
     {
       "source": "/v3/general/users-organisation",
       "destination": "/v3/organization/users-organisation"
+    },
+    {
+      "source": "/v3/data-governance/zdr",
+      "destination": "/v3/data-governance/provider-data-policies"
     }
   ],
   "navigation": {
@@ -220,10 +224,10 @@
                 "icon": "shield-halved",
                 "expanded": false,
                 "pages": [
+                  "v3/data-governance/provider-data-policies",
                   "v3/data-governance/servers-location",
                   "v3/data-governance/eu-endpoint",
-                  "v3/data-governance/data-retention",
-                  "v3/data-governance/zdr"
+                  "v3/data-governance/data-retention"
                 ]
               },
               {

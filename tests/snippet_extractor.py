@@ -237,6 +237,8 @@ TS_FENCE_RE = re.compile(
 
 TS_GUIDES: list[str] = [
     "v3/integrations/openai-sdk-typescript.mdx",
+    "v3/integrations/langchain.mdx",
+    "v3/integrations/pi.mdx",
 ]
 
 GENERATED_TS_DIR = Path(__file__).resolve().parent / "generated_ts"

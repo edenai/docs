@@ -61,28 +61,39 @@ def pytest_sessionstart(session: pytest.Session) -> None:
         state["test_file_id"] = test_file_id
 
     if os.environ.get("EDEN_AI_PRODUCTION_API_TOKEN"):
-        state["pre_existing_tokens"] = sorted(list_custom_token_names())
+        try:
+            state["pre_existing_tokens"] = sorted(list_custom_token_names())
 
-        expire = (datetime.now() + timedelta(days=30)).isoformat()
-        for token_spec in [
-            {
-                "name": "my-api-token",
-                "balance": "100.00",
-                "active_balance": True,
-                "expire_time": expire,
-            },
-            {"name": "old-token"},
-        ]:
-            try:
-                create_custom_token(**token_spec)
-            except requests.HTTPError as exc:
-                # Token may already exist — another run on the same account can
-                # create it first. Test `is None` explicitly: Response.__bool__
-                # returns self.ok, so a 400 response is falsy and `not
-                # exc.response` was short-circuiting to True, re-raising the one
-                # case this handler exists to swallow.
-                if exc.response is None or exc.response.status_code != 400:
-                    raise
+            expire = (datetime.now() + timedelta(days=30)).isoformat()
+            for token_spec in [
+                {
+                    "name": "my-api-token",
+                    "balance": "100.00",
+                    "active_balance": True,
+                    "expire_time": expire,
+                },
+                {"name": "old-token"},
+            ]:
+                try:
+                    create_custom_token(**token_spec)
+                except requests.HTTPError as exc:
+                    # Token may already exist — another run on the same account can
+                    # create it first. Test `is None` explicitly: Response.__bool__
+                    # returns self.ok, so a 400 response is falsy and `not
+                    # exc.response` was short-circuiting to True, re-raising the one
+                    # case this handler exists to swallow.
+                    if exc.response is None or exc.response.status_code != 400:
+                        raise
+        except requests.HTTPError as exc:
+            # The /v2/user/custom_token/ admin endpoint requires a JWT session
+            # token, not an API key. When EDEN_AI_PRODUCTION_API_TOKEN holds an
+            # API key (the common case), skip custom-token setup instead of
+            # crashing pytest_sessionstart. Prod-token-only doc tests will then
+            # skip themselves via _PRODUCTION_TOKEN_FILES logic.
+            if exc.response is None or exc.response.status_code != 401:
+                raise
+            state.pop("pre_existing_tokens", None)
+            print("\n[conftest] Skipping custom-token setup — production token rejected (401)")
 
     path = _shared_state_path(session.config)
     path.parent.mkdir(parents=True, exist_ok=True)

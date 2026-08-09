@@ -112,15 +112,54 @@ This also works with `<CodeGroup>` blocks — place the comment before the `<Cod
 The comment is invisible in rendered docs. The extractor checks the 3 lines preceding each ` ```python ` fence for the marker. Skipped blocks still appear in test output (as `SKIPPED`) rather than being silently excluded, so you can track how many snippets are skipped.
 
 
+## TypeScript snippets
+
+Guides that ship TypeScript examples (`v3/integrations/openai-sdk-typescript.mdx`, `langchain.mdx`, `pi.mdx`) go through a parallel bun-native runner in `tests/ts/`.
+
+```bash
+# One-time install
+bun install --cwd tests/ts
+
+# Run all TS snippets (bunfig.toml preload script auto-invokes the Python extractor first)
+cd tests/ts && bun test
+```
+
+Same skip/fixtures mechanics as Python: `{/* skip-test */}` in the `.mdx` produces a `.skip.<ext>` filename that `bun:test` routes to `test.skip`. `tests/generated_ts/fixtures/` is populated via the shared `populate_fixtures_dir()` helper so `image.jpg`, `document.pdf`, etc. are present.
+
+## Validators
+
+Beyond snippet execution, four validators enforce doc/API consistency. All run under the same `pytest -n auto`.
+
+| File | Checks |
+|------|--------|
+| `tests/config_validator.py` | Parses fenced JSON/YAML/TOML config blocks in tool-integration guides; validates Eden AI URL hosts + endpoint prefixes; cross-checks every `` `provider/model` `` string against the live inventory |
+| `tests/api_reference_validator.py` | Fetches the 3 remote OpenAPI specs referenced in `docs.json`, asserts they're reachable and valid, cross-checks every `https://api.edenai.run/v[23]/…` URL in prose against the specs |
+| `tests/model_provider_validator.py` | Scans every `.mdx` for backticked `provider/model` references; cross-checks against `/v3/models` + `/v3/info` + probed embeddings inventory |
+| `tests/link_checker.py` | Extracts markdown links, JSX `href="…"`, `<TechArticleSchema path="…">`, and bare URLs; verifies internal targets exist and external URLs return 2xx-3xx (or a non-404/410 4xx). Also checks every `docs.json` nav path resolves to an `.mdx` file |
+
+Model/provider lookup is powered by `tests/helpers/edenai_inventory.py` — a session-cached inventory of LLM models (`/v3/models`), expert models (`/v3/info`), and verified embeddings.
+
+Known-stale references are tracked in the failure output; adding new stale refs fails immediately.
+
 ## CI (GitHub Actions)
 
-The workflow at `.github/workflows/test-snippets.yml` runs on PRs that touch `v3/**/*.mdx` or `tests/**`:
+The workflow at `.github/workflows/test-snippets.yml` runs on:
+- PRs that touch `v3/**/*.mdx`, root `*.mdx`, `docs.json`, or `tests/**`
+- Weekly cron (`0 6 * * 1`)
+- Manual dispatch
 
-1. **Execution job**: runs execution tests with `EDEN_AI_SANDBOX_TOKEN` and `EDEN_AI_PRODUCTION_TOKEN` secrets
+Two jobs, both with `cancel-in-progress: false` (session cleanup runs at pytest_sessionfinish; cancelling a started run orphans account resources):
 
-Installs from `requirements-lock.txt` for reproducible builds.
+1. **Python Tests** — snippet execution + all four validators.
+2. **TypeScript Tests** — installs bun + runs `bun test` in `tests/ts/`.
 
-To set up: add `EDEN_AI_SANDBOX_TOKEN` and `EDEN_AI_PRODUCTION_TOKEN` as repository secrets in GitHub.
+Both consume `EDEN_AI_SANDBOX_TOKEN` and (Python job only) `EDEN_AI_PRODUCTION_TOKEN` from repository secrets. `EDEN_AI_BASE_URL` is set from the `EDEN_AI_BASE_URL` repository variable if defined (defaults to staging).
+
+Python deps install from `requirements-lock.txt` for reproducibility. TS deps install from `tests/ts/bun.lock`.
+
+## Disabling the doc-tests workflow
+
+If the docs need to ship despite a failing test run (broken external link, upstream API drift, etc.), disable via GitHub UI: **Actions → Test Documentation Snippets → ⋯ → Disable workflow**. Mintlify's own build pipeline is independent, so the site continues to publish.
 
 ## Common Failure Patterns
 

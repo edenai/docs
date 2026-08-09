@@ -26,13 +26,23 @@ USER_AGENT = (
 )
 
 SKIP_EXTERNAL_HOSTS = frozenset({"example.com"})
+MAX_REDIRECTS = 5
+
+_classify_cache: dict[str, tuple[bool, str]] = {}
 
 
-@cache
+class _NonPublicDestination(Exception):
+    pass
+
+
 def _classify_host(hostname: str) -> tuple[bool, str]:
+    cached = _classify_cache.get(hostname)
+    if cached is not None:
+        return cached
     try:
         infos = socket.getaddrinfo(hostname, None)
     except socket.gaierror as exc:
+        # Not cached: DNS failures can be transient and must retry on next call.
         return False, f"DNS lookup failed: {exc.strerror or exc}"
     for info in infos:
         try:
@@ -40,8 +50,42 @@ def _classify_host(hostname: str) -> tuple[bool, str]:
         except ValueError:
             continue
         if not ip.is_global:
-            return False, f"resolves to non-global address {ip}"
-    return True, ""
+            result = (False, f"resolves to non-global address {ip}")
+            _classify_cache[hostname] = result
+            return result
+    result = (True, "")
+    _classify_cache[hostname] = result
+    return result
+
+
+def _request_following_validated_redirects(
+    method: str, url: str, headers: dict
+) -> requests.Response:
+    current = url
+    for _ in range(MAX_REDIRECTS + 1):
+        parsed = urlparse(current)
+        if not parsed.hostname:
+            raise _NonPublicDestination(f"no hostname in {current}")
+        public, reason = _classify_host(parsed.hostname)
+        if not public:
+            raise _NonPublicDestination(reason)
+        resp = requests.request(
+            method,
+            current,
+            headers=headers,
+            allow_redirects=False,
+            timeout=REQUEST_TIMEOUT_SECONDS,
+            stream=(method == "GET"),
+        )
+        if method == "GET":
+            resp.close()
+        if not (300 <= resp.status_code < 400):
+            return resp
+        location = resp.headers.get("Location")
+        if not location:
+            return resp
+        current = requests.compat.urljoin(current, location)
+    raise _NonPublicDestination(f"too many redirects (>{MAX_REDIRECTS})")
 
 
 def _strip_fenced_blocks(content: str) -> str:
@@ -125,29 +169,15 @@ DEFINITELY_BROKEN_STATUSES = frozenset({404, 410})
 
 @cache
 def _check_external(url: str) -> tuple[bool, str]:
-    parsed = urlparse(url)
-    if not parsed.hostname:
-        return False, "no hostname"
-    public, classification_reason = _classify_host(parsed.hostname)
-    if not public:
-        return False, classification_reason
-
     headers = {"User-Agent": USER_AGENT}
     last_status = "no attempt"
     for attempt in range(MAX_RETRIES):
         try:
-            resp = requests.head(
-                url, headers=headers, allow_redirects=True, timeout=REQUEST_TIMEOUT_SECONDS
-            )
+            resp = _request_following_validated_redirects("HEAD", url, headers)
             if resp.status_code in {400, 403, 405, 501}:
-                resp = requests.get(
-                    url,
-                    headers=headers,
-                    allow_redirects=True,
-                    timeout=REQUEST_TIMEOUT_SECONDS,
-                    stream=True,
-                )
-                resp.close()
+                resp = _request_following_validated_redirects("GET", url, headers)
+        except _NonPublicDestination as exc:
+            return False, str(exc)
         except requests.RequestException as exc:
             last_status = f"network error: {exc.__class__.__name__}"
             time.sleep(2**attempt)

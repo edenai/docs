@@ -21,11 +21,8 @@ from tests.helpers.api import (
     upload_test_file,
 )
 from tests.helpers.file_generators import (
-    large_jpeg,
-    minimal_jpeg,
     minimal_pdf,
-    minimal_png,
-    multipage_pdf,
+    populate_fixtures_dir,
 )
 
 load_dotenv(Path(__file__).parent / ".env")
@@ -146,59 +143,9 @@ def fixtures_dir(request):
     with FileLock(str(d) + ".lock"):
         if not d.exists():
             d.mkdir()
-            _populate_fixtures_dir(d)
+            populate_fixtures_dir(d)
 
     return d
-
-
-def _populate_fixtures_dir(d: Path) -> None:
-    pdf_data = minimal_pdf()
-    for name in [
-        "document.pdf",
-        "invoice.pdf",
-        "report.pdf",
-        "contract.pdf",
-        "quarterly-report.pdf",
-        "policy-document.pdf",
-        "research-paper.pdf",
-        "doc1.pdf",
-        "doc2.pdf",
-        "doc3.pdf",
-        "invoice1.pdf",
-        "invoice2.pdf",
-        "invoice3.pdf",
-        "doc.pdf",
-    ]:
-        (d / name).write_bytes(pdf_data)
-
-    (d / "large-report.pdf").write_bytes(multipage_pdf(6))
-
-    jpeg_data = minimal_jpeg()
-    for name in [
-        "image.jpg",
-        "photo.jpg",
-        "product.jpg",
-        "people.jpg",
-        "passport.jpg",
-        "receipt.jpg",
-        "user_upload.jpg",
-        "complex_document.jpg",
-        "user_photo.jpg",
-    ]:
-        (d / name).write_bytes(jpeg_data)
-    (d / "large-image.jpg").write_bytes(large_jpeg())
-
-    png_data = minimal_png()
-    for name in ["image.png", "screenshot.png"]:
-        (d / name).write_bytes(png_data)
-
-    (d / "app.py").write_text("def main():\n    print('hello')\n")
-
-    (d / "document.txt").write_text(
-        "Eden AI is a platform that provides access to multiple AI providers "
-        "through a single API. It supports text analysis, image processing, "
-        "OCR, and many other AI features."
-    )
 
 
 class HttpRecorder:

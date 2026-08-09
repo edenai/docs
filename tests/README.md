@@ -139,7 +139,7 @@ Beyond snippet execution, four validators enforce doc/API consistency. All run u
 
 Model/provider lookup is powered by `tests/helpers/edenai_inventory.py` — a session-cached inventory of LLM models (`/v3/models`), expert models (`/v3/info`), and verified embeddings.
 
-Known-stale references are tracked in the failure output; adding new stale refs fails immediately.
+Unknown `provider/model` references fail the test unless they match `DOCUMENTATION_PLACEHOLDERS` (e.g. `provider/model` used as a format placeholder) or an `UNAMBIGUOUS_MIME_PREFIXES` prefix (e.g. `application/json`). There is no per-file allowlist.
 
 ## CI (GitHub Actions)
 

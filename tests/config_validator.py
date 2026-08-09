@@ -102,13 +102,9 @@ def find_provider_model_strings(content: str) -> list[str]:
 
 @pytest.mark.parametrize("guide", CONFIG_GUIDES, ids=lambda p: Path(p).stem)
 def test_config_guide(guide: str) -> None:
-    if not os.environ.get("EDEN_AI_SANDBOX_API_TOKEN"):
-        pytest.skip("EDEN_AI_SANDBOX_API_TOKEN not set")
-
     path = DOCS_ROOT / guide
     assert path.exists(), f"Guide not found: {path}"
     content = path.read_text(encoding="utf-8")
-    inventory = get_model_inventory()
     errors: list[str] = []
 
     for block in parse_fenced_config_blocks(content):
@@ -134,12 +130,14 @@ def test_config_guide(guide: str) -> None:
                     f"line {u['line']}: unknown API endpoint path `{u['path']}` in {u['url']}"
                 )
 
-    for pm in find_provider_model_strings(content):
-        if pm in DOCUMENTATION_PLACEHOLDERS:
-            continue
-        if pm in inventory or strip_tool_alias(pm) in inventory:
-            continue
-        errors.append(f"unknown model `{pm}` (not in live inventory)")
+    if os.environ.get("EDEN_AI_SANDBOX_API_TOKEN"):
+        inventory = get_model_inventory()
+        for pm in find_provider_model_strings(content):
+            if pm in DOCUMENTATION_PLACEHOLDERS:
+                continue
+            if pm in inventory or strip_tool_alias(pm) in inventory:
+                continue
+            errors.append(f"unknown model `{pm}` (not in live inventory)")
 
     if errors:
         pytest.fail(f"{guide}:\n  " + "\n  ".join(errors))

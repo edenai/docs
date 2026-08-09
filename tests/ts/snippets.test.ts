@@ -8,9 +8,23 @@ const glob = new Bun.Glob('*.{mts,cts,tsx,ts,mjs,cjs,jsx,js}');
 const snippetFiles = (await Array.fromAsync(glob.scan({ cwd: generatedDir }))).sort();
 
 async function runSnippet(file: string) {
+  const childEnv: Record<string, string> = {
+    NODE_PATH: nodeModulesDir,
+    PATH: process.env.PATH ?? '',
+    HOME: process.env.HOME ?? '',
+  };
+  for (const key of [
+    'EDEN_AI_SANDBOX_API_TOKEN',
+    'EDEN_AI_BASE_URL',
+    '_EDEN_TEST_FILE_ID',
+  ]) {
+    const value = process.env[key];
+    if (value) childEnv[key] = value;
+  }
+
   const proc = Bun.spawn(['bun', 'run', `${generatedDir}/${file}`], {
     cwd: fixturesDir,
-    env: { ...process.env, NODE_PATH: nodeModulesDir },
+    env: childEnv,
     stdout: 'pipe',
     stderr: 'pipe',
   });

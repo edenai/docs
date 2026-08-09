@@ -1,6 +1,8 @@
+import ipaddress
 import json
 import os
 import re
+import socket
 import time
 from functools import cache
 from pathlib import Path
@@ -23,9 +25,23 @@ USER_AGENT = (
     "Mozilla/5.0 (compatible; edenai-docs-linkcheck/1.0; +https://docs.edenai.co)"
 )
 
-SKIP_EXTERNAL_HOSTS = frozenset(
-    {"localhost", "127.0.0.1", "example.com"}
-)
+SKIP_EXTERNAL_HOSTS = frozenset({"example.com"})
+
+
+@cache
+def _classify_host(hostname: str) -> tuple[bool, str]:
+    try:
+        infos = socket.getaddrinfo(hostname, None)
+    except socket.gaierror as exc:
+        return False, f"DNS lookup failed: {exc.strerror or exc}"
+    for info in infos:
+        try:
+            ip = ipaddress.ip_address(info[4][0])
+        except ValueError:
+            continue
+        if not ip.is_global:
+            return False, f"resolves to non-global address {ip}"
+    return True, ""
 
 
 def _strip_fenced_blocks(content: str) -> str:
@@ -109,6 +125,13 @@ DEFINITELY_BROKEN_STATUSES = frozenset({404, 410})
 
 @cache
 def _check_external(url: str) -> tuple[bool, str]:
+    parsed = urlparse(url)
+    if not parsed.hostname:
+        return False, "no hostname"
+    public, classification_reason = _classify_host(parsed.hostname)
+    if not public:
+        return False, classification_reason
+
     headers = {"User-Agent": USER_AGENT}
     last_status = "no attempt"
     for attempt in range(MAX_RETRIES):

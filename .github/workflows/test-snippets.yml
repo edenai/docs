@@ -32,8 +32,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       EDEN_AI_BASE_URL: ${{ vars.EDEN_AI_BASE_URL || 'https://staging-api.edenai.run' }}
-      EDEN_AI_SANDBOX_API_TOKEN: ${{ secrets.EDEN_AI_SANDBOX_TOKEN }}
-      EDEN_AI_PRODUCTION_API_TOKEN: ${{ secrets.EDEN_AI_PRODUCTION_TOKEN }}
+      EDEN_AI_SANDBOX_API_TOKEN: ${{ github.event_name != 'pull_request' && secrets.EDEN_AI_SANDBOX_TOKEN || '' }}
+      EDEN_AI_PRODUCTION_API_TOKEN: ${{ github.event_name != 'pull_request' && secrets.EDEN_AI_PRODUCTION_TOKEN || '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
@@ -66,7 +66,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       EDEN_AI_BASE_URL: ${{ vars.EDEN_AI_BASE_URL || 'https://staging-api.edenai.run' }}
-      EDEN_AI_SANDBOX_API_TOKEN: ${{ secrets.EDEN_AI_SANDBOX_TOKEN }}
+      EDEN_AI_SANDBOX_API_TOKEN: ${{ github.event_name != 'pull_request' && secrets.EDEN_AI_SANDBOX_TOKEN || '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

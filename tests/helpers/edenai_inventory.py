@@ -5,6 +5,18 @@ import requests
 
 _LLM_MODELS_ENDPOINT = "/v3/models"
 _INFO_ENDPOINT = "/v3/info"
+_EMBEDDINGS_ENDPOINT = "/v3/embeddings"
+
+_EMBEDDING_PROBE_CANDIDATES = frozenset(
+    {
+        "openai/text-embedding-3-small",
+        "openai/text-embedding-3-large",
+        "openai/text-embedding-ada-002",
+        "mistral/mistral-embed",
+        "cohere/embed-english-v3.0",
+        "cohere/embed-multilingual-v3.0",
+    }
+)
 
 
 def _base_url() -> str:
@@ -55,4 +67,15 @@ def get_model_inventory() -> frozenset[str]:
 
     assert expert_ids, f"{base}{_INFO_ENDPOINT} returned no expert-model IDs"
 
-    return frozenset(llm_models | expert_ids | subfeature_paths)
+    verified_embeddings: set[str] = set()
+    for candidate in _EMBEDDING_PROBE_CANDIDATES:
+        probe = requests.post(
+            f"{base}{_EMBEDDINGS_ENDPOINT}",
+            headers=headers,
+            json={"model": candidate, "input": "x"},
+            timeout=30,
+        )
+        if probe.status_code == 200:
+            verified_embeddings.add(candidate)
+
+    return frozenset(llm_models | expert_ids | subfeature_paths | verified_embeddings)

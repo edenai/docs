@@ -1,4 +1,5 @@
 import json
+import os
 import re
 import tomllib
 from pathlib import Path
@@ -6,7 +7,13 @@ from pathlib import Path
 import pytest
 import yaml
 
-from tests.snippet_extractor import _SKIP_COMMENT_RE
+from tests.helpers.edenai_inventory import get_model_inventory
+from tests.helpers.model_names import (
+    BACKTICKED_MODEL_RE,
+    DOCUMENTATION_PLACEHOLDERS,
+    strip_tool_alias,
+)
+from tests.snippet_extractor import SKIP_COMMENT_RE
 
 CONFIG_GUIDES = [
     "v3/integrations/bifrost.mdx",
@@ -44,14 +51,6 @@ EDEN_URL_RE = re.compile(
     r"https://(?P<host>[a-z0-9][a-z0-9\-]*(?:\.[a-z0-9\-]+)+)(?P<path>/[^\s'\"`)>]*)?"
 )
 
-PROVIDER_MODEL_CODE_RE = re.compile(
-    r"`(?P<pm>[a-z][a-z0-9\-]{1,30}/[A-Za-z0-9][\w\-\.]{0,60})`"
-)
-
-PROVIDER_MODEL_STRICT_RE = re.compile(
-    r"^[a-z][a-z0-9\-]{1,30}/[A-Za-z0-9][A-Za-z0-9\-\.]{0,60}$"
-)
-
 CONFIG_PARSERS = {
     "json": json.loads,
     "yaml": yaml.safe_load,
@@ -68,7 +67,7 @@ def parse_fenced_config_blocks(content: str) -> list[dict]:
             continue
         preceding = content[: m.start()]
         recent_lines = preceding.rsplit("\n", 3)[-3:]
-        if any(_SKIP_COMMENT_RE.search(line) for line in recent_lines):
+        if any(SKIP_COMMENT_RE.search(line) for line in recent_lines):
             continue
         blocks.append(
             {
@@ -95,14 +94,21 @@ def find_eden_urls(content: str) -> list[dict]:
 
 
 def find_provider_model_strings(content: str) -> list[str]:
-    return [m.group("pm") for m in PROVIDER_MODEL_CODE_RE.finditer(content)]
+    return [
+        f"{m.group('provider')}/{m.group('rest')}"
+        for m in BACKTICKED_MODEL_RE.finditer(content)
+    ]
 
 
 @pytest.mark.parametrize("guide", CONFIG_GUIDES, ids=lambda p: Path(p).stem)
 def test_config_guide(guide: str) -> None:
+    if not os.environ.get("EDEN_AI_SANDBOX_API_TOKEN"):
+        pytest.skip("EDEN_AI_SANDBOX_API_TOKEN not set")
+
     path = DOCS_ROOT / guide
     assert path.exists(), f"Guide not found: {path}"
     content = path.read_text(encoding="utf-8")
+    inventory = get_model_inventory()
     errors: list[str] = []
 
     for block in parse_fenced_config_blocks(content):
@@ -129,8 +135,11 @@ def test_config_guide(guide: str) -> None:
                 )
 
     for pm in find_provider_model_strings(content):
-        if not PROVIDER_MODEL_STRICT_RE.match(pm):
-            errors.append(f"malformed provider/model string: `{pm}`")
+        if pm in DOCUMENTATION_PLACEHOLDERS:
+            continue
+        if pm in inventory or strip_tool_alias(pm) in inventory:
+            continue
+        errors.append(f"unknown model `{pm}` (not in live inventory)")
 
     if errors:
         pytest.fail(f"{guide}:\n  " + "\n  ".join(errors))

@@ -85,8 +85,8 @@ provider/model_name
 - `anthropic/claude-haiku-4-5`
 - `google/gemini-2.5-flash`
 - `google/gemini-2.5-pro`
-- `cohere/command-r-plus`
-- `mistral/mistral-large`
+- `cohere/command-r-plus-08-2024`
+- `mistral/mistral-large-latest`
 
 #### Message Content Types
 

@@ -12,7 +12,7 @@ CODE_BLOCK_RE = re.compile(
     re.MULTILINE | re.DOTALL,
 )
 
-_SKIP_COMMENT_RE = re.compile(r"\{/\*\s*skip-test\s*\*/\}")
+SKIP_COMMENT_RE = re.compile(r"\{/\*\s*skip-test\s*\*/\}")
 
 _SANDBOX_TOKEN_VAR = "EDEN_AI_SANDBOX_API_TOKEN"
 _PRODUCTION_TOKEN_VAR = "EDEN_AI_PRODUCTION_API_TOKEN"
@@ -74,7 +74,7 @@ def extract_python_blocks(mdx_path: Path) -> list[dict]:
     for match in CODE_BLOCK_RE.finditer(content):
         preceding = content[: match.start()]
         recent_lines = preceding.rsplit("\n", 3)[-3:]
-        skip = any(_SKIP_COMMENT_RE.search(line) for line in recent_lines)
+        skip = any(SKIP_COMMENT_RE.search(line) for line in recent_lines)
         code = match.group(1)
         line = preceding.count("\n") + 2
         blocks.append({"code": code, "line": line, "skip": skip})
@@ -304,7 +304,7 @@ def extract_ts_blocks(mdx_path: Path) -> list[dict]:
     for match in TS_FENCE_RE.finditer(content):
         preceding = content[: match.start()]
         recent_lines = preceding.rsplit("\n", 3)[-3:]
-        skip = any(_SKIP_COMMENT_RE.search(line) for line in recent_lines)
+        skip = any(SKIP_COMMENT_RE.search(line) for line in recent_lines)
         lang = match.group("lang")
         body = match.group("body")
         blocks.append(

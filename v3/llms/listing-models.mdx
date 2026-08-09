@@ -104,7 +104,7 @@ Each model `id` is used directly as the `model` parameter in your requests.
 
 Some models are available under a **stable alias**, a version-agnostic name that always points to the current release, alongside versioned or dated snapshot IDs:
 
-- **Stable alias:** `google/gemini-flash-latest`, `anthropic/claude-sonnet-latest`, `deepseek/deepseek-chat`
+- **Stable alias:** `google/gemini-flash-latest`, `anthropic/claude-sonnet-4-6`, `deepseek/deepseek-chat`
 - **Versioned snapshot:** `anthropic/claude-opus-4-5-20251101`
 
 Use the **stable alias** when you want your integration to keep working as providers ship new versions. **Pin a versioned snapshot** when you need a fixed, reproducible model. Either form works as the `model` parameter. Alias entries report the concrete model they currently resolve to in the `alias_of` field, as in the response example above.

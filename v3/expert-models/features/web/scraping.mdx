@@ -57,7 +57,7 @@ Model string pattern: `web/scraping/{provider}[/{model}]`
 
 | Provider | Model String | Price |
 |----------|-------------|-------|
-| firecrawl | `web/scraping/firecrawl` | $0.0038 per token |
+| firecrawl | `web/scraping/linkup` | $0.0038 per token |
 | linkup | `web/scraping/linkup` | $0.001 per token |
 
 
@@ -75,7 +75,7 @@ headers = {
 }
 
 payload = {
-    "model": "web/scraping/firecrawl",
+    "model": "web/scraping/linkup",
     "input": {
         "url": "example"
     }
@@ -90,7 +90,7 @@ curl -X POST https://api.edenai.run/v3/universal-ai \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "web/scraping/firecrawl",
+    "model": "web/scraping/linkup",
     "input": {"url": "example"}
   }'
 ```

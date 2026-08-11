@@ -15,7 +15,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "OpenCode"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-05-07T00:00:00Z"
+  dateModified="2026-08-11T00:00:00Z"
 />
 
 Configure [OpenCode](https://opencode.ai), the AI-powered terminal coding assistant, to use Eden AI for access to 500+ models.
@@ -26,94 +26,169 @@ OpenCode is a terminal-based AI coding assistant. By connecting it to Eden AI, y
 
 - **500+ models**: Access OpenAI, Anthropic, Google, and more through a single API key
 - **Auto-configured**: A script fetches Eden AI's full model catalog and writes your config automatically
-- **Tool calling**: All models in the generated config support function calling, which OpenCode requires
+- **Tool calling**: Only models that support function calling are written to the config, which is what OpenCode requires
+
+## Prerequisites
+
+- Node.js and npm installed
+- Python 3.9+ with `requests` (`pip install requests`) to run the config generator
+- Eden AI API key from [app.edenai.run](https://app.edenai.run) → **API Keys**
 
 ## Setup
 
 ### 1. Install OpenCode
 
-```bash
+<CodeGroup>
+```bash npm
 npm install -g opencode-ai
 ```
 
-### 2. Generate your config
-
-Download the script and run it:
-
-```bash
-python gen_opencode_config.py
+```bash curl
+curl -fsSL https://opencode.ai/install | bash
 ```
 
-This fetches all available Eden AI models and writes them directly to `~/.config/opencode/opencode.json`.
-
-<CodeGroup>
-```python gen_opencode_config.py
-"""Generate opencode.json from Eden AI's model catalog."""
-
-import json
-import requests
-from pathlib import Path
-
-MODELS_URL = "https://api.edenai.run/v3/models"
-BASE_URL = "https://api.edenai.run/v3"
-
-models = requests.get(MODELS_URL).json()["data"]
-
-def to_per_million(v):
-    return round(v * 1_000_000, 6) if v else None
-
-model_entries = {}
-for m in models:
-    caps = m.get("capabilities", {})
-    if not caps.get("supports_function_calling"):
-        continue  # opencode requires tool calling
-
-    p = m.get("pricing", {})
-    cost = {k: to_per_million(p.get(v)) for k, v in {
-        "input": "input_cost_per_token",
-        "output": "output_cost_per_token",
-        "cache_read": "cache_read_input_token_cost",
-        "cache_write": "cache_creation_input_token_cost",
-    }.items() if p.get(v)}
-
-    model_entries[m["id"]] = {
-        **({"cost": cost} if cost else {}),
-        **({"reasoning": True} if caps.get("supports_reasoning") else {}),
-    }
-
-config = {
-    "$schema": "https://opencode.ai/config.json",
-    "provider": {
-        "edenai": {
-            "npm": "@ai-sdk/openai-compatible",
-            "name": "Eden AI",
-            "options": {"baseURL": BASE_URL},
-            "models": model_entries,
-        }
-    },
-}
-
-output = Path.home() / ".config" / "opencode" / "opencode.json"
-output.parent.mkdir(parents=True, exist_ok=True)
-output.write_text(json.dumps(config, indent=2))
-
-print(f"Written {len(model_entries)} models to {output}")
+```bash Homebrew
+brew install anomalyco/tap/opencode
 ```
 </CodeGroup>
 
+### 2. Generate your config
+
+Save the script below as `gen_opencode_config.py` and run it:
+
+```bash
+pip install requests
+python gen_opencode_config.py
+```
+
+It fetches Eden AI's catalog, keeps every model that supports function calling, and adds an `edenai` provider to `~/.config/opencode/opencode.json` (on Windows: `%USERPROFILE%\.config\opencode\opencode.json`). Existing settings in that file are preserved — only the `edenai` provider entry is replaced.
+
+<CodeGroup>
+```python gen_opencode_config.py
+"""Generate an OpenCode provider config from Eden AI's model catalog."""
+
+import json
+from pathlib import Path
+
+import requests
+
+MODELS_URL = "https://api.edenai.run/v3/models"
+BASE_URL = "https://api.edenai.run/v3"
+OUTPUT_TOKEN_CAP = 32000  # OpenCode caps max output tokens at 32k
+
+# OpenCode accepts text/image/audio/video/pdf. Eden AI's "file" maps to "pdf".
+MODALITIES = {"text": "text", "image": "image", "audio": "audio", "video": "video", "file": "pdf"}
+
+
+def per_million(cost_per_token):
+    """OpenCode expects prices per million tokens, Eden AI returns them per token."""
+    return round(cost_per_token * 1_000_000, 6) if cost_per_token else 0
+
+
+models = requests.get(MODELS_URL, timeout=30).json()["data"]
+
+model_entries = {}
+for model in models:
+    caps = model.get("capabilities") or {}
+    if not caps.get("supports_function_calling"):
+        continue  # OpenCode sends tools with every request
+
+    pricing = model.get("pricing") or {}
+    cost = {
+        "input": per_million(pricing.get("input_cost_per_token")),
+        "output": per_million(pricing.get("output_cost_per_token")),
+    }
+    if pricing.get("cache_read_input_token_cost"):
+        cost["cache_read"] = per_million(pricing["cache_read_input_token_cost"])
+    if pricing.get("cache_creation_input_token_cost"):
+        cost["cache_write"] = per_million(pricing["cache_creation_input_token_cost"])
+
+    context = model.get("context_length") or 0
+    inputs = [MODALITIES[m] for m in caps.get("input_modalities") or ["text"] if m in MODALITIES]
+    outputs = [MODALITIES[m] for m in caps.get("output_modalities") or ["text"] if m in MODALITIES]
+
+    model_entries[model["id"]] = {
+        "cost": cost,
+        "limit": {"context": context, "output": min(context, OUTPUT_TOKEN_CAP) or OUTPUT_TOKEN_CAP},
+        "tool_call": True,
+        "reasoning": bool(caps.get("supports_reasoning") or (caps.get("reasoning") or {}).get("mandatory")),
+        "attachment": any(m != "text" for m in inputs),
+        "modalities": {"input": inputs, "output": outputs},
+    }
+
+output = Path.home() / ".config" / "opencode" / "opencode.json"
+output.parent.mkdir(parents=True, exist_ok=True)
+
+config = json.loads(output.read_text()) if output.exists() else {}
+config["$schema"] = "https://opencode.ai/config.json"
+config.setdefault("provider", {})["edenai"] = {
+    "npm": "@ai-sdk/openai-compatible",
+    "name": "Eden AI",
+    "options": {"baseURL": BASE_URL},
+    "models": model_entries,
+}
+output.write_text(json.dumps(config, indent=2))
+
+print(f"Wrote {len(model_entries)} models to {output}")
+```
+</CodeGroup>
+
+Each generated model entry carries the metadata OpenCode needs: `limit` (context window, so the TUI can track context usage and trigger compaction), `cost` per million tokens, `tool_call`, `reasoning`, and the input/output modalities that gate file and image attachments.
+
 ### 3. Connect your API key
 
-Launch OpenCode, run `/connect`, select **Eden AI** from the list, and paste your API key when prompted.
+Launch OpenCode, run `/connect`, select **Eden AI** from the list, and paste your API key when prompted. The credential is stored in OpenCode's auth file, outside of `opencode.json`.
 
-Get your key from [app.edenai.run](https://app.edenai.run) → **API Keys**.
+<Tip>
+Prefer an environment variable? Skip `/connect` and add `"apiKey": "{env:EDENAI_API_KEY}"` next to `baseURL` in the `edenai` provider's `options`, then export `EDENAI_API_KEY` in your shell.
+</Tip>
 
-### 4. Start coding
+### 4. Pick a model and start coding
 
 ```bash
 opencode
 ```
 
+Run `/models` and pick any Eden AI model. To set a default instead, add a top-level `model` key to `~/.config/opencode/opencode.json` using `edenai/` plus the Eden AI model ID:
+
+```json
+"model": "edenai/anthropic/claude-sonnet-latest"
+```
+
+<Note>
+Eden AI model IDs already contain a slash (`anthropic/claude-sonnet-latest`), and some contain several (`together_ai/meta-models/Muse-Glimmer-30B`). OpenCode splits only on the first slash, so `edenai/<full-eden-model-id>` is the correct form.
+</Note>
+
+## Switching models
+
+Re-run the script whenever you want to refresh the catalog — new models appear in `/models` the next time OpenCode starts. Browse the full list via [List Models](/v3/llms/listing-models) or `GET https://api.edenai.run/v3/models`.
+
+## Troubleshooting
+
+### `401 Unauthorized`
+
+The credential is missing or wrong. Re-run `/connect` and paste a fresh key from [app.edenai.run](https://app.edenai.run) → **API Keys**, watching for leading or trailing spaces.
+
+### Eden AI does not appear in `/connect` or `/models`
+
+OpenCode did not load the provider. Confirm the config parses and contains the provider:
+
+```bash
+python -c "import json,pathlib;print(list(json.loads((pathlib.Path.home()/'.config/opencode/opencode.json').read_text())['provider']))"
+```
+
+Restart OpenCode after regenerating the file — the config is read at startup.
+
+### `Model not found: edenai/...`
+
+Use `edenai/` followed by the complete Eden AI model ID (e.g. `edenai/anthropic/claude-sonnet-latest`, not `edenai/claude-sonnet-latest`). The ID must match a key under `provider.edenai.models` in your config.
+
+### Connection issues
+
+Confirm `baseURL` is exactly `https://api.edenai.run/v3` — the OpenAI-compatible client appends `/chat/completions` itself. Check Eden AI status at [app-edenai.instatus.com](https://app-edenai.instatus.com).
+
 ## Next Steps
 
+- [Codex CLI](./codex-cli) - OpenAI's open-source local coding agent
 - [Continue.dev](./continue-dev) - AI code assistant for VS Code and JetBrains
 - [Claude Code](./claude-code) - Official Claude CLI

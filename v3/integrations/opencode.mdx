@@ -179,9 +179,9 @@ python -c "import json,pathlib;print(list(json.loads((pathlib.Path.home()/'.conf
 
 Restart OpenCode after regenerating the file — the config is read at startup.
 
-### `Model not found: edenai/...`
+### `UnknownError` right after sending a message
 
-Use `edenai/` followed by the complete Eden AI model ID (e.g. `edenai/anthropic/claude-sonnet-latest`, not `edenai/claude-sonnet-latest`). The ID must match a key under `provider.edenai.models` in your config.
+Usually a mistyped model reference — OpenCode reports an unknown model as a generic server error rather than a "model not found" message. Use `edenai/` followed by the *complete* Eden AI model ID (`edenai/anthropic/claude-sonnet-latest`, not `edenai/claude-sonnet-latest`); it must match a key under `provider.edenai.models` in your config. Run `opencode models` to see the exact strings OpenCode loaded.
 
 ### Connection issues
 

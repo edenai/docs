@@ -1,0 +1,378 @@
+---
+icon: "plug"
+title: "MCP Server"
+description: "Eden AI's expert models are available as MCP tools, so any MCP client or LLM agent loop can call OCR, web search, speech, translation and more."
+---
+import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
+
+<TechArticleSchema
+  title={"MCP Server"}
+  description={"Eden AI's expert models are available as MCP tools, so any MCP client or LLM agent loop can call OCR, web search, speech, translation and more."}
+  path="v3/expert-models/mcp-server"
+  articleSection="Expert Models"
+  about={"AI API"}
+  proficiencyLevel="Intermediate"
+  keywords={["Eden AI", "AI API", "MCP", "Model Context Protocol", "expert models", "tool calling"]}
+  datePublished="2026-08-14T00:00:00Z"
+  dateModified="2026-08-14T00:00:00Z"
+/>
+
+Eden AI's expert models are exposed as tools on a hosted [Model Context Protocol](https://modelcontextprotocol.io) server. OCR, web search, image analysis, speech, translation and the rest of the catalog become callable tools for any MCP client or agent loop, with no server to run and no per-provider integration work.
+
+Pair the server with any function-calling model on the [AI Gateway](/v3/overview/ai-gateway) and a text-only model becomes multimodal by composition: the model asks for `ocr`, your loop runs it against the MCP server, and the extracted text comes back into the conversation.
+
+## Endpoint
+
+| | |
+|---|---|
+| **URL** | `https://mcp.edenai.run/mcp` |
+| **Transport** | Streamable HTTP |
+| **Authentication** | `Authorization: Bearer YOUR_API_KEY` |
+
+<Note>
+Every tool call is a normal Eden AI expert model call: it is billed to the key in the `Authorization` header and appears in your [monitoring](/v3/general/monitoring) dashboard. Rate limits and [data governance](/v3/data-governance/provider-data-policies) rules apply exactly as they do on the REST API.
+</Note>
+
+## Connect an MCP Client
+
+Most MCP clients (desktop assistants, IDEs, agent frameworks) accept a remote HTTP server in their config file:
+
+```json
+{
+  "mcpServers": {
+    "edenai": {
+      "type": "http",
+      "url": "https://mcp.edenai.run/mcp",
+      "headers": {
+        "Authorization": "Bearer YOUR_API_KEY"
+      }
+    }
+  }
+}
+```
+
+The exact key names vary between clients, but the three values you need are always the same: the URL, the HTTP transport, and the `Authorization` header.
+
+## Tool Catalog
+
+The server publishes 39 tools. Each one maps to an Eden AI expert model feature and carries a JSON Schema for its parameters, so a client can discover the whole catalog without any hardcoded knowledge.
+
+| Family | Tools |
+|---|---|
+| **OCR** | `ocr`, `ocr_async`, `ocr_tables`, `ocr_financial_parser`, `ocr_identity_parser`, `ocr_resume_parser` |
+| **Image** | `image_generation`, `image_background_removal`, `image_anonymization`, `image_object_detection`, `image_face_detection`, `image_face_compare`, `image_face_recognition`, `image_logo_detection`, `image_explicit_content`, `image_ai_detection`, `image_deepfake_detection` |
+| **Text** | `text_moderation`, `text_spell_check`, `text_topic_extraction`, `text_named_entity_recognition`, `text_ai_detection`, `text_plagia_detection` |
+| **Web** | `web_search`, `web_scraping`, `web_map`, `web_crawl`, `web_batch_scrape`, `web_research`, `web_structured_extraction` |
+| **Translation** | `translation_automatic_translation`, `translation_document_translation` |
+| **Audio** | `audio_tts`, `audio_speech_to_text` |
+| **Video** | `video_generation`, `video_deepfake_detection` |
+| **Utility** | `upload_file`, `check_job`, `list_models` |
+
+### Shared Conventions
+
+Every feature tool follows the same three rules:
+
+- **`model` selects the provider.** Pass `"provider"` or `"provider/model"`, for example `"firecrawl"` or `"amazon"`. Call the `list_models` tool for the exact names, pricing and regions, optionally filtered to one tool with `{"tool": "web_search"}`.
+- **File parameters take a URL or a file ID.** If your document already has a public URL, pass it directly. For local content, call `upload_file` first and pass the returned ID.
+- **Long-running tools return a job.** `ocr_async`, `ocr_tables`, `audio_speech_to_text`, `web_crawl`, `web_batch_scrape`, `web_research`, `web_structured_extraction`, `video_generation` and `video_deepfake_detection` return a job ID immediately. Poll it with `check_job` until `status` is `success` or `fail`.
+
+## Give the Tools to Any LLM
+
+You do not need an MCP-aware client. Fetch the catalog, hand the schemas to a model as function-calling tools, and execute the calls the model asks for. The loop below uses the OpenAI SDK against the Eden AI gateway:
+
+```bash
+pip install mcp openai
+```
+
+{/* skip-test */}
+<CodeGroup>
+```python Python
+import asyncio
+import json
+import os
+
+from mcp import ClientSession
+from mcp.client.streamable_http import streamablehttp_client
+from openai import AsyncOpenAI
+
+API_KEY = os.environ["EDENAI_API_KEY"]
+MCP_URL = "https://mcp.edenai.run/mcp"
+MODEL = "google/gemini-flash-latest"
+TOOLS = {"web_search", "ocr"}
+RESULT_CAP = 20_000
+
+
+async def main():
+    headers = {"Authorization": f"Bearer {API_KEY}"}
+    async with streamablehttp_client(MCP_URL, headers=headers) as (read, write, _):
+        async with ClientSession(read, write) as mcp:
+            await mcp.initialize()
+
+            # 1. Turn the MCP catalog into OpenAI function tools.
+            catalog = (await mcp.list_tools()).tools
+            tools = [
+                {
+                    "type": "function",
+                    "function": {
+                        "name": tool.name,
+                        "description": tool.description or "",
+                        "parameters": tool.inputSchema,
+                    },
+                }
+                for tool in catalog
+                if tool.name in TOOLS
+            ]
+
+            # 2. Run the model and execute whatever it asks for.
+            client = AsyncOpenAI(base_url="https://api.edenai.run/v3", api_key=API_KEY)
+            messages = [{"role": "user", "content": "Who is the current CEO of Anthropic?"}]
+
+            for _ in range(6):
+                response = await client.chat.completions.create(
+                    model=MODEL, messages=messages, tools=tools
+                )
+                message = response.choices[0].message
+
+                if not message.tool_calls:
+                    print(message.content)
+                    break
+
+                # Rebuild the tool calls from spec fields only (see Best Practices).
+                messages.append({
+                    "role": "assistant",
+                    "content": message.content or "",
+                    "tool_calls": [
+                        {
+                            "id": call.id,
+                            "type": "function",
+                            "function": {
+                                "name": call.function.name,
+                                "arguments": call.function.arguments,
+                            },
+                        }
+                        for call in message.tool_calls
+                    ],
+                })
+
+                for call in message.tool_calls:
+                    result = await mcp.call_tool(
+                        call.function.name, json.loads(call.function.arguments)
+                    )
+                    text = "\n".join(
+                        block.text for block in result.content if block.type == "text"
+                    )
+                    if result.isError:
+                        text = f"Tool error: {text}"
+                    messages.append({
+                        "role": "tool",
+                        "tool_call_id": call.id,
+                        "content": text[:RESULT_CAP],
+                    })
+
+
+asyncio.run(main())
+```
+</CodeGroup>
+
+The model receives the expert model output as an ordinary tool result and grounds its answer in it. Nothing about the loop is Eden-specific beyond the base URL and the key, so the same code works with any MCP server you already use.
+
+## Anthropic SDK
+
+The same pattern works on the gateway's Anthropic-compatible surface, and the model does not have to be a Claude model. Any function-calling model in the catalog can be driven through this SDK.
+
+<Warning>
+On this surface, a custom tool named exactly `web_search` collides with the provider-native web search feature on some models and the request fails. Register the tool under a different name and map it back when you execute the call, as shown below.
+</Warning>
+
+```bash
+pip install mcp anthropic
+```
+
+{/* skip-test */}
+<CodeGroup>
+```python Python
+import asyncio
+import os
+
+from anthropic import AsyncAnthropic
+from mcp import ClientSession
+from mcp.client.streamable_http import streamablehttp_client
+
+API_KEY = os.environ["EDENAI_API_KEY"]
+MCP_URL = "https://mcp.edenai.run/mcp"
+MODEL = "anthropic/claude-haiku-latest"
+RESULT_CAP = 20_000
+
+# Exposed name -> MCP tool name. Avoids the web_search collision.
+ALIASES = {"internet_search": "web_search"}
+
+
+async def main():
+    headers = {"Authorization": f"Bearer {API_KEY}"}
+    async with streamablehttp_client(MCP_URL, headers=headers) as (read, write, _):
+        async with ClientSession(read, write) as mcp:
+            await mcp.initialize()
+
+            catalog = {tool.name: tool for tool in (await mcp.list_tools()).tools}
+            tools = [
+                {
+                    "name": alias,
+                    "description": catalog[name].description or "",
+                    "input_schema": catalog[name].inputSchema,
+                }
+                for alias, name in ALIASES.items()
+            ]
+
+            client = AsyncAnthropic(base_url="https://api.edenai.run/v3", auth_token=API_KEY)
+            messages = [{"role": "user", "content": "Who is the current CEO of Anthropic?"}]
+
+            for _ in range(6):
+                response = await client.messages.create(
+                    model=MODEL, max_tokens=2048, messages=messages, tools=tools
+                )
+                tool_uses = [b for b in response.content if b.type == "tool_use"]
+                texts = [b.text for b in response.content if b.type == "text"]
+
+                if not tool_uses:
+                    print("".join(texts))
+                    break
+
+                messages.append({"role": "assistant", "content": [
+                    *({"type": "text", "text": t} for t in texts if t),
+                    *({"type": "tool_use", "id": b.id, "name": b.name, "input": b.input}
+                      for b in tool_uses),
+                ]})
+
+                results = []
+                for block in tool_uses:
+                    result = await mcp.call_tool(ALIASES[block.name], block.input)
+                    text = "\n".join(
+                        part.text for part in result.content if part.type == "text"
+                    )
+                    if result.isError:
+                        text = f"Tool error: {text}"
+                    results.append({
+                        "type": "tool_result",
+                        "tool_use_id": block.id,
+                        "content": text[:RESULT_CAP],
+                    })
+                messages.append({"role": "user", "content": results})
+
+
+asyncio.run(main())
+```
+</CodeGroup>
+
+## Working With Documents
+
+File parameters accept a public URL directly, so an agent that finds a PDF on the web can pass the link straight to `ocr` with no upload step.
+
+For local files, call `upload_file` once and reuse the returned ID across as many tools as you like:
+
+{/* skip-test */}
+<CodeGroup>
+```python Python
+import base64
+import json
+from pathlib import Path
+
+
+async def read_document(mcp, path):
+    path = Path(path)
+    upload = await mcp.call_tool("upload_file", {
+        "content_base64": base64.b64encode(path.read_bytes()).decode(),
+        "filename": path.name,
+        "expires_in_days": 7,
+    })
+    file_id = json.loads(upload.content[0].text)["file_id"]
+
+    result = await mcp.call_tool("ocr", {
+        "model": "amazon",
+        "file": file_id,
+        "language": "en",
+    })
+    return json.loads(result.content[0].text)
+```
+</CodeGroup>
+
+Uploads are kept for 30 days by default, configurable from 1 to 30 with `expires_in_days`.
+
+<Tip>
+When you mention a file ID in a prompt so the model can pass it to a tool itself, put it in a fenced code block. Models occasionally mistranscribe a UUID embedded in plain prose, which produces a confusing 404 from the tool.
+</Tip>
+
+### Polling Long-Running Tools
+
+Async tools hand back a job ID. Poll it with `check_job`:
+
+{/* skip-test */}
+<CodeGroup>
+```python Python
+import asyncio
+import json
+
+
+async def ocr_pdf(mcp, file_id):
+    job = await mcp.call_tool("ocr_async", {"model": "amazon", "file": file_id})
+    job_id = json.loads(job.content[0].text)["job_id"]
+
+    while True:
+        status = await mcp.call_tool("check_job", {"job_id": job_id})
+        payload = json.loads(status.content[0].text)
+        if payload["status"] in ("success", "fail"):
+            return payload
+        await asyncio.sleep(3)
+```
+</CodeGroup>
+
+When you expose `check_job` to a model alongside an async tool, the model handles this polling on its own.
+
+## Which Models Can Call the Tools
+
+Any model whose `capabilities.supports_function_calling` is `true` can use the MCP tools. Filter the [model catalog](/v3/llms/listing-models) to find them:
+
+<CodeGroup>
+```python Python
+import requests
+
+response = requests.get("https://api.edenai.run/v3/models")
+
+tool_models = [
+    model["id"]
+    for model in response.json()["data"]
+    if (model.get("capabilities") or {}).get("supports_function_calling")
+]
+print(len(tool_models), "models support tool calling")
+```
+</CodeGroup>
+
+<Tip>
+You can also browse models visually in the [Eden AI model catalog](https://app.edenai.run/models) and filter by capability.
+</Tip>
+
+Smaller models sometimes announce a tool call in prose instead of emitting one. If a model narrates ("I will search the web for that") without producing a tool call, a more capable model usually fixes it.
+
+## Best Practices
+
+- **Echo back only the fields in the spec.** Gateway responses can carry non-standard extras on `tool_calls`, such as an `index` field. Sending those back on the next turn is rejected by strict providers. Rebuild minimal `{id, type, function: {name, arguments}}` objects, and use `""` rather than `null` for the assistant message content.
+- **Cap the size of tool results.** OCR and scraping output can be very large. Truncating to roughly 20,000 characters before appending to the conversation keeps the context manageable without losing the useful part.
+- **Treat tool errors as results, not exceptions.** A failed tool call comes back with `isError` set rather than raising. Pass the error text to the model and it will usually retry with corrected arguments.
+- **Filter the catalog before sending it.** The full 39-tool catalog is a lot of schema for one prompt. Send only the tools the task needs, which improves both accuracy and cost.
+- **Use URLs when you have them.** Skipping `upload_file` removes a round trip and a class of transcription errors.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="OCR" icon="file-lines" href="/v3/expert-models/features/ocr/ocr">
+    Extract text from documents and images
+  </Card>
+  <Card title="Web Search" icon="magnifying-glass" href="/v3/expert-models/features/web/search">
+    Search the web and get ranked results
+  </Card>
+  <Card title="List Expert Models" icon="list" href="/v3/expert-models/listing-models">
+    Browse every provider and model available
+  </Card>
+  <Card title="Monitoring" icon="chart-line" href="/v3/general/monitoring">
+    Track the cost of your tool calls
+  </Card>
+</CardGroup>

@@ -46,10 +46,10 @@ The image surface spans many providers. A few common model strings:
 
 | Provider | Model string |
 |---|---|
-| Google | `google/gemini-3.1-flash-image`, `google/gemini-3-pro-image`, `image/generation/google/imagen-4.0-generate-001` |
-| OpenAI | `image/generation/openai/gpt-image-2`, `image/generation/openai/gpt-image-2` |
+| Google | `google/gemini-3.1-flash-image`, `google/gemini-3-pro-image`, `google/imagen-4.0-generate-001` |
+| OpenAI | `openai/gpt-image-2` |
 | Stability | `stabilityai/sd3.5-large` |
-| Amazon | `image/generation/amazon` |
+| Amazon | `amazon/amazon.nova-canvas-v1:0` |
 
 Call `GET /v3/images/models` for the full, region-aware list (image models also appear in `GET /v3/models`, so the OpenAI SDK's `client.models.list()` returns them too).
 

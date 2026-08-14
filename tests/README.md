@@ -137,9 +137,9 @@ Beyond snippet execution, four validators enforce doc/API consistency. All run u
 | `tests/model_provider_validator.py` | Scans every `.mdx` for backticked `provider/model` references; cross-checks against `/v3/models` + `/v3/info` + probed embeddings inventory |
 | `tests/link_checker.py` | Extracts markdown links, JSX `href="…"`, `<TechArticleSchema path="…">`, and bare URLs; verifies internal targets exist and external URLs return 2xx-3xx (or a non-404/410 4xx). Also checks every `docs.json` nav path resolves to an `.mdx` file |
 
-Model/provider lookup is powered by `tests/helpers/edenai_inventory.py` — a session-cached inventory of LLM models (`/v3/models`), expert models (`/v3/info`), and verified embeddings.
+Model/provider lookup is powered by `tests/helpers/edenai_inventory.py`, a session-cached inventory of LLM models (`/v3/models`), expert models (`/v3/info`), and verified embeddings.
 
-Unknown `provider/model` references fail the test unless they match `DOCUMENTATION_PLACEHOLDERS` (e.g. `provider/model` used as a format placeholder) or an `UNAMBIGUOUS_MIME_PREFIXES` prefix (e.g. `application/json`). There is no per-file allowlist.
+Unknown `provider/model` references fail the test unless they match `DOCUMENTATION_PLACEHOLDERS` (e.g. `provider/model` used as a format placeholder), match an `UNAMBIGUOUS_MIME_PREFIXES` prefix (e.g. `application/json`), or resolve after `strip_tool_alias` removes a leading `edenai/` tool alias. There is no per-file allowlist.
 
 ## CI (GitHub Actions)
 
@@ -150,8 +150,8 @@ The workflow at `.github/workflows/test-snippets.yml` runs on:
 
 Two jobs, both with `cancel-in-progress: false` (session cleanup runs at pytest_sessionfinish; cancelling a started run orphans account resources):
 
-1. **Python Tests** — snippet execution + all four validators.
-2. **TypeScript Tests** — installs bun + runs `bun test` in `tests/ts/`.
+1. **Python Tests**: snippet execution + all four validators.
+2. **TypeScript Tests**: installs bun + runs `bun test` in `tests/ts/`.
 
 Both consume `EDEN_AI_SANDBOX_TOKEN` and (Python job only) `EDEN_AI_PRODUCTION_TOKEN` from repository secrets. `EDEN_AI_BASE_URL` is set from the `EDEN_AI_BASE_URL` repository variable if defined (defaults to staging).
 

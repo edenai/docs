@@ -93,6 +93,8 @@ def pytest_sessionstart(session: pytest.Session) -> None:
             if exc.response is None or exc.response.status_code != 401:
                 raise
             state.pop("pre_existing_tokens", None)
+            state["production_token_rejected"] = True
+            os.environ.pop("EDEN_AI_PRODUCTION_API_TOKEN", None)
             print("\n[conftest] Skipping custom-token setup — production token rejected (401)")
 
     path = _shared_state_path(session.config)
@@ -144,6 +146,10 @@ def _load_shared_state(request):
         state = json.loads(path.read_text())
         if "test_file_id" in state:
             os.environ.setdefault("_EDEN_TEST_FILE_ID", state["test_file_id"])
+        # xdist workers don't see the controller's os.environ mutations, so
+        # propagate the rejected-token signal through the state file too.
+        if state.get("production_token_rejected"):
+            os.environ.pop("EDEN_AI_PRODUCTION_API_TOKEN", None)
 
 
 @pytest.fixture(scope="session")

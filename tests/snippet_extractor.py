@@ -333,6 +333,12 @@ def extract_all_ts() -> list[dict]:
         (GENERATED_TS_DIR / "package.json").write_text('{"type":"module"}\n')
         populate_fixtures_dir(TS_FIXTURES_DIR)
 
+        # The test runner discovers files by globbing this directory, so
+        # snippets left over from a previous run would still execute after
+        # their source block is edited out of the docs.
+        for stale in GENERATED_TS_DIR.glob("*__block_*"):
+            stale.unlink()
+
         for rel in TS_GUIDES:
             mdx_path = DOCS_ROOT / rel
             if not mdx_path.exists():

@@ -21,11 +21,8 @@ from tests.helpers.api import (
     upload_test_file,
 )
 from tests.helpers.file_generators import (
-    large_jpeg,
-    minimal_jpeg,
     minimal_pdf,
-    minimal_png,
-    multipage_pdf,
+    populate_fixtures_dir,
 )
 
 load_dotenv(Path(__file__).parent / ".env")
@@ -64,28 +61,41 @@ def pytest_sessionstart(session: pytest.Session) -> None:
         state["test_file_id"] = test_file_id
 
     if os.environ.get("EDEN_AI_PRODUCTION_API_TOKEN"):
-        state["pre_existing_tokens"] = sorted(list_custom_token_names())
+        try:
+            state["pre_existing_tokens"] = sorted(list_custom_token_names())
 
-        expire = (datetime.now() + timedelta(days=30)).isoformat()
-        for token_spec in [
-            {
-                "name": "my-api-token",
-                "balance": "100.00",
-                "active_balance": True,
-                "expire_time": expire,
-            },
-            {"name": "old-token"},
-        ]:
-            try:
-                create_custom_token(**token_spec)
-            except requests.HTTPError as exc:
-                # Token may already exist — another run on the same account can
-                # create it first. Test `is None` explicitly: Response.__bool__
-                # returns self.ok, so a 400 response is falsy and `not
-                # exc.response` was short-circuiting to True, re-raising the one
-                # case this handler exists to swallow.
-                if exc.response is None or exc.response.status_code != 400:
-                    raise
+            expire = (datetime.now() + timedelta(days=30)).isoformat()
+            for token_spec in [
+                {
+                    "name": "my-api-token",
+                    "balance": "100.00",
+                    "active_balance": True,
+                    "expire_time": expire,
+                },
+                {"name": "old-token"},
+            ]:
+                try:
+                    create_custom_token(**token_spec)
+                except requests.HTTPError as exc:
+                    # Token may already exist — another run on the same account can
+                    # create it first. Test `is None` explicitly: Response.__bool__
+                    # returns self.ok, so a 400 response is falsy and `not
+                    # exc.response` was short-circuiting to True, re-raising the one
+                    # case this handler exists to swallow.
+                    if exc.response is None or exc.response.status_code != 400:
+                        raise
+        except requests.HTTPError as exc:
+            # The /v2/user/custom_token/ admin endpoint requires a JWT session
+            # token, not an API key. When EDEN_AI_PRODUCTION_API_TOKEN holds an
+            # API key (the common case), skip custom-token setup instead of
+            # crashing pytest_sessionstart. Prod-token-only doc tests will then
+            # skip themselves via _PRODUCTION_TOKEN_FILES logic.
+            if exc.response is None or exc.response.status_code != 401:
+                raise
+            state.pop("pre_existing_tokens", None)
+            state["production_token_rejected"] = True
+            os.environ.pop("EDEN_AI_PRODUCTION_API_TOKEN", None)
+            print("\n[conftest] Skipping custom-token setup — production token rejected (401)")
 
     path = _shared_state_path(session.config)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -136,6 +146,10 @@ def _load_shared_state(request):
         state = json.loads(path.read_text())
         if "test_file_id" in state:
             os.environ.setdefault("_EDEN_TEST_FILE_ID", state["test_file_id"])
+        # xdist workers don't see the controller's os.environ mutations, so
+        # propagate the rejected-token signal through the state file too.
+        if state.get("production_token_rejected"):
+            os.environ.pop("EDEN_AI_PRODUCTION_API_TOKEN", None)
 
 
 @pytest.fixture(scope="session")
@@ -146,59 +160,9 @@ def fixtures_dir(request):
     with FileLock(str(d) + ".lock"):
         if not d.exists():
             d.mkdir()
-            _populate_fixtures_dir(d)
+            populate_fixtures_dir(d)
 
     return d
-
-
-def _populate_fixtures_dir(d: Path) -> None:
-    pdf_data = minimal_pdf()
-    for name in [
-        "document.pdf",
-        "invoice.pdf",
-        "report.pdf",
-        "contract.pdf",
-        "quarterly-report.pdf",
-        "policy-document.pdf",
-        "research-paper.pdf",
-        "doc1.pdf",
-        "doc2.pdf",
-        "doc3.pdf",
-        "invoice1.pdf",
-        "invoice2.pdf",
-        "invoice3.pdf",
-        "doc.pdf",
-    ]:
-        (d / name).write_bytes(pdf_data)
-
-    (d / "large-report.pdf").write_bytes(multipage_pdf(6))
-
-    jpeg_data = minimal_jpeg()
-    for name in [
-        "image.jpg",
-        "photo.jpg",
-        "product.jpg",
-        "people.jpg",
-        "passport.jpg",
-        "receipt.jpg",
-        "user_upload.jpg",
-        "complex_document.jpg",
-        "user_photo.jpg",
-    ]:
-        (d / name).write_bytes(jpeg_data)
-    (d / "large-image.jpg").write_bytes(large_jpeg())
-
-    png_data = minimal_png()
-    for name in ["image.png", "screenshot.png"]:
-        (d / name).write_bytes(png_data)
-
-    (d / "app.py").write_text("def main():\n    print('hello')\n")
-
-    (d / "document.txt").write_text(
-        "Eden AI is a platform that provides access to multiple AI providers "
-        "through a single API. It supports text analysis, image processing, "
-        "OCR, and many other AI features."
-    )
 
 
 class HttpRecorder:

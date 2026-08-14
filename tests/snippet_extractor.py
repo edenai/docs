@@ -5,12 +5,14 @@ from pathlib import Path
 
 from filelock import FileLock
 
+from tests.helpers.file_generators import populate_fixtures_dir
+
 CODE_BLOCK_RE = re.compile(
     r"^```python(?:[ \t]+\S+)?[ \t]*\n(.*?)^\s*```",
     re.MULTILINE | re.DOTALL,
 )
 
-_SKIP_COMMENT_RE = re.compile(r"\{/\*\s*skip-test\s*\*/\}")
+SKIP_COMMENT_RE = re.compile(r"\{/\*\s*skip-test\s*\*/\}")
 
 _SANDBOX_TOKEN_VAR = "EDEN_AI_SANDBOX_API_TOKEN"
 _PRODUCTION_TOKEN_VAR = "EDEN_AI_PRODUCTION_API_TOKEN"
@@ -72,7 +74,7 @@ def extract_python_blocks(mdx_path: Path) -> list[dict]:
     for match in CODE_BLOCK_RE.finditer(content):
         preceding = content[: match.start()]
         recent_lines = preceding.rsplit("\n", 3)[-3:]
-        skip = any(_SKIP_COMMENT_RE.search(line) for line in recent_lines)
+        skip = any(SKIP_COMMENT_RE.search(line) for line in recent_lines)
         code = match.group(1)
         line = preceding.count("\n") + 2
         blocks.append({"code": code, "line": line, "skip": skip})
@@ -227,6 +229,146 @@ def extract_all() -> list[dict]:
     return results
 
 
+TS_FENCE_RE = re.compile(
+    r"^```(?P<lang>typescript|ts|tsx|javascript|js|jsx)"
+    r"(?:[ \t]+[^\n]*)?[ \t]*\n(?P<body>.*?)^\s*```",
+    re.MULTILINE | re.DOTALL,
+)
+
+TS_GUIDES: list[str] = [
+    "v3/integrations/openai-sdk-typescript.mdx",
+    "v3/integrations/langchain.mdx",
+    "v3/integrations/pi.mdx",
+]
+
+GENERATED_TS_DIR = Path(__file__).resolve().parent / "generated_ts"
+
+_TS_TOKEN_EXPR = f"process.env.{_SANDBOX_TOKEN_VAR}"
+_TS_BASE_URL_EXPR = (
+    f'process.env.EDEN_AI_BASE_URL ?? "{_DEFAULT_BASE_URL}"'
+)
+
+_TS_REWRITES: list[tuple[re.Pattern[str], str]] = [
+    (re.compile(r"""(['"`])YOUR_(?:EDEN_AI_)?API_KEY\1"""), _TS_TOKEN_EXPR),
+    (
+        re.compile(r'"Bearer\s+YOUR_(?:EDEN_AI_)?API_KEY"'),
+        f"`Bearer ${{{_TS_TOKEN_EXPR}}}`",
+    ),
+    (re.compile(r"process\.env\.EDEN_AI_API_KEY"), _TS_TOKEN_EXPR),
+    (
+        re.compile(r"""(['"])https://api\.edenai\.run(?P<path>[^'"]*)\1"""),
+        f"`${{{_TS_BASE_URL_EXPR}}}\\g<path>`",
+    ),
+    (
+        re.compile(r"https://api\.edenai\.run"),
+        f"${{{_TS_BASE_URL_EXPR}}}",
+    ),
+    (
+        re.compile(rf'"{_PLACEHOLDER_FILE_ID}"'),
+        f'(process.env._EDEN_TEST_FILE_ID ?? "{_PLACEHOLDER_FILE_ID}")',
+    ),
+]
+
+_STRIP_TS_NON_NULL_RE = re.compile(rf"{re.escape(_TS_TOKEN_EXPR)}!")
+
+_CJS_RE = re.compile(
+    r"^\s*(?:const|let|var)\s+\w+\s*=\s*require\s*\(|^\s*module\.exports\b",
+    re.MULTILINE,
+)
+_JSX_RETURN_RE = re.compile(r"\breturn\s*\(?\s*<[A-Za-z]")
+
+
+def _ts_extension(lang: str, body: str) -> str:
+    if _CJS_RE.search(body):
+        return "cjs"
+    if _JSX_RETURN_RE.search(body):
+        return "tsx"
+    if lang in {"tsx", "jsx"}:
+        return "tsx"
+    if lang in {"javascript", "js"}:
+        return "mjs"
+    return "ts"
+
+
+def rewrite_ts_snippet(code: str, ext: str) -> str:
+    for pattern, replacement in _TS_REWRITES:
+        code = pattern.sub(replacement, code)
+    if ext in {"js", "jsx", "mjs", "cjs"}:
+        code = _STRIP_TS_NON_NULL_RE.sub(_TS_TOKEN_EXPR, code)
+    return code
+
+
+def extract_ts_blocks(mdx_path: Path) -> list[dict]:
+    content = mdx_path.read_text(encoding="utf-8")
+    blocks: list[dict] = []
+    for match in TS_FENCE_RE.finditer(content):
+        preceding = content[: match.start()]
+        recent_lines = preceding.rsplit("\n", 3)[-3:]
+        skip = any(SKIP_COMMENT_RE.search(line) for line in recent_lines)
+        lang = match.group("lang")
+        body = match.group("body")
+        blocks.append(
+            {
+                "code": body,
+                "line": preceding.count("\n") + 2,
+                "skip": skip,
+                "ext": _ts_extension(lang, body),
+            }
+        )
+    return blocks
+
+
+_TS_EXTRACT_LOCK = GENERATED_TS_DIR / ".extract.lock"
+
+
+TS_FIXTURES_DIR = GENERATED_TS_DIR / "fixtures"
+
+
+def extract_all_ts() -> list[dict]:
+    GENERATED_TS_DIR.mkdir(parents=True, exist_ok=True)
+    TS_FIXTURES_DIR.mkdir(parents=True, exist_ok=True)
+    results: list[dict] = []
+
+    with FileLock(str(_TS_EXTRACT_LOCK)):
+        (GENERATED_TS_DIR / "package.json").write_text('{"type":"module"}\n')
+        populate_fixtures_dir(TS_FIXTURES_DIR)
+
+        # The test runner discovers files by globbing this directory, so
+        # snippets left over from a previous run would still execute after
+        # their source block is edited out of the docs.
+        for stale in GENERATED_TS_DIR.glob("*__block_*"):
+            stale.unlink()
+
+        for rel in TS_GUIDES:
+            mdx_path = DOCS_ROOT / rel
+            if not mdx_path.exists():
+                raise FileNotFoundError(f"Guide not found: {mdx_path}")
+            blocks = extract_ts_blocks(mdx_path)
+            if not blocks:
+                continue
+
+            stem = sanitize_filename(mdx_path)
+            files: list[dict] = []
+            for i, block in enumerate(blocks, start=1):
+                skip_marker = ".skip" if block["skip"] else ""
+                name = f"{stem}__block_{i}{skip_marker}.{block['ext']}"
+                path = GENERATED_TS_DIR / name
+                path.write_text(rewrite_ts_snippet(block["code"], block["ext"]))
+                files.append(
+                    {
+                        "index": i,
+                        "line": block["line"],
+                        "skip": block["skip"],
+                        "ext": block["ext"],
+                        "path": str(path),
+                    }
+                )
+
+            results.append({"source_mdx": rel, "module_stem": stem, "files": files})
+
+    return results
+
+
 if __name__ == "__main__":
     results = extract_all()
     total_snippets = sum(r["snippet_count"] for r in results)
@@ -236,3 +378,13 @@ if __name__ == "__main__":
     for r in results:
         flag = " [has input()]" if r["has_input"] else ""
         print(f"  {r['source_mdx']}: {r['snippet_count']} snippets{flag}")
+
+    ts_results = extract_all_ts()
+    ts_total = sum(len(r["files"]) for r in ts_results)
+    print()
+    print(f"Extracted {ts_total} TS/JS snippets from {len(ts_results)} guide(s)")
+    for r in ts_results:
+        print(f"  {r['source_mdx']}: {len(r['files'])} snippets")
+        for f in r["files"]:
+            mark = " [skip]" if f["skip"] else ""
+            print(f"    block {f['index']:>2} ({f['ext']}, line {f['line']}){mark}")

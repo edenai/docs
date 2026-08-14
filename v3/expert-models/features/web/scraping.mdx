@@ -14,7 +14,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={[`Eden AI`, `AI API`, `web scraping`, `web search`]}
   datePublished="2026-07-27T00:00:00Z"
-  dateModified="2026-07-27T00:00:00Z"
+  dateModified="2026-08-14T00:00:00Z"
 />
 
 ## Endpoint
@@ -75,7 +75,7 @@ headers = {
 }
 
 payload = {
-    "model": "web/scraping/firecrawl",
+    "model": "web/scraping/linkup",
     "input": {
         "url": "example"
     }
@@ -90,7 +90,7 @@ curl -X POST https://api.edenai.run/v3/universal-ai \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "web/scraping/firecrawl",
+    "model": "web/scraping/linkup",
     "input": {"url": "example"}
   }'
 ```

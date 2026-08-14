@@ -15,7 +15,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "Codex"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-05-07T00:00:00Z"
+  dateModified="2026-08-14T00:00:00Z"
 />
 
 Configure [Codex CLI](https://github.com/openai/codex), OpenAI's open-source local coding agent, to use Eden AI for access to 500+ models behind a single API key.
@@ -42,7 +42,7 @@ Codex CLI reads its provider settings from `~/.codex/config.toml`. Add an `edena
 <CodeGroup>
 ```toml ~/.codex/config.toml
 model_provider = "edenai"
-model = "openai/gpt-5.1-codex"
+model = "azure/gpt-5.1-codex"
 model_reasoning_effort = "high"
 
 [model_providers.edenai]
@@ -78,22 +78,20 @@ Codex now sends requests to Eden AI using the model you set in `config.toml`.
 
 ## Switching models
 
-Eden AI uses the `provider/model` format. Update the `model` field in `~/.codex/config.toml` (or pass `--model` on the command line) to switch:
+Eden AI uses the `provider/model` format. Update the `model` field in `~/.codex/config.toml` (or pass `--model` on the command line) to switch.
 
-<CodeGroup>
-```toml Codex variants
-model = "openai/gpt-5.1-codex"        # default
-model = "openai/gpt-5.1-codex-mini"   # cheaper, faster
-model = "openai/gpt-5.1-codex-max"    # largest context
-model = "openai/gpt-5.3-codex"        # latest
-```
+Codex variants:
 
-```toml Other providers
-model = "anthropic/claude-sonnet-4-5"
-model = "google/gemini-2.5-pro"
-model = "openai/gpt-4o"
-```
-</CodeGroup>
+- `azure/gpt-5.1-codex` (default)
+- `azure/gpt-5.1-codex-mini` (cheaper, faster)
+- `azure/gpt-5.1-codex-max` (largest context)
+- `openai/gpt-5.3-codex` (latest)
+
+Other providers:
+
+- `anthropic/claude-sonnet-4-5`
+- `google/gemini-2.5-pro`
+- `openai/gpt-4o`
 
 Browse the full catalog via [List Models](/v3/llms/listing-models) or `GET https://api.edenai.run/v3/models`.
 
@@ -109,12 +107,12 @@ echo $EDENAI_API_KEY
 curl -X POST https://api.edenai.run/v3/chat/completions \
   -H "Authorization: Bearer $EDENAI_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"model": "openai/gpt-5.1-codex", "messages": [{"role": "user", "content": "ping"}]}'
+  -d '{"model": "azure/gpt-5.1-codex", "messages": [{"role": "user", "content": "ping"}]}'
 ```
 
 ### Model not found
 
-Use the full `provider/model` string (e.g. `openai/gpt-5.1-codex`, not `gpt-5.1-codex`). Confirm the ID is in the catalog returned by `GET /v3/models`.
+Use the full `provider/model` string (e.g. `azure/gpt-5.1-codex`, not `gpt-5.1-codex`). Confirm the ID is in the catalog returned by `GET /v3/models`.
 
 ### Connection issues
 

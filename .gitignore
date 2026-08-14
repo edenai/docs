@@ -5,6 +5,9 @@ __pycache__/
 
 # Generated test modules
 tests/generated/
+tests/generated_ts/
+tests/ts/node_modules/
+
 
 # Coverage reports
 htmlcov/

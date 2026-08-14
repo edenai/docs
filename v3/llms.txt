@@ -86,7 +86,7 @@ provider/model_name
 - `google/gemini-2.5-flash`
 - `google/gemini-2.5-pro`
 - `cohere/command-r-plus`
-- `mistral/mistral-large`
+- `mistral/mistral-large-latest`
 
 #### Message Content Types
 

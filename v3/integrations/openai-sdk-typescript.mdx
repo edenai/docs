@@ -15,7 +15,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "OpenAI SDK", "TypeScript"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-05-07T00:00:00Z"
+  dateModified="2026-08-14T00:00:00Z"
 />
 
 Use the official OpenAI TypeScript/JavaScript SDK with Eden AI for seamless multi-provider access.
@@ -246,9 +246,7 @@ Send images to vision models:
 <CodeGroup>
 ```typescript TypeScript
 import OpenAI from 'openai';
-import FormData from 'form-data';
-import fs from 'fs';
-import fetch from 'node-fetch';
+import { readFile } from 'fs/promises';
 
 const client = new OpenAI({
   apiKey: process.env.EDEN_AI_API_KEY!,
@@ -257,8 +255,9 @@ const client = new OpenAI({
 
 async function analyzeImage() {
   // First, upload the image
+  const imageBytes = await readFile('image.jpg');
   const formData = new FormData();
-  formData.append('file', fs.createReadStream('image.jpg'));
+  formData.append('file', new Blob([imageBytes]), 'image.jpg');
 
   const uploadResponse = await fetch(
     'https://api.edenai.run/v3/upload',
@@ -271,7 +270,7 @@ async function analyzeImage() {
     }
   );
 
-  const { file_id } = await uploadResponse.json();
+  const { file_id } = (await uploadResponse.json()) as { file_id: string };
 
   // Use file_id in chat
   const stream = await client.chat.completions.create({
@@ -352,6 +351,7 @@ safeChat();
 
 Build a chat API with Express:
 
+{/* skip-test */}
 <CodeGroup>
 ```typescript TypeScript
 import express from 'express';

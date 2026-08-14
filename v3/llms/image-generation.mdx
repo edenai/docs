@@ -15,7 +15,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "image generation", "image editing", "OpenAI compatible", "gpt-image", "gemini image"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-06-11T00:00:00Z"
+  dateModified="2026-08-14T00:00:00Z"
 />
 
 Generate and edit images through Eden AI's OpenAI-compatible image endpoints. Point any OpenAI client at `https://api.edenai.run/v3` and the images API works as a drop-in replacement.
@@ -46,8 +46,8 @@ The image surface spans many providers. A few common model strings:
 
 | Provider | Model string |
 |---|---|
-| Google | `google/gemini-2.5-flash-image`, `google/gemini-3-pro-image-preview`, `google/imagen-4.0-generate-001` |
-| OpenAI | `openai/gpt-image-1`, `openai/gpt-image-1-mini` |
+| Google | `google/gemini-3.1-flash-image`, `google/gemini-3-pro-image`, `google/imagen-4.0-generate-001` |
+| OpenAI | `openai/gpt-image-2` |
 | Stability | `stabilityai/sd3.5-large` |
 | Amazon | `amazon/amazon.nova-canvas-v1:0` |
 
@@ -66,7 +66,7 @@ headers = {
 }
 
 payload = {
-    "model": "google/gemini-2.5-flash-image",
+    "model": "google/gemini-3.1-flash-image",
     "prompt": "A nano banana dish in a fancy restaurant, cinematic lighting",
     "size": "1024x1024",
     "n": 1,
@@ -85,7 +85,7 @@ curl -X POST https://api.edenai.run/v3/images/generations \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "google/gemini-2.5-flash-image",
+    "model": "google/gemini-3.1-flash-image",
     "prompt": "A nano banana dish in a fancy restaurant, cinematic lighting",
     "size": "1024x1024",
     "n": 1
@@ -102,7 +102,7 @@ from openai import OpenAI
 client = OpenAI(base_url="https://api.edenai.run/v3", api_key="YOUR_API_KEY")
 
 result = client.images.generate(
-    model="google/gemini-2.5-flash-image",
+    model="google/gemini-3.1-flash-image",
     prompt="A nano banana dish in a fancy restaurant, cinematic lighting",
     size="1024x1024",
     n=1,
@@ -115,7 +115,7 @@ print(result.data[0].url or result.data[0].b64_json[:60])
 
 | Field | Required | Description |
 |---|---|---|
-| `model` | yes | `provider/model`, e.g. `google/gemini-2.5-flash-image` |
+| `model` | yes | `provider/model`, e.g. `google/gemini-3.1-flash-image` |
 | `prompt` | yes | Text description of the image to generate (1–32,000 chars) |
 | `n` | no | Number of images to generate (1–10) |
 | `size` | no | Output resolution, e.g. `1024x1024`, `1536x1024`, `auto`. Allowed values depend on the model |
@@ -189,7 +189,7 @@ headers = {
 }
 
 payload = {
-    "model": "google/gemini-2.5-flash-image",
+    "model": "google/gemini-3.1-flash-image",
     "prompt": "Add a small red hat",
     "images": [
         {"image_url": "https://example.com/photo.png"}

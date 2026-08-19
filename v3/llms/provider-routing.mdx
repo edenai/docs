@@ -35,7 +35,31 @@ Pins the provider. Eden AI calls OpenAI, and only OpenAI.
 ```
 Leaves the choice to Eden AI, which selects among every provider serving that model.
 
-A model sold by a single provider routes to that provider whether or not you name it. Provider routing only has a decision to make where two or more providers offer the same model. Use [Listing Models](/v3/llms/listing-models) to see which providers serve a given model.
+A model sold by a single provider routes to that provider whether or not you name it. Provider routing only has a decision to make where two or more providers offer the same model.
+
+## Finding the routable models
+
+Ask any model listing for the grouped view and you get one entry per routable name, with the providers behind it nested underneath:
+
+```bash cURL
+curl "https://api.edenai.run/v3/models?view=models"
+```
+
+```json
+{
+  "id": "gpt-5.6-sol",
+  "object": "model",
+  "owned_by": "openai",
+  "mode": "chat",
+  "endpoint_count": 2,
+  "endpoints": [
+    { "id": "openai/gpt-5.6-sol", "owned_by": "openai", "...": "pricing, capabilities, context_length, regions" },
+    { "id": "azure/gpt-5.6-sol",  "owned_by": "azure",  "...": "pricing, capabilities, context_length, regions" }
+  ]
+}
+```
+
+The name level makes no claim about price, context window or capability, because providers of one model genuinely differ on all three. Each entry in `endpoints` carries its own, so this one call answers both questions: which names route, and what each provider charges and supports. See [Listing Models](/v3/llms/listing-models) for the full field reference.
 
 <Info>
 Provider routing chooses **which provider serves the model you named**. It is separate from [Smart Routing](/v3/llms/smart-routing), where `@edenai` chooses **which model to use**. The two compose: `@edenai` picks a model, then provider routing picks who serves it.

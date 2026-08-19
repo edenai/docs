@@ -100,6 +100,44 @@ Each entry includes the model's identity, context window, capabilities, pricing,
 
 Each model `id` is used directly as the `model` parameter in your requests.
 
+## Grouped view: one entry per routable name
+
+Many models are sold by more than one provider. Pass `view=models` to get one entry per **routable model name**, with the provider endpoints nested underneath. This is how you discover the names that [Provider Routing](/v3/llms/provider-routing) accepts.
+
+```bash cURL
+curl "https://api.edenai.run/v3/models?view=models"
+```
+
+```json
+{
+  "object": "list",
+  "data": [
+    {
+      "id": "gpt-5.6-sol",
+      "object": "model",
+      "created": 1785352476,
+      "owned_by": "openai",
+      "mode": "chat",
+      "endpoint_count": 2,
+      "endpoints": [
+        { "id": "openai/gpt-5.6-sol", "owned_by": "openai", "...": "a full model entry, as above" },
+        { "id": "azure/gpt-5.6-sol",  "owned_by": "azure",  "...": "a full model entry, as above" }
+      ]
+    }
+  ]
+}
+```
+
+What to expect from the shape:
+
+- **`id` is the routable name.** Send it as `model` and Eden AI picks which provider serves it.
+- **Each entry in `endpoints` is the same object the default view returns**, with its own pricing, capabilities, context length and regions. Nothing is summarised at the name level, because providers of one model genuinely differ on all of it. To compare providers, read `endpoints`.
+- **`owned_by` changes meaning between the views.** On a grouped entry it is who authored the model (`openai`); on an endpoint entry it is the provider selling it (`azure`).
+- **`created` is the newest endpoint's timestamp**, and `endpoint_count` equals `endpoints.length`.
+- The default (`view=endpoints`, or no parameter) is unchanged, and both entry shapes stay compatible with the OpenAI SDK's `client.models.list()`.
+
+Every model listing takes the same parameter: `/v3/models`, `/v3/embeddings/models`, `/v3/moderations/models`, `/v3/audio/transcriptions/models`, `/v3/audio/speech/models` and `/v3/images/models`.
+
 ## Model aliases
 
 Some models are available under a **stable alias**, a version-agnostic name that always points to the current release, alongside versioned or dated snapshot IDs:

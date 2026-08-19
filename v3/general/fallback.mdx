@@ -160,7 +160,7 @@ To turn it off and have the request fail on the first provider instead:
 
 ## Things worth knowing
 
-- **Repeats are kept, not deduplicated.** Listing the same model twice (`["a/m", "b/m", "a/m"]`) means it is genuinely attempted twice. A rate limit or a 5xx does not repeat deterministically, so a deliberate repeat is a retry, the only one Eden AI performs, since it never retries on its own.
+- **Repeats are kept, not deduplicated.** Listing the same model twice (`["a/m", "b/m", "a/m"]`) means it is genuinely attempted twice. A rate limit or a 5xx does not repeat deterministically, and Eden AI never re-attempts the *same* target on its own, so a deliberate repeat is the only way to get one. Trying a *different* provider of the same model is a separate mechanism: provider-level failover, which applies to provider-less names unless you set `routing.allow_fallbacks: false` (see above).
 - **A provider-less name works in `fallbacks` too.** It resolves to one provider of that model, so `{"model": "openai/gpt-4o", "fallbacks": ["gpt-5.6-sol"]}` is valid.
 - **Region tags are per entry.** `{"model": "<model>@eu", "fallbacks": ["<model>@us"]}` is two attempts in two regions, not one model with one region.
 - **Failed attempts cost nothing.** You are billed only for the attempt that produced a response.

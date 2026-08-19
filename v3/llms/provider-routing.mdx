@@ -127,66 +127,20 @@ Which regions a model offers varies by model. Requesting one it is not served fr
 
 ## Seeing which provider served your request
 
-Routing is invisible by default — the response looks the same whichever provider answered. Send `x-edenai-metadata: enabled` to have Eden AI attach the decision to the response.
-
-```bash cURL
-curl -X POST https://api.edenai.run/v3/chat/completions \
-  -H "Authorization: Bearer YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -H "x-edenai-metadata: enabled" \
-  -d '{
-    "model": "gpt-oss-120b",
-    "messages": [{"role": "user", "content": "hi"}]
-  }'
-```
-
-The response gains an `edenai_metadata` object:
+Routing is invisible by default — the response looks the same whichever provider answered. Send `x-edenai-metadata: enabled` and Eden AI attaches what it decided, including every provider it tried and the status each returned.
 
 ```json
-{
-  "choices": [{"...": "..."}],
-  "edenai_metadata": {
-    "requested": "gpt-oss-120b",
-    "strategy": "routed",
-    "region": "global",
-    "summary": "available=10, served=groq/gpt-oss-120b",
-    "attempt": 1,
-    "is_byok": false,
-    "endpoints": {
-      "total": 10,
-      "available": [
-        {"provider": "groq", "model": "groq/gpt-oss-120b", "primary": true, "reachable": true},
-        {"provider": "deepinfra", "model": "deepinfra/openai/gpt-oss-120b", "primary": false, "reachable": true}
-      ]
-    },
-    "attempts": [
-      {"provider": "groq", "model": "groq/gpt-oss-120b", "status": 200, "region": "global"}
-    ]
-  }
+"edenai_metadata": {
+  "strategy": "routed",
+  "summary": "available=10, served=groq/gpt-oss-120b",
+  "attempt": 1,
+  "attempts": [
+    {"provider": "groq", "model": "groq/gpt-oss-120b", "status": 200, "region": "global"}
+  ]
 }
 ```
 
-| Field | Meaning |
-|---|---|
-| `requested` | The model name you sent |
-| `strategy` | How the model was resolved — see the table below |
-| `region` | Region the request was served from |
-| `summary` | One-line digest: how many providers were available, and which one served |
-| `attempt` | 1-based position of the attempt that served |
-| `is_byok` | Whether your own provider key was used |
-| `endpoints` | Every provider of this model, and which were reachable for this request |
-| `attempts` | Each provider tried, in order, with its HTTP status |
-
-`strategy` tells you how much Eden AI chose for you:
-
-| Value | Meaning |
-|---|---|
-| `direct` | You named a `provider/model` — no routing happened |
-| `alias` | You named an alias that resolved to a specific model |
-| `routed` | You named a model without a provider, and Eden AI picked one |
-| `auto` | You used `@edenai`, so Eden AI picked the model too |
-
-Because `attempts` records every provider tried with its status, this is the fastest way to confirm whether a slow or failed request was retried, and where.
+See [Request Metadata](/v3/llms/request-metadata) for every field, the `strategy` values, and how to read the block off a stream.
 
 ## Turning routing off
 

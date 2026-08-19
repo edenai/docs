@@ -1,13 +1,13 @@
 ---
 icon: "receipt"
 title: "Request Metadata"
-description: "Opt in to a per-request report of what Eden AI decided — which provider served you, what was tried before it, which region, and whether your own key was used."
+description: "Opt in to a per-request report of what Eden AI decided: which provider served you, what was tried before it, which region, and whether your own key was used."
 ---
 import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
 
 <TechArticleSchema
   title={"Request Metadata"}
-  description={"Opt in to a per-request report of what Eden AI decided — which provider served you, what was tried before it, which region, and whether your own key was used."}
+  description={"Opt in to a per-request report of what Eden AI decided: which provider served you, what was tried before it, which region, and whether your own key was used."}
   path="v3/llms/request-metadata"
   articleSection="LLMs"
   about={"LLM API"}
@@ -17,7 +17,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   dateModified="2026-08-19T00:00:00Z"
 />
 
-Eden AI makes decisions on your behalf on every LLM request: which provider serves a model sold by several, which region it runs in, whether to retry elsewhere when one fails, and whether to use your own provider key. None of that is visible in a normal response — the answer looks the same whoever produced it.
+Eden AI makes decisions on your behalf on every LLM request: which provider serves a model sold by several, which region it runs in, whether to retry elsewhere when one fails, and whether to use your own provider key. None of that is visible in a normal response, because the answer looks the same whoever produced it.
 
 Send the `x-edenai-metadata` header to have Eden AI attach what it decided.
 
@@ -29,12 +29,12 @@ curl -X POST https://api.edenai.run/v3/chat/completions \
   -H "Content-Type: application/json" \
   -H "x-edenai-metadata: enabled" \
   -d '{
-    "model": "gpt-oss-120b",
+    "model": "gpt-5.6-sol",
     "messages": [{"role": "user", "content": "hi"}]
   }'
 ```
 
-The value is case-insensitive. Any value other than `enabled` — including `disabled` — is treated as off.
+The value is case-insensitive. Any value other than `enabled`, including `disabled`, is treated as off.
 
 <Info>
 The block is **absent unless you ask for it**, and adding the header changes nothing else: the rest of the response is identical. It is safe to enable per request, for a subset of traffic, or only while debugging.
@@ -51,21 +51,21 @@ The response gains one extra top-level key, `edenai_metadata`:
   "choices": [{"...": "..."}],
   "usage": {"...": "..."},
   "edenai_metadata": {
-    "requested": "gpt-oss-120b",
+    "requested": "gpt-5.6-sol",
     "strategy": "routed",
     "region": "global",
-    "summary": "available=10, served=groq/gpt-oss-120b",
+    "summary": "available=2, served=openai/gpt-5.6-sol",
     "attempt": 1,
     "is_byok": false,
     "endpoints": {
-      "total": 10,
+      "total": 2,
       "available": [
-        {"provider": "groq", "model": "groq/gpt-oss-120b", "primary": true, "reachable": true},
-        {"provider": "deepinfra", "model": "deepinfra/openai/gpt-oss-120b", "primary": false, "reachable": true}
+        {"provider": "openai", "model": "openai/gpt-5.6-sol", "primary": true, "reachable": true},
+        {"provider": "azure", "model": "azure/gpt-5.6-sol", "primary": false, "reachable": true}
       ]
     },
     "attempts": [
-      {"provider": "groq", "model": "groq/gpt-oss-120b", "status": 200, "region": "global"}
+      {"provider": "openai", "model": "openai/gpt-5.6-sol", "status": 200, "region": "global"}
     ]
   }
 }
@@ -74,7 +74,7 @@ The response gains one extra top-level key, `edenai_metadata`:
 | Field | Meaning |
 |---|---|
 | `requested` | The model name you sent, before any resolution |
-| `strategy` | How that name was resolved — see below |
+| `strategy` | How that name was resolved. See below |
 | `region` | The region the request was **served** from |
 | `summary` | One-line digest: how many providers were available, and which served |
 | `attempt` | 1-based position of the attempt that served. `2` means the first one failed |
@@ -89,14 +89,14 @@ The response gains one extra top-level key, `edenai_metadata`:
 
 | Value | Meaning |
 |---|---|
-| `direct` | You named a `provider/model` — no routing happened |
+| `direct` | You named a `provider/model`, so no routing happened |
 | `alias` | You named an alias, which resolved to a specific model |
-| `routed` | You named a model without a provider, so Eden AI picked one — see [Provider Routing](/v3/llms/provider-routing) |
-| `auto` | You used `@edenai`, so Eden AI picked the model too — see [Smart Routing](/v3/llms/smart-routing) |
+| `routed` | You named a model without a provider, so Eden AI picked one. See [Provider Routing](/v3/llms/provider-routing) |
+| `auto` | You used `@edenai`, so Eden AI picked the model too. See [Smart Routing](/v3/llms/smart-routing) |
 
 ## Reading it on a stream
 
-For streaming requests the block rides the **first** chunk, not the last. Routing is settled before the first token is generated, so the answer is already known — and putting it first means you get it even from providers that never send a terminal usage chunk.
+For streaming requests the block rides the **first** chunk, not the last. Routing is settled before the first token is generated, so the answer is already known, and putting it first means you get it even from providers that never send a terminal usage chunk.
 
 ```json
 {
@@ -108,7 +108,7 @@ For streaming requests the block rides the **first** chunk, not the last. Routin
 ```
 
 <Warning>
-If a stream fails partway through, the error frame carries a **corrected** block — the retry that happened after the first chunk would otherwise leave you holding a report that says the request succeeded. Read the block from the first chunk, and let a later error frame overwrite it.
+If a stream fails partway through, the error frame carries a **corrected** block. The retry that happened after the first chunk would otherwise leave you holding a report that says the request succeeded. Read the block from the first chunk, and let a later error frame overwrite it.
 </Warning>
 
 ## What it is useful for
@@ -121,7 +121,7 @@ If a stream fails partway through, the error frame carries a **corrected** block
 
 ## Scope
 
-Available on the LLM endpoints — `/v3/chat/completions`, `/v3/responses` and `/v3/v1/messages` — in both streaming and non-streaming form. It is not returned by `/v3/universal-ai`.
+Available on the LLM endpoints (`/v3/chat/completions`, `/v3/responses` and `/v3/v1/messages`) in both streaming and non-streaming form. It is not returned by `/v3/universal-ai`.
 
 ## Next Steps
 

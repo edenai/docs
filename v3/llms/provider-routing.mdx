@@ -1,13 +1,13 @@
 ---
 icon: "shuffle"
 title: "Provider Routing"
-description: "Name a model without a provider and Eden AI picks which provider serves it — by price, speed or latency, with health-aware failover."
+description: "Name a model without a provider and Eden AI picks which provider serves it, by price, speed or latency, with health-aware failover."
 ---
 import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
 
 <TechArticleSchema
   title={"Provider Routing"}
-  description={"Name a model without a provider and Eden AI picks which provider serves it — by price, speed or latency, with health-aware failover."}
+  description={"Name a model without a provider and Eden AI picks which provider serves it, by price, speed or latency, with health-aware failover."}
   path="v3/llms/provider-routing"
   articleSection="LLMs"
   about={"LLM API"}
@@ -17,25 +17,25 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   dateModified="2026-08-19T00:00:00Z"
 />
 
-Many models are sold by more than one provider. `gpt-oss-120b` is served by ten of them, `kimi-k2.6` by seven, `claude-sonnet-4.6` by two. They run the same weights at different prices, speeds and reliability.
+Many models are sold by more than one provider. `gpt-5.6-sol` is served by OpenAI and Azure, `kimi-k2.6` by seven providers, `gpt-oss-120b` by ten. They run the same weights at different prices, speeds and reliability.
 
 Name a model **without** a provider prefix and Eden AI picks which provider serves it.
 
 ```json
 {
-  "model": "groq/gpt-oss-120b"
+  "model": "openai/gpt-5.6-sol"
 }
 ```
-Pins the provider. Eden AI calls Groq, and only Groq.
+Pins the provider. Eden AI calls OpenAI, and only OpenAI.
 
 ```json
 {
-  "model": "gpt-oss-120b"
+  "model": "gpt-5.6-sol"
 }
 ```
 Leaves the choice to Eden AI, which selects among every provider serving that model.
 
-A model sold by a single provider routes to that provider whether or not you name it — provider routing only has a decision to make where two or more providers offer the same model. Use [Listing Models](/v3/llms/listing-models) to see which providers serve a given model.
+A model sold by a single provider routes to that provider whether or not you name it. Provider routing only has a decision to make where two or more providers offer the same model. Use [Listing Models](/v3/llms/listing-models) to see which providers serve a given model.
 
 <Info>
 Provider routing chooses **which provider serves the model you named**. It is separate from [Smart Routing](/v3/llms/smart-routing), where `@edenai` chooses **which model to use**. The two compose: `@edenai` picks a model, then provider routing picks who serves it.
@@ -43,7 +43,7 @@ Provider routing chooses **which provider serves the model you named**. It is se
 
 ## How a provider is chosen
 
-By default Eden AI optimises for **cost** — the cheapest provider for the shape of your request, accounting for how much of it is prompt versus completion.
+By default Eden AI optimises for **cost**: the cheapest provider for the shape of your request, accounting for how much of it is prompt versus completion.
 
 Selection is weighted rather than absolute: cheaper providers receive proportionally more traffic instead of every request piling onto a single one. That keeps you off one provider's rate limits and spreads exposure when a provider degrades.
 
@@ -62,7 +62,7 @@ Set `routing.sort` to optimise for something other than price.
 
 ```json
 {
-  "model": "gpt-oss-120b",
+  "model": "gpt-5.6-sol",
   "messages": [{"role": "user", "content": "Summarise this contract"}],
   "routing": {"sort": "cost"}
 }
@@ -72,12 +72,12 @@ The same objective can be written as a suffix on the model name, which is useful
 
 ```json
 {
-  "model": "gpt-oss-120b:latency"
+  "model": "gpt-5.6-sol:latency"
 }
 ```
 
 <Info>
-`speed`, `latency` and `exact` rank on observed performance. When Eden AI has too little data for a model, routing falls back to ranking on price rather than guessing — your request still succeeds.
+`speed`, `latency` and `exact` rank on observed performance. When Eden AI has too little data for a model, routing falls back to ranking on price rather than guessing, and your request still succeeds.
 </Info>
 
 Naming an objective also turns off traffic spreading: `cost` means the cheapest provider every time, not a weighted draw.
@@ -88,33 +88,91 @@ Naming an objective also turns off traffic spreading: `cost` means the cheapest 
 
 ```json
 {
-  "model": "gpt-oss-120b",
+  "model": "gpt-5.6-sol",
   "messages": [{"role": "user", "content": "hi"}],
-  "routing": {"allowed_providers": ["groq", "together_ai"]}
+  "routing": {"allowed_providers": ["openai"]}
 }
 ```
 
 If no provider in the list serves the requested model, the request fails with a clear error rather than silently routing elsewhere.
 
-## Keeping a request on one provider
+## Disabling provider failover
 
-By default, if the chosen provider fails, Eden AI tries another provider of the same model. Set `routing.allow_fallbacks` to `false` to stop that — the request is attempted once and the error is returned to you.
+By default, if the chosen provider fails, Eden AI tries another provider of the same model. Set `routing.allow_fallbacks` to `false` to stop that. The request is attempted once and the error is returned to you.
 
 ```json
 {
-  "model": "gpt-oss-120b",
+  "model": "gpt-5.6-sol",
   "messages": [{"role": "user", "content": "hi"}],
   "routing": {"allow_fallbacks": false}
 }
 ```
 
 <Warning>
-`allow_fallbacks` governs **other providers of the model you requested**. Models you list yourself in `fallbacks` are your own choice and are always kept — see [Fallback](/v3/general/fallback).
+`allow_fallbacks` governs **other providers of the model you requested**. Models you list yourself in `fallbacks` are your own choice and are always kept. See [Fallback](/v3/general/fallback).
 </Warning>
+
+## Keeping a conversation on one provider
+
+A prompt cache lives at **one** provider endpoint. If routing picks a different provider on turn two of a conversation, that cache is not there, so you pay to build it again instead of reading it at a discount.
+
+Sticky routing keeps a conversation on the provider that already holds its cache. It is **on by default**, and only ever active for models whose providers discount cache reads. Where there is no discount there is nothing to gain, so routing keeps spreading by price.
+
+You don't have to do anything: with no identifier, Eden AI recognises a conversation from its opening messages, which don't change as it grows.
+
+Sending an identifier makes it reliable. Use any stable string: a thread id, a ticket number, an agent run id.
+
+```json
+{
+  "model": "gpt-5.6-sol",
+  "session_id": "conv-7f3a91",
+  "messages": [{"role": "user", "content": "Summarise this contract"}]
+}
+```
+
+For clients that cannot add body fields, such as a coding agent that only lets you set headers, send the same value as a header. The body field wins if both are present.
+
+```bash cURL
+curl -X POST https://api.edenai.run/v3/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "x-session-id: conv-7f3a91" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "gpt-5.6-sol", "messages": [{"role": "user", "content": "hi"}]}'
+```
+
+`session_id` is accepted on all three chat dialects (`/v3/chat/completions`, `/v3/responses` and `/v3/v1/messages`) and is capped at 256 characters. It is never forwarded to the provider.
+
+### Choosing a session id
+
+The identifier has to be **the same on every turn of one conversation**. That is the whole contract, and both ways of getting it wrong look like using the feature correctly:
+
+| | Identifier | What happens |
+|---|---|---|
+| ✅ | A thread id, ticket number, or agent run id | Stable for the conversation's life. One cache write, then reads |
+| ❌ | A fresh UUID per request | A new conversation every turn, so every turn re-routes. You opted in and got nothing |
+| ❌ | The end user's account id | All of that user's conversations collide on one provider. Different prompts, so no cache benefit, and their traffic stops spreading by price |
+
+Mint it once when the conversation starts, store it alongside the conversation, and send it on every turn.
+
+### Turning it off
+
+```json
+{
+  "model": "gpt-5.6-sol",
+  "messages": [{"role": "user", "content": "hi"}],
+  "routing": {"sticky": false}
+}
+```
+
+Naming an explicit `routing.sort` also takes priority, because "cheapest" has to keep meaning cheapest, cache or no cache. And a concrete `provider/model` was never routed in the first place.
+
+<Info>
+Confirm it is working with [Request Metadata](/v3/llms/request-metadata): the provider in `summary` should be the same on every turn. Your usage block reports the cached tokens. Expect none on the first turn, since there was nothing to read yet.
+</Info>
 
 ## Pinning a region
 
-Append `@region` to route to a provider endpoint in a specific region. This composes with everything above, and each entry in a chain carries its own region — so the primary and the fallback below are two separate attempts in two separate regions.
+Append `@region` to route to a provider endpoint in a specific region. This composes with everything above, and each entry in a chain carries its own region, so the primary and the fallback below are two separate attempts in two separate regions.
 
 ```json
 {
@@ -127,15 +185,15 @@ Which regions a model offers varies by model. Requesting one it is not served fr
 
 ## Seeing which provider served your request
 
-Routing is invisible by default — the response looks the same whichever provider answered. Send `x-edenai-metadata: enabled` and Eden AI attaches what it decided, including every provider it tried and the status each returned.
+Routing is invisible by default: the response looks the same whichever provider answered. Send `x-edenai-metadata: enabled` and Eden AI attaches what it decided, including every provider it tried and the status each returned.
 
 ```json
 "edenai_metadata": {
   "strategy": "routed",
-  "summary": "available=10, served=groq/gpt-oss-120b",
+  "summary": "available=2, served=openai/gpt-5.6-sol",
   "attempt": 1,
   "attempts": [
-    {"provider": "groq", "model": "groq/gpt-oss-120b", "status": 200, "region": "global"}
+    {"provider": "openai", "model": "openai/gpt-5.6-sol", "status": 200, "region": "global"}
   ]
 }
 ```
@@ -144,7 +202,7 @@ See [Request Metadata](/v3/llms/request-metadata) for every field, the `strategy
 
 ## Turning routing off
 
-Name a `provider/model` and routing never runs — the request goes exactly where you sent it. This is the behaviour of every request that names a provider, and nothing about provider routing changes it.
+Name a `provider/model` and routing never runs. The request goes exactly where you sent it. This is the behaviour of every request that names a provider, and nothing about provider routing changes it.
 
 ## Next Steps
 

@@ -23,7 +23,7 @@ There are **two independent layers** of failover, and knowing which is which sav
 
 | Layer | What it retries | You control it with |
 |---|---|---|
-| **Models you name** | The next entry in your `fallbacks` list — a different model | `fallbacks` |
+| **Models you name** | The next entry in your `fallbacks` list, meaning a different model | `fallbacks` |
 | **Providers of one model** | A different provider selling the *same* model you requested | `routing.allow_fallbacks` |
 
 The second layer only exists for models sold by more than one provider, and only when you let Eden AI choose the provider. See [Provider Routing](/v3/llms/provider-routing).
@@ -142,39 +142,39 @@ Add a `fallbacks` array to your request with one or more backup models (LLM) or 
 
 ## Provider-level failover (LLM)
 
-When you name a model **without** a provider — `gpt-oss-120b` rather than `groq/gpt-oss-120b` — Eden AI chooses the provider, and will try a different provider of that same model if the chosen one fails. This happens whether or not you supplied a `fallbacks` list.
+When you name a model **without** a provider (`gpt-5.6-sol` rather than `openai/gpt-5.6-sol`) Eden AI chooses the provider, and will try a different provider of that same model if the chosen one fails. This happens whether or not you supplied a `fallbacks` list.
 
 To turn it off and have the request fail on the first provider instead:
 
 ```json
 {
-  "model": "gpt-oss-120b",
+  "model": "gpt-5.6-sol",
   "messages": [{"role": "user", "content": "hi"}],
   "routing": {"allow_fallbacks": false}
 }
 ```
 
 <Warning>
-`routing.allow_fallbacks` governs **other providers of the model you requested**. It never drops the models you listed in `fallbacks` — those are your own choice and are always kept, even with `allow_fallbacks: false`.
+`routing.allow_fallbacks` governs **other providers of the model you requested**. It never drops the models you listed in `fallbacks`. Those are your own choice and are always kept, even with `allow_fallbacks: false`.
 </Warning>
 
 ## Things worth knowing
 
-- **Repeats are kept, not deduplicated.** Listing the same model twice (`["a/m", "b/m", "a/m"]`) means it is genuinely attempted twice. A rate limit or a 5xx does not repeat deterministically, so a deliberate repeat is a retry — the only one Eden AI performs, since it never retries on its own.
-- **A provider-less name works in `fallbacks` too.** It resolves to one provider of that model, so `{"model": "openai/gpt-4o", "fallbacks": ["gpt-oss-120b"]}` is valid.
+- **Repeats are kept, not deduplicated.** Listing the same model twice (`["a/m", "b/m", "a/m"]`) means it is genuinely attempted twice. A rate limit or a 5xx does not repeat deterministically, so a deliberate repeat is a retry, the only one Eden AI performs, since it never retries on its own.
+- **A provider-less name works in `fallbacks` too.** It resolves to one provider of that model, so `{"model": "openai/gpt-4o", "fallbacks": ["gpt-5.6-sol"]}` is valid.
 - **Region tags are per entry.** `{"model": "<model>@eu", "fallbacks": ["<model>@us"]}` is two attempts in two regions, not one model with one region.
 - **Failed attempts cost nothing.** You are billed only for the attempt that produced a response.
 
 ## Seeing what was tried
 
-Send `x-edenai-metadata: enabled` and the response reports every attempt in order, each with the provider and its HTTP status — so a fallback is visible rather than inferred from latency.
+Send `x-edenai-metadata: enabled` and the response reports every attempt in order, each with the provider and its HTTP status, so a fallback is visible rather than inferred from latency.
 
 ```json
 "edenai_metadata": {
   "attempt": 2,
   "attempts": [
-    {"provider": "cerebras", "model": "cerebras/gpt-oss-120b", "status": 402, "region": "global"},
-    {"provider": "groq", "model": "groq/gpt-oss-120b", "status": 200, "region": "global"}
+    {"provider": "azure", "model": "azure/gpt-5.6-sol", "status": 429, "region": "global"},
+    {"provider": "openai", "model": "openai/gpt-5.6-sol", "status": 200, "region": "global"}
   ]
 }
 ```

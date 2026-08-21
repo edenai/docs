@@ -370,12 +370,12 @@ for (path in documents) {
 }
 
 # Pad every row to the widest one, then write a single CSV.
-width <- max(sapply(all_rows, length), 3)
 if (length(all_rows) == 0) {
   # Nothing extracted — still write a valid, empty CSV with the base columns.
   df <- data.frame(source_file = character(), page = character(),
                    table = character(), stringsAsFactors = FALSE)
 } else {
+  width <- max(sapply(all_rows, length), 3)
   padded <- lapply(all_rows, function(r) c(r, rep("", width - length(r))))
   df <- as.data.frame(do.call(rbind, padded), stringsAsFactors = FALSE)
   names(df) <- c("source_file", "page", "table",

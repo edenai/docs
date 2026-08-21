@@ -392,8 +392,8 @@ API_KEY="YOUR_API_KEY"
 MODEL="ocr/ocr_tables_async/amazon"
 BASE="https://api.edenai.run"
 
-# Start the CSV with a header row so read.csv() reads columns, not data.
-echo "source_file,page,table,cells" > tables.csv
+# Buffer flattened rows as JSON arrays; we pad them to a uniform width at the end.
+rows=$(mktemp)
 
 for doc in invoice1.pdf invoice2.pdf invoice3.pdf; do
   echo "Processing $doc ..."
@@ -418,13 +418,22 @@ for doc in invoice1.pdf invoice2.pdf invoice3.pdf; do
     sleep 5
   done
 
-  # Flatten cells -> CSV rows tagged with source file, page and table
-  echo "$body" | jq -r --arg src "$doc" '
+  # One JSON array per table row: [source_file, page, table, cell1, cell2, ...]
+  echo "$body" | jq -c --arg src "$doc" '
     .output.pages | to_entries[]? as $p | $p.value.tables | to_entries[]? as $t |
     $t.value.rows[]? |
-    [$src, ($p.key + 1), ($t.key + 1), ([.cells[]? | .text])[]] | @csv
-  ' >> tables.csv
+    [$src, ($p.key + 1), ($t.key + 1)] + [.cells[]?.text // ""]
+  ' >> "$rows"
 done
+
+# Pad every row to the widest, name each cell column, and write a single CSV.
+jq -rs '
+  (map(length) | max // 3) as $w
+  | ["source_file", "page", "table"] + [range(1; $w - 2) | "col\(.)"],
+    (.[] | . + [range(0; $w - length) | ""])
+  | @csv
+' "$rows" > tables.csv
+rm -f "$rows"
 echo "Done -> tables.csv"
 ```
 </CodeGroup>

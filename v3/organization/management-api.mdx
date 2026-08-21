@@ -1,0 +1,92 @@
+---
+sidebarTitle: "Management API"
+title: "Management API"
+description: "Programmatically create and manage your organization's inference keys with a durable issuer key, without a dashboard round-trip."
+icon: "key"
+---
+
+import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
+
+<TechArticleSchema
+  title="Eden AI Management API"
+  description="Create and manage your organization's inference keys programmatically with the Eden AI Management API: issuer keys, auth keys and inference keys."
+  path="v3/organization/management-api"
+  articleSection="Organization"
+  about="Programmatic API key management"
+  proficiencyLevel="Intermediate"
+  dependencies="You need an Eden AI organization and the permission to manage API keys."
+  keywords={["Eden AI", "Management API", "API key", "issuer key", "service key"]}
+/>
+
+The **Management API** lets your automation create and manage inference keys **programmatically** — the
+capability you had with a long-lived account key, restored without the security downside of a single
+permanent credential that can call inference directly.
+
+## The three tiers
+
+The chain separates the durable credential you store from the key that actually spends:
+
+| Tier | Prefix | What it can do | Where it comes from |
+|------|--------|----------------|---------------------|
+| **Issuer key** | `mgmt-eden-…` | Mint **auth keys**. Nothing else — it cannot read, write, or call inference. | Generated once from the dashboard (**Organization → API keys**). |
+| **Auth key** | `mgmt-eden-…` | Manage the org (`manage:read` / `manage:write`), including minting **inference keys**. | Minted by an issuer key, or from the dashboard. |
+| **Inference key** | `sk-eden-…` | Call the inference API (bills the org). | Minted by an auth key with `manage:write`. |
+
+Because the issuer key can only *mint*, a leaked issuer key is contained by auditing and revocation at
+every hop — but it can still mint its way down to inference, so **store it like a root secret**.
+
+## Quickstart
+
+<Steps>
+<Step title="Generate an issuer key">
+From the dashboard (**Organization → API keys**), generate an **issuer key**. Copy it once — it is shown
+only at creation. The org owner can always do this; the owner can also grant the *Manage API keys*
+permission to other members via roles.
+</Step>
+<Step title="Mint an auth (worker) key">
+```bash
+curl -X POST https://api.edenai.run/v3/manage/auth-keys \
+  -H "Authorization: Bearer $ISSUER_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "ci-worker", "scopes": ["manage:read", "manage:write"]}'
+```
+Returns a `mgmt-eden-…` auth key (shown once). An issuer key can never mint another issuer key.
+</Step>
+<Step title="Mint an inference key">
+```bash
+curl -X POST https://api.edenai.run/v3/manage/keys \
+  -H "Authorization: Bearer $AUTH_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "prod", "balance": "25", "balance_reset_period": "monthly", "balance_reset_amount": "25"}'
+```
+Returns an `sk-eden-…` inference key (shown once) with the budget/expiry you set. Use it exactly like any
+Eden AI inference key.
+</Step>
+</Steps>
+
+## Keys are permanent by default
+
+Management and inference keys do **not** expire unless you set `expire_time` explicitly. Regeneration is
+deliberate: to roll a worker key, mint a fresh one with your issuer key and revoke the old one — the
+durable issuer key is always available to do this without a human in the loop.
+
+## Endpoints
+
+All endpoints authenticate with `Authorization: Bearer <mgmt-eden key>` and are scoped to the calling
+key's organization.
+
+| Method & path | Scope | Purpose |
+|---------------|-------|---------|
+| `POST /v3/manage/auth-keys` | `manage:mint` | Issuer mints a worker key |
+| `GET /v3/manage/auth-keys` | `manage:mint` | List the org's management keys |
+| `DELETE /v3/manage/auth-keys/{key_id}` | `manage:mint` | Revoke a worker key |
+| `GET · POST /v3/manage/keys` | `manage:read` · `manage:write` | List / mint inference keys |
+| `GET · PATCH · DELETE /v3/manage/keys/{key_id}` | `manage:read` · `manage:write` | Read / update / revoke an inference key |
+| `POST /v3/manage/keys/{key_id}/rotate` | `manage:write` | Rotate an inference key's secret |
+| `GET /v3/manage/members` · `/usage` · `/whoami` | `manage:read` | Members, usage, key introspection |
+
+## Migrating from a dashboard-only key
+
+If your pipeline previously created keys through the dashboard-only flow, move it to this API: generate an
+issuer key once, then have your automation mint auth and inference keys as above. Inference keys minted
+here behave identically to keys created in the dashboard.

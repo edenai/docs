@@ -23,7 +23,7 @@ This guide walks through extracting tables from a folder of documents (scanned p
 
 Table extraction runs as an **async** feature: you start a job, then poll for its result. The workflow is always the same three steps, repeated for each document:
 
-1. **Upload** the file (or pass a public URL) to get a `file_id`.
+1. **Upload** the file to get a `file_id` — or skip the upload and pass a public file URL directly as the `file` input in step 2.
 2. **Launch** a table-extraction job with `POST /v3/universal-ai/async`, which returns a `public_id`.
 3. **Poll** `GET /v3/universal-ai/async/{public_id}` until the job's `status` is `success`, then read its `output`.
 
@@ -422,7 +422,7 @@ for doc in invoice1.pdf invoice2.pdf invoice3.pdf; do
   echo "$body" | jq -c --arg src "$doc" '
     .output.pages | to_entries[]? as $p | $p.value.tables | to_entries[]? as $t |
     $t.value.rows[]? |
-    [$src, ($p.key + 1), ($t.key + 1)] + [.cells[]?.text // ""]
+    [$src, ($p.key + 1), ($t.key + 1)] + [.cells[]? | .text // ""]
   ' >> "$rows"
 done
 

@@ -24,8 +24,8 @@ This guide walks through extracting tables from a folder of documents (scanned p
 Table extraction runs as an **async** feature: you start a job, then poll for its result. The workflow is always the same three steps, repeated for each document:
 
 1. **Upload** the file (or pass a public URL) to get a `file_id`.
-2. **Launch** a table-extraction job with `POST /v3/universal-ai/async`, which returns a `job_id`.
-3. **Poll** `GET /v3/universal-ai/async/{job_id}` until the job's `status` is `success`, then read its `output`.
+2. **Launch** a table-extraction job with `POST /v3/universal-ai/async`, which returns a `public_id`.
+3. **Poll** `GET /v3/universal-ai/async/{public_id}` until the job's `status` is `success`, then read its `output`.
 
 ## Prerequisites
 
@@ -45,7 +45,7 @@ Pick the provider from the [table below](#choosing-a-provider) — `amazon`, `go
 
 ## A single document, end to end
 
-Start with one file to see the shape of the calls. This uploads a document and launches the job; the launch response contains the `job_id` you poll on.
+Start with one file to see the shape of the calls. This uploads a document and launches the job; the launch response contains the `public_id` you poll on.
 
 <CodeGroup>
 ```python Python
@@ -70,7 +70,7 @@ launch = requests.post(
     headers={**HEADERS, "Content-Type": "application/json"},
     json={"model": "ocr/ocr_tables_async/amazon", "input": {"file": file_id}},
 )
-print(launch.json())  # -> {"job_id": "...", "status": "pending", ...}
+print(launch.json())  # -> {"public_id": "...", "status": "processing", ...}
 ```
 
 ```bash cURL
@@ -86,11 +86,11 @@ curl -X POST https://api.edenai.run/v3/universal-ai/async \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"model":"ocr/ocr_tables_async/amazon","input":{"file":"YOUR_FILE_ID"}}'
-# -> {"job_id": "...", "status": "pending", ...}
+# -> {"public_id": "...", "status": "processing", ...}
 
 # 3. Check the job status — repeat this call until status is "success"
 #    (returns "processing" until the job finishes)
-curl https://api.edenai.run/v3/universal-ai/async/YOUR_JOB_ID \
+curl https://api.edenai.run/v3/universal-ai/async/YOUR_PUBLIC_ID \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
@@ -120,7 +120,7 @@ launch <- POST(
   ),
   encode = "json"
 )
-print(content(launch))  # -> list with job_id and status
+print(content(launch))  # -> list with public_id and status
 ```
 </CodeGroup>
 
@@ -205,7 +205,7 @@ def upload_document(path):
 
 
 def launch_job(file_id):
-    """Start an async table-extraction job and return its job_id."""
+    """Start an async table-extraction job and return its public_id."""
     resp = requests.post(
         f"{BASE_URL}/v3/universal-ai/async",
         headers={**HEADERS, "Content-Type": "application/json"},
@@ -214,15 +214,14 @@ def launch_job(file_id):
     if not resp.ok:
         print(f"  launch failed: {resp.status_code} {resp.text}")
         return None
-    body = resp.json()
-    return body.get("job_id") or body.get("public_id") or body.get("id")
+    return resp.json().get("public_id")
 
 
-def wait_for_result(job_id):
+def wait_for_result(public_id):
     """Poll until the job finishes; return its output, or None."""
     for _ in range(MAX_POLLS):
         resp = requests.get(
-            f"{BASE_URL}/v3/universal-ai/async/{job_id}", headers=HEADERS
+            f"{BASE_URL}/v3/universal-ai/async/{public_id}", headers=HEADERS
         )
         if not resp.ok:
             print(f"  poll failed: {resp.status_code} {resp.text}")
@@ -231,11 +230,12 @@ def wait_for_result(job_id):
         status = body.get("status")
         if status == "success":
             return body.get("output", {})
-        if status in ("fail", "failed", "error"):
-            print(f"  job {job_id} failed: {body.get('error')}")
+        if status == "fail":
+            print(f"  job {public_id} failed: {body.get('error')}")
             return None
+        # status is "processing" while the job is still running
         time.sleep(POLL_INTERVAL)
-    print(f"  job {job_id} still pending after {MAX_POLLS} polls")
+    print(f"  job {public_id} still processing after {MAX_POLLS} polls")
     return None
 
 
@@ -259,10 +259,10 @@ for path in DOCUMENTS:
     file_id = upload_document(path)
     if not file_id:
         continue
-    job_id = launch_job(file_id)
-    if not job_id:
+    public_id = launch_job(file_id)
+    if not public_id:
         continue
-    output = wait_for_result(job_id)
+    output = wait_for_result(public_id)
     if output:
         all_rows.extend(output_to_rows(output, path))
 
@@ -314,25 +314,26 @@ launch_job <- function(file_id) {
     message("  launch failed: ", status_code(resp))
     return(NULL)
   }
-  content(resp)$job_id
+  content(resp)$public_id
 }
 
-wait_for_result <- function(job_id) {
+wait_for_result <- function(public_id) {
   for (i in seq_len(max_polls)) {
-    resp <- GET(paste0(base_url, "/v3/universal-ai/async/", job_id), auth)
+    resp <- GET(paste0(base_url, "/v3/universal-ai/async/", public_id), auth)
     if (http_error(resp)) {
       message("  poll failed: ", status_code(resp))
       return(NULL)
     }
     body <- content(resp)
     if (identical(body$status, "success")) return(body$output)
-    if (body$status %in% c("fail", "failed", "error")) {
-      message("  job ", job_id, " failed")
+    if (identical(body$status, "fail")) {
+      message("  job ", public_id, " failed")
       return(NULL)
     }
+    # status is "processing" while the job is still running
     Sys.sleep(poll_interval)
   }
-  message("  job ", job_id, " still pending after ", max_polls, " polls")
+  message("  job ", public_id, " still processing after ", max_polls, " polls")
   NULL
 }
 
@@ -360,9 +361,9 @@ for (path in documents) {
   message("Processing ", path, " ...")
   file_id <- upload_document(path)
   if (is.null(file_id)) next
-  job_id <- launch_job(file_id)
-  if (is.null(job_id)) next
-  output <- wait_for_result(job_id)
+  public_id <- launch_job(file_id)
+  if (is.null(public_id)) next
+  output <- wait_for_result(public_id)
   if (!is.null(output)) {
     all_rows <- c(all_rows, output_to_rows(output, path))
   }
@@ -402,14 +403,14 @@ for doc in invoice1.pdf invoice2.pdf invoice3.pdf; do
     -H "Authorization: Bearer $API_KEY" \
     -F "file=@$doc" -F "purpose=ocr" | jq -r '.file_id')
 
-  # 2. Launch -> job_id
-  job_id=$(curl -s -X POST "$BASE/v3/universal-ai/async" \
+  # 2. Launch -> public_id
+  public_id=$(curl -s -X POST "$BASE/v3/universal-ai/async" \
     -H "Authorization: Bearer $API_KEY" -H "Content-Type: application/json" \
-    -d "{\"model\":\"$MODEL\",\"input\":{\"file\":\"$file_id\"}}" | jq -r '.job_id')
+    -d "{\"model\":\"$MODEL\",\"input\":{\"file\":\"$file_id\"}}" | jq -r '.public_id')
 
-  # 3. Poll until success (bounded to 60 attempts)
+  # 3. Poll until success (bounded to 60 attempts; status is "processing" until done)
   for _ in $(seq 60); do
-    body=$(curl -s "$BASE/v3/universal-ai/async/$job_id" \
+    body=$(curl -s "$BASE/v3/universal-ai/async/$public_id" \
       -H "Authorization: Bearer $API_KEY")
     status=$(echo "$body" | jq -r '.status')
     [ "$status" = "success" ] && break

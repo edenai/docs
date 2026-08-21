@@ -65,7 +65,8 @@
                 "expanded": true,
                 "pages": [
                   "v3/quickstart/first-llm-call",
-                  "v3/quickstart/first-expert-model-call"
+                  "v3/quickstart/first-expert-model-call",
+                  "v3/quickstart/batch-ocr-tables"
                 ]
               },
               {

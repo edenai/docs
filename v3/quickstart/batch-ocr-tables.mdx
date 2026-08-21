@@ -88,7 +88,8 @@ curl -X POST https://api.edenai.run/v3/universal-ai/async \
   -d '{"model":"ocr/ocr_tables_async/amazon","input":{"file":"YOUR_FILE_ID"}}'
 # -> {"job_id": "...", "status": "pending", ...}
 
-# 3. Poll until status is "success"
+# 3. Check the job status — repeat this call until status is "success"
+#    (returns "processing" until the job finishes)
 curl https://api.edenai.run/v3/universal-ai/async/YOUR_JOB_ID \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
@@ -265,10 +266,15 @@ for path in DOCUMENTS:
     if output:
         all_rows.extend(output_to_rows(output, path))
 
+# Pad every row to the widest one so the CSV has a stable column count.
+width = max((len(row) for row in all_rows), default=3)
+header = ["source_file", "page", "table"] + [
+    f"col{i}" for i in range(1, width - 2)
+]
 with open("tables.csv", "w", newline="") as f:
     writer = csv.writer(f)
-    writer.writerow(["source_file", "page", "table", "cells..."])
-    writer.writerows(all_rows)
+    writer.writerow(header)
+    writer.writerows(row + [""] * (width - len(row)) for row in all_rows)
 
 print(f"Wrote {len(all_rows)} rows to tables.csv")
 ```
@@ -363,11 +369,17 @@ for (path in documents) {
 }
 
 # Pad every row to the widest one, then write a single CSV.
-width <- max(sapply(all_rows, length), 0)
-padded <- lapply(all_rows, function(r) c(r, rep("", width - length(r))))
-df <- as.data.frame(do.call(rbind, padded), stringsAsFactors = FALSE)
-names(df) <- c("source_file", "page", "table",
-               paste0("col", seq_len(max(width - 3, 0))))
+width <- max(sapply(all_rows, length), 3)
+if (length(all_rows) == 0) {
+  # Nothing extracted — still write a valid, empty CSV with the base columns.
+  df <- data.frame(source_file = character(), page = character(),
+                   table = character(), stringsAsFactors = FALSE)
+} else {
+  padded <- lapply(all_rows, function(r) c(r, rep("", width - length(r))))
+  df <- as.data.frame(do.call(rbind, padded), stringsAsFactors = FALSE)
+  names(df) <- c("source_file", "page", "table",
+                 paste0("col", seq_len(width - 3)))
+}
 write.csv(df, "tables.csv", row.names = FALSE)
 message("Wrote ", nrow(df), " rows to tables.csv")
 ```
@@ -378,6 +390,9 @@ message("Wrote ", nrow(df), " rows to tables.csv")
 API_KEY="YOUR_API_KEY"
 MODEL="ocr/ocr_tables_async/amazon"
 BASE="https://api.edenai.run"
+
+# Start the CSV with a header row so read.csv() reads columns, not data.
+echo "source_file,page,table,cells" > tables.csv
 
 for doc in invoice1.pdf invoice2.pdf invoice3.pdf; do
   echo "Processing $doc ..."
@@ -402,17 +417,19 @@ for doc in invoice1.pdf invoice2.pdf invoice3.pdf; do
     sleep 5
   done
 
-  # Flatten cells -> CSV rows tagged with the source file
+  # Flatten cells -> CSV rows tagged with source file, page and table
   echo "$body" | jq -r --arg src "$doc" '
-    .output.pages[]? as $p | $p.tables[]? as $t | $t.rows[]? |
-    [$src, ([.cells[]? | .text])[]] | @csv' >> tables.csv
+    .output.pages | to_entries[]? as $p | $p.value.tables | to_entries[]? as $t |
+    $t.value.rows[]? |
+    [$src, ($p.key + 1), ($t.key + 1), ([.cells[]? | .text])[]] | @csv
+  ' >> tables.csv
 done
 echo "Done -> tables.csv"
 ```
 </CodeGroup>
 
 <Tip>
-Prefer not to poll? Pass a `webhook_url` when you launch the job and Eden AI will POST each result to your server as it finishes — see [Webhooks](/v3/expert-models/webhooks) for the payload shape and a poll-vs-webhook comparison. Polling is simplest for a one-off batch; webhooks scale better for large or ongoing workloads.
+Prefer not to poll? Pass an HTTPS `webhook_receiver` when you launch the job and Eden AI will POST each result to your server as it finishes — see [Webhooks](/v3/expert-models/webhooks) for the payload shape and a poll-vs-webhook comparison. Polling is simplest for a one-off batch; webhooks scale better for large or ongoing workloads.
 </Tip>
 
 ## Reading the CSV in R

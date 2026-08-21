@@ -218,7 +218,8 @@
                 "divider": true,
                 "pages": [
                   "v3/organization/users-organisation",
-                  "v3/organization/guardrails"
+                  "v3/organization/guardrails",
+                  "v3/organization/management-api"
                 ]
               },
               {

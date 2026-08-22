@@ -29,7 +29,7 @@ Model string pattern: `video/generation_async/{provider}[/{model}]`
 |-------|------|----------|-------------|
 | text | string | Yes | Text prompt describing the content and style of the video to generate |
 | file | file_input | No | Initial keyframe image (JPEG or PNG) file ID from /v3/upload or direct file URL |
-| duration | int | No | Length of the generated video in seconds |
+| duration | int | No | Length of the generated video in seconds. Omit to use the model's default duration. |
 | dimension | string | No | Video resolution in 'widthxheight' format (e.g., '1280x720') |
 | seed | int | No | Random seed for generation reproducibility (0 to 2,147,483,646). Omit for varied output. |
 

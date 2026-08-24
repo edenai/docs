@@ -1,0 +1,358 @@
+---
+icon: "layer-group"
+title: "Prompt Caching"
+description: "Reuse stable prompt prefixes to reduce LLM latency and input-token cost while still generating a fresh response on every request."
+---
+import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
+
+<TechArticleSchema
+  title={"Prompt Caching"}
+  description={"Reuse stable prompt prefixes to reduce LLM latency and input-token cost while still generating a fresh response on every request."}
+  path="v3/llms/prompt-caching"
+  articleSection="LLMs"
+  about={"LLM API"}
+  proficiencyLevel="Intermediate"
+  keywords={["Eden AI", "AI API", "LLM API", "prompt caching", "context caching", "cached tokens"]}
+  datePublished="2026-08-24T00:00:00Z"
+  dateModified="2026-08-24T00:00:00Z"
+/>
+
+Prompt caching lets a provider reuse the stable beginning of a long prompt. The provider still runs the model and generates a fresh response, but cached input tokens can be faster and cheaper than processing the same prefix again.
+
+<Info>
+Prompt caching is different from [Response Caching](/v3/general/caching). Response caching returns an earlier result for an identical request. Prompt caching only reuses LLM input processing; the response is newly generated each time.
+</Info>
+
+## How it works
+
+1. Put reusable content first: system instructions, tools, examples, documents, then conversation history.
+2. Send the first request. Depending on the provider, it creates a cache entry automatically or at an explicit cache boundary.
+3. Repeat the exact prefix and append changing content after it.
+4. The provider reads the matching prefix from its cache until that entry expires.
+
+The cache belongs to the provider endpoint that handled the request. It is not shared between providers, regions, accounts, or unrelated models.
+
+<Warning>
+Providers enforce their own minimum cacheable prompt size. Short prompts can succeed without creating a cache entry. Token thresholds, retention, and prices differ by model and may change over time.
+</Warning>
+
+## Find models that support prompt caching
+
+The model catalog advertises support per provider endpoint:
+
+```bash cURL
+curl https://api.edenai.run/v3/models
+```
+
+Look for:
+
+```json
+{
+  "id": "openai/gpt-5.6-luna",
+  "capabilities": {
+    "supports_prompt_caching": true
+  },
+  "pricing": {
+    "input_cost_per_token": 0.000001,
+    "cache_read_input_token_cost": 0.0000001,
+    "cache_creation_input_token_cost": 0.00000125
+  }
+}
+```
+
+Treat the catalog as the source of truth. Support and pricing belong to a concrete `provider/model`, so providers serving the same routable model name can differ.
+
+## Automatic caching
+
+Providers such as OpenAI and DeepSeek cache eligible prompt prefixes automatically. Eden AI also adds default ephemeral cache boundaries for cache-capable Anthropic and Bedrock Claude models. No cache marker is required: send the same long prefix again and keep changing content at the end.
+
+```bash cURL
+curl -X POST https://api.edenai.run/v3/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5.4-nano",
+    "messages": [
+      {
+        "role": "system",
+        "content": "A long, stable set of instructions and reference material..."
+      },
+      {
+        "role": "user",
+        "content": "The changing question goes last."
+      }
+    ]
+  }'
+```
+
+The first eligible request normally reports no cached tokens. A repeated request with a matching prefix can report a cache read:
+
+```json
+{
+  "usage": {
+    "prompt_tokens": 5514,
+    "prompt_tokens_details": {
+      "cached_tokens": 4864
+    }
+  },
+  "cost": 0.00023228,
+  "provider": "openai"
+}
+```
+
+`prompt_cache_key` can improve provider cache-shard affinity for traffic that shares one prefix:
+
+```json
+{
+  "model": "openai/gpt-5.4-nano",
+  "prompt_cache_key": "support-agent-v3",
+  "messages": [
+    {"role": "system", "content": "A long, stable prefix..."},
+    {"role": "user", "content": "A changing question..."}
+  ]
+}
+```
+
+Use a stable key for one reusable prompt family. A different key on every request prevents the affinity from helping.
+
+For supported OpenAI models, `prompt_cache_retention` controls provider retention:
+
+```json
+{
+  "model": "openai/gpt-5.4-nano",
+  "prompt_cache_key": "support-agent-v3",
+  "prompt_cache_retention": "24h",
+  "messages": []
+}
+```
+
+Known values are `in_memory` and `24h`. Availability is model-dependent, and unsupported values are passed to the provider for validation.
+
+## Explicit cache boundaries
+
+Use the marker native to the provider. Eden AI preserves both `prompt_cache_breakpoint` and `cache_control` on content blocks, but does not translate one format into the other.
+
+### OpenAI GPT-5.6 and newer
+
+Place `prompt_cache_breakpoint` on the last content block of the stable prefix. Set `prompt_cache_options.mode` to `explicit` if only marked prefixes should be cached.
+
+```bash cURL
+curl -X POST https://api.edenai.run/v3/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5.6-luna",
+    "prompt_cache_key": "legal-agent-v2",
+    "prompt_cache_options": {
+      "mode": "explicit",
+      "ttl": "30m"
+    },
+    "messages": [
+      {
+        "role": "system",
+        "content": [
+          {
+            "type": "text",
+            "text": "Long instructions and reference material...",
+            "prompt_cache_breakpoint": {"type": "ephemeral"}
+          }
+        ]
+      },
+      {"role": "user", "content": "Review section 12."}
+    ]
+  }'
+```
+
+On a cold request, OpenAI can report the written prefix:
+
+```json
+{
+  "prompt_tokens_details": {
+    "cached_tokens": 0,
+    "cache_write_tokens": 5523
+  }
+}
+```
+
+The same prefix can then report `cached_tokens: 5523` and `cache_write_tokens: 0`.
+
+The same fields work on the Responses API. Use `input_text` content blocks:
+
+```json
+{
+  "model": "openai/gpt-5.6-luna",
+  "prompt_cache_key": "legal-agent-v2",
+  "prompt_cache_options": {"mode": "explicit", "ttl": "30m"},
+  "input": [
+    {
+      "role": "system",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "Long instructions and reference material...",
+          "prompt_cache_breakpoint": {"type": "ephemeral"}
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [{"type": "input_text", "text": "Review section 12."}]
+    }
+  ]
+}
+```
+
+### Anthropic and Bedrock Claude
+
+For cache-capable Anthropic and Bedrock Claude models sent through Chat Completions, Eden AI automatically marks the system prompt and trailing turn with ephemeral cache boundaries. The default retention is five minutes. Prompts below the provider's minimum size are processed normally without a cache write.
+
+If you provide any `cache_control` marker yourself, the automatic placement stands down and your explicit boundaries take precedence.
+
+For explicit placement or one-hour retention, use the Anthropic-compatible Messages endpoint and add `cache_control` to the last block of the reusable prefix:
+
+```bash cURL
+curl -X POST https://api.edenai.run/v3/v1/messages \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-sonnet-4-6",
+    "system": [
+      {
+        "type": "text",
+        "text": "Long instructions and reference material...",
+        "cache_control": {
+          "type": "ephemeral",
+          "ttl": "1h"
+        }
+      }
+    ],
+    "messages": [
+      {"role": "user", "content": "Review section 12."}
+    ],
+    "max_tokens": 256
+  }'
+```
+
+Omit `ttl` for the provider default. Anthropic currently supports `5m` and `1h` retention. The native usage fields distinguish creation from reads:
+
+```json
+{
+  "usage": {
+    "input_tokens": 9,
+    "cache_creation_input_tokens": 0,
+    "cache_read_input_tokens": 8817
+  }
+}
+```
+
+### Google Gemini
+
+Gemini accepts `cache_control` on a Chat Completions content block:
+
+```json
+{
+  "model": "google/gemini-3.5-flash-lite",
+  "messages": [
+    {
+      "role": "system",
+      "content": [
+        {
+          "type": "text",
+          "text": "Long instructions and reference material...",
+          "cache_control": {"type": "ephemeral"}
+        }
+      ]
+    },
+    {"role": "user", "content": "Review section 12."}
+  ]
+}
+```
+
+Gemini can report the explicitly cached context as `cached_tokens` on the first marked request and may not expose a separate cache-write count. Check `cached_tokens`, not only `cache_write_tokens`, when verifying Gemini.
+
+## Provider behavior
+
+| Provider | Default behavior | Explicit control | Usage signal |
+|---|---|---|---|
+| OpenAI | Automatic on eligible prefixes | `prompt_cache_breakpoint`, `prompt_cache_options`, `prompt_cache_key`, `prompt_cache_retention` | `cached_tokens`, and on newer models `cache_write_tokens` |
+| Anthropic and Bedrock Claude | Eden AI automatically marks the system prompt and trailing turn | `cache_control`; optional `ttl` of `5m` or `1h` | `cached_tokens`, `cache_write_tokens`, plus Anthropic-native read/creation fields |
+| Google Gemini | Provider-dependent | `cache_control` on a content block | `cached_tokens`; a distinct write count may be absent |
+| DeepSeek | Automatic | No marker required | `cached_tokens`, `prompt_cache_hit_tokens`, `prompt_cache_miss_tokens` |
+| Other providers | Model-dependent | Provider-dependent | Normalized where the provider reports cache usage |
+
+Provider-native behavior can change independently of Eden AI. Check the model catalog before depending on a specific combination.
+
+## Keeping routed requests on the warm provider
+
+When you use a model name without a provider prefix, multiple providers may serve it. Prompt caches do not move between those providers, so Eden AI uses sticky routing for models with discounted cache reads.
+
+Send one stable conversation identifier on every turn:
+
+```json
+{
+  "model": "gpt-5.6-luna",
+  "session_id": "conversation-7f3a91",
+  "messages": []
+}
+```
+
+The routing affinity key is chosen in this order:
+
+1. Body `session_id`
+2. `x-session-id` request header
+3. `prompt_cache_key`
+4. A key inferred from the opening messages
+
+Body and header session ids are never forwarded to the provider. `prompt_cache_key` is also forwarded when the selected provider supports it.
+
+After a cache read, provider affinity lasts 10 minutes by default. A declared `cache_control.ttl`, `prompt_cache_options.ttl`, or `prompt_cache_retention` makes the affinity follow that cache window, up to the serving provider's retention limit. See [How long provider affinity lasts](/v3/llms/provider-routing#how-long-provider-affinity-lasts) for the complete rules.
+
+Set `routing.sticky` to `false` to route independently:
+
+```json
+{
+  "model": "gpt-5.6-luna",
+  "routing": {"sticky": false},
+  "messages": []
+}
+```
+
+An explicit `routing.sort` also takes priority over cache affinity. A concrete `provider/model` needs no sticky routing because its provider is already fixed. See [Provider Routing](/v3/llms/provider-routing) for the complete routing contract.
+
+## Reading cache usage and cost
+
+| API dialect | Cache read | Cache creation |
+|---|---|---|
+| Chat Completions | `usage.prompt_tokens_details.cached_tokens` | `usage.prompt_tokens_details.cache_write_tokens` |
+| Responses | `usage.input_tokens_details.cached_tokens` | `usage.input_tokens_details.cache_write_tokens` |
+| Anthropic Messages | `usage.cache_read_input_tokens` | `usage.cache_creation_input_tokens` |
+
+Fields that the provider does not report can be absent or zero. In a Chat Completions stream, request `stream_options.include_usage: true`; Eden AI includes normalized cache usage and `cost` in the final usage event before `[DONE]`.
+
+The response `cost` already accounts for the provider's cache-read and cache-creation prices. Cache creation can cost the same as, or more than, normal input processing. Savings appear on later cache reads.
+
+## Best practices
+
+- Put static content before dynamic content. A change near the beginning invalidates the reusable suffix after it.
+- Keep tools, schemas, examples, and documents byte-for-byte stable between requests.
+- Reuse one `session_id` for the life of a conversation; do not generate one per request or share one across unrelated conversations.
+- Use a concrete `provider/model` when explicit marker semantics matter.
+- Inspect usage rather than assuming a cache hit. A successful response does not guarantee that the prompt met the provider's cache threshold.
+- Expect a cold request after expiration, failover, region changes, model changes, or provider maintenance.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Provider Routing" icon="shuffle" href="/v3/llms/provider-routing">
+    Keep routed conversations on the provider holding their prompt cache
+  </Card>
+  <Card title="List LLM Models" icon="list" href="/v3/llms/listing-models">
+    Find prompt-cache support and cache pricing per provider endpoint
+  </Card>
+  <Card title="Streaming" icon="wave-pulse" href="/v3/llms/streaming">
+    Read normalized cache usage from the final stream event
+  </Card>
+  <Card title="Response Caching" icon="database" href="/v3/general/caching">
+    Return a stored response for an identical deterministic request
+  </Card>
+</CardGroup>

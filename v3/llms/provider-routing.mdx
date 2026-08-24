@@ -14,7 +14,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "LLM API", "provider routing", "load balancing", "failover"]}
   datePublished="2026-08-19T00:00:00Z"
-  dateModified="2026-08-19T00:00:00Z"
+  dateModified="2026-08-24T00:00:00Z"
 />
 
 Many models are sold by more than one provider. `gpt-5.6-sol` is served by OpenAI and Azure, `kimi-k2.6` by seven providers, `gpt-oss-120b` by ten. They run the same weights at different prices, speeds and reliability.
@@ -138,7 +138,7 @@ By default, if the chosen provider fails, Eden AI tries another provider of the 
 
 ## Keeping a conversation on one provider
 
-A prompt cache lives at **one** provider endpoint. If routing picks a different provider on turn two of a conversation, that cache is not there, so you pay to build it again instead of reading it at a discount.
+A [prompt cache](/v3/llms/prompt-caching) lives at **one** provider endpoint. If routing picks a different provider on turn two of a conversation, that cache is not there, so you pay to build it again instead of reading it at a discount.
 
 Sticky routing keeps a conversation on the provider that already holds its cache. It is **on by default**, and only ever active for models whose providers discount cache reads. Where there is no discount there is nothing to gain, so routing keeps spreading by price.
 
@@ -165,6 +165,22 @@ curl -X POST https://api.edenai.run/v3/chat/completions \
 ```
 
 `session_id` is accepted on all three chat dialects (`/v3/chat/completions`, `/v3/responses` and `/v3/v1/messages`) and is capped at 256 characters. It is never forwarded to the provider.
+
+### How long provider affinity lasts
+
+After Eden AI observes a cache read, it keeps the conversation on that provider for **10 minutes by default**. Each later cache read refreshes the window.
+
+When you declare a prompt-cache lifetime, sticky routing follows it so the provider affinity matches the cache window:
+
+| Cache setting | Provider affinity |
+|---|---|
+| No duration, or `prompt_cache_retention: "in_memory"` | 10 minutes |
+| `cache_control.ttl: "5m"` | 5 minutes |
+| `prompt_cache_options.ttl: "30m"` | 30 minutes |
+| `cache_control.ttl: "1h"` | Up to 1 hour for Anthropic and Bedrock |
+| `prompt_cache_retention: "24h"` | Up to 24 hours for OpenAI and Azure |
+
+If a request declares more than one duration, Eden AI uses the longest one, capped at the maximum retention of the provider that served the cache read. Providers without a known extended-retention policy use a conservative one-hour ceiling.
 
 ### Choosing a session id
 

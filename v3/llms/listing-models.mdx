@@ -14,7 +14,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "LLM API", "chat completion", "OpenAI compatible"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-08-19T00:00:00Z"
+  dateModified="2026-08-24T00:00:00Z"
 />
 
 Use the `/v3/models` endpoint to retrieve all LLM models available through Eden AI, along with their capabilities: input modalities, reasoning, web search, and function calling.
@@ -161,7 +161,7 @@ The `capabilities` object describes what each model supports:
 | `supports_web_search` | Model can perform live web searches via [`web_search_options`](/v3/llms/web-search) |
 | `supports_function_calling` | Model supports function/tool calling |
 | `supports_tool_choice` | Model supports the `tool_choice` parameter |
-| `supports_prompt_caching` | Model supports prompt caching |
+| `supports_prompt_caching` | Model supports [prompt caching](/v3/llms/prompt-caching) |
 | `supports_response_schema` | Model supports structured output with a response schema |
 | `supports_system_messages` | Model accepts system messages |
 | `supports_computer_use` | Model supports computer-use tooling |
@@ -183,4 +183,3 @@ Need EU data residency? Hit `https://api.eu.edenai.run/v3/models` instead and th
 <Note>
 Looking for OCR, image, or audio models? See [List Expert Models](/v3/expert-models/listing-models) for the full catalog of expert model features.
 </Note>
-

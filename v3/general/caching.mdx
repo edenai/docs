@@ -14,10 +14,14 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "rate limits", "billing", "monitoring"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-05-07T00:00:00Z"
+  dateModified="2026-08-24T00:00:00Z"
 />
 
 Eden AI automatically caches responses for repeated identical requests. When a request matches a previous one (same model and same input), the cached response is returned at no additional cost.
+
+<Info>
+This page describes **response caching**, which returns an earlier result. For LLM prefix reuse that still generates a fresh response, see [Prompt Caching](/v3/llms/prompt-caching).
+</Info>
 
 ## How It Works
 

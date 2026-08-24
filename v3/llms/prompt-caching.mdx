@@ -41,8 +41,7 @@ Providers enforce their own minimum cacheable prompt size. Short prompts can suc
 The model catalog advertises support per provider endpoint:
 
 ```bash cURL
-curl https://api.edenai.run/v3/models \
-  | jq '.data[] | select(.capabilities.supports_prompt_caching == true) | .id'
+curl https://api.edenai.run/v3/models
 ```
 
 Look for:

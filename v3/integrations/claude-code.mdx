@@ -15,7 +15,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "Claude Code"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-05-07T00:00:00Z"
+  dateModified="2026-08-27T00:00:00Z"
 />
 
 Configure [Claude Code](https://github.com/anthropics/claude-code), Anthropic's official CLI coding agent, to use Eden AI for access to 500+ models behind a single API key.
@@ -85,6 +85,33 @@ export ANTHROPIC_MODEL="google/gemini-2.5-pro"
 </CodeGroup>
 
 Browse the full catalog via [List Models](/v3/llms/listing-models) or `GET https://api.edenai.run/v3/models`.
+
+## Expert Models as Tools (MCP)
+
+Eden AI also hosts an [MCP server](/v3/expert-models/mcp-server) that exposes the expert model catalog (OCR, web search, speech, translation and more) as tools. Add it and Claude Code can read documents or search the web through the same API key:
+
+```bash
+claude mcp add --transport http edenai https://mcp.edenai.run/mcp \
+  --header "Authorization: Bearer YOUR_EDEN_AI_API_KEY"
+```
+
+To share it with your team instead, commit the equivalent block to the project's `.mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "edenai": {
+      "type": "http",
+      "url": "https://mcp.edenai.run/mcp",
+      "headers": {
+        "Authorization": "Bearer YOUR_EDEN_AI_API_KEY"
+      }
+    }
+  }
+}
+```
+
+Keep the `type` field: without it Claude Code reads the entry as a stdio server. Run `/mcp` to confirm the connection. See the [MCP server page](/v3/expert-models/mcp-server) for the full tool catalog and the conventions its tools share.
 
 ## Troubleshooting
 

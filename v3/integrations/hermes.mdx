@@ -15,7 +15,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "Hermes Agent", "Nous Research"]}
   datePublished="2026-06-19T00:00:00Z"
-  dateModified="2026-07-16T00:00:00Z"
+  dateModified="2026-08-27T00:00:00Z"
 />
 
 Connect [Hermes Agent](https://hermes-agent.nousresearch.com) to Eden AI and run the self-hosted, persistent agent on 500+ models with automatic fallbacks and a single API key.
@@ -167,6 +167,22 @@ Hermes then auto-wires credential resolution, the `--provider eden-ai` flag, the
 ```bash
 hermes chat --provider eden-ai
 ```
+
+## Expert Models as Tools (MCP)
+
+Eden AI also hosts an [MCP server](/v3/expert-models/mcp-server) that exposes the expert model catalog (OCR, web search, speech, translation and more) as tools. Add it under `mcp_servers` in Hermes' config file (`hermes config path` prints the location):
+
+```yaml
+mcp_servers:
+  edenai:
+    url: https://mcp.edenai.run/mcp
+    headers:
+      Authorization: Bearer ${EDENAI_API_KEY}
+```
+
+Hermes interpolates `${VAR}` in server entries, so this reuses the `EDENAI_API_KEY` you already added in [step 2](#2-add-your-api-key). The server's tools register into Hermes' normal tool registry at startup, which means they chain with built-in tools in a single workflow. Run `/reload-mcp` in an active chat to pick up config changes without a restart.
+
+See the [MCP server page](/v3/expert-models/mcp-server) for the full tool catalog and the conventions its tools share.
 
 ## Troubleshooting
 

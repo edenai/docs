@@ -15,7 +15,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "Continue.dev"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-05-07T00:00:00Z"
+  dateModified="2026-08-27T00:00:00Z"
 />
 
 Configure Continue.dev, the open-source AI code assistant, to use Eden AI for access to 500+ models.
@@ -354,6 +354,22 @@ Modernize legacy code:
 1. Select old code
 2. Use `/edit` command
 3. Ask: "Refactor this to use modern Python features"
+
+## Expert Models as Tools (MCP)
+
+Eden AI also hosts an [MCP server](/v3/expert-models/mcp-server) that exposes the expert model catalog (OCR, web search, speech, translation and more) as tools. Add the server to your assistant's `config.yaml`:
+
+```yaml
+mcpServers:
+  - name: Eden AI
+    type: streamable-http
+    url: https://mcp.edenai.run/mcp
+    requestOptions:
+      headers:
+        Authorization: Bearer YOUR_EDEN_AI_API_KEY
+```
+
+The tools become available in Agent mode. See the [MCP server page](/v3/expert-models/mcp-server) for the full tool catalog and the conventions its tools share.
 
 ## Troubleshooting
 

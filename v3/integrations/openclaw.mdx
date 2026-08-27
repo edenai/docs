@@ -15,7 +15,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "OpenClaw"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-06-30T00:00:00Z"
+  dateModified="2026-08-27T00:00:00Z"
 />
 
 Connect [OpenClaw](https://openclaw.ai) to Eden AI and route your agent through 500+ models with automatic fallbacks and a single API key.
@@ -137,6 +137,34 @@ Common choices:
 | `google/gemini-2.5-pro` | Long context, multimodal |
 
 Browse the full catalog at [app.edenai.run/models](https://app.edenai.run/models).
+
+## Expert Models as Tools (MCP)
+
+Eden AI also hosts an [MCP server](/v3/expert-models/mcp-server) that exposes the expert model catalog (OCR, web search, speech, translation and more) as tools. Add it with the CLI:
+
+```bash
+openclaw mcp set edenai '{"url":"https://mcp.edenai.run/mcp","transport":"streamable-http","headers":{"Authorization":"Bearer YOUR_EDEN_AI_API_KEY"}}'
+```
+
+Or edit `~/.openclaw/openclaw.json` directly and restart the gateway:
+
+```json
+{
+  "mcp": {
+    "servers": {
+      "edenai": {
+        "url": "https://mcp.edenai.run/mcp",
+        "transport": "streamable-http",
+        "headers": {
+          "Authorization": "Bearer YOUR_EDEN_AI_API_KEY"
+        }
+      }
+    }
+  }
+}
+```
+
+See the [MCP server page](/v3/expert-models/mcp-server) for the full tool catalog and the conventions its tools share.
 
 ## Troubleshooting
 

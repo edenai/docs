@@ -15,7 +15,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "Cline"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-05-07T00:00:00Z"
+  dateModified="2026-08-27T00:00:00Z"
 />
 
 Configure [Cline](https://github.com/cline/cline), the autonomous AI coding agent for VS Code, to use Eden AI for access to +300 LLM models.
@@ -65,6 +65,26 @@ Use any model from Eden AI's catalog in the `provider/model` format. A few examp
 - `openai/gpt-4o-mini` — cheapest, suitable for simple edits
 
 Browse the full catalog with pricing and capabilities at [app.edenai.run/models](https://app.edenai.run/models).
+
+## Expert Models as Tools (MCP)
+
+Eden AI also hosts an [MCP server](/v3/expert-models/mcp-server) that exposes the expert model catalog (OCR, web search, speech, translation and more) as tools. Open **MCP Servers** in the Cline sidebar, choose **Configure MCP Servers**, and add the server to `cline_mcp_settings.json`:
+
+```json
+{
+  "mcpServers": {
+    "edenai": {
+      "type": "streamableHttp",
+      "url": "https://mcp.edenai.run/mcp",
+      "headers": {
+        "Authorization": "Bearer YOUR_EDEN_AI_API_KEY"
+      }
+    }
+  }
+}
+```
+
+The tools appear in Cline's MCP panel once the server connects. See the [MCP server page](/v3/expert-models/mcp-server) for the full tool catalog and the conventions its tools share.
 
 ## Troubleshooting
 

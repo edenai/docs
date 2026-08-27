@@ -107,6 +107,7 @@
                 "expanded": false,
                 "divider": true,
                 "pages": [
+                  "v3/expert-models/mcp-server",
                   "v3/expert-models/webhooks",
                   "v3/expert-models/listing-models",
                   "v3/expert-models/provider-parameters",

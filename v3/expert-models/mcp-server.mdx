@@ -61,7 +61,6 @@ The server publishes one tool per expert model feature, plus three utility tools
 
 Every tool carries a JSON Schema for its parameters, so a client discovers the catalog at runtime rather than hardcoding it. Ask the server what it has:
 
-{/* skip-test */}
 <CodeGroup>
 ```python Python
 async def print_catalog(mcp):
@@ -110,71 +109,74 @@ RESULT_CAP = 20_000
 
 
 async def main():
-    http_client = create_mcp_http_client(headers={"Authorization": f"Bearer {API_KEY}"})
-    async with streamable_http_client(MCP_URL, http_client=http_client) as (read, write):
-        async with ClientSession(read, write) as mcp:
-            await mcp.initialize()
+    headers = {"Authorization": f"Bearer {API_KEY}"}
+    async with (
+        create_mcp_http_client(headers=headers) as http_client,
+        streamable_http_client(MCP_URL, http_client=http_client) as (read, write),
+        ClientSession(read, write) as mcp,
+    ):
+        await mcp.initialize()
 
-            # 1. Turn the MCP catalog into OpenAI function tools.
-            catalog = (await mcp.list_tools()).tools
-            tools = [
-                {
-                    "type": "function",
-                    "function": {
-                        "name": tool.name,
-                        "description": tool.description or "",
-                        "parameters": tool.input_schema,
-                    },
-                }
-                for tool in catalog
-                if tool.name in TOOLS
-            ]
+        # 1. Turn the MCP catalog into OpenAI function tools.
+        catalog = (await mcp.list_tools()).tools
+        tools = [
+            {
+                "type": "function",
+                "function": {
+                    "name": tool.name,
+                    "description": tool.description or "",
+                    "parameters": tool.input_schema,
+                },
+            }
+            for tool in catalog
+            if tool.name in TOOLS
+        ]
 
-            # 2. Run the model and execute whatever it asks for.
-            client = AsyncOpenAI(base_url="https://api.edenai.run/v3", api_key=API_KEY)
-            messages = [{"role": "user", "content": "What is the latest stable release of Python?"}]
+        # 2. Run the model and execute whatever it asks for.
+        client = AsyncOpenAI(base_url="https://api.edenai.run/v3", api_key=API_KEY)
+        messages = [{"role": "user", "content": "What is the latest stable release of Python?"}]
 
-            for _ in range(6):
-                response = await client.chat.completions.create(
-                    model=MODEL, messages=messages, tools=tools
+        for _ in range(6):
+            response = await client.chat.completions.create(
+                model=MODEL, messages=messages, tools=tools
+            )
+            message = response.choices[0].message
+
+            if not message.tool_calls:
+                print(message.content)
+                break
+
+            # Rebuild the tool calls from spec fields only (see Best Practices).
+            messages.append({
+                "role": "assistant",
+                "content": message.content or "",
+                "tool_calls": [
+                    {
+                        "id": call.id,
+                        "type": "function",
+                        "function": {
+                            "name": call.function.name,
+                            "arguments": call.function.arguments,
+                        },
+                    }
+                    for call in message.tool_calls
+                ],
+            })
+
+            for call in message.tool_calls:
+                result = await mcp.call_tool(
+                    call.function.name, json.loads(call.function.arguments or "{}")
                 )
-                message = response.choices[0].message
-
-                if not message.tool_calls:
-                    print(message.content)
-                    break
-
-                # Rebuild the tool calls from spec fields only (see Best Practices).
+                text = "\n".join(
+                    block.text for block in result.content if block.type == "text"
+                )
+                if result.is_error:
+                    text = f"Tool error: {text}"
                 messages.append({
-                    "role": "assistant",
-                    "content": message.content or "",
-                    "tool_calls": [
-                        {
-                            "id": call.id,
-                            "type": "function",
-                            "function": {
-                                "name": call.function.name,
-                                "arguments": call.function.arguments,
-                            },
-                        }
-                        for call in message.tool_calls
-                    ],
+                    "role": "tool",
+                    "tool_call_id": call.id,
+                    "content": text[:RESULT_CAP],
                 })
-
-                for call in message.tool_calls:
-                    result = await mcp.call_tool(
-                        call.function.name, json.loads(call.function.arguments or "{}")
-                    )
-                    text = "\n".join(
-                        block.text for block in result.content if block.type == "text"
-                    )
-                    if result.is_error:
-                        text = f"Tool error: {text}"
-                    messages.append({
-                        "role": "tool",
-                        "tool_call_id": call.id,
-                        "content": text[:RESULT_CAP],
-                    })
 
 
 asyncio.run(main())
@@ -215,55 +217,58 @@ ALIASES = {"internet_search": "web_search"}
 
 
 async def main():
-    http_client = create_mcp_http_client(headers={"Authorization": f"Bearer {API_KEY}"})
-    async with streamable_http_client(MCP_URL, http_client=http_client) as (read, write):
-        async with ClientSession(read, write) as mcp:
-            await mcp.initialize()
+    headers = {"Authorization": f"Bearer {API_KEY}"}
+    async with (
+        create_mcp_http_client(headers=headers) as http_client,
+        streamable_http_client(MCP_URL, http_client=http_client) as (read, write),
+        ClientSession(read, write) as mcp,
+    ):
+        await mcp.initialize()
 
-            catalog = {tool.name: tool for tool in (await mcp.list_tools()).tools}
-            tools = [
-                {
-                    "name": alias,
-                    "description": catalog[name].description or "",
-                    "input_schema": catalog[name].input_schema,
-                }
-                for alias, name in ALIASES.items()
-            ]
+        catalog = {tool.name: tool for tool in (await mcp.list_tools()).tools}
+        tools = [
+            {
+                "name": alias,
+                "description": catalog[name].description or "",
+                "input_schema": catalog[name].input_schema,
+            }
+            for alias, name in ALIASES.items()
+        ]
 
-            client = AsyncAnthropic(base_url="https://api.edenai.run/v3", auth_token=API_KEY)
-            messages = [{"role": "user", "content": "What is the latest stable release of Python?"}]
+        client = AsyncAnthropic(base_url="https://api.edenai.run/v3", auth_token=API_KEY)
+        messages = [{"role": "user", "content": "What is the latest stable release of Python?"}]
 
-            for _ in range(6):
-                response = await client.messages.create(
-                    model=MODEL, max_tokens=2048, messages=messages, tools=tools
+        for _ in range(6):
+            response = await client.messages.create(
+                model=MODEL, max_tokens=2048, messages=messages, tools=tools
+            )
+            tool_uses = [b for b in response.content if b.type == "tool_use"]
+            texts = [b.text for b in response.content if b.type == "text"]
+
+            if not tool_uses:
+                print("".join(texts))
+                break
+
+            messages.append({"role": "assistant", "content": [
+                *({"type": "text", "text": t} for t in texts if t),
+                *({"type": "tool_use", "id": b.id, "name": b.name, "input": b.input}
+                  for b in tool_uses),
+            ]})
+
+            results = []
+            for block in tool_uses:
+                result = await mcp.call_tool(ALIASES[block.name], block.input)
+                text = "\n".join(
+                    part.text for part in result.content if part.type == "text"
                 )
-                tool_uses = [b for b in response.content if b.type == "tool_use"]
-                texts = [b.text for b in response.content if b.type == "text"]
-
-                if not tool_uses:
-                    print("".join(texts))
-                    break
-
-                messages.append({"role": "assistant", "content": [
-                    *({"type": "text", "text": t} for t in texts if t),
-                    *({"type": "tool_use", "id": b.id, "name": b.name, "input": b.input}
-                      for b in tool_uses),
-                ]})
-
-                results = []
-                for block in tool_uses:
-                    result = await mcp.call_tool(ALIASES[block.name], block.input)
-                    text = "\n".join(
-                        part.text for part in result.content if part.type == "text"
-                    )
-                    if result.is_error:
-                        text = f"Tool error: {text}"
-                    results.append({
-                        "type": "tool_result",
-                        "tool_use_id": block.id,
-                        "content": text[:RESULT_CAP],
-                    })
-                messages.append({"role": "user", "content": results})
+                if result.is_error:
+                    text = f"Tool error: {text}"
+                results.append({
+                    "type": "tool_result",
+                    "tool_use_id": block.id,
+                    "content": text[:RESULT_CAP],
+                })
+            messages.append({"role": "user", "content": results})
 
 
 asyncio.run(main())
@@ -276,7 +281,6 @@ File parameters accept a public URL directly, so an agent that finds a PDF on th
 
 For local files, call `upload_file` once and reuse the returned ID across as many tools as you like:
 
-{/* skip-test */}
 <CodeGroup>
 ```python Python
 import base64
@@ -312,7 +316,6 @@ When you mention a file ID in a prompt so the model can pass it to a tool itself
 
 Async tools hand back a job ID. Poll it with `check_job`:
 
-{/* skip-test */}
 <CodeGroup>
 ```python Python
 import asyncio
@@ -322,14 +325,17 @@ import json
 async def ocr_pdf(mcp, file_id, timeout_s=300, interval_s=3):
     job = await mcp.call_tool("ocr_async", {"model": "amazon", "file": file_id})
     job_id = json.loads(job.content[0].text)["job_id"]
+    deadline = asyncio.get_running_loop().time() + timeout_s
 
-    for _ in range(timeout_s // interval_s):
+    while True:
         status = await mcp.call_tool("check_job", {"job_id": job_id})
         payload = json.loads(status.content[0].text)
         if payload["status"] in ("success", "fail"):
             return payload
-        await asyncio.sleep(interval_s)
-    raise TimeoutError(f"job {job_id} did not finish within {timeout_s}s")
+        remaining = deadline - asyncio.get_running_loop().time()
+        if remaining <= 0:
+            raise TimeoutError(f"job {job_id} did not finish within {timeout_s}s")
+        await asyncio.sleep(min(interval_s, remaining))
 ```
 </CodeGroup>
 

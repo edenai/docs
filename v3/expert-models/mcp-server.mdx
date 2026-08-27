@@ -35,23 +35,19 @@ Every tool call is a normal Eden AI expert model call: it is billed to the key i
 
 ## Connect an MCP Client
 
-Most MCP clients (desktop assistants, IDEs, agent frameworks) accept a remote HTTP server in their config file:
+Any MCP-capable client can use the server with the three values above, but the config syntax differs from client to client: the key names, the transport label and the place headers go are all client-specific. These integration guides carry a ready-to-copy block for each:
 
-```json
-{
-  "mcpServers": {
-    "edenai": {
-      "type": "http",
-      "url": "https://mcp.edenai.run/mcp",
-      "headers": {
-        "Authorization": "Bearer YOUR_API_KEY"
-      }
-    }
-  }
-}
-```
+| Client | Where the config lives |
+|---|---|
+| [Claude Code](/v3/integrations/claude-code#expert-models-as-tools-mcp) | `claude mcp add`, or the project's `.mcp.json` |
+| [Codex CLI](/v3/integrations/codex-cli#expert-models-as-tools-mcp) | `~/.codex/config.toml` |
+| [Cline](/v3/integrations/cline#expert-models-as-tools-mcp) | `cline_mcp_settings.json` |
+| [Continue](/v3/integrations/continue-dev#expert-models-as-tools-mcp) | the assistant's `config.yaml` |
+| [OpenCode](/v3/integrations/opencode#expert-models-as-tools-mcp) | `opencode.json` |
+| [Hermes Agent](/v3/integrations/hermes#expert-models-as-tools-mcp) | `~/.hermes/config.yaml` |
+| [OpenClaw](/v3/integrations/openclaw#expert-models-as-tools-mcp) | `~/.openclaw/openclaw.json` |
 
-The exact key names vary between clients, but the three values you need are always the same: the URL, the HTTP transport, and the `Authorization` header.
+For a client that is not listed, check its MCP documentation for how it declares a remote streamable-HTTP server with custom headers. If your client cannot consume MCP at all, you can still use the tools by driving the loop yourself: see [Give the Tools to Any LLM](#give-the-tools-to-any-llm).
 
 ## Tool Catalog
 

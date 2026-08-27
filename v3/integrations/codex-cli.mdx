@@ -97,6 +97,20 @@ model = "openai/gpt-4o"
 
 Browse the full catalog via [List Models](/v3/llms/listing-models) or `GET https://api.edenai.run/v3/models`.
 
+## Expert Models as Tools (MCP)
+
+Eden AI also hosts an [MCP server](/v3/expert-models/mcp-server) that exposes the expert model catalog (OCR, web search, speech, translation and more) as tools. Add it to `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.edenai]
+url = "https://mcp.edenai.run/mcp"
+bearer_token_env_var = "EDENAI_API_KEY"
+```
+
+Codex reads `EDENAI_API_KEY` from the environment at connect time and sends it as an `Authorization: Bearer` header, which keeps the key out of a config file that may be committed. The CLI equivalent is `codex mcp add edenai --url https://mcp.edenai.run/mcp`.
+
+See the [MCP server page](/v3/expert-models/mcp-server) for the full tool catalog and the conventions its tools share.
+
 ## Troubleshooting
 
 ### Authentication errors

@@ -163,6 +163,28 @@ Eden AI model IDs already contain a slash (`anthropic/claude-sonnet-latest`), an
 
 Re-run the script whenever you want to refresh the catalog — new models appear in `/models` the next time OpenCode starts. Browse the full list via [List Models](/v3/llms/listing-models) or `GET https://api.edenai.run/v3/models`.
 
+## Expert Models as Tools (MCP)
+
+Eden AI also hosts an [MCP server](/v3/expert-models/mcp-server) that exposes the expert model catalog (OCR, web search, speech, translation and more) as tools. Add the server to `opencode.json`:
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "edenai": {
+      "type": "remote",
+      "url": "https://mcp.edenai.run/mcp",
+      "enabled": true,
+      "headers": {
+        "Authorization": "Bearer YOUR_EDEN_AI_API_KEY"
+      }
+    }
+  }
+}
+```
+
+See the [MCP server page](/v3/expert-models/mcp-server) for the full tool catalog and the conventions its tools share.
+
 ## Troubleshooting
 
 ### `401 Unauthorized`

@@ -51,18 +51,25 @@ For a client that is not listed, check its MCP documentation for how it declares
 
 ## Tool Catalog
 
-The server publishes 39 tools. Each one maps to an Eden AI expert model feature and carries a JSON Schema for its parameters, so a client can discover the whole catalog without any hardcoded knowledge.
+The server publishes one tool per expert model feature, plus three utility tools. The feature tools track the catalog documented in this section, so the [AI Features Reference](/v3/expert-models/features) is the live list: OCR, image, text, web, translation, audio and video. Tool names follow their feature, for example `ocr`, `web_search`, `image_generation` and `translation_automatic_translation`.
 
-| Family | Tools |
+| Utility tool | Purpose |
 |---|---|
-| **OCR** | `ocr`, `ocr_async`, `ocr_tables`, `ocr_financial_parser`, `ocr_identity_parser`, `ocr_resume_parser` |
-| **Image** | `image_generation`, `image_background_removal`, `image_anonymization`, `image_object_detection`, `image_face_detection`, `image_face_compare`, `image_face_recognition`, `image_logo_detection`, `image_explicit_content`, `image_ai_detection`, `image_deepfake_detection` |
-| **Text** | `text_moderation`, `text_spell_check`, `text_topic_extraction`, `text_named_entity_recognition`, `text_ai_detection`, `text_plagia_detection` |
-| **Web** | `web_search`, `web_scraping`, `web_map`, `web_crawl`, `web_batch_scrape`, `web_research`, `web_structured_extraction` |
-| **Translation** | `translation_automatic_translation`, `translation_document_translation` |
-| **Audio** | `audio_tts`, `audio_speech_to_text` |
-| **Video** | `video_generation`, `video_deepfake_detection` |
-| **Utility** | `upload_file`, `check_job`, `list_models` |
+| `upload_file` | Upload local content and get a file ID to pass to any file parameter |
+| `check_job` | Fetch the status and result of a long-running tool's job |
+| `list_models` | List providers, models and pricing, optionally for a single tool |
+
+Every tool carries a JSON Schema for its parameters, so a client discovers the catalog at runtime rather than hardcoding it. Ask the server what it has:
+
+{/* skip-test */}
+<CodeGroup>
+```python Python
+async def print_catalog(mcp):
+    for tool in (await mcp.list_tools()).tools:
+        required = tool.inputSchema.get("required", [])
+        print(f"{tool.name}({', '.join(required)})")
+```
+</CodeGroup>
 
 ### Shared Conventions
 
@@ -70,7 +77,7 @@ Every feature tool follows the same three rules:
 
 - **`model` selects the provider.** Pass `"provider"` or `"provider/model"`, for example `"firecrawl"` or `"amazon"`. Call the `list_models` tool for the exact names, pricing and regions, optionally filtered to one tool with `{"tool": "web_search"}`.
 - **File parameters take a URL or a file ID.** If your document already has a public URL, pass it directly. For local content, call `upload_file` first and pass the returned ID.
-- **Long-running tools return a job.** `ocr_async`, `ocr_tables`, `audio_speech_to_text`, `web_crawl`, `web_batch_scrape`, `web_research`, `web_structured_extraction`, `video_generation` and `video_deepfake_detection` return a job ID immediately. Poll it with `check_job` until `status` is `success` or `fail`.
+- **Long-running tools return a job.** Tools for the async features return a job ID immediately instead of a result, and say `Long-running` in their description. Poll with `check_job` until `status` is `success` or `fail`.
 
 ## Give the Tools to Any LLM
 
@@ -353,7 +360,7 @@ Smaller models sometimes announce a tool call in prose instead of emitting one. 
 - **Echo back only the fields in the spec.** Gateway responses can carry non-standard extras on `tool_calls`, such as an `index` field. Sending those back on the next turn is rejected by strict providers. Rebuild minimal `{id, type, function: {name, arguments}}` objects, and use `""` rather than `null` for the assistant message content.
 - **Cap the size of tool results.** OCR and scraping output can be very large. Truncating to roughly 20,000 characters before appending to the conversation keeps the context manageable without losing the useful part.
 - **Treat tool errors as results, not exceptions.** A failed tool call comes back with `isError` set rather than raising. Pass the error text to the model and it will usually retry with corrected arguments.
-- **Filter the catalog before sending it.** The full 39-tool catalog is a lot of schema for one prompt. Send only the tools the task needs, which improves both accuracy and cost.
+- **Filter the catalog before sending it.** The full catalog is a lot of schema for one prompt. Send only the tools the task needs, which improves both accuracy and cost.
 - **Use URLs when you have them.** Skipping `upload_file` removes a round trip and a class of transcription errors.
 
 ## Next Steps

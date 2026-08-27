@@ -324,6 +324,10 @@
               {
                 "group": "User Management",
                 "openapi": "https://api.edenai.run/v2/info/splitted-schema/user/openapi.json"
+              },
+              {
+                "group": "Organization Management",
+                "openapi": "https://api.edenai.run/v2/info/splitted-schema/management_api/openapi.json"
               }
             ]
           }

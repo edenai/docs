@@ -1,0 +1,499 @@
+---
+sidebarTitle: "Batch OCR Table Extraction"
+title: "Batch OCR Table Extraction"
+icon: "table-cells"
+description: "Extract tables from many documents with Eden AI's async OCR endpoint, then flatten the results into a single CSV. Includes Python, R, and cURL samples."
+---
+
+import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
+
+<TechArticleSchema
+  title={"Batch OCR Table Extraction"}
+  description={"Extract tables from many documents with Eden AI's async OCR endpoint, then flatten the results into a single CSV. Includes Python, R, and cURL samples."}
+  path="v3/quickstart/batch-ocr-tables"
+  articleSection="Quickstart"
+  about={"OCR API"}
+  proficiencyLevel="Beginner"
+  keywords={["Eden AI", "AI API", "OCR", "table extraction", "batch processing", "R"]}
+  datePublished="2026-08-21T00:00:00Z"
+  dateModified="2026-08-21T00:00:00Z"
+/>
+
+This guide walks through extracting tables from a folder of documents (scanned pages, PDFs, historical records) and saving every table cell to one CSV file you can open in a spreadsheet or load into R.
+
+Table extraction runs as an **async** feature: you start a job, then poll for its result. The workflow is always the same three steps, repeated for each document:
+
+1. **Upload** the file to get a `file_id` — or skip the upload and pass a public file URL directly as the `file` input in step 2.
+2. **Launch** a table-extraction job with `POST /v3/universal-ai/async`, which returns a `public_id`.
+3. **Poll** `GET /v3/universal-ai/async/{public_id}` until the job's `status` is `success`, then read its `output`.
+
+## Prerequisites
+
+1. **API Token** — get yours from the [Eden AI dashboard](https://app.edenai.run/).
+2. **Credits** — table extraction is billed per page (see [pricing](#choosing-a-provider) below). To try the flow for free first, use a [sandbox token](/v3/general/sandbox).
+3. For R: the `httr` and `jsonlite` packages (`install.packages(c("httr", "jsonlite"))`).
+
+## Model string
+
+Table extraction uses the Universal AI model format `feature/subfeature/provider`:
+
+```
+ocr/ocr_tables_async/{provider}
+```
+
+Pick the provider from the [table below](#choosing-a-provider) — `amazon`, `google`, or `microsoft`.
+
+## A single document, end to end
+
+Start with one file to see the shape of the calls. This uploads a document and launches the job; the launch response contains the `public_id` you poll on.
+
+<CodeGroup>
+```python Python
+import requests
+
+BASE_URL = "https://api.edenai.run"
+HEADERS = {"Authorization": "Bearer YOUR_API_KEY"}
+
+# 1. Upload the document
+with open("document.pdf", "rb") as f:
+    upload = requests.post(
+        f"{BASE_URL}/v3/upload",
+        headers=HEADERS,
+        files={"file": f},
+        data={"purpose": "ocr"},
+    )
+file_id = upload.json()["file_id"]
+
+# 2. Launch the table-extraction job
+launch = requests.post(
+    f"{BASE_URL}/v3/universal-ai/async",
+    headers={**HEADERS, "Content-Type": "application/json"},
+    json={"model": "ocr/ocr_tables_async/amazon", "input": {"file": file_id}},
+)
+print(launch.json())  # -> {"public_id": "...", "status": "processing", ...}
+```
+
+```bash cURL
+# 1. Upload the document
+curl -X POST https://api.edenai.run/v3/upload \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -F "file=@document.pdf" \
+  -F "purpose=ocr"
+# -> {"file_id": "550e8400-...", ...}
+
+# 2. Launch the job with the returned file_id
+curl -X POST https://api.edenai.run/v3/universal-ai/async \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"ocr/ocr_tables_async/amazon","input":{"file":"YOUR_FILE_ID"}}'
+# -> {"public_id": "...", "status": "processing", ...}
+
+# 3. Check the job status — repeat this call until status is "success"
+#    (returns "processing" until the job finishes)
+curl https://api.edenai.run/v3/universal-ai/async/YOUR_PUBLIC_ID \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+```r R
+library(httr)
+library(jsonlite)
+
+base_url <- "https://api.edenai.run"
+auth <- add_headers(Authorization = "Bearer YOUR_API_KEY")
+
+# 1. Upload the document
+upload <- POST(
+  paste0(base_url, "/v3/upload"),
+  auth,
+  body = list(file = upload_file("document.pdf"), purpose = "ocr")
+)
+file_id <- content(upload)$file_id
+
+# 2. Launch the table-extraction job
+launch <- POST(
+  paste0(base_url, "/v3/universal-ai/async"),
+  auth,
+  content_type_json(),
+  body = list(
+    model = "ocr/ocr_tables_async/amazon",
+    input = list(file = file_id)
+  ),
+  encode = "json"
+)
+print(content(launch))  # -> list with public_id and status
+```
+</CodeGroup>
+
+## Response shape
+
+A completed job returns a `status` and an `output`. Tables are nested `pages -> tables -> rows -> cells`, and each cell carries its position (`row_index`, `col_index`) so you can rebuild the grid:
+
+```json
+{
+  "status": "success",
+  "cost": 0.015,
+  "provider": "amazon",
+  "feature": "ocr",
+  "subfeature": "ocr_tables_async",
+  "output": {
+    "num_pages": 1,
+    "pages": [
+      {
+        "tables": [
+          {
+            "num_rows": 2,
+            "num_cols": 2,
+            "rows": [
+              {
+                "cells": [
+                  {"text": "Year", "row_index": 0, "col_index": 0, "is_header": true},
+                  {"text": "Population", "row_index": 0, "col_index": 1, "is_header": true}
+                ]
+              },
+              {
+                "cells": [
+                  {"text": "1950", "row_index": 1, "col_index": 0},
+                  {"text": "2,584,000", "row_index": 1, "col_index": 1}
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+## Batch a whole folder into one CSV
+
+Now loop the three steps over a list of files. Each document is uploaded, launched, and polled independently; every cell is flattened into a row tagged with its source file, page, and table, then written to `tables.csv`.
+
+The poll loop is **bounded** — it gives up after a fixed number of attempts rather than waiting forever — and a failed or slow document is skipped rather than aborting the whole batch.
+
+<CodeGroup>
+{/* skip-test */}
+```python Python
+import csv
+import time
+import requests
+
+BASE_URL = "https://api.edenai.run"
+HEADERS = {"Authorization": "Bearer YOUR_API_KEY"}
+
+# The documents to process, and the provider to use.
+DOCUMENTS = ["invoice1.pdf", "invoice2.pdf", "invoice3.pdf"]
+MODEL = "ocr/ocr_tables_async/amazon"
+
+POLL_INTERVAL = 5   # seconds between status checks
+MAX_POLLS = 60      # give up after MAX_POLLS * POLL_INTERVAL seconds
+
+
+def upload_document(path):
+    """Upload one file and return its file_id."""
+    with open(path, "rb") as f:
+        resp = requests.post(
+            f"{BASE_URL}/v3/upload",
+            headers=HEADERS,
+            files={"file": f},
+            data={"purpose": "ocr"},
+        )
+    if not resp.ok:
+        print(f"  upload failed for {path}: {resp.status_code} {resp.text}")
+        return None
+    return resp.json().get("file_id")
+
+
+def launch_job(file_id):
+    """Start an async table-extraction job and return its public_id."""
+    resp = requests.post(
+        f"{BASE_URL}/v3/universal-ai/async",
+        headers={**HEADERS, "Content-Type": "application/json"},
+        json={"model": MODEL, "input": {"file": file_id}},
+    )
+    if not resp.ok:
+        print(f"  launch failed: {resp.status_code} {resp.text}")
+        return None
+    return resp.json().get("public_id")
+
+
+def wait_for_result(public_id):
+    """Poll until the job finishes; return its output, or None."""
+    for _ in range(MAX_POLLS):
+        resp = requests.get(
+            f"{BASE_URL}/v3/universal-ai/async/{public_id}", headers=HEADERS
+        )
+        if not resp.ok:
+            print(f"  poll failed: {resp.status_code} {resp.text}")
+            return None
+        body = resp.json()
+        status = body.get("status")
+        if status == "success":
+            return body.get("output", {})
+        if status == "fail":
+            print(f"  job {public_id} failed: {body.get('error')}")
+            return None
+        # status is "processing" while the job is still running
+        time.sleep(POLL_INTERVAL)
+    print(f"  job {public_id} still processing after {MAX_POLLS} polls")
+    return None
+
+
+def output_to_rows(output, source):
+    """Flatten pages -> tables -> rows -> cells into CSV rows."""
+    rows = []
+    for page_num, page in enumerate(output.get("pages", []), start=1):
+        for table_num, table in enumerate(page.get("tables", []), start=1):
+            for row in table.get("rows", []):
+                cells = sorted(
+                    row.get("cells", []), key=lambda c: c.get("col_index", 0)
+                )
+                values = [c.get("text", "") for c in cells]
+                rows.append([source, page_num, table_num] + values)
+    return rows
+
+
+all_rows = []
+for path in DOCUMENTS:
+    print(f"Processing {path} ...")
+    file_id = upload_document(path)
+    if not file_id:
+        continue
+    public_id = launch_job(file_id)
+    if not public_id:
+        continue
+    output = wait_for_result(public_id)
+    if output:
+        all_rows.extend(output_to_rows(output, path))
+
+# Pad every row to the widest one so the CSV has a stable column count.
+width = max((len(row) for row in all_rows), default=3)
+header = ["source_file", "page", "table"] + [
+    f"col{i}" for i in range(1, width - 2)
+]
+with open("tables.csv", "w", newline="") as f:
+    writer = csv.writer(f)
+    writer.writerow(header)
+    writer.writerows(row + [""] * (width - len(row)) for row in all_rows)
+
+print(f"Wrote {len(all_rows)} rows to tables.csv")
+```
+
+```r R
+library(httr)
+library(jsonlite)
+
+base_url <- "https://api.edenai.run"
+auth <- add_headers(Authorization = "Bearer YOUR_API_KEY")
+
+# The documents to process, and the provider to use.
+documents <- c("invoice1.pdf", "invoice2.pdf", "invoice3.pdf")
+model <- "ocr/ocr_tables_async/amazon"
+
+poll_interval <- 5   # seconds between status checks
+max_polls <- 60      # give up after max_polls * poll_interval seconds
+
+upload_document <- function(path) {
+  resp <- POST(
+    paste0(base_url, "/v3/upload"), auth,
+    body = list(file = upload_file(path), purpose = "ocr")
+  )
+  if (http_error(resp)) {
+    message("  upload failed for ", path, ": ", status_code(resp))
+    return(NULL)
+  }
+  content(resp)$file_id
+}
+
+launch_job <- function(file_id) {
+  resp <- POST(
+    paste0(base_url, "/v3/universal-ai/async"), auth, content_type_json(),
+    body = list(model = model, input = list(file = file_id)), encode = "json"
+  )
+  if (http_error(resp)) {
+    message("  launch failed: ", status_code(resp))
+    return(NULL)
+  }
+  content(resp)$public_id
+}
+
+wait_for_result <- function(public_id) {
+  for (i in seq_len(max_polls)) {
+    resp <- GET(paste0(base_url, "/v3/universal-ai/async/", public_id), auth)
+    if (http_error(resp)) {
+      message("  poll failed: ", status_code(resp))
+      return(NULL)
+    }
+    body <- content(resp)
+    if (identical(body$status, "success")) return(body$output)
+    if (identical(body$status, "fail")) {
+      message("  job ", public_id, " failed")
+      return(NULL)
+    }
+    # status is "processing" while the job is still running
+    Sys.sleep(poll_interval)
+  }
+  message("  job ", public_id, " still processing after ", max_polls, " polls")
+  NULL
+}
+
+output_to_rows <- function(output, source) {
+  rows <- list()
+  page_num <- 0
+  for (page in output$pages) {
+    page_num <- page_num + 1
+    table_num <- 0
+    for (table in page$tables) {
+      table_num <- table_num + 1
+      for (row in table$rows) {
+        cells <- row$cells
+        cells <- cells[order(sapply(cells, function(c) c$col_index))]
+        values <- sapply(cells, function(c) if (is.null(c$text)) "" else c$text)
+        rows[[length(rows) + 1]] <- c(source, page_num, table_num, values)
+      }
+    }
+  }
+  rows
+}
+
+all_rows <- list()
+for (path in documents) {
+  message("Processing ", path, " ...")
+  file_id <- upload_document(path)
+  if (is.null(file_id)) next
+  public_id <- launch_job(file_id)
+  if (is.null(public_id)) next
+  output <- wait_for_result(public_id)
+  if (!is.null(output)) {
+    all_rows <- c(all_rows, output_to_rows(output, path))
+  }
+}
+
+# Pad every row to the widest one, then write a single CSV.
+if (length(all_rows) == 0) {
+  # Nothing extracted — still write a valid, empty CSV with the base columns.
+  df <- data.frame(source_file = character(), page = character(),
+                   table = character(), stringsAsFactors = FALSE)
+} else {
+  width <- max(sapply(all_rows, length), 3)
+  padded <- lapply(all_rows, function(r) c(r, rep("", width - length(r))))
+  df <- as.data.frame(do.call(rbind, padded), stringsAsFactors = FALSE)
+  names(df) <- c("source_file", "page", "table",
+                 paste0("col", seq_len(width - 3)))
+}
+write.csv(df, "tables.csv", row.names = FALSE)
+message("Wrote ", nrow(df), " rows to tables.csv")
+```
+
+```bash cURL
+#!/usr/bin/env bash
+# Batch table extraction with curl + jq. Requires: curl, jq.
+API_KEY="YOUR_API_KEY"
+MODEL="ocr/ocr_tables_async/amazon"
+BASE="https://api.edenai.run"
+
+# Buffer flattened rows as JSON arrays; we pad them to a uniform width at the end.
+rows=$(mktemp)
+
+for doc in invoice1.pdf invoice2.pdf invoice3.pdf; do
+  echo "Processing $doc ..."
+
+  # 1. Upload -> file_id
+  file_id=$(curl -s -X POST "$BASE/v3/upload" \
+    -H "Authorization: Bearer $API_KEY" \
+    -F "file=@$doc" -F "purpose=ocr" | jq -r '.file_id')
+
+  # 2. Launch -> public_id
+  public_id=$(curl -s -X POST "$BASE/v3/universal-ai/async" \
+    -H "Authorization: Bearer $API_KEY" -H "Content-Type: application/json" \
+    -d "{\"model\":\"$MODEL\",\"input\":{\"file\":\"$file_id\"}}" | jq -r '.public_id')
+
+  # 3. Poll until success (bounded to 60 attempts; status is "processing" until done)
+  for _ in $(seq 60); do
+    body=$(curl -s "$BASE/v3/universal-ai/async/$public_id" \
+      -H "Authorization: Bearer $API_KEY")
+    status=$(echo "$body" | jq -r '.status')
+    [ "$status" = "success" ] && break
+    [ "$status" = "fail" ] && break
+    sleep 5
+  done
+
+  # One JSON array per table row: [source_file, page, table, cell1, cell2, ...]
+  echo "$body" | jq -c --arg src "$doc" '
+    .output.pages | to_entries[]? as $p | $p.value.tables | to_entries[]? as $t |
+    $t.value.rows[]? |
+    [$src, ($p.key + 1), ($t.key + 1)] + [.cells[]? | .text // ""]
+  ' >> "$rows"
+done
+
+# Pad every row to the widest, name each cell column, and write a single CSV.
+jq -rs '
+  (map(length) | max // 3) as $w
+  | ["source_file", "page", "table"] + [range(1; $w - 2) | "col\(.)"],
+    (.[] | . + [range(0; $w - length) | ""])
+  | @csv
+' "$rows" > tables.csv
+rm -f "$rows"
+echo "Done -> tables.csv"
+```
+</CodeGroup>
+
+<Tip>
+Prefer not to poll? Pass an HTTPS `webhook_receiver` when you launch the job and Eden AI will POST each result to your server as it finishes — see [Webhooks](/v3/expert-models/webhooks) for the payload shape and a poll-vs-webhook comparison. Polling is simplest for a one-off batch; webhooks scale better for large or ongoing workloads.
+</Tip>
+
+## Reading the CSV in R
+
+Once `tables.csv` is written, it loads like any other data frame:
+
+```r R
+tables <- read.csv("tables.csv", stringsAsFactors = FALSE)
+head(tables)
+
+# Everything from one source document
+subset(tables, source_file == "invoice1.pdf")
+```
+
+## Choosing a provider
+
+All three providers return the same standardized shape, so you can switch by changing only the provider in the model string. They differ in price and in how they handle dense or low-quality scans — worth testing a few of your own pages against each.
+
+| Provider | Model String | Price |
+|----------|-------------|-------|
+| microsoft | `ocr/ocr_tables_async/microsoft` | $10 per 1,000 pages |
+| amazon | `ocr/ocr_tables_async/amazon` | $15 per 1,000 pages |
+| google | `ocr/ocr_tables_async/google` | $65 per 1,000 pages |
+
+## Expert OCR vs. an LLM
+
+Table extraction (`ocr/ocr_tables_async`) is a **specialized OCR model**: it returns every cell with its row/column position and a confidence score, and it's priced per page. That structure is what makes the CSV step above reliable.
+
+An **LLM** can also read a document and return data, and it's more flexible when you want to reshape or interpret the content in the same pass (for example "return each row as JSON with typed fields"). It's usually the better fit when the layout varies a lot or you need reasoning over the values, but it does not give you per-cell coordinates or confidences, and cost scales with tokens rather than pages.
+
+If you're deciding between the two for a table-heavy workload, see:
+
+<CardGroup cols={2}>
+  <Card title="LLMs vs. Expert Models" icon="scale-balanced" href="/v3/overview/llms-vs-expert-models">
+    When to reach for a specialized model versus a general LLM.
+  </Card>
+  <Card title="Structured Output" icon="brackets-curly" href="/v3/llms/structured-output">
+    Force an LLM to return typed JSON matching your schema.
+  </Card>
+</CardGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Table Extraction Reference" icon="table" href="/v3/expert-models/features/ocr/ocr-tables-async">
+    Full input/output schema for `ocr_tables_async`.
+  </Card>
+  <Card title="File Upload" icon="file-arrow-up" href="/v3/llms/file-upload">
+    Upload once, reference a file across many requests.
+  </Card>
+  <Card title="Webhooks" icon="bell" href="/v3/expert-models/webhooks">
+    Get async results pushed to you instead of polling.
+  </Card>
+  <Card title="OCR Features" icon="file-lines" href="/v3/expert-models/features/ocr/ocr">
+    Text detection, multipage OCR, and document parsers.
+  </Card>
+</CardGroup>

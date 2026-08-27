@@ -65,7 +65,8 @@
                 "expanded": true,
                 "pages": [
                   "v3/quickstart/first-llm-call",
-                  "v3/quickstart/first-expert-model-call"
+                  "v3/quickstart/first-expert-model-call",
+                  "v3/quickstart/batch-ocr-tables"
                 ]
               },
               {
@@ -93,6 +94,9 @@
                   "v3/llms/structured-output",
                   "v3/llms/web-search",
                   "v3/llms/smart-routing",
+                  "v3/llms/prompt-caching",
+                  "v3/llms/provider-routing",
+                  "v3/llms/request-metadata",
                   "v3/llms/streaming",
                   "v3/llms/image-generation"
                 ]
@@ -217,7 +221,8 @@
                 "divider": true,
                 "pages": [
                   "v3/organization/users-organisation",
-                  "v3/organization/guardrails"
+                  "v3/organization/guardrails",
+                  "v3/organization/management-api"
                 ]
               },
               {
@@ -320,6 +325,10 @@
               {
                 "group": "User Management",
                 "openapi": "https://api.edenai.run/v2/info/splitted-schema/user/openapi.json"
+              },
+              {
+                "group": "Organization Management",
+                "openapi": "https://api.edenai.run/v2/info/splitted-schema/management_api/openapi.json"
               }
             ]
           }

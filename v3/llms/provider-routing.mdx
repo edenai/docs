@@ -1,0 +1,262 @@
+---
+icon: "shuffle"
+title: "Provider Routing"
+description: "Name a model without a provider and Eden AI picks which provider serves it, by price, speed or latency, with health-aware failover."
+---
+import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
+
+<TechArticleSchema
+  title={"Provider Routing"}
+  description={"Name a model without a provider and Eden AI picks which provider serves it, by price, speed or latency, with health-aware failover."}
+  path="v3/llms/provider-routing"
+  articleSection="LLMs"
+  about={"LLM API"}
+  proficiencyLevel="Intermediate"
+  keywords={["Eden AI", "AI API", "LLM API", "provider routing", "load balancing", "failover"]}
+  datePublished="2026-08-19T00:00:00Z"
+  dateModified="2026-08-24T00:00:00Z"
+/>
+
+Many models are sold by more than one provider. `gpt-5.6-sol` is served by OpenAI and Azure, `kimi-k2.6` by seven providers, `gpt-oss-120b` by ten. They run the same weights at different prices, speeds and reliability.
+
+Name a model **without** a provider prefix and Eden AI picks which provider serves it.
+
+```json
+{
+  "model": "openai/gpt-5.6-sol"
+}
+```
+Pins the provider. Eden AI calls OpenAI, and only OpenAI.
+
+```json
+{
+  "model": "gpt-5.6-sol"
+}
+```
+Leaves the choice to Eden AI, which selects among every provider serving that model.
+
+A model sold by a single provider routes to that provider whether or not you name it. Provider routing only has a decision to make where two or more providers offer the same model.
+
+## Finding the routable models
+
+Ask any model listing for the grouped view and you get one entry per routable name, with the providers behind it nested underneath:
+
+```bash cURL
+curl "https://api.edenai.run/v3/models?view=models"
+```
+
+```json
+{
+  "id": "gpt-5.6-sol",
+  "object": "model",
+  "owned_by": "openai",
+  "mode": "chat",
+  "endpoint_count": 2,
+  "endpoints": [
+    { "id": "openai/gpt-5.6-sol", "owned_by": "openai", "...": "pricing, capabilities, context_length, regions" },
+    { "id": "azure/gpt-5.6-sol",  "owned_by": "azure",  "...": "pricing, capabilities, context_length, regions" }
+  ]
+}
+```
+
+The name level makes no claim about price, context window or capability, because providers of one model genuinely differ on all three. Each entry in `endpoints` carries its own, so this one call answers both questions: which names route, and what each provider charges and supports. See [Listing Models](/v3/llms/listing-models) for the full field reference.
+
+<Info>
+Provider routing chooses **which provider serves the model you named**. It is separate from [Smart Routing](/v3/llms/smart-routing), where `@edenai` chooses **which model to use**. The two compose: `@edenai` picks a model, then provider routing picks who serves it.
+</Info>
+
+## How a provider is chosen
+
+By default Eden AI optimises for **cost**: the cheapest provider for the shape of your request, accounting for how much of it is prompt versus completion.
+
+Selection is weighted rather than absolute: cheaper providers receive proportionally more traffic instead of every request piling onto a single one. That keeps you off one provider's rate limits and spreads exposure when a provider degrades.
+
+Providers that are failing are ranked below healthy ones and are never chosen first. They stay in the chain as a last resort, because a struggling provider is still better than no answer.
+
+## Choosing an objective
+
+Set `routing.sort` to optimise for something other than price.
+
+| Value | Optimises for |
+|---|---|
+| `cost` | Cheapest for this request. **Default** |
+| `speed` | Highest observed throughput |
+| `latency` | Lowest observed time-to-first-token |
+| `exact` | Best instruction-following, for tool calls and structured output |
+
+```json
+{
+  "model": "gpt-5.6-sol",
+  "messages": [{"role": "user", "content": "Summarise this contract"}],
+  "routing": {"sort": "cost"}
+}
+```
+
+The same objective can be written as a suffix on the model name, which is useful when a client only lets you configure a model string:
+
+```json
+{
+  "model": "gpt-5.6-sol:latency"
+}
+```
+
+<Info>
+`speed`, `latency` and `exact` rank on observed performance. When Eden AI has too little data for a model, routing falls back to ranking on price rather than guessing, and your request still succeeds.
+</Info>
+
+Naming an objective also turns off traffic spreading: `cost` means the cheapest provider every time, not a weighted draw.
+
+## Restricting which providers may be used
+
+`routing.allowed_providers` narrows the pool to providers you trust or have agreements with. Everything else is excluded, including from failover.
+
+```json
+{
+  "model": "gpt-5.6-sol",
+  "messages": [{"role": "user", "content": "hi"}],
+  "routing": {"allowed_providers": ["openai"]}
+}
+```
+
+If no provider in the list serves the requested model, the request fails with a clear error rather than silently routing elsewhere.
+
+## Disabling provider failover
+
+By default, if the chosen provider fails, Eden AI tries another provider of the same model. Set `routing.allow_fallbacks` to `false` to stop that. The request is attempted once and the error is returned to you.
+
+```json
+{
+  "model": "gpt-5.6-sol",
+  "messages": [{"role": "user", "content": "hi"}],
+  "routing": {"allow_fallbacks": false}
+}
+```
+
+<Warning>
+`allow_fallbacks` governs **other providers of the model you requested**. Models you list yourself in `fallbacks` are your own choice and are always kept. See [Fallback](/v3/general/fallback).
+</Warning>
+
+## Keeping a conversation on one provider
+
+A [prompt cache](/v3/llms/prompt-caching) lives at **one** provider endpoint. If routing picks a different provider on turn two of a conversation, that cache is not there, so you pay to build it again instead of reading it at a discount.
+
+Sticky routing keeps a conversation on the provider that already holds its cache. It is **on by default**, and only ever active for models whose providers discount cache reads. Where there is no discount there is nothing to gain, so routing keeps spreading by price.
+
+You don't have to do anything: with no identifier, Eden AI recognises a conversation from its opening messages, which don't change as it grows.
+
+Sending an identifier makes it reliable. Use any stable string: a thread id, a ticket number, an agent run id.
+
+```json
+{
+  "model": "gpt-5.6-sol",
+  "session_id": "conv-7f3a91",
+  "messages": [{"role": "user", "content": "Summarise this contract"}]
+}
+```
+
+For clients that cannot add body fields, such as a coding agent that only lets you set headers, send the same value as a header. The body field wins if both are present.
+
+```bash cURL
+curl -X POST https://api.edenai.run/v3/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "x-session-id: conv-7f3a91" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "gpt-5.6-sol", "messages": [{"role": "user", "content": "hi"}]}'
+```
+
+`session_id` is accepted on all three chat dialects (`/v3/chat/completions`, `/v3/responses` and `/v3/v1/messages`) and is capped at 256 characters. It is never forwarded to the provider.
+
+### How long provider affinity lasts
+
+After Eden AI observes a cache read, it keeps the conversation on that provider for **10 minutes by default**. Each later cache read refreshes the window.
+
+When you declare a prompt-cache lifetime, sticky routing follows it so the provider affinity matches the cache window:
+
+| Cache setting | Provider affinity |
+|---|---|
+| No duration, or `prompt_cache_retention: "in_memory"` | 10 minutes |
+| `cache_control.ttl: "5m"` | 5 minutes |
+| `prompt_cache_options.ttl: "30m"` | 30 minutes |
+| `cache_control.ttl: "1h"` | Up to 1 hour for Anthropic and Bedrock |
+| `prompt_cache_retention: "24h"` | Up to 24 hours for OpenAI and Azure |
+
+If a request declares more than one duration, Eden AI uses the longest one, capped at the maximum retention of the provider that served the cache read. Providers without a known extended-retention policy use a conservative one-hour ceiling.
+
+### Choosing a session id
+
+The identifier has to be **the same on every turn of one conversation**. That is the whole contract, and both ways of getting it wrong look like using the feature correctly:
+
+| | Identifier | What happens |
+|---|---|---|
+| ✅ | A thread id, ticket number, or agent run id | Stable for the conversation's life. One cache write, then reads |
+| ❌ | A fresh UUID per request | A new conversation every turn, so every turn re-routes. You opted in and got nothing |
+| ❌ | The end user's account id | All of that user's conversations collide on one provider. Different prompts, so no cache benefit, and their traffic stops spreading by price |
+
+Mint it once when the conversation starts, store it alongside the conversation, and send it on every turn.
+
+### Turning it off
+
+```json
+{
+  "model": "gpt-5.6-sol",
+  "messages": [{"role": "user", "content": "hi"}],
+  "routing": {"sticky": false}
+}
+```
+
+Naming an explicit `routing.sort` also takes priority, because "cheapest" has to keep meaning cheapest, cache or no cache. And a concrete `provider/model` was never routed in the first place.
+
+<Info>
+Confirm it is working with [Request Metadata](/v3/llms/request-metadata): the provider in `summary` should be the same on every turn. Your usage block reports the cached tokens. Expect none on the first turn, since there was nothing to read yet.
+</Info>
+
+## Pinning a region
+
+Append `@region` to route to a provider endpoint in a specific region. This composes with everything above, and each entry in a chain carries its own region, so the primary and the fallback below are two separate attempts in two separate regions.
+
+```json
+{
+  "model": "<model>@eu",
+  "fallbacks": ["<model>@us"]
+}
+```
+
+Which regions a model offers varies by model. Requesting one it is not served from returns an error rather than quietly serving it elsewhere. See [Servers Location](/v3/data-governance/servers-location).
+
+## Seeing which provider served your request
+
+Routing is invisible by default: the response looks the same whichever provider answered. Send `x-edenai-metadata: enabled` and Eden AI attaches what it decided, including every provider it tried and the status each returned.
+
+```json
+"edenai_metadata": {
+  "strategy": "routed",
+  "summary": "available=2, served=openai/gpt-5.6-sol",
+  "attempt": 1,
+  "attempts": [
+    {"provider": "openai", "model": "openai/gpt-5.6-sol", "status": 200, "region": "global"}
+  ]
+}
+```
+
+See [Request Metadata](/v3/llms/request-metadata) for every field, the `strategy` values, and how to read the block off a stream.
+
+## Turning routing off
+
+Name a `provider/model` and routing never runs. The request goes exactly where you sent it. This is the behaviour of every request that names a provider, and nothing about provider routing changes it.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Smart Routing" icon="route" href="/v3/llms/smart-routing">
+    Let Eden AI choose the model as well as the provider
+  </Card>
+  <Card title="Fallback" icon="rotate-left" href="/v3/general/fallback">
+    Name your own backup models
+  </Card>
+  <Card title="LLM Models" icon="brain" href="/v3/llms/listing-models">
+    Browse available models and their pricing
+  </Card>
+  <Card title="Servers Location" icon="globe" href="/v3/data-governance/servers-location">
+    Where each region runs
+  </Card>
+</CardGroup>

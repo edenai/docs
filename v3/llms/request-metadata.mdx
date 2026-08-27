@@ -1,0 +1,141 @@
+---
+icon: "receipt"
+title: "Request Metadata"
+description: "Opt in to a per-request report of what Eden AI decided: which provider served you, what was tried before it, which region, and whether your own key was used."
+---
+import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
+
+<TechArticleSchema
+  title={"Request Metadata"}
+  description={"Opt in to a per-request report of what Eden AI decided: which provider served you, what was tried before it, which region, and whether your own key was used."}
+  path="v3/llms/request-metadata"
+  articleSection="LLMs"
+  about={"LLM API"}
+  proficiencyLevel="Intermediate"
+  keywords={["Eden AI", "AI API", "LLM API", "observability", "debugging", "provider routing"]}
+  datePublished="2026-08-19T00:00:00Z"
+  dateModified="2026-08-19T00:00:00Z"
+/>
+
+Eden AI makes decisions on your behalf on every LLM request: which provider serves a model sold by several, which region it runs in, whether to retry elsewhere when one fails, and whether to use your own provider key. None of that is visible in a normal response, because the answer looks the same whoever produced it.
+
+Send the `x-edenai-metadata` header to have Eden AI attach what it decided.
+
+## Enabling it
+
+```bash cURL
+curl -X POST https://api.edenai.run/v3/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "x-edenai-metadata: enabled" \
+  -d '{
+    "model": "gpt-5.6-sol",
+    "messages": [{"role": "user", "content": "hi"}]
+  }'
+```
+
+The value is case-insensitive. Any value other than `enabled`, including `disabled`, is treated as off.
+
+<Info>
+The block is **absent unless you ask for it**, and adding the header changes nothing else: the rest of the response is identical. It is safe to enable per request, for a subset of traffic, or only while debugging.
+</Info>
+
+## What you get
+
+The response gains one extra top-level key, `edenai_metadata`:
+
+```json
+{
+  "id": "chatcmpl-abc123",
+  "object": "chat.completion",
+  "choices": [{"...": "..."}],
+  "usage": {"...": "..."},
+  "edenai_metadata": {
+    "requested": "gpt-5.6-sol",
+    "strategy": "routed",
+    "region": "global",
+    "summary": "available=2, served=openai/gpt-5.6-sol",
+    "attempt": 1,
+    "is_byok": false,
+    "endpoints": {
+      "total": 2,
+      "available": [
+        {"provider": "openai", "model": "openai/gpt-5.6-sol", "primary": true, "reachable": true},
+        {"provider": "azure", "model": "azure/gpt-5.6-sol", "primary": false, "reachable": true}
+      ]
+    },
+    "attempts": [
+      {"provider": "openai", "model": "openai/gpt-5.6-sol", "status": 200, "region": "global"}
+    ]
+  }
+}
+```
+
+| Field | Meaning |
+|---|---|
+| `requested` | The model name you sent, before any resolution |
+| `strategy` | How that name was resolved. See below |
+| `region` | The region the request was **served** from |
+| `summary` | One-line digest: how many providers were available, and which served |
+| `attempt` | 1-based position of the attempt that served. `2` means the first one failed |
+| `is_byok` | Whether your own provider key was used instead of Eden AI's |
+| `endpoints.total` | How many providers offer the requested model |
+| `endpoints.available` | Each of them, with `primary` (chosen first) and `reachable` (usable for this request) |
+| `attempts` | Every provider actually called, in order, each with its HTTP `status` and `region` |
+
+### Strategy values
+
+`strategy` tells you how much Eden AI chose for you:
+
+| Value | Meaning |
+|---|---|
+| `direct` | You named a `provider/model`, so no routing happened |
+| `alias` | You named an alias, which resolved to a specific model |
+| `routed` | You named a model without a provider, so Eden AI picked one. See [Provider Routing](/v3/llms/provider-routing) |
+| `auto` | You used `@edenai`, so Eden AI picked the model too. See [Smart Routing](/v3/llms/smart-routing) |
+
+## Reading it on a stream
+
+For streaming requests the block rides the **first** chunk, not the last. Routing is settled before the first token is generated, so the answer is already known, and putting it first means you get it even from providers that never send a terminal usage chunk.
+
+```json
+{
+  "id": "chatcmpl-abc123",
+  "object": "chat.completion.chunk",
+  "choices": [{"delta": {"role": "assistant"}, "index": 0}],
+  "edenai_metadata": {"...": "..."}
+}
+```
+
+<Warning>
+If a stream fails partway through, the error frame carries a **corrected** block. The retry that happened after the first chunk would otherwise leave you holding a report that says the request succeeded. Read the block from the first chunk, and let a later error frame overwrite it.
+</Warning>
+
+## What it is useful for
+
+- **Confirming which provider answered.** With provider routing the seller varies per request; `summary` and `attempts` name the one that produced your tokens.
+- **Explaining a slow or failed request.** `attempts` records every provider tried with its status, so a retry is visible rather than inferred from latency.
+- **Verifying BYOK.** `is_byok` confirms your own key was used, without reading a bill.
+- **Verifying data residency.** `region` reports where the request was actually served, not merely what you asked for.
+- **Attributing cost.** The provider in `attempts` is the one you were billed for.
+
+## Scope
+
+Available on the LLM endpoints (`/v3/chat/completions`, `/v3/responses` and `/v3/v1/messages`) in both streaming and non-streaming form. It is not returned by `/v3/universal-ai`.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Provider Routing" icon="shuffle" href="/v3/llms/provider-routing">
+    How the provider in `attempts` was chosen
+  </Card>
+  <Card title="Fallback" icon="rotate-left" href="/v3/general/fallback">
+    Name your own backup models
+  </Card>
+  <Card title="BYOK" icon="key" href="/v3/general/byok">
+    Use your own provider keys
+  </Card>
+  <Card title="Monitoring" icon="chart-line" href="/v3/general/monitoring">
+    Account-level consumption and credits
+  </Card>
+</CardGroup>

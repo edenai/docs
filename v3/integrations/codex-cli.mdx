@@ -107,7 +107,12 @@ url = "https://mcp.edenai.run/mcp"
 bearer_token_env_var = "EDENAI_API_KEY"
 ```
 
-Codex reads `EDENAI_API_KEY` from the environment at connect time and sends it as an `Authorization: Bearer` header, which keeps the key out of a config file that may be committed. The CLI equivalent is `codex mcp add edenai --url https://mcp.edenai.run/mcp`.
+Codex reads `EDENAI_API_KEY` from the environment at connect time and sends it as an `Authorization: Bearer` header, which keeps the key out of a config file that may be committed. The CLI equivalent is:
+
+```bash
+codex mcp add edenai --url https://mcp.edenai.run/mcp \
+  --bearer-token-env-var EDENAI_API_KEY
+```
 
 See the [MCP server page](/v3/expert-models/mcp-server) for the full tool catalog and the conventions its tools share.
 

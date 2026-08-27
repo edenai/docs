@@ -159,7 +159,7 @@ async def main():
 
                 for call in message.tool_calls:
                     result = await mcp.call_tool(
-                        call.function.name, json.loads(call.function.arguments)
+                        call.function.name, json.loads(call.function.arguments or "{}")
                     )
                     text = "\n".join(
                         block.text for block in result.content if block.type == "text"
@@ -298,7 +298,7 @@ async def read_document(mcp, path):
 ```
 </CodeGroup>
 
-Uploads are kept for 30 days by default, configurable from 1 to 30 with `expires_in_days`.
+The tool sends a 30-day retention by default and accepts 1 to 30 days in `expires_in_days`. Uploading through [the REST API](/v3/llms/file-upload) instead keeps a file for 7 days unless you ask for longer.
 
 <Tip>
 When you mention a file ID in a prompt so the model can pass it to a tool itself, put it in a fenced code block. Models occasionally mistranscribe a UUID embedded in plain prose, which produces a confusing 404 from the tool.
@@ -315,16 +315,17 @@ import asyncio
 import json
 
 
-async def ocr_pdf(mcp, file_id):
+async def ocr_pdf(mcp, file_id, timeout_s=300, interval_s=3):
     job = await mcp.call_tool("ocr_async", {"model": "amazon", "file": file_id})
     job_id = json.loads(job.content[0].text)["job_id"]
 
-    while True:
+    for _ in range(timeout_s // interval_s):
         status = await mcp.call_tool("check_job", {"job_id": job_id})
         payload = json.loads(status.content[0].text)
         if payload["status"] in ("success", "fail"):
             return payload
-        await asyncio.sleep(3)
+        await asyncio.sleep(interval_s)
+    raise TimeoutError(f"job {job_id} did not finish within {timeout_s}s")
 ```
 </CodeGroup>
 

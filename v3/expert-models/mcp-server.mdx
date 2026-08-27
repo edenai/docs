@@ -66,7 +66,7 @@ Every tool carries a JSON Schema for its parameters, so a client discovers the c
 ```python Python
 async def print_catalog(mcp):
     for tool in (await mcp.list_tools()).tools:
-        required = tool.inputSchema.get("required", [])
+        required = tool.input_schema.get("required", [])
         print(f"{tool.name}({', '.join(required)})")
 ```
 </CodeGroup>
@@ -84,8 +84,12 @@ Every feature tool follows the same three rules:
 You do not need an MCP-aware client. Fetch the catalog, hand the schemas to a model as function-calling tools, and execute the calls the model asks for. The loop below uses the OpenAI SDK against the Eden AI gateway:
 
 ```bash
-pip install mcp openai
+pip install "mcp>=2" openai
 ```
+
+<Note>
+These examples target version 2 of the `mcp` Python SDK. Version 1 spelled the transport `streamablehttp_client(url, headers=...)`, yielded a third session-ID value alongside the streams, and named the model attributes `inputSchema` and `isError`. All of those changed in 2.0, so an unpinned install of an older snippet will fail on the import.
+</Note>
 
 {/* skip-test */}
 <CodeGroup>
@@ -95,7 +99,7 @@ import json
 import os
 
 from mcp import ClientSession
-from mcp.client.streamable_http import streamablehttp_client
+from mcp.client.streamable_http import create_mcp_http_client, streamable_http_client
 from openai import AsyncOpenAI
 
 API_KEY = os.environ["EDENAI_API_KEY"]
@@ -106,8 +110,8 @@ RESULT_CAP = 20_000
 
 
 async def main():
-    headers = {"Authorization": f"Bearer {API_KEY}"}
-    async with streamablehttp_client(MCP_URL, headers=headers) as (read, write, _):
+    http_client = create_mcp_http_client(headers={"Authorization": f"Bearer {API_KEY}"})
+    async with streamable_http_client(MCP_URL, http_client=http_client) as (read, write):
         async with ClientSession(read, write) as mcp:
             await mcp.initialize()
 
@@ -119,7 +123,7 @@ async def main():
                     "function": {
                         "name": tool.name,
                         "description": tool.description or "",
-                        "parameters": tool.inputSchema,
+                        "parameters": tool.input_schema,
                     },
                 }
                 for tool in catalog
@@ -164,7 +168,7 @@ async def main():
                     text = "\n".join(
                         block.text for block in result.content if block.type == "text"
                     )
-                    if result.isError:
+                    if result.is_error:
                         text = f"Tool error: {text}"
                     messages.append({
                         "role": "tool",
@@ -188,7 +192,7 @@ On this surface, a custom tool named exactly `web_search` collides with the prov
 </Warning>
 
 ```bash
-pip install mcp anthropic
+pip install "mcp>=2" anthropic
 ```
 
 {/* skip-test */}
@@ -199,7 +203,7 @@ import os
 
 from anthropic import AsyncAnthropic
 from mcp import ClientSession
-from mcp.client.streamable_http import streamablehttp_client
+from mcp.client.streamable_http import create_mcp_http_client, streamable_http_client
 
 API_KEY = os.environ["EDENAI_API_KEY"]
 MCP_URL = "https://mcp.edenai.run/mcp"
@@ -211,8 +215,8 @@ ALIASES = {"internet_search": "web_search"}
 
 
 async def main():
-    headers = {"Authorization": f"Bearer {API_KEY}"}
-    async with streamablehttp_client(MCP_URL, headers=headers) as (read, write, _):
+    http_client = create_mcp_http_client(headers={"Authorization": f"Bearer {API_KEY}"})
+    async with streamable_http_client(MCP_URL, http_client=http_client) as (read, write):
         async with ClientSession(read, write) as mcp:
             await mcp.initialize()
 
@@ -221,7 +225,7 @@ async def main():
                 {
                     "name": alias,
                     "description": catalog[name].description or "",
-                    "input_schema": catalog[name].inputSchema,
+                    "input_schema": catalog[name].input_schema,
                 }
                 for alias, name in ALIASES.items()
             ]
@@ -252,7 +256,7 @@ async def main():
                     text = "\n".join(
                         part.text for part in result.content if part.type == "text"
                     )
-                    if result.isError:
+                    if result.is_error:
                         text = f"Tool error: {text}"
                     results.append({
                         "type": "tool_result",
@@ -360,7 +364,7 @@ Smaller models sometimes announce a tool call in prose instead of emitting one. 
 
 - **Echo back only the fields in the spec.** Gateway responses can carry non-standard extras on `tool_calls`, such as an `index` field. Sending those back on the next turn is rejected by strict providers. Rebuild minimal `{id, type, function: {name, arguments}}` objects, and use `""` rather than `null` for the assistant message content.
 - **Cap the size of tool results.** OCR and scraping output can be very large. Truncating to roughly 20,000 characters before appending to the conversation keeps the context manageable without losing the useful part.
-- **Treat tool errors as results, not exceptions.** A failed tool call comes back with `isError` set rather than raising. Pass the error text to the model and it will usually retry with corrected arguments.
+- **Treat tool errors as results, not exceptions.** A failed tool call comes back with `is_error` set rather than raising. Pass the error text to the model and it will usually retry with corrected arguments.
 - **Filter the catalog before sending it.** The full catalog is a lot of schema for one prompt. Send only the tools the task needs, which improves both accuracy and cost.
 - **Use URLs when you have them.** Skipping `upload_file` removes a round trip and a class of transcription errors.
 

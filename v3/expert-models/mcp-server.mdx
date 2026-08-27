@@ -88,7 +88,7 @@ pip install "mcp>=2" openai
 ```
 
 <Note>
-These examples target version 2 of the `mcp` Python SDK. Version 1 spelled the transport `streamablehttp_client(url, headers=...)`, yielded a third session-ID value alongside the streams, and named the model attributes `inputSchema` and `isError`. All of those changed in 2.0, so an unpinned install of an older snippet will fail on the import.
+These examples require the `mcp` Python SDK 2.0 or later.
 </Note>
 
 {/* skip-test */}
@@ -132,7 +132,7 @@ async def main():
 
             # 2. Run the model and execute whatever it asks for.
             client = AsyncOpenAI(base_url="https://api.edenai.run/v3", api_key=API_KEY)
-            messages = [{"role": "user", "content": "Who is the current CEO of Anthropic?"}]
+            messages = [{"role": "user", "content": "What is the latest stable release of Python?"}]
 
             for _ in range(6):
                 response = await client.chat.completions.create(
@@ -231,7 +231,7 @@ async def main():
             ]
 
             client = AsyncAnthropic(base_url="https://api.edenai.run/v3", auth_token=API_KEY)
-            messages = [{"role": "user", "content": "Who is the current CEO of Anthropic?"}]
+            messages = [{"role": "user", "content": "What is the latest stable release of Python?"}]
 
             for _ in range(6):
                 response = await client.messages.create(

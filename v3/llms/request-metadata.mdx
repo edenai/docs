@@ -14,7 +14,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "LLM API", "observability", "debugging", "provider routing"]}
   datePublished="2026-08-19T00:00:00Z"
-  dateModified="2026-08-19T00:00:00Z"
+  dateModified="2026-08-28T00:00:00Z"
 />
 
 Eden AI makes decisions on your behalf on every LLM request: which provider serves a model sold by several, which region it runs in, whether to retry elsewhere when one fails, and whether to use your own provider key. None of that is visible in a normal response, because the answer looks the same whoever produced it.
@@ -66,7 +66,8 @@ The response gains one extra top-level key, `edenai_metadata`:
     },
     "attempts": [
       {"provider": "openai", "model": "openai/gpt-5.6-sol", "status": 200, "region": "global"}
-    ]
+    ],
+    "auto": null
   }
 }
 ```
@@ -82,6 +83,7 @@ The response gains one extra top-level key, `edenai_metadata`:
 | `endpoints.total` | How many providers offer the requested model |
 | `endpoints.available` | Each of them, with `primary` (chosen first) and `reachable` (usable for this request) |
 | `attempts` | Every provider actually called, in order, each with its HTTP `status` and `region` |
+| `auto` | What the `@edenai` router chose, or `null` when you named the model yourself. See below |
 
 ### Strategy values
 
@@ -93,6 +95,21 @@ The response gains one extra top-level key, `edenai_metadata`:
 | `alias` | You named an alias, which resolved to a specific model |
 | `routed` | You named a model without a provider, so Eden AI picked one. See [Provider Routing](/v3/llms/provider-routing) |
 | `auto` | You used `@edenai`, so Eden AI picked the model too. See [Smart Routing](/v3/llms/smart-routing) |
+
+### When Eden AI chose the model
+
+Name a model and `auto` is `null`, which is what tells a parser that the choice was yours. Send `@edenai` and it reports how the model was chosen:
+
+```json
+"auto": {
+  "selection": "ranked",
+  "chosen": "openai/gpt-5-nano",
+  "dropped": ["azure/gpt-5.5"],
+  "quality_cost": 8
+}
+```
+
+`selection` says how the model was arrived at: `ranked` (the candidates were ranked for this request), `single` (only one was eligible) or `default` (they could not be ranked, so a default was applied). `chosen` is the model handed to the pipeline, and `dropped` lists the `router_candidates` that could not be ranked. [Smart Routing](/v3/llms/smart-routing#seeing-what-was-chosen) documents every field.
 
 ## Reading it on a stream
 
@@ -118,6 +135,7 @@ If a stream fails partway through, the error frame carries a **corrected** block
 - **Verifying BYOK.** `is_byok` confirms your own key was used, without reading a bill.
 - **Verifying data residency.** `region` reports where the request was actually served, not merely what you asked for.
 - **Attributing cost.** The provider in `attempts` is the one you were billed for.
+- **Seeing what `@edenai` chose.** `auto.chosen` names the model, and `auto.selection` says whether it was ranked for this request or applied as a default.
 
 ## Scope
 

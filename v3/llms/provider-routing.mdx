@@ -14,7 +14,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "LLM API", "provider routing", "load balancing", "failover"]}
   datePublished="2026-08-19T00:00:00Z"
-  dateModified="2026-08-24T00:00:00Z"
+  dateModified="2026-08-28T00:00:00Z"
 />
 
 Many models are sold by more than one provider. `gpt-5.6-sol` is served by OpenAI and Azure, `kimi-k2.6` by seven providers, `gpt-oss-120b` by ten. They run the same weights at different prices, speeds and reliability.
@@ -105,6 +105,8 @@ The same objective can be written as a suffix on the model name, which is useful
 </Info>
 
 Naming an objective also turns off traffic spreading: `cost` means the cheapest provider every time, not a weighted draw.
+
+`sort` never changes **which model** answers, only who serves it. To let Eden AI trade quality for a cheaper model, see [`routing.quality_cost`](/v3/llms/smart-routing#trading-quality-for-cost).
 
 ## Restricting which providers may be used
 

@@ -53,8 +53,8 @@ OpenClaw stores its config at `~/.openclaw/openclaw.json` (on Windows: `%USERPRO
         "api": "openai-completions",
         "models": [
           {
-            "id": "anthropic/claude-sonnet-4-5",
-            "name": "Eden AI — Claude Sonnet 4.5",
+            "id": "anthropic/claude-sonnet-latest",
+            "name": "Eden AI — Claude Sonnet",
             "contextWindow": 128000,
             "maxTokens": 16384,
             "input": ["text", "image"],
@@ -77,7 +77,7 @@ OpenClaw stores its config at `~/.openclaw/openclaw.json` (on Windows: `%USERPRO
   "agents": {
     "defaults": {
       "model": {
-        "primary": "edenai/anthropic/claude-sonnet-4-5"
+        "primary": "edenai/anthropic/claude-sonnet-latest"
       }
     }
   }
@@ -90,7 +90,7 @@ Use any `provider/model` from the Eden AI catalog. Pick one that supports functi
 <Note>
 A few notes on the config above:
 - **`api`** must be `openai-completions`. Eden AI exposes an OpenAI-compatible endpoint, and this tells OpenClaw which wire protocol to use. If you omit it, the model fails to load with `no "api" specified`.
-- **`agents.defaults.model.primary`** makes the Eden AI model OpenClaw's default. It must be `edenai/<model-id>` — the provider key (`edenai`) plus the model's `id` (e.g. `edenai/anthropic/claude-sonnet-4-5`).
+- **`agents.defaults.model.primary`** makes the Eden AI model OpenClaw's default. It must be `edenai/<model-id>` — the provider key (`edenai`) plus the model's `id` (e.g. `edenai/anthropic/claude-sonnet-latest`).
 - **`name`** is just the display label shown in OpenClaw's model picker. If you switch `id` to another model, rename this field too so the picker doesn't show a stale label.
 - **`cost`** values are placeholders. Billing is handled on the Eden AI side through your API key, so OpenClaw's local cost tracking isn't used here. Check per-request cost in the [Eden AI dashboard](https://app.edenai.run).
 - **`supportsTools: true`** enables tool/function calling through Eden AI. Set it to `false` only if you want to restrict this provider to plain chat completions.
@@ -104,7 +104,7 @@ Run the built-in wizard:
 openclaw configure
 ```
 
-In the **Model and auth** step, select `Eden AI — Claude Sonnet 4.5` — the model you defined in Step 1 (it's already your default from the `agents.defaults.model.primary` setting). Accept the defaults for the remaining steps (Workspace, Gateway, Channels, etc.) unless you have specific local-networking or channel needs.
+In the **Model and auth** step, select `Eden AI — Claude Sonnet` — the model you defined in Step 1 (it's already your default from the `agents.defaults.model.primary` setting). Accept the defaults for the remaining steps (Workspace, Gateway, Channels, etc.) unless you have specific local-networking or channel needs.
 
 <Note>
 The wizard's **Gateway** step configures OpenClaw's *local* server (port, bind address, auth mode, tailscale exposure) — it does **not** ask for the Eden AI API URL. That's already set as `models.providers.edenai.baseUrl` in Step 1.
@@ -130,7 +130,7 @@ Common choices:
 
 | Model | Best for |
 |---|---|
-| `anthropic/claude-sonnet-4-5` | **Recommended default** — balanced reasoning, reliable tool calling |
+| `anthropic/claude-sonnet-latest` | **Recommended default** — balanced reasoning, reliable tool calling |
 | `anthropic/claude-opus-4-7` | Maximum capability |
 | `anthropic/claude-haiku-4-5` | Fast and cheap |
 | `openai/gpt-5` | OpenAI's frontier model |
@@ -174,7 +174,7 @@ Verify your Eden AI key — grab a fresh one at [app.edenai.run](https://app.ede
 
 ### `model not found`
 
-Ensure the `id` uses the `provider/model` format (e.g. `anthropic/claude-sonnet-4-5`). No bare model names.
+Ensure the `id` uses the `provider/model` format (e.g. `anthropic/claude-sonnet-latest`). No bare model names.
 
 ### `no "api" specified`
 

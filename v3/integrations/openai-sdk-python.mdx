@@ -72,7 +72,7 @@ Access models from multiple providers using the `provider/model` format:
 - `openai/gpt-3.5-turbo`
 
 **Anthropic**
-- `anthropic/claude-sonnet-4-5`
+- `anthropic/claude-sonnet-latest`
 - `anthropic/claude-opus-4-5`
 - `anthropic/claude-haiku-4-5`
 
@@ -81,12 +81,12 @@ Access models from multiple providers using the `provider/model` format:
 - `google/gemini-2.5-flash`
 
 **Cohere**
-- `cohere/command-r-plus`
-- `cohere/command-r`
+- `cohere/command-a-03-2025`
+- `cohere/command-r-08-2024`
 
-**Meta**
-- `meta/llama-3-70b`
-- `meta/llama-3-8b`
+**Meta Llama** (served by EU hosts, the id carries the host)
+- `scaleway/llama-3.3-70b-instruct`
+- `ionos/meta-llama/Meta-Llama-3.1-8B-Instruct`
 
 ## Multi-Turn Conversations
 
@@ -107,7 +107,7 @@ messages = [
 ]
 
 response = client.chat.completions.create(
-    model="anthropic/claude-sonnet-4-5",
+    model="anthropic/claude-sonnet-latest",
     messages=messages
 )
 
@@ -121,7 +121,7 @@ messages.append({"role": "assistant", "content": assistant_response})
 messages.append({"role": "user", "content": "What's the population?"})
 
 response = client.chat.completions.create(
-    model="anthropic/claude-sonnet-4-5",
+    model="anthropic/claude-sonnet-latest",
     messages=messages
 )
 

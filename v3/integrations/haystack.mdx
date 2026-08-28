@@ -30,7 +30,7 @@ The integration provides three components:
 - `EdenAITextEmbedder` to embed a query string
 - `EdenAIDocumentEmbedder` to embed documents for indexing
 
-Models use Eden AI's `provider/model` naming convention, for example `anthropic/claude-sonnet-4-5` or `mistral/mistral-large-latest`.
+Models use Eden AI's `provider/model` naming convention, for example `anthropic/claude-sonnet-latest` or `mistral/mistral-large-latest`.
 
 ## Installation
 
@@ -81,7 +81,7 @@ messages = [ChatMessage.from_user("Write a haiku about the sea.")]
 
 for model in [
     "openai/gpt-4o-mini",
-    "anthropic/claude-sonnet-4-5",
+    "anthropic/claude-sonnet-latest",
     "mistral/mistral-large-latest",
 ]:
     generator = EdenAIChatGenerator(model=model)
@@ -144,7 +144,7 @@ Use the `provider/model` format for any Eden AI model:
 
 **Chat**
 - `openai/gpt-4o-mini`
-- `anthropic/claude-sonnet-4-5`
+- `anthropic/claude-sonnet-latest`
 - `mistral/mistral-large-latest`
 - `google/gemini-2.5-flash`
 

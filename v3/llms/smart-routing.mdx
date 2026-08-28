@@ -1,14 +1,14 @@
 ---
 icon: "route"
 title: "Smart Routing"
-description: "Send @edenai as the model and Eden AI chooses which model answers each request, with a cost and quality knob and a local fallback when the router cannot answer."
+description: "Send @edenai as the model and Eden AI chooses which model answers each request, with a cost and quality knob and a fallback when the models cannot be ranked."
 ---
 
 import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
 
 <TechArticleSchema
   title={"Smart Routing"}
-  description={"Send @edenai as the model and Eden AI chooses which model answers each request, with a cost and quality knob and a local fallback when the router cannot answer."}
+  description={"Send @edenai as the model and Eden AI chooses which model answers each request, with a cost and quality knob and a fallback when the models cannot be ranked."}
   path="v3/llms/smart-routing"
   articleSection="LLMs"
   about={"LLM API"}
@@ -76,19 +76,18 @@ Each entry is a concrete `provider/model` id, the kind listed under `endpoints` 
 
 ### Entries that cannot be ranked are skipped
 
-Not every id Eden AI serves can be ranked. Today the router knows a model through the provider that makes it (`openai/`, `anthropic/`, `google/`, `mistral/`), not through a reseller of it, so `azure/gpt-5.5` is a perfectly valid Eden AI model id that is still skipped here.
-
-A skipped entry does not fail the request. It is dropped from the pool and reported back to you:
+The router ranks the models it has evaluated, and that is not every id Eden AI serves. An entry it cannot rank does not fail the request: it is dropped from the pool and reported back to you.
 
 ```json
-"auto": {"chosen": "openai/gpt-5-nano", "dropped": ["azure/gpt-5.5"]}
+"auto": {
+  "selection": "ranked",
+  "chosen": "openai/gpt-5-nano",
+  "dropped": ["openai/gpt-4o-search-preview"],
+  "quality_cost": null
+}
 ```
 
 The request fails with `422` only when nothing is left, and the error names every entry it dropped.
-
-<Warning>
-Alias names such as `openai/gpt-latest` resolve when you name them as your `model`, but not inside `router_candidates`. Send the id the alias points at, which the model listing reports as `alias_of`.
-</Warning>
 
 ## Trading quality for cost
 
@@ -96,7 +95,8 @@ Alias names such as `openai/gpt-latest` resolve when you name them as your `mode
 
 | Value | Asks for |
 |---|---|
-| `0` | The best model for this request. **Default** |
+| Unset | Quality first. **Default** |
+| `0` | The best model for this request |
 | `1` to `9` | A blend, weighted towards cost as the number rises |
 | `10` | The cheapest model that can still handle the request |
 
@@ -133,30 +133,30 @@ Leave it unset and Eden AI optimises for quality, which is why a one-line prompt
 
 Two questions get answered on an `@edenai` request: which model, then which provider serves it.
 
-When the router answers, it names a provider along with the model, so the second question is already settled. When it cannot answer and Eden AI falls back to one of its default models, that model is a bare name, and [provider routing](/v3/llms/provider-routing) resolves it exactly as if you had sent it yourself: your `routing.sort`, `routing.allowed_providers`, sticky affinity, region and failover all still apply.
+When ranking succeeds, it names a provider along with the model, so the second question is already settled. When it cannot rank and Eden AI falls back to one of its default models, that model is a bare name, and [provider routing](/v3/llms/provider-routing) resolves it exactly as if you had sent it yourself: your `routing.sort`, `routing.allowed_providers`, sticky affinity, region and failover all still apply.
 
-## What is sent to the routing engine
+## What the ranking step looks at
 
-Ranking models means describing your request to the component that ranks them. Eden AI sends a digest, never the request.
+Ranking models means describing your request. The ranking step works from a digest, never the full request.
 
-**Sent**
+**Looked at**
 
 - System text, plus the last **8 turns** of the conversation, capped at **16,000 characters** in total. Older turns are dropped first.
 - The **names and descriptions** of your function tools.
-- Content hashing is enabled on the call, so the text is not kept on the other side.
+- Message content is hashed, not stored, once the ranking is done.
 
-**Never sent**
+**Never looked at**
 
 - Images, files and audio.
 - Tool results, and the arguments of tool calls. A tool call contributes its name only.
 - Reasoning items.
 - Anything older than those last 8 turns.
 
-If nothing textual survives, an image-only prompt for instance, the ranking call is skipped altogether and Eden AI chooses locally. See [Data Retention](/v3/data-governance/data-retention) for what Eden AI itself keeps.
+If nothing textual survives, an image-only prompt for instance, ranking is skipped altogether and Eden AI applies a default. See [Data Retention](/v3/data-governance/data-retention) for what Eden AI itself keeps.
 
 ## Routing never fails your request
 
-The ranking call is a hint, not a dependency. If it is slow, rate limited, unavailable, or answers with a model outside the pool, Eden AI chooses locally and your request carries on:
+Ranking is a hint, not a requirement. If it is slow, fails, or answers with a model outside the pool, Eden AI applies a default and your request carries on:
 
 1. Your first `router_candidates` entry that survived filtering.
 2. Otherwise the first of Eden AI's default models with a provider callable on your endpoint and region.
@@ -164,9 +164,9 @@ The ranking call is a hint, not a dependency. If it is slow, rate limited, unava
 
 All three report themselves as `selection: "default"` in the [metadata](#seeing-what-was-chosen).
 
-Some requests never make the ranking call at all. A pool of one model is its own answer, reported as `selection: "single"`. An empty digest takes a default, and so does a request arriving during the 30 seconds Eden AI stops calling after a run of failures.
+Some requests are never ranked at all. A pool of one model is its own answer, reported as `selection: "single"`. An empty digest takes a default, and so does a request arriving while ranking is briefly paused after repeated failures.
 
-Waiting is bounded too. The router gets 3 seconds to answer and is not retried when it is merely slow, because a routing decision that costs more than it saves is not worth having.
+Waiting is bounded too. Ranking gets a few seconds and is not retried when it is merely slow, because a routing decision that costs more than it saves is not worth having.
 
 ### The errors you can still get
 
@@ -196,7 +196,7 @@ Send `x-edenai-metadata: enabled` and the response carries an `auto` block insid
 | Field | Meaning |
 |---|---|
 | `selection` | How the model was arrived at. See below |
-| `chosen` | The model handed to the pipeline. A `provider/model` id, or a bare model name when a default was applied |
+| `chosen` | The model handed to the pipeline. A `provider/model` id, or a bare model name when one of Eden AI's default models was applied |
 | `dropped` | The `router_candidates` entries that could not be ranked |
 | `quality_cost` | The value you sent, unchanged. `null` if you sent none |
 
@@ -206,7 +206,7 @@ Send `x-edenai-metadata: enabled` and the response carries an `auto` block insid
 | `single` | One candidate was eligible, so there was nothing to rank |
 | `default` | The candidates could not be ranked this time, so a default was applied: your first candidate, or Eden AI's own default when you named none |
 
-The block reports the outcome, not the machinery. It does not name what ranks the models, and it does not say why a `default` was applied, because both are Eden AI's dependencies to watch rather than yours.
+The block reports the outcome, not the machinery: it does not say why a `default` was applied, because that is Eden AI's to watch rather than yours.
 
 ```python Python
 import requests

@@ -118,7 +118,7 @@ client = OpenAI(
 )
 
 response = client.chat.completions.create(
-    model="anthropic/claude-sonnet-4-5",
+    model="anthropic/claude-sonnet-latest",
     messages=[{"role": "user", "content": "Hello!"}]
 )
 
@@ -130,9 +130,9 @@ print(response.choices[0].message.content)
 Use the format `provider/model`:
 
 - `openai/gpt-4`
-- `anthropic/claude-sonnet-4-5`
+- `anthropic/claude-sonnet-latest`
 - `google/gemini-2.5-flash`
-- `mistral/mistral-large`
+- `mistral/mistral-large-latest`
 
 <Card title="List all available models" icon="list" href="/v3/llms/listing-models">
   Discover all 315+ LLM models available through Eden AI.

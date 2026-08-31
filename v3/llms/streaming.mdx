@@ -55,7 +55,7 @@ client = OpenAI(
 )
 
 stream = client.chat.completions.create(
-    model="anthropic/claude-sonnet-4-5",
+    model="anthropic/claude-sonnet-latest",
     messages=[{"role": "user", "content": "Tell me a short story"}],
     stream=True
 )

@@ -15,7 +15,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "LibreChat"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-05-07T00:00:00Z"
+  dateModified="2026-08-31T00:00:00Z"
 />
 
 Configure LibreChat, the open-source ChatGPT alternative, to use Eden AI for access to 500+ AI models.
@@ -122,12 +122,12 @@ endpoints:
       baseURL: "https://api.edenai.run/v3"
       models:
         default:
-          - "anthropic/claude-sonnet-4-5"
+          - "anthropic/claude-sonnet-latest"
           - "openai/gpt-4"
           - "openai/gpt-4-turbo"
           - "google/gemini-2.5-pro"
           - "google/gemini-2.5-flash"
-          - "cohere/command-r-plus"
+          - "cohere/command-a-03-2025"
           - "openai/gpt-3.5-turbo"
         fetch: false
       titleConvo: true
@@ -166,9 +166,9 @@ endpoints:
       baseURL: "https://api.edenai.run/v3"
       models:
         default:
-          - "anthropic/claude-sonnet-4-5"
+          - "anthropic/claude-sonnet-latest"
           - "anthropic/claude-opus-4-5"
-          - "anthropic/claude-sonnet-4-5"
+          - "anthropic/claude-sonnet-latest"
           - "anthropic/claude-haiku-4-5"
       modelDisplayLabel: "Claude (Eden AI)"
 
@@ -220,7 +220,7 @@ endpoints:
         default:
           - "openai/gpt-4o"
           - "google/gemini-2.5-pro"
-          - "anthropic/claude-sonnet-4-5"
+          - "anthropic/claude-sonnet-latest"
       # Enable file uploads
       fileConfig:
         endpoints:
@@ -250,12 +250,12 @@ endpoints:
       baseURL: "https://api.edenai.run/v3"
       models:
         default:
-          - "anthropic/claude-sonnet-4-5"
+          - "anthropic/claude-sonnet-latest"
           - "openai/gpt-4"
       # Add custom presets
       presets:
         - title: "Code Assistant"
-          model: "anthropic/claude-sonnet-4-5"
+          model: "anthropic/claude-sonnet-latest"
           temperature: 0.1
           system_message: "You are an expert programmer. Provide clean, well-documented code."
 
@@ -286,7 +286,7 @@ endpoints:
       baseURL: "https://api.edenai.run/v3"
       models:
         default:
-          - "anthropic/claude-sonnet-4-5"
+          - "anthropic/claude-sonnet-latest"
       # Default parameters
       default:
         temperature: 0.7
@@ -444,7 +444,7 @@ If models don't show up in the interface:
      -H "Authorization: Bearer YOUR_API_KEY" \
      -H "Content-Type: application/json" \
      -d '{
-       "model": "anthropic/claude-sonnet-4-5",
+       "model": "anthropic/claude-sonnet-latest",
        "messages": [{"role": "user", "content": "test"}],
        "stream": true
      }'

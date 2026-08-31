@@ -14,7 +14,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Beginner"
   keywords={["Eden AI", "AI API", "AI gateway", "multi-provider"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-05-07T00:00:00Z"
+  dateModified="2026-08-31T00:00:00Z"
 />
 
 Eden AI V3 provides two main endpoints. Both share the same base URL (`https://api.edenai.run/v3`) and authentication (`Authorization: Bearer YOUR_API_KEY`), but they serve different purposes.
@@ -43,7 +43,7 @@ The LLM endpoint follows the **OpenAI chat completions format**, making it a dro
 
 **Model format:** `provider/model`
 
-Examples: `openai/gpt-4`, `anthropic/claude-sonnet-4-5`, `google/gemini-2.5-flash`
+Examples: `openai/gpt-4`, `anthropic/claude-sonnet-latest`, `google/gemini-2.5-flash`
 
 <CodeGroup>
 ```python Python
@@ -110,7 +110,7 @@ The Universal AI endpoint handles **specialized AI tasks** through a single URL.
 
 **Model format:** `feature/subfeature/provider[/model]`
 
-Examples: `text/moderation/openai`, `ocr/financial_parser/google`, `image/generation/openai/dall-e-3`
+Examples: `text/moderation/openai`, `ocr/financial_parser/google`, `image/generation/openai/gpt-image-2`
 
 <CodeGroup>
 ```python Python

@@ -14,7 +14,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "LLM API", "chat completion", "OpenAI compatible"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-06-11T00:00:00Z"
+  dateModified="2026-08-31T00:00:00Z"
 />
 
 Build conversational AI applications using Eden AI's OpenAI-compatible chat completions endpoint.
@@ -42,9 +42,9 @@ provider/model
 **Examples:**
 
 - `openai/gpt-4`
-- `anthropic/claude-sonnet-4-5`
+- `anthropic/claude-sonnet-latest`
 - `google/gemini-2.5-flash`
-- `cohere/command-r-plus`
+- `cohere/command-a-03-2025`
 
 ## Basic Chat Completion
 
@@ -118,7 +118,7 @@ headers = {
 }
 
 payload = {
-    "model": "anthropic/claude-sonnet-4-5",
+    "model": "anthropic/claude-sonnet-latest",
     "messages": [
         {"role": "user", "content": "What is the capital of France?"},
         {"role": "assistant", "content": "The capital of France is Paris."},
@@ -224,7 +224,7 @@ headers = {
 }
 
 payload = {
-    "model": "anthropic/claude-sonnet-4-5",
+    "model": "anthropic/claude-sonnet-latest",
     "messages": [
         {"role": "user", "content": "How many r's are in strawberry? Think it through."}
     ],
@@ -243,7 +243,7 @@ curl -X POST https://api.edenai.run/v3/chat/completions \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "anthropic/claude-sonnet-4-5",
+    "model": "anthropic/claude-sonnet-latest",
     "messages": [{"role": "user", "content": "Think it through: how many r in strawberry?"}],
     "thinking": {"type": "enabled", "budget_tokens": 2000}
   }'
@@ -321,7 +321,7 @@ client = OpenAI(
 
 # Use any provider through OpenAI SDK
 response = client.chat.completions.create(
-    model="anthropic/claude-sonnet-4-5",
+    model="anthropic/claude-sonnet-latest",
     messages=[{"role": "user", "content": "Hello!"}]
 )
 

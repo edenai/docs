@@ -15,7 +15,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "OpenAI SDK", "TypeScript"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-05-07T00:00:00Z"
+  dateModified="2026-08-31T00:00:00Z"
 />
 
 Use the official OpenAI TypeScript/JavaScript SDK with Eden AI for seamless multi-provider access.
@@ -82,7 +82,7 @@ const client = new OpenAI({
 });
 
 const stream = await client.chat.completions.create({
-  model: 'anthropic/claude-sonnet-4-5',
+  model: 'anthropic/claude-sonnet-latest',
   messages: [{ role: 'user', content: 'Hello!' }],
   stream: true,
 });
@@ -133,17 +133,17 @@ Access models from multiple providers:
 - `openai/gpt-3.5-turbo`
 
 ### Anthropic
-- `anthropic/claude-sonnet-4-5`
+- `anthropic/claude-sonnet-latest`
 - `anthropic/claude-opus-4-5`
-- `anthropic/claude-sonnet-4-5`
+- `anthropic/claude-sonnet-latest`
 
 ### Google
 - `google/gemini-2.5-pro`
 - `google/gemini-2.5-flash`
 
-### Cohere & Meta
-- `cohere/command-r-plus`
-- `meta/llama-3-70b`
+### Cohere and Meta Llama
+- `cohere/command-a-03-2025`
+- `scaleway/llama-3.3-70b-instruct`
 
 ## Multi-Turn Conversations
 
@@ -167,7 +167,7 @@ async function chat() {
 
   // First interaction
   const stream1 = await client.chat.completions.create({
-    model: 'anthropic/claude-sonnet-4-5',
+    model: 'anthropic/claude-sonnet-latest',
     messages,
     stream: true,
   });
@@ -187,7 +187,7 @@ async function chat() {
 
   // Continue conversation
   const stream2 = await client.chat.completions.create({
-    model: 'anthropic/claude-sonnet-4-5',
+    model: 'anthropic/claude-sonnet-latest',
     messages,
     stream: true,
   });
@@ -428,7 +428,7 @@ export function ChatComponent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: updatedMessages,
-          model: 'anthropic/claude-sonnet-4-5',
+          model: 'anthropic/claude-sonnet-latest',
         }),
       });
 
@@ -562,7 +562,7 @@ async function main() {
 
       try {
         const stream = await client.chat.completions.create({
-          model: 'anthropic/claude-sonnet-4-5',
+          model: 'anthropic/claude-sonnet-latest',
           messages,
           temperature: 0.7,
           stream: true,

@@ -11,9 +11,9 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   description={"Configure Kilo Code, the open-source AI coding agent for VS Code and the terminal, to use Eden AI for 500+ models behind one API key."}
   path="v3/integrations/kilo-code"
   articleSection="Coding Agents"
-  about={"AI Coding Agents"}
-  proficiencyLevel="Beginner"
-  keywords={["Eden AI", "AI API", "Kilo Code", "coding agent", "VS Code"]}
+  about={"AI Coding Assistants"}
+  proficiencyLevel="Intermediate"
+  keywords={["Eden AI", "AI API", "Kilo Code", "Coding Agent", "VS Code"]}
   datePublished="2026-08-27T00:00:00Z"
   dateModified="2026-08-27T00:00:00Z"
 />
@@ -48,7 +48,7 @@ Credentials are stored in Kilo's `auth.json`, the same store the CLI uses.
 Connecting interactively is the recommended path, so the key lands in `auth.json` rather than in a project file. In the TUI run `/connect`, choose **Eden AI**, then paste your key. From the shell:
 
 <CodeGroup>
-```bash bash
+```bash Terminal
 kilo auth login --provider edenai
 ```
 </CodeGroup>
@@ -56,7 +56,7 @@ kilo auth login --provider edenai
 Then pick a model from the picker, or set a default:
 
 <CodeGroup>
-```jsonc kilo.json
+```json kilo.json
 {
   "model": "edenai/anthropic/claude-sonnet-5"
 }
@@ -66,11 +66,11 @@ Then pick a model from the picker, or set a default:
 To keep the secret in the environment instead, declare the provider in `~/.config/kilo/kilo.json` or `./kilo.json`:
 
 <CodeGroup>
-```bash bash
+```bash Terminal
 export EDENAI_API_KEY="your_api_key_here"
 ```
 
-```jsonc ~/.config/kilo/kilo.json
+```json ~/.config/kilo/kilo.json
 {
   "provider": {
     "edenai": {
@@ -87,7 +87,7 @@ export EDENAI_API_KEY="your_api_key_here"
 Eden AI model IDs are already `vendor/model`, so a full reference in Kilo has **three** segments, `edenai/<vendor>/<model>`:
 
 <CodeGroup>
-```jsonc examples
+```json Examples
 { "model": "edenai/openai/gpt-4o-mini" }
 { "model": "edenai/google/gemini-3.6-flash" }
 { "model": "edenai/zai/glm-5.2" }
@@ -107,7 +107,7 @@ curl https://api.edenai.run/v3/models
 The picker lists the Eden AI models in the catalogue Kilo refreshes, which is smaller than the full Eden AI catalogue. Any other model can be declared yourself:
 
 <CodeGroup>
-```jsonc kilo.json
+```json kilo.json
 {
   "provider": {
     "edenai": {
@@ -133,7 +133,7 @@ The picker lists the Eden AI models in the catalogue Kilo refreshes, which is sm
 Point the provider at the EU gateway with a custom base URL:
 
 <CodeGroup>
-```jsonc kilo.json
+```json kilo.json
 {
   "provider": {
     "edenai": {
@@ -152,7 +152,7 @@ That base URL governs where Eden AI processes the request. The EU endpoint serve
 Independently, some models are published as a region-pinned variant that also pins the underlying vendor's region, marked with an `@eu` suffix:
 
 <CodeGroup>
-```jsonc kilo.json
+```json kilo.json
 { "model": "edenai/vertex/gemini-3.6-flash@eu" }
 ```
 </CodeGroup>

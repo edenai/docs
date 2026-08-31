@@ -1,0 +1,106 @@
+---
+title: "PyGPT"
+icon: "/integration-logo/py-gpt-icondoc.svg"
+description: "Configure PyGPT, the desktop AI assistant, to use Eden AI for 500+ models behind one API key."
+---
+
+import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
+
+<TechArticleSchema
+  title={"PyGPT"}
+  description={"Configure PyGPT, the desktop AI assistant, to use Eden AI for 500+ models behind one API key."}
+  path="v3/integrations/py-gpt"
+  articleSection="Chat UI"
+  about={"LLM Chat Interface"}
+  proficiencyLevel="Beginner"
+  keywords={["Eden AI", "AI API", "PyGPT", "Desktop Assistant", "LlamaIndex"]}
+  datePublished="2026-08-31T00:00:00Z"
+  dateModified="2026-08-31T00:00:00Z"
+/>
+
+Configure [PyGPT](https://github.com/szczyglis-dev/py-gpt), the desktop AI assistant, to use Eden AI for 500+ models behind one API key.
+
+## Overview
+
+PyGPT is a desktop application for chat, vision, image generation and agents. Eden AI is a **built-in provider**, configured entirely from the settings window with no file editing:
+
+- **500+ models**: reach OpenAI, Anthropic, Google, Mistral and more through one key
+- **Its own settings tab**: Eden AI has a dedicated tab under API keys
+- **LLM and embeddings**: the provider serves both, so semantic index features work from the same key
+- **EU endpoint**: change one field to route through `api.eu.edenai.run`
+
+## Prerequisites
+
+- PyGPT installed. See the [PyGPT repository](https://github.com/szczyglis-dev/py-gpt)
+- An Eden AI API key from [app.edenai.run](https://app.edenai.run) → **API Keys**
+
+## Setup
+
+### 1. Enter your key
+
+1. Open **Config** then **Settings**.
+2. Go to the **API Keys** section and select the **Eden AI** tab.
+3. Paste your key into **Eden AI API key**.
+4. Leave **API Endpoint** at its default, `https://api.edenai.run/v3`.
+5. Save.
+
+### 2. Add an Eden AI model
+
+Models are declared in the model editor with `edenai` as their provider, and the model name in Eden AI's `vendor/model` form. For example `anthropic/claude-sonnet-latest` or `openai/gpt-5-mini`.
+
+Once saved, the model appears in the model picker like any other.
+
+## Model naming
+
+Eden AI addresses models as `vendor/model`, and PyGPT forwards the name unchanged. The live catalogue is public and needs no key:
+
+<CodeGroup>
+```bash cURL
+curl https://api.edenai.run/v3/models
+```
+</CodeGroup>
+
+Read the catalogue rather than copying a list from a guide, since IDs are retired over time. `anthropic/claude-sonnet-latest` is an alias that always resolves to the current Sonnet, which makes it a safe default for a model entry you do not want to revisit.
+
+## Embeddings
+
+The Eden AI provider also serves embeddings, so PyGPT's index and semantic search features work from the same key. Embedding models live on a **separate catalogue**:
+
+<CodeGroup>
+```bash cURL
+curl https://api.edenai.run/v3/embeddings/models
+```
+</CodeGroup>
+
+An embedding model will not appear in `/v3/models`, which is a common source of confusion when picking one.
+
+## EU data residency
+
+Change the **API Endpoint** field in the Eden AI settings tab:
+
+```
+https://api.eu.edenai.run/v3
+```
+
+The EU endpoint serves the subset of the catalogue available in the EU, so a model that works on the global endpoint is not guaranteed to be reachable through it.
+
+## Troubleshooting
+
+### Authentication errors
+
+Re-check the key in **Settings** then **API Keys** then **Eden AI**. Make sure it is an Eden AI key and not a vendor key, and that it was pasted into the Eden AI tab rather than another provider's.
+
+### `model not found`
+
+Use the full `vendor/model` form, for example `openai/gpt-5-mini` and not `gpt-5-mini`. Copy the identifier exactly as `GET /v3/models` returns it.
+
+### The endpoint field was cleared
+
+An empty **API Endpoint** leaves the provider without a base URL. Restore the default, `https://api.edenai.run/v3`, or the EU host if that is what you want.
+
+## Next Steps
+
+- [Chat Completions](/v3/llms/chat-completions) - Core LLM endpoint
+- [List LLM Models](/v3/llms/listing-models) - Browse available providers and models
+- [LibreChat](/v3/integrations/librechat) - Another chat interface on Eden AI
+- [Open WebUI](/v3/integrations/open-webui) - Self-hosted chat UI on Eden AI

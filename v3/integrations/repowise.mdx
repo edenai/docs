@@ -1,0 +1,135 @@
+---
+title: "Repowise"
+icon: "/integration-logo/repowise-icondoc.svg"
+description: "Run Repowise codebase intelligence on Eden AI, for both the LLM and the embedder, with an EU endpoint."
+---
+
+import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
+
+<TechArticleSchema
+  title={"Repowise"}
+  description={"Run Repowise codebase intelligence on Eden AI, for both the LLM and the embedder, with an EU endpoint."}
+  path="v3/integrations/repowise"
+  articleSection="AI Frameworks"
+  about={"LLM Framework Integration"}
+  proficiencyLevel="Intermediate"
+  keywords={["Eden AI", "AI API", "Repowise", "Embeddings", "Semantic Search"]}
+  datePublished="2026-08-31T00:00:00Z"
+  dateModified="2026-08-31T00:00:00Z"
+/>
+
+Run [Repowise](https://github.com/repowise-dev/repowise) codebase intelligence on Eden AI, for both the LLM and the embedder, with an EU endpoint.
+
+## Overview
+
+Repowise reads a repository and produces code health scores, generated documentation and git analytics. Eden AI is a **built-in provider on both sides**, which is unusual: one key covers the language model and the embedder used for semantic search.
+
+- **500+ models**: reach OpenAI, Anthropic, Google, Mistral and more through one key
+- **LLM and embedder from the same key**: no second account for embeddings
+- **EU endpoint**: `EDENAI_BASE_URL` covers both the LLM and the embedder in one setting
+
+## Prerequisites
+
+- Repowise installed. See the [Repowise repository](https://github.com/repowise-dev/repowise)
+- An Eden AI API key from [app.edenai.run](https://app.edenai.run) → **API Keys**
+
+## Setup
+
+### 1. Export your key
+
+<CodeGroup>
+```bash Terminal
+export EDENAI_API_KEY="your_api_key_here"
+```
+</CodeGroup>
+
+### 2. Initialise with Eden AI
+
+<CodeGroup>
+```bash Terminal
+repowise init --provider edenai --model mistral/mistral-small-latest
+```
+</CodeGroup>
+
+Reasoning models are supported with an explicit effort level:
+
+<CodeGroup>
+```bash Terminal
+repowise init --provider edenai --model openai/gpt-5-mini --reasoning low
+```
+</CodeGroup>
+
+## Model naming
+
+Eden AI addresses models as `vendor/model`, and Repowise passes the identifier through unchanged. The live catalogues are public and need no key:
+
+<CodeGroup>
+```bash Chat models
+curl https://api.edenai.run/v3/models
+```
+
+```bash Embedding models
+curl https://api.edenai.run/v3/embeddings/models
+```
+</CodeGroup>
+
+<Note>
+  The chat and embedding catalogues are **separate endpoints**. An embedding model will not appear in `/v3/models`, which is a common source of confusion when picking one.
+</Note>
+
+## Embeddings for semantic search
+
+The same key also selects `edenai` as the embedder. Pick a model with `REPOWISE_EMBEDDING_MODEL`:
+
+<CodeGroup>
+```bash .env
+export EDENAI_API_KEY="your_api_key_here"
+export REPOWISE_EMBEDDING_MODEL="google/gemini-embedding-001"
+```
+</CodeGroup>
+
+The embedder can also be chosen explicitly, and Eden AI is one of the accepted values alongside `openai`, `gemini`, `ollama`, `openrouter` and `mock`:
+
+<CodeGroup>
+```bash Terminal
+repowise init --embedder edenai
+```
+</CodeGroup>
+
+<Note>
+  A model's vector width is a property of the gateway serving it, not of the model name alone. The same identifier can return a different number of dimensions through two different gateways, so let Repowise read the width from Eden AI rather than copying a figure from another provider's table.
+</Note>
+
+## EU data residency
+
+One variable covers both the LLM and the embedder:
+
+<CodeGroup>
+```bash .env
+export EDENAI_API_KEY="your_api_key_here"
+export EDENAI_BASE_URL="https://api.eu.edenai.run/v3"
+```
+</CodeGroup>
+
+The EU endpoint serves the subset of the catalogue available in the EU, so a model that works on the global endpoint is not guaranteed to be reachable through it. This is the main reason to reach for Eden AI here: the other hosted providers Repowise supports terminate outside the EU.
+
+## Troubleshooting
+
+### `401 Unauthorized`
+
+Check that `EDENAI_API_KEY` is exported in the shell Repowise runs from, and that the value is an Eden AI key rather than a vendor key.
+
+### `model not found`
+
+Copy the identifier exactly as the catalogue returns it, vendor prefix included, and make sure you read the right catalogue: chat models from `/v3/models`, embedding models from `/v3/embeddings/models`.
+
+### Semantic search returns nothing useful
+
+Confirm the embedder actually resolved to `edenai` rather than falling back. An unset or unrecognised embedder value silently degrades to a keyless stub, which indexes without producing real vectors.
+
+## Next Steps
+
+- [Chat Completions](/v3/llms/chat-completions) - Core LLM endpoint
+- [Embeddings](/v3/llms/embeddings) - Vector embeddings endpoint
+- [List LLM Models](/v3/llms/listing-models) - Browse available providers and models
+- [aisuite](/v3/integrations/aisuite) - Unified LLM interface on Eden AI

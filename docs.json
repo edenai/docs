@@ -277,7 +277,8 @@
                       "v3/integrations/continue-dev",
                       "v3/integrations/opencode",
                       "v3/integrations/open-code-review",
-                      "v3/integrations/pi"
+                      "v3/integrations/pi",
+                      "v3/integrations/kilo-code"
                     ]
                   },
                   {
@@ -286,7 +287,8 @@
                     "expanded": false,
                     "pages": [
                       "v3/integrations/hermes",
-                      "v3/integrations/openclaw"
+                      "v3/integrations/openclaw",
+                      "v3/integrations/nanobot"
                     ]
                   },
                   {

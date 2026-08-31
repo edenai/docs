@@ -1,0 +1,147 @@
+---
+title: "nanobot"
+icon: "/integration-logo/nanobot-icondoc.svg"
+description: "Run nanobot, the self-hosted personal AI agent framework, on Eden AI and reach 500+ models with a single API key."
+---
+
+import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
+
+<TechArticleSchema
+  title={"nanobot"}
+  description={"Run nanobot, the self-hosted personal AI agent framework, on Eden AI and reach 500+ models with a single API key."}
+  path="v3/integrations/nanobot"
+  articleSection="Autonomous Agents"
+  about={"Autonomous AI Agents"}
+  proficiencyLevel="Intermediate"
+  keywords={["Eden AI", "AI API", "nanobot", "Self-Hosted Agent", "MCP"]}
+  datePublished="2026-08-31T00:00:00Z"
+  dateModified="2026-08-31T00:00:00Z"
+/>
+
+Run [nanobot](https://github.com/HKUDS/nanobot), the self-hosted personal AI agent framework, on Eden AI and reach 500+ models with a single API key.
+
+## Overview
+
+nanobot is an ultra-lightweight Python agent framework you host yourself, with a WebUI, tools, memory, MCP support and multi-agent workflows. Eden AI is a **built-in provider**, so there is nothing to write and no custom endpoint to declare:
+
+- **500+ models**: reach OpenAI, Anthropic, Google, Mistral and more through one key
+- **One key, many vendors**: switch models by editing a single config value
+- **Catalogue in the WebUI**: once your key is saved, nanobot can load the Eden AI model list for you
+- **Secrets stay out of the config**: nanobot expands `${ENV_VAR}` placeholders inside any string value
+
+## Prerequisites
+
+- nanobot already installed. If not, see the [nanobot repository](https://github.com/HKUDS/nanobot)
+- An Eden AI API key from [app.edenai.run](https://app.edenai.run) → **API Keys**
+
+## Setup
+
+### 1. Add Eden AI to your config
+
+nanobot reads `~/.nanobot/config.json`. Add the `edenai` provider and point a model preset at it. The base URL is built into the provider, so you only supply the key:
+
+<CodeGroup>
+```json ~/.nanobot/config.json
+{
+  "providers": {
+    "edenai": {
+      "apiKey": "${EDENAI_API_KEY}"
+    }
+  },
+  "modelPresets": {
+    "primary": {
+      "provider": "edenai",
+      "model": "anthropic/claude-sonnet-latest",
+      "maxTokens": 8192
+    }
+  },
+  "agents": {
+    "defaults": {
+      "modelPreset": "primary"
+    }
+  }
+}
+```
+</CodeGroup>
+
+<Note>
+  Keep the key in the environment rather than in the file. nanobot expands `${EDENAI_API_KEY}` at load time, so start it from a shell that exports the variable.
+</Note>
+
+### 2. Export your key
+
+<CodeGroup>
+```bash Terminal
+export EDENAI_API_KEY="your_api_key_here"
+```
+</CodeGroup>
+
+### 3. Start nanobot
+
+<CodeGroup>
+```bash Terminal
+nanobot
+```
+</CodeGroup>
+
+If your config predates a schema change, run `nanobot onboard --refresh` first. It fills in missing default fields and leaves your existing values alone.
+
+## Model naming
+
+Eden AI model IDs are `provider/model`, and nanobot forwards the ID unchanged, including the vendor prefix. So the preset above sends `anthropic/claude-sonnet-latest` upstream as-is.
+
+The live catalogue is public and needs no authentication, so you can browse it before choosing:
+
+<CodeGroup>
+```bash cURL
+curl https://api.edenai.run/v3/models
+```
+</CodeGroup>
+
+Read the catalogue rather than copying a model list from a guide. Availability and pricing change, and IDs are retired over time. `anthropic/claude-sonnet-latest` is an alias that always resolves to the current Sonnet, which makes it a safe default for a config you do not want to revisit.
+
+## Switching models
+
+Change one value to move a preset to another vendor:
+
+<CodeGroup>
+```json ~/.nanobot/config.json
+{
+  "modelPresets": {
+    "primary": {
+      "provider": "edenai",
+      "model": "openai/gpt-5.5",
+      "maxTokens": 8192
+    },
+    "cheap": {
+      "provider": "edenai",
+      "model": "mistral/mistral-small-2603",
+      "maxTokens": 4096
+    }
+  }
+}
+```
+</CodeGroup>
+
+You can also load the catalogue from the WebUI under **Settings → Models** once the Eden AI key is saved.
+
+## Troubleshooting
+
+### `401 Unauthorized`
+
+The key is missing or wrong. Check that the shell running nanobot exports `EDENAI_API_KEY`, and that the value is an Eden AI key rather than a vendor key.
+
+### `model not found`
+
+The model ID is not in the Eden AI catalogue, or the vendor prefix is missing. Copy the ID exactly as `GET /v3/models` returns it, prefix included.
+
+### Timeouts on long turns
+
+nanobot caps OpenAI-compatible requests with `NANOBOT_OPENAI_COMPAT_TIMEOUT_S`, 120 seconds by default. Raise it if you use large reasoning models.
+
+## Next Steps
+
+- [Chat Completions](/v3/llms/chat-completions) - Core LLM endpoint
+- [List LLM Models](/v3/llms/listing-models) - Browse available providers and models
+- [OpenClaw](/v3/integrations/openclaw) - Another self-hosted agent on Eden AI
+- [Hermes Agent](/v3/integrations/hermes) - Persistent agent with automatic fallbacks

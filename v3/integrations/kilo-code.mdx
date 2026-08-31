@@ -1,0 +1,189 @@
+---
+title: "Kilo Code"
+icon: "/integration-logo/kilo-code-icondoc.svg"
+description: "Configure Kilo Code, the open-source AI coding agent for VS Code and the terminal, to use Eden AI for 500+ models behind one API key."
+---
+
+import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
+
+<TechArticleSchema
+  title={"Kilo Code"}
+  description={"Configure Kilo Code, the open-source AI coding agent for VS Code and the terminal, to use Eden AI for 500+ models behind one API key."}
+  path="v3/integrations/kilo-code"
+  articleSection="Coding Agents"
+  about={"AI Coding Assistants"}
+  proficiencyLevel="Intermediate"
+  keywords={["Eden AI", "AI API", "Kilo Code", "Coding Agent", "VS Code"]}
+  datePublished="2026-08-31T00:00:00Z"
+  dateModified="2026-08-31T00:00:00Z"
+/>
+
+Configure [Kilo Code](https://kilocode.ai), the open-source AI coding agent for VS Code and the terminal, to use Eden AI for 500+ models behind one API key.
+
+## Overview
+
+Eden AI is a **built-in provider** in Kilo Code, in both the VS Code extension and the CLI. Kilo uses the provider ID `edenai` and reads your key from `EDENAI_API_KEY`.
+
+- **500+ models**: reach OpenAI, Anthropic, Google, Mistral, Z.ai and more through one key
+- **One key, one invoice**: no per-vendor accounts to manage
+- **EU endpoint**: route through `api.eu.edenai.run` when you have data-residency requirements
+- **Shared credential store**: the extension and the CLI read the same `auth.json`
+
+## Prerequisites
+
+- Kilo Code installed, either the VS Code extension or the CLI. See [kilocode.ai](https://kilocode.ai)
+- An Eden AI API key from [app.edenai.run](https://app.edenai.run) → **API Keys**
+
+## Setup in VS Code
+
+1. Open **Settings** in the Kilo Code extension.
+2. Go to the **Providers** tab and add **Eden AI**. If it is not listed, click **Show more providers**.
+3. Paste your Eden AI API key.
+4. Select a model.
+
+Credentials are stored in Kilo's `auth.json`, the same store the CLI uses.
+
+## Setup in the CLI
+
+Connecting interactively is the recommended path, so the key lands in `auth.json` rather than in a project file. In the TUI run `/connect`, choose **Eden AI**, then paste your key. From the shell:
+
+<CodeGroup>
+```bash Terminal
+kilo auth login --provider edenai
+```
+</CodeGroup>
+
+Then pick a model from the picker, or set a default:
+
+<CodeGroup>
+```json kilo.json
+{
+  "model": "edenai/anthropic/claude-sonnet-5"
+}
+```
+</CodeGroup>
+
+To keep the secret in the environment instead, declare the provider in `~/.config/kilo/kilo.json` or `./kilo.json`:
+
+<CodeGroup>
+```bash Terminal
+export EDENAI_API_KEY="your_api_key_here"
+```
+
+```json ~/.config/kilo/kilo.json
+{
+  "provider": {
+    "edenai": {
+      "env": ["EDENAI_API_KEY"]
+    }
+  },
+  "model": "edenai/anthropic/claude-sonnet-5"
+}
+```
+</CodeGroup>
+
+## Model naming
+
+Eden AI model IDs are already `vendor/model`, so a full reference in Kilo has **three** segments, `edenai/<vendor>/<model>`:
+
+<CodeGroup>
+```json Examples
+{ "model": "edenai/openai/gpt-4o-mini" }
+{ "model": "edenai/google/gemini-3.6-flash" }
+{ "model": "edenai/zai/glm-5.2" }
+```
+</CodeGroup>
+
+Copy the identifier exactly as the models endpoint returns it. It is public and needs no key:
+
+<CodeGroup>
+```bash cURL
+curl https://api.edenai.run/v3/models
+```
+</CodeGroup>
+
+## Using a model that is not in the picker
+
+The picker lists the Eden AI models in the catalogue Kilo refreshes, which is smaller than the full Eden AI catalogue. Any other model can be declared yourself:
+
+<CodeGroup>
+```json kilo.json
+{
+  "provider": {
+    "edenai": {
+      "models": {
+        "anthropic/claude-haiku-4-5": {
+          "name": "Claude Haiku 4.5",
+          "cost": { "input": 1, "output": 5, "cache_read": 0.1 }
+        }
+      }
+    }
+  },
+  "model": "edenai/anthropic/claude-haiku-4-5"
+}
+```
+</CodeGroup>
+
+<Note>
+  Set `cost` when you declare a model, and `limit` too if you want the context gauge to be right. Kilo defaults both to zero for a model it does not already know, which would leave spend reporting at zero. Costs are per million tokens, so multiply the endpoint's `input_cost_per_token` and `output_cost_per_token` by one million. A `limit` block needs both `context`, from `context_length`, and `output`.
+</Note>
+
+## EU data residency
+
+Point the provider at the EU gateway with a custom base URL:
+
+<CodeGroup>
+```json kilo.json
+{
+  "provider": {
+    "edenai": {
+      "env": ["EDENAI_API_KEY"],
+      "options": {
+        "baseURL": "https://api.eu.edenai.run/v3"
+      }
+    }
+  }
+}
+```
+</CodeGroup>
+
+That base URL governs where Eden AI processes the request. The EU endpoint serves the subset of the catalogue available in the EU, so a model that works on the global endpoint is not guaranteed to be reachable through it.
+
+Independently, some models are published as a region-pinned variant that also pins the underlying vendor's region, marked with an `@eu` suffix:
+
+<CodeGroup>
+```json kilo.json
+{ "model": "edenai/vertex/gemini-3.6-flash@eu" }
+```
+</CodeGroup>
+
+Only a few of these appear in the picker. Declare the others as shown in the previous section.
+
+## Cost tracking
+
+The spend Kilo Code displays for Eden AI is derived from token counts and the per-model rates in its catalogue, so treat it as an estimate. Eden AI returns the actual billed cost of each request in its own response body, and that figure, with your [Eden AI dashboard](https://app.edenai.run), is the authoritative one.
+
+## Troubleshooting
+
+### Invalid API key
+
+Create a new key in your Eden AI account, then reconnect with `/connect` or `kilo auth login --provider edenai`. If you use manual configuration, update `EDENAI_API_KEY` in the environment Kilo runs from.
+
+### Model not found
+
+Copy the identifier exactly as the [models endpoint](https://api.edenai.run/v3/models) returns it, vendor prefix included. Do not rely on a static list.
+
+### Eden AI is not visible in the provider list
+
+Refresh Kilo Code's provider catalogue, then check **Show more providers**.
+
+### A key or model you just added has no effect
+
+Kilo caches the resolved catalogue for a few minutes. Wait, then restart your client.
+
+## Next Steps
+
+- [Chat Completions](/v3/llms/chat-completions) - Core LLM endpoint
+- [List LLM Models](/v3/llms/listing-models) - Browse available providers and models
+- [Cline](/v3/integrations/cline) - Another VS Code coding agent on Eden AI
+- [OpenCode](/v3/integrations/opencode) - Terminal coding agent on Eden AI

@@ -11,9 +11,9 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   description={"Route Plano, the AI-native proxy for agentic apps, through Eden AI and reach 500+ models behind one key."}
   path="v3/integrations/plano"
   articleSection="AI Gateway"
-  about={"AI Gateway"}
+  about={"LLM Gateway Integration"}
   proficiencyLevel="Intermediate"
-  keywords={["Eden AI", "AI API", "Plano", "Katanemo", "AI proxy", "LLM routing"]}
+  keywords={["Eden AI", "AI API", "Plano", "LLM Gateway", "Katanemo"]}
   datePublished="2026-08-31T00:00:00Z"
   dateModified="2026-08-31T00:00:00Z"
 />
@@ -77,7 +77,7 @@ model_providers:
 ### 2. Export your key
 
 <CodeGroup>
-```bash bash
+```bash Terminal
 export EDENAI_API_KEY="your_api_key_here"
 ```
 </CodeGroup>
@@ -85,7 +85,7 @@ export EDENAI_API_KEY="your_api_key_here"
 ### 3. Start Plano
 
 <CodeGroup>
-```bash bash
+```bash Terminal
 planoai up
 ```
 </CodeGroup>
@@ -97,7 +97,7 @@ Eden AI model IDs are already `vendor/model`, so a full reference in Plano has *
 The live catalogue is public and needs no key, so you can browse it before choosing:
 
 <CodeGroup>
-```bash curl
+```bash cURL
 curl https://api.edenai.run/v3/models
 ```
 </CodeGroup>

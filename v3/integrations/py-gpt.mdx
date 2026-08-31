@@ -11,9 +11,9 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   description={"Configure PyGPT, the desktop AI assistant, to use Eden AI for 500+ models behind one API key."}
   path="v3/integrations/py-gpt"
   articleSection="Chat UI"
-  about={"Desktop AI Assistant"}
+  about={"LLM Chat Interface"}
   proficiencyLevel="Beginner"
-  keywords={["Eden AI", "AI API", "PyGPT", "desktop assistant", "LlamaIndex"]}
+  keywords={["Eden AI", "AI API", "PyGPT", "Desktop Assistant", "LlamaIndex"]}
   datePublished="2026-08-31T00:00:00Z"
   dateModified="2026-08-31T00:00:00Z"
 />
@@ -55,7 +55,7 @@ Once saved, the model appears in the model picker like any other.
 Eden AI addresses models as `vendor/model`, and PyGPT forwards the name unchanged. The live catalogue is public and needs no key:
 
 <CodeGroup>
-```bash curl
+```bash cURL
 curl https://api.edenai.run/v3/models
 ```
 </CodeGroup>
@@ -67,7 +67,7 @@ Read the catalogue rather than copying a list from a guide, since IDs are retire
 The Eden AI provider also serves embeddings, so PyGPT's index and semantic search features work from the same key. Embedding models live on a **separate catalogue**:
 
 <CodeGroup>
-```bash curl
+```bash cURL
 curl https://api.edenai.run/v3/embeddings/models
 ```
 </CodeGroup>

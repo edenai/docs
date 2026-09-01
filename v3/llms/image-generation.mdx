@@ -15,7 +15,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "image generation", "image editing", "OpenAI compatible", "gpt-image", "gemini image"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-06-11T00:00:00Z"
+  dateModified="2026-09-01T00:00:00Z"
 />
 
 Generate and edit images through Eden AI's OpenAI-compatible image endpoints. Point any OpenAI client at `https://api.edenai.run/v3` and the images API works as a drop-in replacement.
@@ -217,7 +217,7 @@ curl https://api.edenai.run/v3/images/models \
 ## Limitations
 
 - **No streaming.** `stream: true` is forwarded to the provider but the partial-image pipeline is not wired up.
-- **No `@edenai` router or `fallbacks`.** Specify a single explicit `provider/model`.
+- **No `fallbacks`.** Specify a single explicit `provider/model`.
 - **`/v3/images/variations` is not implemented.**
 
 ## Next Steps

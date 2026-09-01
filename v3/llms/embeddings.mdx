@@ -16,7 +16,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "LLM API", "chat completion", "OpenAI compatible"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-05-22T00:00:00Z"
+  dateModified="2026-09-01T00:00:00Z"
 />
 
 Embeddings turn text into numerical vectors that capture meaning. They are the foundation for [RAG pipelines](#use-cases), semantic search, recommendations, and clustering.
@@ -129,7 +129,7 @@ query = "How do I track my API costs?"
 corpus = [
     "Eden AI returns a `cost` field on every response so you can track spend per call.",
     "You can cap spending by creating custom API keys with a per-token budget.",
-    "Smart routing with `@edenai` applies to chat/completions, not to embeddings.",
+    "Provider routing picks the provider serving a model named without one.",
     "The /v3/models endpoint lists every available chat-completions model.",
     "To upload files for vision-capable LLMs, use the /v3/upload endpoint.",
 ]
@@ -231,7 +231,7 @@ Common HTTP status codes returned by `/v3/embeddings`:
 
 ## Best practices
 
-- **Smart routing is not supported on embeddings.** Always pass a concrete `provider/model`, not `@edenai/...`. See [Smart routing](/v3/llms/smart-routing) for which endpoints support it.
+- **Always pass a concrete `provider/model`.** There is no automatic model selection on embeddings.
 - **Compare vectors with cosine similarity.** It is the standard distance for embedding spaces. Normalize once at write time so retrieval is a single dot product.
 - **Re-index when you change models.** Vectors from different models are not compatible — store `(text, embedding, model_id)` together and re-embed if you switch.
 - **Cache embeddings.** They are deterministic for the same `(model, input)` pair, so caching by hash avoids re-billing for unchanged content.
@@ -240,7 +240,6 @@ Common HTTP status codes returned by `/v3/embeddings`:
 ## Related
 
 - [List LLM models](/v3/llms/listing-models) — discover all chat-completion models.
-- [Smart routing](/v3/llms/smart-routing) — automatic provider selection (chat only).
 - [Fallback](/v3/general/fallback) — route to a backup model on errors.
 - [Plans & pricing](/v3/overview/plans-prices) — credits, budgets, and per-call costs.
 - [OpenAI SDK (Python)](/v3/integrations/openai-sdk-python) — call `/v3/embeddings` through the OpenAI client.

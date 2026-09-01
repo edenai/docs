@@ -14,7 +14,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "LLM API", "provider routing", "load balancing", "failover"]}
   datePublished="2026-08-19T00:00:00Z"
-  dateModified="2026-08-28T00:00:00Z"
+  dateModified="2026-09-01T00:00:00Z"
 />
 
 Many models are sold by more than one provider. `gpt-5.6-sol` is served by OpenAI and Azure, `kimi-k2.6` by seven providers, `gpt-oss-120b` by ten. They run the same weights at different prices, speeds and reliability.
@@ -61,10 +61,6 @@ curl "https://api.edenai.run/v3/models?view=models"
 
 The name level makes no claim about price, context window or capability, because providers of one model genuinely differ on all three. Each entry in `endpoints` carries its own, so this one call answers both questions: which names route, and what each provider charges and supports. See [Listing Models](/v3/llms/listing-models) for the full field reference.
 
-<Info>
-Provider routing chooses **which provider serves the model you named**. It is separate from [Smart Routing](/v3/llms/smart-routing), where `@edenai` chooses **which model to use**. The two compose: `@edenai` picks a model, then provider routing picks who serves it.
-</Info>
-
 ## How a provider is chosen
 
 By default Eden AI optimises for **cost**: the cheapest provider for the shape of your request, accounting for how much of it is prompt versus completion.
@@ -106,7 +102,7 @@ The same objective can be written as a suffix on the model name, which is useful
 
 Naming an objective also turns off traffic spreading: `cost` means the cheapest provider every time, not a weighted draw.
 
-`sort` never changes **which model** answers, only who serves it. To let Eden AI trade quality for a cheaper model, see [`routing.quality_cost`](/v3/llms/smart-routing#trading-quality-for-cost).
+`sort` never changes **which model** answers, only who serves it.
 
 ## Restricting which providers may be used
 
@@ -249,9 +245,6 @@ Name a `provider/model` and routing never runs. The request goes exactly where y
 ## Next Steps
 
 <CardGroup cols={2}>
-  <Card title="Smart Routing" icon="route" href="/v3/llms/smart-routing">
-    Let Eden AI choose the model as well as the provider
-  </Card>
   <Card title="Fallback" icon="rotate-left" href="/v3/general/fallback">
     Name your own backup models
   </Card>
@@ -260,5 +253,8 @@ Name a `provider/model` and routing never runs. The request goes exactly where y
   </Card>
   <Card title="Servers Location" icon="globe" href="/v3/data-governance/servers-location">
     Where each region runs
+  </Card>
+  <Card title="Request Metadata" icon="receipt" href="/v3/llms/request-metadata">
+    See which provider actually served the request
   </Card>
 </CardGroup>

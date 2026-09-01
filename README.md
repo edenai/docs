@@ -11,15 +11,15 @@ This repository contains the complete documentation for Eden AI's V3 API, built 
 Eden AI is a unified API platform that provides:
 - **Universal AI Endpoint** - Single endpoint for all AI features (text analysis, OCR, image processing, translation)
 - **OpenAI-Compatible LLM** - Drop-in replacement for OpenAI's API with multi-provider support
-- **Smart Routing** - Intelligent provider selection based on cost, performance, and reliability
+- **Provider Routing** - Automatic provider selection for a named model, based on cost, performance, and reliability
 - **Persistent File Storage** - Upload files once, use them across multiple requests
 - **Built-in API Discovery** - Explore features and providers programmatically
 
 ## Documentation Structure
 
 ### V3 Documentation
-- **Get Started** - Introduction, smart routing, FAQ, enterprise offerings, and professional services
-- **How-To Guides** - Step-by-step guides for authentication, cost management, discovery, user management, smart routing, Universal AI, LLM endpoints, and file uploads
+- **Get Started** - Introduction, FAQ, enterprise offerings, and professional services
+- **How-To Guides** - Step-by-step guides for authentication, cost management, discovery, user management, Universal AI, LLM endpoints, and file uploads
 - **Tutorials** - Practical tutorials for optimizing LLM costs, tracking spending, and managing tokens
 - **Integrations** - SDKs (Python, TypeScript), AI assistants (Claude Code, Continue.dev), frameworks (LangChain), and chat platforms (LibreChat, Open WebUI)
 - **Changelog** - Version history and updates

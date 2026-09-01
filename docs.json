@@ -41,6 +41,10 @@
       "destination": "/v3/organization/users-organisation"
     },
     {
+      "source": "/v3/llms/smart-routing",
+      "destination": "/v3/llms/provider-routing"
+    },
+    {
       "source": "/v3/data-governance/zdr",
       "destination": "/v3/data-governance/provider-data-policies"
     }
@@ -93,7 +97,6 @@
                   "v3/llms/file-upload",
                   "v3/llms/structured-output",
                   "v3/llms/web-search",
-                  "v3/llms/smart-routing",
                   "v3/llms/prompt-caching",
                   "v3/llms/provider-routing",
                   "v3/llms/request-metadata",

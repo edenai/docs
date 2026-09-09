@@ -305,7 +305,7 @@ The routing affinity key is chosen in this order:
 
 Body and header session ids are never forwarded to the provider. `prompt_cache_key` is also forwarded when the selected provider supports it.
 
-After a cache read, provider affinity lasts 10 minutes by default. A declared `cache_control.ttl`, `prompt_cache_options.ttl`, or `prompt_cache_retention` makes the affinity follow that cache window, up to the serving provider's retention limit. See [How long provider affinity lasts](/v3/llms/provider-routing#how-long-provider-affinity-lasts) for the complete rules.
+After a cache write or read, provider affinity lasts 10 minutes by default. A declared `cache_control.ttl`, `prompt_cache_options.ttl`, or `prompt_cache_retention` makes the affinity follow that cache window, up to the serving provider's retention limit. See [How long provider affinity lasts](/v3/llms/provider-routing#how-long-provider-affinity-lasts) for the complete rules.
 
 Set `routing.sticky` to `false` to route independently:
 

@@ -83,7 +83,7 @@ key's organization.
 | `GET · POST /v3/manage/keys` | `manage:read` · `manage:write` | List / mint inference keys |
 | `GET · PATCH · DELETE /v3/manage/keys/{key_id}` | `manage:read` · `manage:write` | Read / update / revoke an inference key |
 | `POST /v3/manage/keys/{key_id}/rotate` | `manage:write` | Rotate an inference key's secret |
-| `GET /v3/manage/members` · `/usage` · `/whoami` | `manage:read` | Members, usage, key introspection |
+| `GET /v3/manage/members` · `/usage` · `/keys/{key_id}/usage` · `/whoami` | `manage:read` | Members, usage, key introspection |
 
 ## Migrating from a dashboard-only key
 

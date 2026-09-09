@@ -65,50 +65,57 @@ def upload_test_file(file_bytes: bytes, filename: str) -> str:
     return resp.json()["file_id"]
 
 
-def production_api_headers() -> dict:
-    token = os.environ.get("EDEN_AI_PRODUCTION_API_TOKEN")
+def management_headers() -> dict:
+    token = os.environ.get("EDEN_AI_MANAGEMENT_KEY")
     if not token:
-        raise RuntimeError("EDEN_AI_PRODUCTION_API_TOKEN env var is missing")
+        raise RuntimeError("EDEN_AI_MANAGEMENT_KEY env var is missing")
     return {"Authorization": f"Bearer {token}"}
 
 
-def list_custom_token_names() -> set[str]:
-    """Return the set of all custom token names currently on the account."""
-    resp = requests.get(
-        f"{api_base_url()}/v2/user/custom_token/",
-        headers=production_api_headers(),
-    )
-    resp.raise_for_status()
-    return {t["name"] for t in resp.json()}
+def list_active_key_ids() -> set[str]:
+    """Return the ids of every non-revoked inference key in the organization.
 
-
-def create_custom_token(name: str, **kwargs) -> dict:
-    """Create a custom token and return the response JSON."""
-    payload = {"name": name, **kwargs}
-    resp = requests.post(
-        f"{api_base_url()}/v2/user/custom_token/",
-        headers=production_api_headers(),
-        json=payload,
-    )
-    resp.raise_for_status()
-    return resp.json()
-
-
-def delete_custom_tokens(names: set[str]) -> int:
-    """Delete custom tokens by name. Returns count of deleted tokens."""
-    if not names:
-        return 0
-    deleted = 0
-    errors = []
-    for name in names:
-        resp = requests.delete(
-            f"{api_base_url()}/v2/user/custom_token/{name}/",
-            headers=production_api_headers(),
+    Legacy keys that were never regenerated have a null id and are skipped:
+    they cannot be addressed by URL anyway.
+    """
+    key_ids: set[str] = set()
+    offset = 0
+    limit = 100
+    while True:
+        resp = requests.get(
+            f"{api_base_url()}/v3/manage/keys/",
+            headers=management_headers(),
+            params={"limit": limit, "offset": offset},
         )
-        if resp.status_code == 204:
-            deleted += 1
+        resp.raise_for_status()
+        data = resp.json()
+        for key in data["results"]:
+            if key["id"] and not key["revoked"]:
+                key_ids.add(key["id"])
+        offset += limit
+        if offset >= data["total_count"]:
+            break
+    return key_ids
+
+
+def revoke_keys(key_ids: set[str]) -> int:
+    """Revoke inference keys by id. Returns the number of keys revoked.
+
+    Revocation is permanent: the keys stay listed with ``revoked: true``.
+    """
+    if not key_ids:
+        return 0
+    revoked = 0
+    errors = []
+    for key_id in key_ids:
+        resp = requests.delete(
+            f"{api_base_url()}/v3/manage/keys/{key_id}/",
+            headers=management_headers(),
+        )
+        if resp.status_code == 200:
+            revoked += 1
         elif resp.status_code != 404:
-            errors.append(f"{name}: {resp.status_code} {resp.text}")
+            errors.append(f"{key_id}: {resp.status_code} {resp.text}")
     if errors:
-        raise RuntimeError("Failed to delete custom tokens:\n" + "\n".join(errors))
-    return deleted
+        raise RuntimeError("Failed to revoke keys:\n" + "\n".join(errors))
+    return revoked

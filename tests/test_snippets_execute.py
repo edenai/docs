@@ -47,6 +47,11 @@ def test_snippet_executes(test_case, fixtures_dir, monkeypatch):
     if needs_production_token and not os.environ.get("EDEN_AI_PRODUCTION_API_TOKEN"):
         pytest.skip("EDEN_AI_PRODUCTION_API_TOKEN not set")
 
+    if test_case["needs_management_key"] and not os.environ.get(
+        "EDEN_AI_MANAGEMENT_KEY"
+    ):
+        pytest.skip("EDEN_AI_MANAGEMENT_KEY not set")
+
     monkeypatch.chdir(fixtures_dir)
 
     if has_input:

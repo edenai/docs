@@ -3,7 +3,6 @@
 import json
 import os
 import time
-from datetime import datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -13,11 +12,10 @@ from filelock import FileLock
 from xdist.plugin import is_xdist_worker
 
 from tests.helpers.api import (
-    create_custom_token,
-    delete_custom_tokens,
     delete_file_ids,
-    list_custom_token_names,
+    list_active_key_ids,
     list_file_ids,
+    revoke_keys,
     upload_test_file,
 )
 from tests.helpers.file_generators import (
@@ -63,29 +61,11 @@ def pytest_sessionstart(session: pytest.Session) -> None:
         state["pre_existing_files"] = sorted(pre_existing_files)
         state["test_file_id"] = test_file_id
 
-    if os.environ.get("EDEN_AI_PRODUCTION_API_TOKEN"):
-        state["pre_existing_tokens"] = sorted(list_custom_token_names())
-
-        expire = (datetime.now() + timedelta(days=30)).isoformat()
-        for token_spec in [
-            {
-                "name": "my-api-token",
-                "balance": "100.00",
-                "active_balance": True,
-                "expire_time": expire,
-            },
-            {"name": "old-token"},
-        ]:
-            try:
-                create_custom_token(**token_spec)
-            except requests.HTTPError as exc:
-                # Token may already exist — another run on the same account can
-                # create it first. Test `is None` explicitly: Response.__bool__
-                # returns self.ok, so a 400 response is falsy and `not
-                # exc.response` was short-circuiting to True, re-raising the one
-                # case this handler exists to swallow.
-                if exc.response is None or exc.response.status_code != 400:
-                    raise
+    if os.environ.get("EDEN_AI_MANAGEMENT_KEY"):
+        # The Management API samples mint real inference keys in the test
+        # organization; snapshot the active ones so the run can revoke only
+        # the keys it created.
+        state["pre_existing_keys"] = sorted(list_active_key_ids())
 
     path = _shared_state_path(session.config)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -116,16 +96,16 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
         except Exception as exc:
             print(f"\n[conftest] WARNING: file cleanup failed: {exc}")
 
-    if "pre_existing_tokens" in state:
-        pre_existing = set(state["pre_existing_tokens"])
+    if "pre_existing_keys" in state:
+        pre_existing = set(state["pre_existing_keys"])
         try:
-            current = list_custom_token_names()
-            new_tokens = current - pre_existing
-            if new_tokens:
-                deleted = delete_custom_tokens(new_tokens)
-                print(f"\n[conftest] Cleaned up {deleted} custom token(s)")
+            current = list_active_key_ids()
+            new_keys = current - pre_existing
+            if new_keys:
+                revoked = revoke_keys(new_keys)
+                print(f"\n[conftest] Revoked {revoked} inference key(s)")
         except Exception as exc:
-            print(f"\n[conftest] WARNING: token cleanup failed: {exc}")
+            print(f"\n[conftest] WARNING: key cleanup failed: {exc}")
 
 
 @pytest.fixture(scope="session", autouse=True)

@@ -22,7 +22,8 @@ cp tests/.env.example tests/.env
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `EDEN_AI_SANDBOX_API_TOKEN` | For execution tests | Sandbox token — AI features return mock responses, no credits consumed |
-| `EDEN_AI_PRODUCTION_API_TOKEN` | Optional | Production token — needed for v2 admin endpoint tests (cost/token management); skipped if not set |
+| `EDEN_AI_PRODUCTION_API_TOKEN` | Optional | Production token, needed by the few pages whose samples require real provider responses (e.g. structured output); skipped if not set |
+| `EDEN_AI_MANAGEMENT_KEY` | Optional | Management key (`mgmt-eden-...`, `manage:read` + `manage:write`), needed by Management API samples (custom API keys, sandbox key creation, monitoring). Samples mint real inference keys in the key's organization; the run revokes the ones it created. Skipped if not set |
 | `EDEN_AI_BASE_URL` | Optional | Defaults to `https://staging-api.edenai.run` |
 
 ## Running Tests
@@ -84,6 +85,7 @@ When adding new `.mdx` files with Python code snippets:
 
 1. Use ` ```python ` fencing for code blocks
 2. Make each snippet self-contained (include its own imports, define `url`, `headers`, etc.)
+   - Use `YOUR_API_KEY` as the inference key placeholder and `YOUR_MANAGEMENT_KEY` for Management API (`/v3/manage/...`) calls; the extractor swaps each for the matching environment variable
 3. Run `pytest tests/ -v` to verify
 4. The extractor auto-discovers new `.mdx` files (under `v3/` and at the repo root) — no configuration needed
 
@@ -116,11 +118,11 @@ The comment is invisible in rendered docs. The extractor checks the 3 lines prec
 
 The workflow at `.github/workflows/test-snippets.yml` runs on PRs that touch `v3/**/*.mdx` or `tests/**`:
 
-1. **Execution job**: runs execution tests with `EDEN_AI_SANDBOX_TOKEN` and `EDEN_AI_PRODUCTION_TOKEN` secrets
+1. **Execution job**: runs execution tests with the `EDEN_AI_SANDBOX_TOKEN`, `EDEN_AI_PRODUCTION_TOKEN` and `EDEN_AI_MANAGEMENT_KEY` secrets
 
 Installs from `requirements-lock.txt` for reproducible builds.
 
-To set up: add `EDEN_AI_SANDBOX_TOKEN` and `EDEN_AI_PRODUCTION_TOKEN` as repository secrets in GitHub.
+To set up: add `EDEN_AI_SANDBOX_TOKEN`, `EDEN_AI_PRODUCTION_TOKEN` and `EDEN_AI_MANAGEMENT_KEY` as repository secrets in GitHub. Without `EDEN_AI_MANAGEMENT_KEY` the Management API samples are reported as skipped, not failed.
 
 ## Common Failure Patterns
 

@@ -14,10 +14,9 @@ _SKIP_COMMENT_RE = re.compile(r"\{/\*\s*skip-test\s*\*/\}")
 
 _SANDBOX_TOKEN_VAR = "EDEN_AI_SANDBOX_API_TOKEN"
 _PRODUCTION_TOKEN_VAR = "EDEN_AI_PRODUCTION_API_TOKEN"
+_MANAGEMENT_KEY_VAR = "EDEN_AI_MANAGEMENT_KEY"
 
 _PRODUCTION_TOKEN_FILES = {
-    "v3/general/custom-api-keys.mdx",
-    "v3/general/monitoring.mdx",
     "v3/how-to/cost-management/monitor-usage.mdx",
     "v3/how-to/user-management/manage-tokens.mdx",
     "v3/llms/structured-output.mdx",
@@ -47,6 +46,24 @@ API_KEY_PATTERNS = [
     (
         re.compile(r'os\.(?:getenv|environ\.get)\(\s*"EDEN_AI_API_KEY"\s*\)'),
         'os.environ["{token_var}"]',
+    ),
+]
+
+# Samples that call the Management API (/v3/manage/...) use this placeholder
+# instead of YOUR_API_KEY. It is swapped for EDEN_AI_MANAGEMENT_KEY whatever
+# file the block lives in, so a page can mix inference and management samples.
+MANAGEMENT_KEY_PATTERNS = [
+    (
+        re.compile(r'f"Bearer\s+YOUR_MANAGEMENT_KEY"'),
+        f"f\"Bearer {{os.environ['{_MANAGEMENT_KEY_VAR}']}}\"",
+    ),
+    (
+        re.compile(r'"Bearer\s+YOUR_MANAGEMENT_KEY"'),
+        f"f\"Bearer {{os.environ['{_MANAGEMENT_KEY_VAR}']}}\"",
+    ),
+    (
+        re.compile(r'"YOUR_MANAGEMENT_KEY"'),
+        f'os.environ["{_MANAGEMENT_KEY_VAR}"]',
     ),
 ]
 
@@ -89,6 +106,12 @@ def replace_api_keys(code: str, token_var: str = _SANDBOX_TOKEN_VAR) -> str:
         )
     elif _BARE_API_KEY_RE.search(code) and not _API_KEY_ASSIGNMENT_RE.search(code):
         code = f'API_KEY = os.environ["{token_var}"]\n' + code
+    return code
+
+
+def replace_management_keys(code: str) -> str:
+    for pattern, replacement in MANAGEMENT_KEY_PATTERNS:
+        code = pattern.sub(replacement, code)
     return code
 
 
@@ -140,10 +163,13 @@ def build_module(blocks: list[dict], source_mdx: str) -> tuple[str, list[dict]]:
     for i, block in enumerate(blocks):
         func_name = f"block_{i + 1}"
         code = replace_placeholder_file_id(
-            replace_base_url(replace_api_keys(block["code"], token_var))
+            replace_base_url(
+                replace_api_keys(replace_management_keys(block["code"]), token_var)
+            )
         )
         line_num = block["line"]
         has_input = "input(" in code
+        needs_management_key = _MANAGEMENT_KEY_VAR in code
 
         module_lines.append("")
         module_lines.append("")
@@ -160,6 +186,7 @@ def build_module(blocks: list[dict], source_mdx: str) -> tuple[str, list[dict]]:
                 "lines": [line_num],
                 "has_input": has_input,
                 "needs_production_token": needs_production_token,
+                "needs_management_key": needs_management_key,
                 "skip": block.get("skip", False),
             }
         )

@@ -14,7 +14,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "LLM API", "provider routing", "load balancing", "failover"]}
   datePublished="2026-08-19T00:00:00Z"
-  dateModified="2026-09-01T00:00:00Z"
+  dateModified="2026-09-09T00:00:00Z"
 />
 
 Many models are sold by more than one provider. `gpt-5.6-sol` is served by OpenAI and Azure, `kimi-k2.6` by seven providers, `gpt-oss-120b` by ten. They run the same weights at different prices, speeds and reliability.
@@ -219,7 +219,7 @@ Append `@region` to route to a provider endpoint in a specific region. This comp
 }
 ```
 
-Which regions a model offers varies by model. Requesting one it is not served from returns an error rather than quietly serving it elsewhere. See [Servers Location](/v3/data-governance/servers-location).
+Which regions a model offers varies by model. Requesting one it is not served from returns a `400` error (model not found or inactive) rather than quietly serving it elsewhere. See [Servers Location](/v3/data-governance/servers-location).
 
 ## Seeing which provider served your request
 

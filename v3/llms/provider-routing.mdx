@@ -219,7 +219,7 @@ Append `@region` to route to a provider endpoint in a specific region. This comp
 }
 ```
 
-Which regions a model offers varies by model. Requesting one it is not served from returns an error rather than quietly serving it elsewhere. See [Servers Location](/v3/data-governance/servers-location).
+Which regions a model offers varies by model. Requesting one it is not served from returns a `400` error (model not found or inactive) rather than quietly serving it elsewhere. See [Servers Location](/v3/data-governance/servers-location).
 
 ## Seeing which provider served your request
 

@@ -1,13 +1,13 @@
 ---
 icon: "key"
 title: "Custom API Keys"
-description: "Custom API keys let you create additional tokens beyond your main account key. Each token can have its own budget, expiration, and type, giving you fine-grained control over access and spending."
+description: "Custom API keys let you create additional keys beyond your main account key. Each key can have its own budget, expiration, and type, giving you fine-grained control over access and spending."
 ---
 import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
 
 <TechArticleSchema
   title={"Custom API Keys"}
-  description={"Custom API keys let you create additional tokens beyond your main account key. Each token can have its own budget, expiration, and type, giving you fine-grained control over access and spending."}
+  description={"Custom API keys let you create additional keys beyond your main account key. Each key can have its own budget, expiration, and type, giving you fine-grained control over access and spending."}
   path="v3/general/custom-api-keys"
   articleSection="General"
   about={"API Configuration"}
@@ -17,7 +17,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   dateModified="2026-07-21T00:00:00Z"
 />
 
-Custom API keys let you create additional tokens beyond your main account key. Each token can have its own budget, expiration, and type, giving you fine-grained control over access and spending.
+Custom API keys let you create additional keys beyond your main account key. Each key can have its own budget, expiration, and type, giving you fine-grained control over access and spending.
 
 ## Use Cases
 
@@ -31,69 +31,123 @@ Custom API keys let you create additional tokens beyond your main account key. E
 
 | Type | Description | Use Case |
 |------|-------------|----------|
-| `api_token` | Production token with full access | Live applications |
-| `sandbox_api_token` | Test token, no real provider calls | Development and testing |
+| `api_token` | Production key with full access | Live applications |
+| `sandbox_api_token` | Test key, no real provider calls | Development and testing |
 
 <Info>
-Sandbox tokens return simulated responses and do not incur any cost. They are ideal for development and CI pipelines.
+Sandbox keys return simulated responses and do not incur any cost. They are ideal for development and CI pipelines. See the [Sandbox guide](/v3/general/sandbox).
 </Info>
+
+## Two Ways to Manage Keys
+
+**From the dashboard.** Any user can create, edit, rotate and revoke keys on the [API Keys](https://app.edenai.run/settings/api-keys) page. This is all you need for a handful of keys.
+
+**Through the Management API.** Organizations that provision keys from automation (CI, an internal portal, onboarding scripts) use the `/v3/manage/keys` endpoints documented below. These endpoints are **not** called with an inference key: they need a **management key** (`mgmt-eden-…`) with the `manage:read` scope to read and `manage:write` to create, update, rotate or revoke. Generate one from the dashboard (**Account → Management Keys**) or mint it with an issuer key, as explained in the [Management API guide](/v3/organization/management-api).
+
+<Note>
+Calling a `/v3/manage` endpoint with an inference key (`sk-eden-…`) returns `401` with a message asking for a management key.
+</Note>
 
 ## API Endpoints
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/v2/user/custom_token/` | `POST` | Create a new token |
-| `/v2/user/custom_token/` | `GET` | List all tokens |
-| `/v2/user/custom_token/{name}/` | `GET` | Get a specific token |
-| `/v2/user/custom_token/{name}/` | `PATCH` | Update a token |
-| `/v2/user/custom_token/{name}/` | `DELETE` | Delete a token |
+All requests use `Authorization: Bearer <management_key>` and act on the organization the management key belongs to. Keys are addressed by their `id` (a UUID returned on create and in the list), not by name.
 
-## Create a Token
+| Endpoint | Method | Scope | Description |
+|----------|--------|-------|-------------|
+| `/v3/manage/keys/` | `POST` | `manage:write` | Create a key. The response contains the `secret` **once**. |
+| `/v3/manage/keys/` | `GET` | `manage:read` | List keys (paginated, revoked keys included). |
+| `/v3/manage/keys/{key_id}/` | `GET` | `manage:read` | Get one key. |
+| `/v3/manage/keys/{key_id}/` | `PATCH` | `manage:write` | Update the name or spending controls. |
+| `/v3/manage/keys/{key_id}/` | `DELETE` | `manage:write` | Revoke a key permanently. |
+| `/v3/manage/keys/{key_id}/rotate/` | `POST` | `manage:write` | Replace the secret, keeping the key's id, name and settings. |
+| `/v3/manage/keys/{key_id}/usage/` | `GET` | `manage:read` | Consumption of one key. See [Monitoring](/v3/general/monitoring). |
+
+The full request and response schemas are in the [API Reference](/v3/api-reference).
+
+## Create a Key
 
 <CodeGroup>
 ```python Python
 import requests
 
 headers = {
-    "Authorization": "Bearer YOUR_API_KEY",
+    "Authorization": "Bearer YOUR_MANAGEMENT_KEY",
     "Content-Type": "application/json"
 }
 
 response = requests.post(
-    "https://api.edenai.run/v2/user/custom_token/",
+    "https://api.edenai.run/v3/manage/keys/",
     headers=headers,
     json={
         "name": "production-v1"
     }
 )
+response.raise_for_status()
 
-token = response.json()
-print(f"Created token: {token['name']}")
+key = response.json()
+print(f"Created key {key['name']} (id: {key['id']})")
+print(f"Secret (shown once, store it now): {key['secret']}")
 ```
 
 ```bash cURL
-curl -X POST https://api.edenai.run/v2/user/custom_token/ \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+curl -X POST https://api.edenai.run/v3/manage/keys/ \
+  -H "Authorization: Bearer YOUR_MANAGEMENT_KEY" \
   -H "Content-Type: application/json" \
   -d '{"name": "production-v1"}'
 ```
 </CodeGroup>
 
-## Create a Token with Budget
+The response is the key resource plus a `secret` field:
 
-Set a spending limit by enabling `active_balance`:
+```json
+{
+  "id": "3f1c2b6e-8a4d-4f0e-9b7a-2c5d6e7f8a90",
+  "name": "production-v1",
+  "token_type": "api_token",
+  "member": "owner@example.com",
+  "masked": "sk-eden-…8a90",
+  "active_balance": true,
+  "balance": null,
+  "expire_time": null,
+  "revoked": false,
+  "revoked_at": null,
+  "secret": "sk-eden-..."
+}
+```
+
+<Warning>
+`secret` is returned **only in this response** and cannot be retrieved later. Store it immediately. If you lose it, [rotate the key](#update-rotate-or-revoke-a-key) to get a new secret.
+</Warning>
+
+Request fields:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `name` | string, required | Display name, unique among the owner's active keys. A duplicate returns `409`. |
+| `token_type` | `api_token` (default) or `sandbox_api_token` | Production or sandbox environment. Cannot be changed later. |
+| `member` | email | Attribute the key to an organization member so their usage is reported per user. Omit it for a service key attributed to the organization itself. |
+| `balance` | decimal string, e.g. `"50.00"` | Spending cap, enforced when `active_balance` is `true`. |
+| `active_balance` | boolean, default `true` | Whether `balance` is enforced. |
+| `expire_time` | ISO 8601 datetime | Hard expiry, at least one day ahead. |
+| `balance_reset_period`, `balance_reset_amount` | see below | Periodic budget refill. |
+
+Creating a key returns `403` if your plan's key limit is reached.
+
+## Create a Key with Budget
+
+Set a spending limit with `balance`:
 
 <CodeGroup>
 ```python Python
 import requests
 
 headers = {
-    "Authorization": "Bearer YOUR_API_KEY",
+    "Authorization": "Bearer YOUR_MANAGEMENT_KEY",
     "Content-Type": "application/json"
 }
 
 response = requests.post(
-    "https://api.edenai.run/v2/user/custom_token/",
+    "https://api.edenai.run/v3/manage/keys/",
     headers=headers,
     json={
         "name": "team-backend",
@@ -102,14 +156,15 @@ response = requests.post(
         "active_balance": True
     }
 )
+response.raise_for_status()
 
-token = response.json()
-print(f"Created token with ${token['balance']} budget")
+key = response.json()
+print(f"Created key with ${key['balance']:.2f} budget")
 ```
 
 ```bash cURL
-curl -X POST https://api.edenai.run/v2/user/custom_token/ \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+curl -X POST https://api.edenai.run/v3/manage/keys/ \
+  -H "Authorization: Bearer YOUR_MANAGEMENT_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "name": "team-backend",
@@ -120,7 +175,7 @@ curl -X POST https://api.edenai.run/v2/user/custom_token/ \
 ```
 </CodeGroup>
 
-When `active_balance` is `true`, every API call deducts from the token's balance. Once it reaches $0, the token stops working.
+When `active_balance` is `true`, every API call deducts from the key's balance. Once it reaches $0, the key stops working. In responses, `balance` is the remaining amount (a number), or `null` when the key has no spending cap.
 
 ## Periodic Budget Reset
 
@@ -137,12 +192,12 @@ On the [API Keys](https://app.edenai.run/settings/api-keys) page, create or edit
 import requests
 
 headers = {
-    "Authorization": "Bearer YOUR_API_KEY",
+    "Authorization": "Bearer YOUR_MANAGEMENT_KEY",
     "Content-Type": "application/json"
 }
 
 response = requests.post(
-    "https://api.edenai.run/v2/user/custom_token/",
+    "https://api.edenai.run/v3/manage/keys/",
     headers=headers,
     json={
         "name": "team-daily",
@@ -151,11 +206,15 @@ response = requests.post(
         "balance_reset_period": "daily"
     }
 )
+response.raise_for_status()
+
+key = response.json()
+print(f"{key['name']} starts each day with ${key['balance']:.2f}")
 ```
 
 ```bash cURL
-curl -X POST https://api.edenai.run/v2/user/custom_token/ \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+curl -X POST https://api.edenai.run/v3/manage/keys/ \
+  -H "Authorization: Bearer YOUR_MANAGEMENT_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "name": "team-daily",
@@ -174,48 +233,120 @@ Behaviour to know:
 
 - Setting a reset period **automatically enforces the budget** (`active_balance` becomes `true`) — you don't have to set it separately.
 - `balance_reset_amount` is the reset **target**, kept separate from the live `balance` (the amount remaining right now). They are not the same field.
-- A new periodic token **starts the period full**: if you don't pass a starting `balance`, it begins at `balance_reset_amount`. Passing an explicit `balance` lets a key start partway through a period.
+- A new periodic key **starts the period full**: if you don't pass a starting `balance`, it begins at `balance_reset_amount`. Passing an explicit `balance` lets a key start partway through a period.
 - Resets run at **midnight Europe/Paris time**: daily every night, weekly on Monday, monthly on the 1st.
-- Setting the period back to `none` clears `balance_reset_amount` and returns the token to a one-time budget.
+- Setting the period back to `none` (with a `PATCH`) clears `balance_reset_amount` and returns the key to a one-time budget.
 
 <Note>
-This per-token reset is distinct from the **per-member budget cap** you can set on a [guardrail](/v3/organization/guardrails#budget-cap). A token budget is a hard cap on one key (it stops at $0); a member budget is a soft periodic spend cap that follows a person across all their keys.
+This per-key reset is distinct from the **per-member budget cap** you can set on a [guardrail](/v3/organization/guardrails#budget-cap). A key budget is a hard cap on one key (it stops at $0); a member budget is a soft periodic spend cap that follows a person across all their keys.
 </Note>
 
-## List All Tokens
+## List All Keys
+
+The list is paginated (`limit`, max 100, and `offset`) and includes revoked keys, flagged with `revoked: true`. Secrets are never returned; use `masked` to recognise a key.
 
 <CodeGroup>
 ```python Python
 import requests
 
 headers = {
-    "Authorization": "Bearer YOUR_API_KEY"
+    "Authorization": "Bearer YOUR_MANAGEMENT_KEY"
 }
 
 response = requests.get(
-    "https://api.edenai.run/v2/user/custom_token/",
-    headers=headers
+    "https://api.edenai.run/v3/manage/keys/",
+    headers=headers,
+    params={"limit": 100}
 )
+response.raise_for_status()
 
-tokens = response.json()
-for t in tokens:
-    print(f"{t['name']} | type: {t['token_type']} | balance: {t['balance']}")
+page = response.json()
+print(f"{page['total_count']} key(s) in the organization")
+for key in page["results"]:
+    status = "revoked" if key["revoked"] else "active"
+    print(f"{key['name']} | {key['token_type']} | balance: {key['balance']} | {status}")
 ```
 
 ```bash cURL
-curl -X GET https://api.edenai.run/v2/user/custom_token/ \
-  -H "Authorization: Bearer YOUR_API_KEY"
+curl -X GET "https://api.edenai.run/v3/manage/keys/?limit=100" \
+  -H "Authorization: Bearer YOUR_MANAGEMENT_KEY"
 ```
 </CodeGroup>
+
+```json
+{
+  "results": [
+    {
+      "id": "3f1c2b6e-8a4d-4f0e-9b7a-2c5d6e7f8a90",
+      "name": "production-v1",
+      "token_type": "api_token",
+      "member": "owner@example.com",
+      "masked": "sk-eden-…8a90",
+      "active_balance": true,
+      "balance": null,
+      "expire_time": null,
+      "revoked": false,
+      "revoked_at": null
+    },
+    {
+      "id": "9d2e4a11-6c3b-4b8f-a1d0-7e6f5a4b3c21",
+      "name": "team-backend",
+      "token_type": "api_token",
+      "member": "dev@example.com",
+      "masked": "sk-eden-…3c21",
+      "active_balance": true,
+      "balance": 42.17,
+      "expire_time": null,
+      "revoked": true,
+      "revoked_at": "2026-08-30T09:12:44Z"
+    }
+  ],
+  "limit": 100,
+  "offset": 0,
+  "total_count": 2,
+  "next": null,
+  "previous": null
+}
+```
+
+<Note>
+A legacy key that was created before keys had ids and has never been regenerated is listed with `"id": null`. It cannot be addressed by URL until you regenerate it from the dashboard.
+</Note>
+
+## Update, Rotate or Revoke a Key
+
+Follow-up operations take the key's `id`. Only the fields you send in a `PATCH` are changed; `token_type` cannot be changed.
+
+```bash Update the budget
+curl -X PATCH https://api.edenai.run/v3/manage/keys/3f1c2b6e-8a4d-4f0e-9b7a-2c5d6e7f8a90/ \
+  -H "Authorization: Bearer YOUR_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"balance": "100.00", "active_balance": true}'
+```
+
+```bash Rotate the secret
+curl -X POST https://api.edenai.run/v3/manage/keys/3f1c2b6e-8a4d-4f0e-9b7a-2c5d6e7f8a90/rotate/ \
+  -H "Authorization: Bearer YOUR_MANAGEMENT_KEY"
+```
+
+Rotating returns `{"secret": "sk-eden-...", "masked": "...", "name": "production-v1"}`. The previous secret stops working immediately and the new one is shown once.
+
+```bash Revoke
+curl -X DELETE https://api.edenai.run/v3/manage/keys/3f1c2b6e-8a4d-4f0e-9b7a-2c5d6e7f8a90/ \
+  -H "Authorization: Bearer YOUR_MANAGEMENT_KEY"
+```
+
+Revoking is **permanent**: the key stops authenticating immediately, cannot be re-enabled, and stays in the list with `revoked: true` for your records. The response is `200` with the revoked key.
 
 ## Best Practices
 
 <Tip>
-Use clear naming conventions like `env-project-purpose` (e.g., `prod-billing-api`, `dev-ml-team`) so tokens are easy to identify at a glance.
+Use clear naming conventions like `env-project-purpose` (e.g., `prod-billing-api`, `dev-ml-team`) so keys are easy to identify at a glance.
 </Tip>
 
-- **Set budgets on non-production tokens** to prevent accidental overspending during development.
+- **Set budgets on non-production keys** to prevent accidental overspending during development.
 - **Use a periodic reset** (`balance_reset_period`) for recurring allowances — e.g. a $10/day CI key — instead of topping up manually.
-- **Use sandbox tokens for CI/CD** to validate integrations without incurring costs.
-- **Rotate tokens periodically** — create a new token, migrate your application, then delete the old one.
-- **Set expiration dates** on temporary tokens (e.g., for contractors or short-term projects).
+- **Use sandbox keys for CI/CD** to validate integrations without incurring costs.
+- **Rotate keys periodically** with the rotate endpoint: the key keeps its id, name and budget, so nothing else needs to change.
+- **Set expiration dates** on temporary keys (e.g., for contractors or short-term projects).
+- **Attribute keys to members** with `member` so [usage reports](/v3/general/monitoring) show who spent what.

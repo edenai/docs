@@ -32,7 +32,7 @@ cp tests/.env.example tests/.env
 pytest tests/ -v
 ```
 
-Tests run in parallel by default (via `pytest-xdist`, configured in `pytest.ini` with `-n auto` which matches the CPU count). Override with `-n`:
+Tests run in parallel by default (via `pytest-xdist`, configured in `pytest.ini` with `-n auto` which matches the CPU count). Each test is capped at 5 minutes (`pytest-timeout`), every `requests` call made by a snippet gets a 120-second timeout unless it sets its own, and 429 retries wait at most 30 seconds, so a request the API never answers fails with its details instead of stalling the run. Override the worker count with `-n`:
 
 ```bash
 pytest tests/ -v -n 5   # 5 workers

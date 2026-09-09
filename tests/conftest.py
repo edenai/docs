@@ -32,6 +32,11 @@ http_interceptor_key = pytest.StashKey()
 
 _SHARED_STATE_FILE = ".eden_test_shared_state.json"
 
+# Applied to every snippet HTTP call that does not set its own timeout.
+_DEFAULT_HTTP_TIMEOUT = 120
+# Upper bound on how long a 429 retry waits, whatever Retry-After says.
+_MAX_RETRY_AFTER = 30
+
 
 def _shared_basetemp(config: pytest.Config) -> Path:
     """Return the controller's basetemp directory."""
@@ -226,13 +231,18 @@ def http_interceptor(monkeypatch, request):
     original_send = requests.Session.send
 
     def _intercepted_send(self, prepared_request, **kwargs):
+        # Snippets never pass a timeout, so a request the API never answers
+        # would hold a worker until the job is killed. Turn that into a
+        # ReadTimeout with the request details attached to the failure.
+        if kwargs.get("timeout") is None:
+            kwargs["timeout"] = _DEFAULT_HTTP_TIMEOUT
         recorder.last_request = prepared_request
         response = original_send(self, prepared_request, **kwargs)
         recorder.last_response = response
         retries = 0
         while response.status_code == 429 and retries < 5:
             retry_after = float(response.headers.get("Retry-After", 1))
-            time.sleep(retry_after)
+            time.sleep(min(retry_after, _MAX_RETRY_AFTER))
             response = original_send(self, prepared_request, **kwargs)
             recorder.last_response = response
             retries += 1

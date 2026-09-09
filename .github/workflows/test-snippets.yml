@@ -27,6 +27,8 @@ jobs:
   execute:
     name: Execution Tests
     runs-on: ubuntu-latest
+    # The whole suite takes about a minute; anything near this is a hang.
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5

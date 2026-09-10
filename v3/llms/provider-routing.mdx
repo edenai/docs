@@ -152,7 +152,7 @@ Sending an identifier makes it reliable. Use any stable string: a thread id, a t
 }
 ```
 
-For clients that cannot add body fields, such as a coding agent that only lets you set headers, send the same value as a header. The body field wins if both are present.
+For clients that cannot add body fields, such as a coding agent that only lets you set headers, send the same value as a header. Eden AI checks `x-session-id`, `x-claude-code-session-id`, `x-session-affinity`, and `session-id`. The body field wins if headers are present.
 
 ```bash cURL
 curl -X POST https://api.edenai.run/v3/chat/completions \
@@ -162,7 +162,7 @@ curl -X POST https://api.edenai.run/v3/chat/completions \
   -d '{"model": "gpt-5.6-sol", "messages": [{"role": "user", "content": "hi"}]}'
 ```
 
-`session_id` is accepted on all three chat dialects (`/v3/chat/completions`, `/v3/responses` and `/v3/v1/messages`) and is capped at 256 characters. It is never forwarded to the provider.
+`session_id` and the session headers are accepted on all three chat dialects (`/v3/chat/completions`, `/v3/responses` and `/v3/v1/messages`) and are capped at 256 characters. They are never forwarded to the provider.
 
 ### How long provider affinity lasts
 

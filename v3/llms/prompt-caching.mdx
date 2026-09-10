@@ -299,7 +299,7 @@ Send one stable conversation identifier on every turn:
 The routing affinity key is chosen in this order:
 
 1. Body `session_id`
-2. `x-session-id` request header
+2. Session request headers (`x-session-id`, `x-claude-code-session-id`, `x-session-affinity` or `session-id`)
 3. `prompt_cache_key`
 4. A key inferred from the opening messages
 

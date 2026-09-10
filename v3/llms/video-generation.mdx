@@ -1,0 +1,141 @@
+---
+icon: "video"
+title: "Video Generation"
+description: "Generate video with the OpenAI-compatible /v3/videos endpoints."
+---
+
+import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
+
+<TechArticleSchema
+  title={"Video Generation"}
+  description={"Generate video with the OpenAI-compatible /v3/videos endpoints."}
+  path="v3/llms/video-generation"
+  articleSection="LLMs"
+  about={"LLM API"}
+  proficiencyLevel="Intermediate"
+  keywords={["Eden AI", "AI API", "video generation", "OpenAI compatible", "sora", "veo", "minimax", "pruna"]}
+  datePublished="2026-09-10T00:00:00Z"
+  dateModified="2026-09-10T00:00:00Z"
+/>
+
+Generate videos through Eden AI's OpenAI-compatible video endpoints. Point any OpenAI client at `https://api.edenai.run/v3` and the video API works as a drop-in replacement for OpenAI's video generation.
+
+## Overview
+
+The surface is a facade over `POST /v3/universal-ai/async` for `video/generation_async`: same providers, same pricing, same job table, same polling and webhooks. Only the wire shape is OpenAI's.
+
+| Method | Path | Purpose |
+|---|---|---|
+| `POST`   | `/v3/videos`                    | Start a job (JSON or multipart). Returns 200 + video object |
+| `GET`    | `/v3/videos/{video_id}`         | Job status as a video object                              |
+| `GET`    | `/v3/videos/{video_id}/content` | The mp4: 302 to the file while its link is valid, bytes after |
+| `GET`    | `/v3/videos`                    | Your video jobs, newest first (`limit` 1-100, `after` cursor) |
+| `DELETE` | `/v3/videos/{video_id}`         | Delete a finished job (409 while it is still running)     |
+| `GET`    | `/v3/videos/models`             | Models callable here, as `provider/model` ids             |
+
+<Warning>
+Video models are **not** in `GET /v3/models` (chat / responses only) nor in `GET /v3/images/models`.
+</Warning>
+
+## Usage
+
+{/* skip-test */}
+<CodeGroup>
+```python OpenAI SDK
+from openai import OpenAI
+
+client = OpenAI(base_url="https://api.edenai.run/v3", api_key="YOUR_API_KEY")
+
+video = client.videos.create_and_poll(
+    model="pruna/p-video",
+    prompt="A red paper boat drifting on a calm pond at sunrise",
+    seconds="5",
+    size="1280x720",
+)
+assert video.status == "completed"
+client.videos.download_content(video.id).write_to_file("boat.mp4")
+```
+</CodeGroup>
+
+### Image-to-Video
+Image-to-video with the SDK's file upload (multipart):
+{/* skip-test */}
+<CodeGroup>
+```python OpenAI SDK (Multipart)
+with open("keyframe.png", "rb") as f:
+    video = client.videos.create(
+        model="pruna/p-video", 
+        prompt="the boat sails away", 
+        input_reference=f
+    )
+```
+</CodeGroup>
+
+Image-to-video with JSON, referencing an upload or a URL:
+{/* skip-test */}
+<CodeGroup>
+```bash cURL (JSON)
+curl -X POST "https://api.edenai.run/v3/videos" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "pruna/p-video", 
+    "prompt": "the boat sails away",
+    "input_reference": {"image_url": "https://example.com/keyframe.png"}
+  }'
+```
+</CodeGroup>
+
+`input_reference` accepts `{"file_id": "<id from /v3/upload>"}` or `{"image_url": "https://..."}` (an http(s) URL to a JPEG or PNG). Base64 data URLs are rejected; upload the image instead.
+
+## Request fields
+
+| OpenAI field      | Maps to universal-ai | Notes                                                                                    |
+| ----------------- | -------------------- | ---------------------------------------------------------------------------------------- |
+| `model`           | model string         | Required. E.g., `provider/model`. Bare names (`sora-2`) are rejected with a 400.         |
+| `prompt`          | `text`               | Required. Text describing the content to generate.                                       |
+| `seconds`         | `duration`           | String or integer, any positive value; omitted uses the model's default.                 |
+| `size`            | `dimension`          | `WIDTHxHEIGHT`. Omitted uses the provider's default resolution.                          |
+| `input_reference` | `file`               | Object or file part. See examples above.                                                 |
+
+Eden extensions (not in OpenAI's API): `seed`, `provider_params` (gated by the per-provider allow-list), `webhook_receiver`, `user_webhook_parameters`. 
+
+On a JSON body, unknown fields are rejected (422), so `fallbacks` and `@edenai` routing are not available here. A multipart form silently ignores unknown form fields instead.
+
+## Video object
+
+```json
+{
+  "id": "e5eef4b4-acd1-4eb9-a5c9-2769271e42f5",
+  "object": "video",
+  "status": "queued",
+  "progress": 0,
+  "created_at": 1757435495,
+  "completed_at": null,
+  "expires_at": null,
+  "model": "pruna/p-video",
+  "seconds": "5",
+  "size": "1280x720",
+  "remixed_from_video_id": null,
+  "error": null,
+  "provider": "pruna",
+  "cost": 0
+}
+```
+
+- `status`: `queued` on the create response, `in_progress` on later reads while the job runs, then `completed` or `failed`. `progress` goes from 0 to 100.
+- `provider` and `cost` (USD) are Eden extensions. `cost` is 0 while the job is queued or in progress, and updates to the settled amount once the job completes or fails.
+- `id` is the universal-ai job id: the same job is visible at `GET /v3/universal-ai/async/{id}`.
+
+## Limitations
+
+- **Response `size`:** `size` is only echoed on the create response; reads return `null` (the job row does not store the request). `seconds` on reads is the duration the provider actually rendered.
+- **Unsupported Routes:** No remix, extensions, edits or characters: these OpenAI routes answer 400.
+- **Keyset Pagination:** `after` is a keyset cursor on `(created_at, id)`: pass the previous page's `last_id` to get the jobs that follow it in newest-first order, rather than an offset-style page number.
+- Only the `video` content variant (no thumbnails / spritesheets).
+- The content redirect points at a signed link valid for 7 days; after that the endpoint serves the stored bytes directly.
+- Authentication errors (401 for a bad token, 403 when the header is missing), rate-limit (429) and query-parameter validation errors (e.g. `?limit=0`) use the platform's `{"detail": ...}` shape rather than the OpenAI error envelope.
+
+## Pricing
+
+Identical to universal-ai video generation: `info_pricing` rows per provider/model, per-second or per-request, with resolution tiers where seeded. Nothing is priced differently for coming through this surface.

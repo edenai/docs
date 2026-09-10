@@ -2055,7 +2055,7 @@ curl -X POST https://api.edenai.run/v3/universal-ai \
 | **LLM Streaming** | Optional (`stream: true/false`) | Always streams (SSE) |
 | **Discovery** | Not available | `/v3/info/*` endpoints |
 | **File Reuse** | Not supported | Upload once, use many times |
-| **Error Format** | `{detail, error}` | `{status: "fail", error: {...}}` |
+| **Error Format** | `{detail, error}` | `{status: "fail", error: {...}, output: null, cost: 0}` |
 
 ---
 

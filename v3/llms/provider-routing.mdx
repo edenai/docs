@@ -152,7 +152,7 @@ Sending an identifier makes it reliable. Use any stable string: a thread id, a t
 }
 ```
 
-For clients that cannot add body fields, such as a coding agent that only lets you set headers, send the same value as a header. The body field wins if both are present.
+For clients that cannot add body fields, such as a coding agent that only lets you set headers, send the same value as a header. Eden AI checks `x-session-id`, `x-claude-code-session-id`, `x-session-affinity`, and `session-id`. The body field wins if headers are present.
 
 ```bash cURL
 curl -X POST https://api.edenai.run/v3/chat/completions \
@@ -162,11 +162,11 @@ curl -X POST https://api.edenai.run/v3/chat/completions \
   -d '{"model": "gpt-5.6-sol", "messages": [{"role": "user", "content": "hi"}]}'
 ```
 
-`session_id` is accepted on all three chat dialects (`/v3/chat/completions`, `/v3/responses` and `/v3/v1/messages`) and is capped at 256 characters. It is never forwarded to the provider.
+`session_id` and the session headers are accepted on all three chat dialects (`/v3/chat/completions`, `/v3/responses` and `/v3/v1/messages`) and are capped at 256 characters. They are never forwarded to the provider.
 
 ### How long provider affinity lasts
 
-After Eden AI observes a cache read, it keeps the conversation on that provider for **10 minutes by default**. Each later cache read refreshes the window.
+After Eden AI observes a cache write or read, it keeps the conversation on that provider for **10 minutes by default**. Each later cache write or read refreshes the window.
 
 When you declare a prompt-cache lifetime, sticky routing follows it so the provider affinity matches the cache window:
 
@@ -178,7 +178,7 @@ When you declare a prompt-cache lifetime, sticky routing follows it so the provi
 | `cache_control.ttl: "1h"` | Up to 1 hour for Anthropic and Bedrock |
 | `prompt_cache_retention: "24h"` | Up to 24 hours for OpenAI and Azure |
 
-If a request declares more than one duration, Eden AI uses the longest one, capped at the maximum retention of the provider that served the cache read. Providers without a known extended-retention policy use a conservative one-hour ceiling.
+If a request declares more than one duration, Eden AI uses the longest one, capped at the maximum retention of the provider that served the cache write or read. Providers without a known extended-retention policy use a conservative one-hour ceiling.
 
 ### Choosing a session id
 

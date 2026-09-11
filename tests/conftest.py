@@ -3,6 +3,7 @@
 import json
 import os
 import time
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -13,8 +14,9 @@ from xdist.plugin import is_xdist_worker
 
 from tests.helpers.api import (
     delete_file_ids,
-    list_active_key_ids,
     list_file_ids,
+    list_sample_key_ids,
+    partition_upload_ids,
     revoke_keys,
     upload_test_file,
 )
@@ -29,6 +31,9 @@ from tests.helpers.file_generators import (
 load_dotenv(Path(__file__).parent / ".env")
 
 http_interceptor_key = pytest.StashKey()
+# Uploads already on the account when the session started. Both hooks that use
+# it run in the controller, so it never needs to reach a worker.
+pre_existing_files_key = pytest.StashKey[set]()
 
 _SHARED_STATE_FILE = ".eden_test_shared_state.json"
 
@@ -51,26 +56,46 @@ def _shared_state_path(config: pytest.Config) -> Path:
     return _shared_basetemp(config) / _SHARED_STATE_FILE
 
 
+def _clean_up(description: str, action: Callable[[], int]) -> bool:
+    """Remove test resources, reporting failure instead of raising.
+
+    Returns whether the sweep succeeded, so a caller that cannot tolerate
+    leftovers can escalate. Cleanup runs either side of the session: a
+    cancelled or crashed run never reaches its teardown, so the next one clears
+    what it left behind before starting.
+    """
+    try:
+        removed = action()
+    except Exception as exc:
+        print(f"\n[conftest] WARNING: {description} cleanup failed: {exc}")
+        return False
+    if removed:
+        print(f"\n[conftest] Cleaned up {removed} {description}")
+    return True
+
+
 @pytest.hookimpl(tryfirst=True)
 def pytest_sessionstart(session: pytest.Session) -> None:
-    """Snapshot API resources and upload a test file (controller only)."""
+    """Clear leftovers, snapshot resources, upload a test file (controller)."""
     if is_xdist_worker(session):
         return
 
     state: dict = {}
 
-    if os.environ.get("EDEN_AI_SANDBOX_API_TOKEN"):
-        pre_existing_files = list_file_ids()
-        test_file_id = upload_test_file(minimal_pdf(), "test_fixture.pdf")
-        os.environ["_EDEN_TEST_FILE_ID"] = test_file_id
-        state["pre_existing_files"] = sorted(pre_existing_files)
-        state["test_file_id"] = test_file_id
-
     if os.environ.get("EDEN_AI_MANAGEMENT_KEY"):
-        # The Management API samples mint real inference keys in the test
-        # organization; snapshot the active ones so the run can revoke only
-        # the keys it created.
-        state["pre_existing_keys"] = sorted(list_active_key_ids())
+        # A key left active by an earlier run makes the create samples fail
+        # with 409 on the duplicate name, so clear those first.
+        _clean_up(
+            "leftover inference key(s)", lambda: revoke_keys(list_sample_key_ids())
+        )
+
+    if os.environ.get("EDEN_AI_SANDBOX_API_TOKEN"):
+        leftover_files, pre_existing_files = partition_upload_ids()
+        _clean_up("leftover uploaded file(s)", lambda: delete_file_ids(leftover_files))
+        session.config.stash[pre_existing_files_key] = pre_existing_files
+        test_file_id = upload_test_file(minimal_pdf())
+        os.environ["_EDEN_TEST_FILE_ID"] = test_file_id
+        state["test_file_id"] = test_file_id
 
     path = _shared_state_path(session.config)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -83,34 +108,21 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
     if is_xdist_worker(session):
         return
 
-    path = _shared_state_path(session.config)
-    if not path.exists():
-        return
+    pre_existing = session.config.stash.get(pre_existing_files_key, None)
+    if pre_existing is not None:
+        _clean_up(
+            "uploaded file(s)", lambda: delete_file_ids(list_file_ids() - pre_existing)
+        )
 
-    state = json.loads(path.read_text())
-    print("\n[conftest] Cleaning up API resources...")
-
-    if "pre_existing_files" in state:
-        pre_existing = set(state["pre_existing_files"])
-        try:
-            current = list_file_ids()
-            new_file_ids = current - pre_existing
-            if new_file_ids:
-                deleted = delete_file_ids(new_file_ids)
-                print(f"\n[conftest] Cleaned up {deleted} uploaded file(s)")
-        except Exception as exc:
-            print(f"\n[conftest] WARNING: file cleanup failed: {exc}")
-
-    if "pre_existing_keys" in state:
-        pre_existing = set(state["pre_existing_keys"])
-        try:
-            current = list_active_key_ids()
-            new_keys = current - pre_existing
-            if new_keys:
-                revoked = revoke_keys(new_keys)
-                print(f"\n[conftest] Revoked {revoked} inference key(s)")
-        except Exception as exc:
-            print(f"\n[conftest] WARNING: key cleanup failed: {exc}")
+    if os.environ.get("EDEN_AI_MANAGEMENT_KEY"):
+        # An inference key that outlives the run can still spend the
+        # organization's credit, so failing to revoke one fails the session
+        # instead of passing with a warning nobody reads.
+        revoked = _clean_up(
+            "inference key(s)", lambda: revoke_keys(list_sample_key_ids())
+        )
+        if not revoked:
+            session.exitstatus = pytest.ExitCode.TESTS_FAILED
 
 
 @pytest.fixture(scope="session", autouse=True)

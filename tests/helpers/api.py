@@ -4,6 +4,17 @@ import os
 
 import requests
 
+# Setup and teardown call the API outside the snippet interceptor that bounds
+# snippet requests, so every call here carries its own timeout.
+_REQUEST_TIMEOUT = 60
+
+# Cleanup is scoped to the names the documentation samples use, so it can never
+# delete or revoke a resource that belongs to someone else in the organization.
+FIXTURE_FILE_NAME = "test_fixture.pdf"
+SAMPLE_KEY_NAMES = frozenset(
+    {"production-v1", "team-backend", "team-daily", "dev-testing"}
+)
+
 
 def api_base_url() -> str:
     return os.environ.get("EDEN_AI_BASE_URL", "https://staging-api.edenai.run")
@@ -16,24 +27,42 @@ def api_headers() -> dict:
     return {"Authorization": f"Bearer {token}"}
 
 
-def list_file_ids() -> set[str]:
-    """Return the set of all file IDs currently on the account."""
-    file_ids: set[str] = set()
+def _iter_uploads():
+    """Yield every uploaded file on the account, walking the pages."""
     page = 1
     while True:
         resp = requests.get(
             f"{api_base_url()}/v3/upload",
             headers=api_headers(),
             params={"page": page, "limit": 1000},
+            timeout=_REQUEST_TIMEOUT,
         )
         resp.raise_for_status()
         data = resp.json()
-        for item in data["items"]:
-            file_ids.add(item["file_id"])
+        yield from data["items"]
         if page >= data["total_pages"]:
             break
         page += 1
-    return file_ids
+
+
+def list_file_ids() -> set[str]:
+    """Return the set of all file IDs currently on the account."""
+    return {item["file_id"] for item in _iter_uploads()}
+
+
+def partition_upload_ids() -> tuple[set[str], set[str]]:
+    """Split the account's uploads into (fixture leftovers, everything else).
+
+    One walk answers both questions the session start asks: which uploads an
+    earlier run left behind, and which ones were already there, so teardown can
+    tell what this run uploaded.
+    """
+    fixture_ids: set[str] = set()
+    other_ids: set[str] = set()
+    for item in _iter_uploads():
+        target = fixture_ids if item["file_name"] == FIXTURE_FILE_NAME else other_ids
+        target.add(item["file_id"])
+    return fixture_ids, other_ids
 
 
 def delete_file_ids(file_ids: set[str]) -> int:
@@ -48,18 +77,20 @@ def delete_file_ids(file_ids: set[str]) -> int:
             f"{api_base_url()}/v3/upload/delete",
             headers={**api_headers(), "Content-Type": "application/json"},
             json={"file_ids": batch},
+            timeout=_REQUEST_TIMEOUT,
         )
         resp.raise_for_status()
         deleted += resp.json()["deleted_count"]
     return deleted
 
 
-def upload_test_file(file_bytes: bytes, filename: str) -> str:
+def upload_test_file(file_bytes: bytes, filename: str = FIXTURE_FILE_NAME) -> str:
     """Upload a file and return its file_id."""
     resp = requests.post(
         f"{api_base_url()}/v3/upload",
         headers=api_headers(),
         files={"file": (filename, file_bytes)},
+        timeout=_REQUEST_TIMEOUT,
     )
     resp.raise_for_status()
     return resp.json()["file_id"]
@@ -72,11 +103,13 @@ def management_headers() -> dict:
     return {"Authorization": f"Bearer {token}"}
 
 
-def list_active_key_ids() -> set[str]:
-    """Return the ids of every non-revoked inference key in the organization.
+def list_sample_key_ids() -> set[str]:
+    """Return the ids of the active inference keys the samples create.
 
-    Legacy keys that were never regenerated have a null id and are skipped:
-    they cannot be addressed by URL anyway.
+    Scoped to SAMPLE_KEY_NAMES, so cleanup can never revoke a key the
+    organization actually depends on, whoever created it. Legacy keys that were
+    never regenerated have a null id and are skipped: they cannot be addressed
+    by URL anyway.
     """
     key_ids: set[str] = set()
     offset = 0
@@ -86,11 +119,12 @@ def list_active_key_ids() -> set[str]:
             f"{api_base_url()}/v3/manage/keys/",
             headers=management_headers(),
             params={"limit": limit, "offset": offset},
+            timeout=_REQUEST_TIMEOUT,
         )
         resp.raise_for_status()
         data = resp.json()
         for key in data["results"]:
-            if key["id"] and not key["revoked"]:
+            if key["id"] and not key["revoked"] and key["name"] in SAMPLE_KEY_NAMES:
                 key_ids.add(key["id"])
         offset += limit
         if offset >= data["total_count"]:
@@ -111,6 +145,7 @@ def revoke_keys(key_ids: set[str]) -> int:
         resp = requests.delete(
             f"{api_base_url()}/v3/manage/keys/{key_id}/",
             headers=management_headers(),
+            timeout=_REQUEST_TIMEOUT,
         )
         if resp.status_code == 200:
             revoked += 1

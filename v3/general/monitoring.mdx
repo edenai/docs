@@ -79,6 +79,8 @@ Narrow the data with any of these query parameters:
 
 Get the last 7 days of usage, grouped by day, and total it per key:
 
+{/* The organization-wide usage endpoint can take longer to answer than the snippet test timeout on an organization with real traffic. */}
+{/* skip-test */}
 ```python Python
 import requests
 
@@ -104,6 +106,8 @@ for entry in usage:
 
 For a specific period, pass `begin` and `end`. Remember that `end` is exclusive: this returns one monthly bucket covering all of August 2026.
 
+{/* The organization-wide usage endpoint can take longer to answer than the snippet test timeout on an organization with real traffic. */}
+{/* skip-test */}
 ```python Python
 import requests
 
@@ -188,6 +192,8 @@ Features follow the pattern `{category}__{subfeature}`:
 
 Add `group_by=user` to get one total per organization member over the window instead of a time series:
 
+{/* The organization-wide usage endpoint can take longer to answer than the snippet test timeout on an organization with real traffic. */}
+{/* skip-test */}
 ```python Python
 import requests
 
@@ -230,18 +236,22 @@ keys = requests.get(
     headers=headers,
     params={"limit": 100}
 ).json()["results"]
-key = next(k for k in keys if k["id"] and not k["revoked"])
+active_keys = [k for k in keys if k["id"] and not k["revoked"]]
 
-response = requests.get(
-    f"https://api.edenai.run/v3/manage/keys/{key['id']}/usage/",
-    headers=headers,
-    params={"step": 1}
-)
-response.raise_for_status()
+if not active_keys:
+    print("No active key to report on")
+else:
+    key = active_keys[0]
+    response = requests.get(
+        f"https://api.edenai.run/v3/manage/keys/{key['id']}/usage/",
+        headers=headers,
+        params={"step": 1}
+    )
+    response.raise_for_status()
 
-usage = response.json()["usage"]
-days = sum(len(entry["data"]) for entry in usage)
-print(f"{key['name']}: usage on {days} day(s) in the last 7 days")
+    usage = response.json()["usage"]
+    days = sum(len(entry["data"]) for entry in usage)
+    print(f"{key['name']}: usage on {days} day(s) in the last 7 days")
 ```
 
 A key that belongs to another organization returns `404`.

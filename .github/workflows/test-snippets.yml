@@ -8,19 +8,18 @@ on:
       - '*.mdx'
       - 'tests/**'
 
-# These tests create shared, named resources on one Eden AI account (inference
-# keys, uploaded files), so two runs of the same ref must not overlap.
-# update-dates.yml pushes a dateModified bump to every .mdx PR, which starts a
-# second run seconds after the first, so serialise them per ref.
+# These tests share one Eden AI account, and teardown deletes every upload that
+# appeared while they ran, so overlapping runs would delete each other's files.
+# The group carries no ref on purpose: a run on another branch collides exactly
+# as a second run of the same ref would, and update-dates.yml pushes a
+# dateModified bump to every .mdx PR, starting one seconds after the other.
 #
 # Deliberately NOT cancel-in-progress: cleanup happens in pytest_sessionfinish,
-# so cancelling a started run orphans the keys and uploaded file it created.
-# The next run then snapshots those as pre-existing and never deletes them,
-# leaking a little account state on every .mdx PR. Queuing costs one extra
-# minute of CI and always runs cleanup. (A still-pending run carries no
-# resources, so GitHub replacing it is harmless.)
+# so cancelling orphans the keys and files a started run created. The next run
+# clears the ones named after the samples before it starts. (A still-pending run
+# carries no resources, so GitHub replacing it is harmless.)
 concurrency:
-  group: test-snippets-${{ github.ref }}
+  group: test-snippets
   cancel-in-progress: false
 
 jobs:

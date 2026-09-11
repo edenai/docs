@@ -72,6 +72,7 @@ Narrow the data with any of these query parameters:
 | `subfeature` | Specific feature | `chat`, `ocr`, `text_to_speech` | both endpoints |
 | `provider` | AI provider | `openai`, `anthropic` | both endpoints |
 | `phase` | Processing phase, for features that report one | | both endpoints |
+| `billing` | Filter traffic by billing mode. `eden` (default) includes only managed-key traffic charged by Eden AI. `own_keys` includes only BYOK traffic (priced but never charged by Eden). `all` includes both. | `eden` | both endpoints |
 | `token` | Only the keys with this **name**. Use `base_token` for usage not attributed to any key. Ignored when `key_id` is given. | `production-v1` | organization |
 | `key_id` | Only this key, by id. `404` if it is not in the organization. | | organization |
 | `user` | Only this member, by email. `404` if they are not in the organization. | `dev@example.com` | organization |

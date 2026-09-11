@@ -47,6 +47,14 @@
     {
       "source": "/v3/data-governance/zdr",
       "destination": "/v3/data-governance/provider-data-policies"
+    },
+    {
+      "source": "/v2",
+      "destination": "/index"
+    },
+    {
+      "source": "/v2/index",
+      "destination": "/index"
     }
   ],
   "navigation": {
@@ -334,12 +342,6 @@
               }
             ]
           }
-        ]
-      },
-      {
-        "version": "V2",
-        "pages": [
-          "v2/index"
         ]
       }
     ]

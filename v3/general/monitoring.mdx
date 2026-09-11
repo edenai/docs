@@ -38,6 +38,8 @@ Generate a management key from the dashboard (**Account → Management Keys**) o
 | `GET /v3/manage/usage/` | The organization's consumption: a time series per API key, or one total per member with `group_by=user`. |
 | `GET /v3/manage/keys/{key_id}/usage/` | The consumption of one API key as a time series. |
 
+{/* The `GET /v3/manage/usage/` samples on this page are marked skip-test: the organization-wide endpoint can take longer to answer than the snippet test timeout on an organization with real traffic. The per-key samples still run. */}
+
 ## Key Concepts
 
 ### Date window
@@ -79,7 +81,6 @@ Narrow the data with any of these query parameters:
 
 Get the last 7 days of usage, grouped by day, and total it per key:
 
-{/* The organization-wide usage endpoint can take longer to answer than the snippet test timeout on an organization with real traffic. */}
 {/* skip-test */}
 ```python Python
 import requests
@@ -106,7 +107,6 @@ for entry in usage:
 
 For a specific period, pass `begin` and `end`. Remember that `end` is exclusive: this returns one monthly bucket covering all of August 2026.
 
-{/* The organization-wide usage endpoint can take longer to answer than the snippet test timeout on an organization with real traffic. */}
 {/* skip-test */}
 ```python Python
 import requests
@@ -192,7 +192,6 @@ Features follow the pattern `{category}__{subfeature}`:
 
 Add `group_by=user` to get one total per organization member over the window instead of a time series:
 
-{/* The organization-wide usage endpoint can take longer to answer than the snippet test timeout on an organization with real traffic. */}
 {/* skip-test */}
 ```python Python
 import requests

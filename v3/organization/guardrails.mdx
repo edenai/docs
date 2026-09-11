@@ -14,7 +14,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "guardrails", "usage policy", "access control", "rate limits", "model restrictions", "budget cap", "spending limit"]}
   datePublished="2026-06-11T00:00:00Z"
-  dateModified="2026-07-21T00:00:00Z"
+  dateModified="2026-09-11T00:00:00Z"
 />
 
 A **guardrail** is a reusable usage policy that controls:
@@ -128,7 +128,7 @@ For **model rules** and **rate limit** independently, Eden AI uses the value fro
 The **member budget** resolves differently: only the **member** and **role** levels are considered (token budgets are handled separately, on the token itself), and the budget amount and period are always taken together from the most specific level that sets them — they are never mixed across levels.
 
 <Note>
-Guardrails can also be managed programmatically through the User Management API if you need to automate provisioning. See the [API Reference](https://www.edenai.co/docs) for the `guardrails` endpoints.
+Guardrails are configured in the dashboard; there is no API for them yet. To automate the **per-key** side of provisioning (budgets, expiry, attribution to a member), use the [Management API](/v3/organization/management-api).
 </Note>
 
 ## Related

@@ -329,14 +329,6 @@
                 "openapi": "https://api.edenai.run/v3/docs/openapi.json"
               },
               {
-                "group": "Cost Management",
-                "openapi": "https://api.edenai.run/v2/info/splitted-schema/cost_management/openapi.json"
-              },
-              {
-                "group": "User Management",
-                "openapi": "https://api.edenai.run/v2/info/splitted-schema/user/openapi.json"
-              },
-              {
                 "group": "Organization Management",
                 "openapi": "https://api.edenai.run/v2/info/splitted-schema/management_api/openapi.json"
               }

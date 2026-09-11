@@ -3,7 +3,7 @@
 import json
 import os
 import time
-from datetime import datetime, timedelta
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -13,11 +13,11 @@ from filelock import FileLock
 from xdist.plugin import is_xdist_worker
 
 from tests.helpers.api import (
-    create_custom_token,
-    delete_custom_tokens,
     delete_file_ids,
-    list_custom_token_names,
     list_file_ids,
+    list_sample_key_ids,
+    partition_upload_ids,
+    revoke_keys,
     upload_test_file,
 )
 from tests.helpers.file_generators import (
@@ -31,8 +31,16 @@ from tests.helpers.file_generators import (
 load_dotenv(Path(__file__).parent / ".env")
 
 http_interceptor_key = pytest.StashKey()
+# Uploads already on the account when the session started. Both hooks that use
+# it run in the controller, so it never needs to reach a worker.
+pre_existing_files_key = pytest.StashKey[set]()
 
 _SHARED_STATE_FILE = ".eden_test_shared_state.json"
+
+# Applied to every snippet HTTP call that does not set its own timeout.
+_DEFAULT_HTTP_TIMEOUT = 120
+# Upper bound on how long a 429 retry waits, whatever Retry-After says.
+_MAX_RETRY_AFTER = 30
 
 
 def _shared_basetemp(config: pytest.Config) -> Path:
@@ -48,44 +56,46 @@ def _shared_state_path(config: pytest.Config) -> Path:
     return _shared_basetemp(config) / _SHARED_STATE_FILE
 
 
+def _clean_up(description: str, action: Callable[[], int]) -> bool:
+    """Remove test resources, reporting failure instead of raising.
+
+    Returns whether the sweep succeeded, so a caller that cannot tolerate
+    leftovers can escalate. Cleanup runs either side of the session: a
+    cancelled or crashed run never reaches its teardown, so the next one clears
+    what it left behind before starting.
+    """
+    try:
+        removed = action()
+    except Exception as exc:
+        print(f"\n[conftest] WARNING: {description} cleanup failed: {exc}")
+        return False
+    if removed:
+        print(f"\n[conftest] Cleaned up {removed} {description}")
+    return True
+
+
 @pytest.hookimpl(tryfirst=True)
 def pytest_sessionstart(session: pytest.Session) -> None:
-    """Snapshot API resources and upload a test file (controller only)."""
+    """Clear leftovers, snapshot resources, upload a test file (controller)."""
     if is_xdist_worker(session):
         return
 
     state: dict = {}
 
+    if os.environ.get("EDEN_AI_MANAGEMENT_KEY"):
+        # A key left active by an earlier run makes the create samples fail
+        # with 409 on the duplicate name, so clear those first.
+        _clean_up(
+            "leftover inference key(s)", lambda: revoke_keys(list_sample_key_ids())
+        )
+
     if os.environ.get("EDEN_AI_SANDBOX_API_TOKEN"):
-        pre_existing_files = list_file_ids()
-        test_file_id = upload_test_file(minimal_pdf(), "test_fixture.pdf")
+        leftover_files, pre_existing_files = partition_upload_ids()
+        _clean_up("leftover uploaded file(s)", lambda: delete_file_ids(leftover_files))
+        session.config.stash[pre_existing_files_key] = pre_existing_files
+        test_file_id = upload_test_file(minimal_pdf())
         os.environ["_EDEN_TEST_FILE_ID"] = test_file_id
-        state["pre_existing_files"] = sorted(pre_existing_files)
         state["test_file_id"] = test_file_id
-
-    if os.environ.get("EDEN_AI_PRODUCTION_API_TOKEN"):
-        state["pre_existing_tokens"] = sorted(list_custom_token_names())
-
-        expire = (datetime.now() + timedelta(days=30)).isoformat()
-        for token_spec in [
-            {
-                "name": "my-api-token",
-                "balance": "100.00",
-                "active_balance": True,
-                "expire_time": expire,
-            },
-            {"name": "old-token"},
-        ]:
-            try:
-                create_custom_token(**token_spec)
-            except requests.HTTPError as exc:
-                # Token may already exist — another run on the same account can
-                # create it first. Test `is None` explicitly: Response.__bool__
-                # returns self.ok, so a 400 response is falsy and `not
-                # exc.response` was short-circuiting to True, re-raising the one
-                # case this handler exists to swallow.
-                if exc.response is None or exc.response.status_code != 400:
-                    raise
 
     path = _shared_state_path(session.config)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -98,34 +108,21 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
     if is_xdist_worker(session):
         return
 
-    path = _shared_state_path(session.config)
-    if not path.exists():
-        return
+    pre_existing = session.config.stash.get(pre_existing_files_key, None)
+    if pre_existing is not None:
+        _clean_up(
+            "uploaded file(s)", lambda: delete_file_ids(list_file_ids() - pre_existing)
+        )
 
-    state = json.loads(path.read_text())
-    print("\n[conftest] Cleaning up API resources...")
-
-    if "pre_existing_files" in state:
-        pre_existing = set(state["pre_existing_files"])
-        try:
-            current = list_file_ids()
-            new_file_ids = current - pre_existing
-            if new_file_ids:
-                deleted = delete_file_ids(new_file_ids)
-                print(f"\n[conftest] Cleaned up {deleted} uploaded file(s)")
-        except Exception as exc:
-            print(f"\n[conftest] WARNING: file cleanup failed: {exc}")
-
-    if "pre_existing_tokens" in state:
-        pre_existing = set(state["pre_existing_tokens"])
-        try:
-            current = list_custom_token_names()
-            new_tokens = current - pre_existing
-            if new_tokens:
-                deleted = delete_custom_tokens(new_tokens)
-                print(f"\n[conftest] Cleaned up {deleted} custom token(s)")
-        except Exception as exc:
-            print(f"\n[conftest] WARNING: token cleanup failed: {exc}")
+    if os.environ.get("EDEN_AI_MANAGEMENT_KEY"):
+        # An inference key that outlives the run can still spend the
+        # organization's credit, so failing to revoke one fails the session
+        # instead of passing with a warning nobody reads.
+        revoked = _clean_up(
+            "inference key(s)", lambda: revoke_keys(list_sample_key_ids())
+        )
+        if not revoked:
+            session.exitstatus = pytest.ExitCode.TESTS_FAILED
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -246,13 +243,18 @@ def http_interceptor(monkeypatch, request):
     original_send = requests.Session.send
 
     def _intercepted_send(self, prepared_request, **kwargs):
+        # Snippets never pass a timeout, so a request the API never answers
+        # would hold a worker until the job is killed. Turn that into a
+        # ReadTimeout with the request details attached to the failure.
+        if kwargs.get("timeout") is None:
+            kwargs["timeout"] = _DEFAULT_HTTP_TIMEOUT
         recorder.last_request = prepared_request
         response = original_send(self, prepared_request, **kwargs)
         recorder.last_response = response
         retries = 0
         while response.status_code == 429 and retries < 5:
             retry_after = float(response.headers.get("Retry-After", 1))
-            time.sleep(retry_after)
+            time.sleep(min(retry_after, _MAX_RETRY_AFTER))
             response = original_send(self, prepared_request, **kwargs)
             recorder.last_response = response
             retries += 1

@@ -1,52 +1,59 @@
 ---
 icon: "chart-line"
-description: "Learn how to track your Eden AI API consumption and costs using the Cost Monitoring endpoints."
+description: "Learn how to track your Eden AI API consumption and costs with the Management API usage endpoints."
 ---
 
 import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
 
 <TechArticleSchema
   title={"Monitoring"}
-  description={"Learn how to track your Eden AI API consumption and costs using the Cost Monitoring endpoints."}
+  description={"Learn how to track your Eden AI API consumption and costs with the Management API usage endpoints."}
   path="v3/general/monitoring"
   articleSection="General"
   about={"API Configuration"}
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "rate limits", "billing", "monitoring"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-05-07T00:00:00Z"
+  dateModified="2026-09-11T00:00:00Z"
 />
 
-Learn how to track your Eden AI API consumption and costs using the Cost Monitoring endpoints.
+Learn how to track your Eden AI API consumption and costs with the Management API usage endpoints.
 
-> **Note**: These are admin/dashboard endpoints typically used by the Eden AI dashboard or custom admin interfaces. For standard API usage authentication, see the [API Keys guide](/v3/general/custom-api-keys).
+The [dashboard](https://app.edenai.run/) shows the same data, plus your current **credit balance**, which is not exposed by the API. Use the endpoints below when you want to pull consumption into your own reporting, alerting or chargeback tooling.
 
-## Overview
+## Authentication
 
-The Cost Monitoring API provides two key endpoints to help you track and manage your Eden AI spending:
+Usage endpoints belong to the [Management API](/v3/organization/management-api). They are called with a **management key** (`mgmt-eden-…`) that has the `manage:read` scope, not with an inference key:
 
-- **Monitor Consumptions** - Get detailed usage and cost breakdowns by date, provider, and feature
-- **Check Credits** - Retrieve your current account credit balance
+```
+Authorization: Bearer <management_key>
+```
+
+Generate a management key from the dashboard (**Account → Management Keys**) or mint one with an issuer key. Calling these endpoints with an inference key (`sk-eden-…`) returns `401`.
 
 ## Endpoints
 
-### Monitor Consumptions
+| Endpoint | What it returns |
+|----------|-----------------|
+| `GET /v3/manage/usage/` | The organization's consumption: a time series per API key, or one total per member with `group_by=user`. |
+| `GET /v3/manage/keys/{key_id}/usage/` | The consumption of one API key as a time series. |
 
-```
-GET https://api.edenai.run/v2/cost_management/
-```
-
-### Check Current Credits
-
-```
-GET https://api.edenai.run/v2/cost_management/credits/
-```
+{/* The `GET /v3/manage/usage/` samples on this page are marked skip-test: the organization-wide endpoint can take longer to answer than the snippet test timeout on an organization with real traffic. The per-key samples still run. */}
 
 ## Key Concepts
 
-### Step Parameter
+### Date window
 
-The `step` parameter controls how data is aggregated:
+| Parameter | Description |
+|-----------|-------------|
+| `begin` | First day of the window, inclusive (`YYYY-MM-DD`). |
+| `end` | Day **after** the last day of the window, exclusive (`YYYY-MM-DD`). `begin=2026-08-01&end=2026-09-01` is the whole of August. |
+
+Provide both or neither. Without them you get the **last 7 days**. The window may not exceed **366 days**.
+
+### Step parameter
+
+`step` is **required** and controls how the time series is bucketed:
 
 | Step Value | Aggregation Period | Use Case |
 |------------|-------------------|----------|
@@ -57,78 +64,84 @@ The `step` parameter controls how data is aggregated:
 
 ### Filtering Options
 
-Filter your cost data by adding any of these query parameters:
+Narrow the data with any of these query parameters:
 
-| Parameter | Description | Example |
-|-----------|-------------|---------|
-| `provider` | Specific AI provider | `openai`, `anthropic` |
-| `subfeature` | Specific feature | `chat`, `ocr`, `text_to_speech` |
-| `token` | Specific API token | `prod_token_123` |
-| `workflow_id` | Specific workflow execution | |
-| `rag_project_id` | Specific RAG project | |
-
-## Check Your Current Credits
-
-```python Python
-import requests
-
-API_KEY = "eyJhbG...xxxxxxxxxxxxxxxxxxxxxxxx"
-
-response = requests.get(
-    "https://api.edenai.run/v2/cost_management/credits/",
-    headers={"Authorization": f"Bearer {API_KEY}"}
-)
-
-credits_data = response.json()
-print(f"Current credits: ${credits_data['credits']:.2f}")
-```
-
-**Response:**
-
-```json
-{
-  "credits": 42.50
-}
-```
+| Parameter | Description | Example | Available on |
+|-----------|-------------|---------|--------------|
+| `feature` | Feature category | `text`, `image`, `ocr` | both endpoints |
+| `subfeature` | Specific feature | `chat`, `ocr`, `text_to_speech` | both endpoints |
+| `provider` | AI provider | `openai`, `anthropic` | both endpoints |
+| `phase` | Processing phase, for features that report one | | both endpoints |
+| `token` | Only the keys with this **name**. Use `base_token` for usage not attributed to any key. Ignored when `key_id` is given. | `production-v1` | organization |
+| `key_id` | Only this key, by id. `404` if it is not in the organization. | | organization |
+| `user` | Only this member, by email. `404` if they are not in the organization. | `dev@example.com` | organization |
+| `group_by` | `user`: one total per member instead of a time series. | `user` | organization |
 
 ## Monitor Usage
 
-Get your last 30 days of usage, grouped by day:
+Get the last 7 days of usage, grouped by day, and total it per key:
 
+{/* skip-test */}
 ```python Python
 import requests
-from datetime import datetime, timedelta
 
-API_KEY = "eyJhbG...xxxxxxxxxxxxxxxxxxxxxxxx"
-
-end_date = datetime.now()
-begin_date = end_date - timedelta(days=30)
+headers = {"Authorization": "Bearer YOUR_MANAGEMENT_KEY"}
 
 response = requests.get(
-    "https://api.edenai.run/v2/cost_management/",
-    headers={"Authorization": f"Bearer {API_KEY}"},
+    "https://api.edenai.run/v3/manage/usage/",
+    headers=headers,
+    params={"step": 1}  # Daily aggregation, last 7 days by default
+)
+response.raise_for_status()
+
+usage = response.json()["usage"]
+print(f"Usage data retrieved for {len(usage)} key(s)")
+for entry in usage:
+    total = sum(
+        feature["total_cost"]
+        for day in entry["data"].values()
+        for feature in day.values()
+    )
+    print(f"{entry['token']}: ${total:.2f}")
+```
+
+For a specific period, pass `begin` and `end`. Remember that `end` is exclusive: this returns one monthly bucket covering all of August 2026.
+
+{/* skip-test */}
+```python Python
+import requests
+
+headers = {"Authorization": "Bearer YOUR_MANAGEMENT_KEY"}
+
+response = requests.get(
+    "https://api.edenai.run/v3/manage/usage/",
+    headers=headers,
     params={
-        "begin": begin_date.strftime("%Y-%m-%d"),
-        "end": end_date.strftime("%Y-%m-%d"),
-        "step": 1  # Daily aggregation
+        "begin": "2026-08-01",
+        "end": "2026-09-01",
+        "step": 3,  # Monthly aggregation
+        "provider": "openai"
     }
 )
+response.raise_for_status()
 
-data = response.json()
-print(f"Usage data retrieved for {len(data['response'])} token(s)")
+for entry in response.json()["usage"]:
+    for month, features in entry["data"].items():
+        for name, stats in features.items():
+            print(f"{entry['token']} | {month} | {name}: {stats['details']} calls, ${stats['total_cost']:.2f}")
 ```
 
 ## Response Format
 
-The monitoring endpoint returns data structured by token, date, and feature:
+The organization and per-key endpoints return the same shape: a `usage` list with one entry per API key, whose `data` is keyed by period start date, then by feature:
 
 ```json
 {
-  "response": [
+  "usage": [
     {
-      "token": "base_token",
+      "token": "production-v1",
       "data": {
-        "2024-01-01": {
+        "2026-09-01": {
           "text__chat": {
             "total_cost": 11.30,
             "details": 381,
@@ -155,9 +168,9 @@ The monitoring endpoint returns data structured by token, date, and feature:
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `token` | string | API token identifier |
-| `data` | object | Date-keyed usage data |
-| `total_cost` | number | Total cost for this feature on this date |
+| `token` | string | Name of the API key. `base_token` groups usage not attributed to any key. |
+| `data` | object | Period-keyed usage data. Each key is the first day of a bucket (`step`). |
+| `total_cost` | number | Total cost for this feature in this period |
 | `details` | integer | Number of API calls made |
 | `cost_per_provider` | object | Cost breakdown by provider |
 
@@ -175,36 +188,88 @@ Features follow the pattern `{category}__{subfeature}`:
 | `ocr__ocr` | OCR text extraction |
 | `audio__text_to_speech` | Text-to-speech |
 
+## Cost per Member
+
+Add `group_by=user` to get one total per organization member over the window instead of a time series:
+
+{/* skip-test */}
+```python Python
+import requests
+
+headers = {"Authorization": "Bearer YOUR_MANAGEMENT_KEY"}
+
+response = requests.get(
+    "https://api.edenai.run/v3/manage/usage/",
+    headers=headers,
+    params={"step": 3, "group_by": "user"}
+)
+response.raise_for_status()
+
+for member in response.json()["usage"]:
+    print(f"{member['user']}: ${member['total_cost']:.2f}")
+```
+
+```json
+{
+  "usage": [
+    {"user": "owner@example.com", "total_cost": 128.40},
+    {"user": "dev@example.com", "total_cost": 12.05}
+  ]
+}
+```
+
+Usage is attributed to a member through the `member` set on their [API keys](/v3/general/custom-api-keys#create-a-key).
+
+## Usage of One Key
+
+`GET /v3/manage/keys/{key_id}/usage/` returns the time series of a single key. It takes the same `begin`, `end`, `step`, `feature`, `subfeature`, `provider` and `phase` parameters. The `key_id` is the `id` returned when the key was created or by the [key list](/v3/general/custom-api-keys#list-all-keys):
+
+```python Python
+import requests
+
+headers = {"Authorization": "Bearer YOUR_MANAGEMENT_KEY"}
+
+# Find the id of an active key, then fetch its daily usage for the last 7 days
+keys = requests.get(
+    "https://api.edenai.run/v3/manage/keys/",
+    headers=headers,
+    params={"limit": 100}
+).json()["results"]
+active_keys = [k for k in keys if k["id"] and not k["revoked"]]
+
+if not active_keys:
+    print("No active key to report on")
+else:
+    key = active_keys[0]
+    response = requests.get(
+        f"https://api.edenai.run/v3/manage/keys/{key['id']}/usage/",
+        headers=headers,
+        params={"step": 1}
+    )
+    response.raise_for_status()
+
+    usage = response.json()["usage"]
+    days = sum(len(entry["data"]) for entry in usage)
+    print(f"{key['name']}: usage on {days} day(s) in the last 7 days")
+```
+
+A key that belongs to another organization returns `404`.
+
+## Checking Your Credit Balance
+
+The account credit balance is not exposed by the Management API. Check it in the [Eden AI dashboard](https://app.edenai.run/), or cap spending per key with a [key budget](/v3/general/custom-api-keys#create-a-key-with-budget) so a runaway integration cannot drain the account.
+
 ## Error Responses
 
-### 400 Bad Request
+| Status | Cause |
+|--------|-------|
+| `400` | Invalid parameters: `step` missing or outside 1–4, only one of `begin`/`end` given, a window longer than 366 days, or an unknown filter value. |
+| `401` | No management key. An inference key (`sk-eden-…`) cannot call `/v3/manage` endpoints. |
+| `403` | The management key lacks the `manage:read` scope. |
+| `404` | The `key_id` or `user` is not in the management key's organization. |
 
-```json
+```json 401 with an inference key
 {
-  "error": {
-    "type": "validation_error",
-    "message": {
-      "begin": ["This field is required."]
-    }
-  }
-}
-```
-
-### 403 Forbidden
-
-```json
-{
-  "error": {
-    "type": "permission_error",
-    "message": "You do not have permission to access this resource"
-  }
-}
-```
-
-### 404 Not Found
-
-```json
-{
-  "details": "Not Found"
+  "detail": "This endpoint needs a management key. An inference key (sk-eden...) cannot manage an organization; mint a management key from the dashboard and use it here."
 }
 ```

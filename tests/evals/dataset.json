@@ -114,7 +114,7 @@
     {
         "id": "q16",
         "question": "How do I create a custom API token with a budget limit?",
-        "expected_output": "POST to /v2/user/custom_token/ with name, token_type ('api_token' or 'sandbox_api_token'), balance (string, e.g. '50.00'), and active_balance set to true. When active_balance is true, every API call deducts from the token's balance and the token stops working at $0. List tokens with GET /v2/user/custom_token/, update with PATCH, delete with DELETE.",
+        "expected_output": "Use the Management API with a management key (mgmt-eden-..., manage:write scope), not an inference key: POST to /v3/manage/keys/ with name, optionally token_type ('api_token' or 'sandbox_api_token'), balance (string, e.g. '50.00') and active_balance set to true. When active_balance is true, every API call deducts from the key's balance and the key stops working at $0. The response contains the key's secret exactly once. List keys with GET /v3/manage/keys/ (paginated), then update with PATCH, rotate with POST .../rotate/, or revoke with DELETE /v3/manage/keys/{key_id}/ using the key's id. Keys can also be created from the dashboard.",
         "source_doc": "v3/general/custom-api-keys.mdx",
         "category": "general",
         "difficulty": "intermediate"

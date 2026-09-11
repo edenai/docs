@@ -14,7 +14,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "rate limits", "billing", "monitoring"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-06-11T00:00:00Z"
+  dateModified="2026-09-11T00:00:00Z"
 />
 
 Eden AI uses a **pay-per-use credit system**. Every API response includes a `cost` field showing the charge in USD for that request, so you always know exactly what you are spending.
@@ -66,7 +66,7 @@ Postpaid billing is arranged with the Eden AI team as part of an Advanced AI Pla
 
 ## Checking Your Balance
 
-You can check your current credit balance in the [Eden AI dashboard](https://app.edenai.run/) or programmatically via the [monitoring endpoint](/v3/general/monitoring).
+You can check your current credit balance in the [Eden AI dashboard](https://app.edenai.run/). The balance itself is not exposed by the API, but you can track consumption programmatically with the [usage endpoints](/v3/general/monitoring) and cap spending with [key budgets](/v3/general/custom-api-keys#create-a-key-with-budget).
 
 ## Understanding Costs
 

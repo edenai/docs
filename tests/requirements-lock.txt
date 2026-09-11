@@ -278,6 +278,8 @@ pytest==9.0.2
     #   pytest-xdist
 pytest-cov==7.0.0
     # via -r tests/requirements.txt
+pytest-timeout==2.4.0
+    # via -r tests/requirements.txt
 pytest-xdist==3.8.0
     # via -r tests/requirements.txt
 python-dateutil==2.9.0.post0

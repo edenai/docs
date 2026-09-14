@@ -12,6 +12,9 @@ source .venv/bin/activate
 # Install dependencies
 uv pip install -r tests/requirements.txt
 
+# The Ask AI eval pipeline (tests/evals/) has its own file, which includes the above
+uv pip install -r tests/requirements-evals.txt
+
 # Set up environment variables
 cp tests/.env.example tests/.env
 # Edit tests/.env and fill in your token values
@@ -24,7 +27,8 @@ cp tests/.env.example tests/.env
 | `EDEN_AI_SANDBOX_API_TOKEN` | For execution tests | Sandbox token — AI features return mock responses, no credits consumed |
 | `EDEN_AI_PRODUCTION_API_TOKEN` | Optional | Production token, needed by the few pages whose samples require real provider responses (e.g. structured output); skipped if not set |
 | `EDEN_AI_MANAGEMENT_KEY` | Optional | Management key (`mgmt-eden-...`, `manage:read` + `manage:write`), needed by Management API samples (custom API keys, sandbox key creation, monitoring). Samples mint real inference keys in the key's organization; the run revokes them on the way out, and clears any left by a cancelled run before it starts. Cleanup only ever touches keys named after the samples (`production-v1`, `team-backend`, `team-daily`, `dev-testing`). Skipped if not set |
-| `EDEN_AI_BASE_URL` | Optional | Defaults to `https://staging-api.edenai.run` |
+| `EDEN_AI_BASE_URL` | Optional | Defaults to `https://staging-api.edenai.run`. CI runs against production. The integration guides that drive Eden AI through a framework holding a hardcoded production endpoint (Haystack) are reported as skipped anywhere else |
+| `EDENAI_API_KEY` | Set for you | Not something you fill in: the suite publishes the token above under this name because the integration frameworks (any-llm, Haystack, Atomic Agents) read the key from the environment rather than taking it as an argument |
 
 ## Running Tests
 
@@ -91,7 +95,7 @@ When adding new `.mdx` files with Python code snippets:
 
 ### Skipping Non-Runnable Snippets
 
-Some ` ```python ` blocks are illustrative fragments (e.g., `"model": "openai/gpt-4o"`) rather than valid standalone Python. To exclude a block from testing while preserving syntax highlighting, add an MDX comment before the fence:
+Some ` ```python ` blocks are illustrative fragments (e.g., `"model": "openai/gpt-4o"`) rather than valid standalone Python, and a few depend on something no test environment can supply (a package that has not shipped the code the page documents, a module that only exists inside another project's tree). To exclude a block from testing while preserving syntax highlighting, add an MDX comment before the fence:
 
 ```
 {/* skip-test */}
@@ -109,6 +113,13 @@ This also works with `<CodeGroup>` blocks — place the comment before the `<Cod
 # code with known issues...
 ```​
 </CodeGroup>
+```
+
+The marker can carry the reason, which is worth writing every time — it is what stops the next
+person re-deciding whether the block should run:
+
+```
+{/* skip-test: the Eden AI provider is merged upstream but not in any aisuite release yet */}
 ```
 
 The comment is invisible in rendered docs. The extractor checks the 3 lines preceding each ` ```python ` fence for the marker. Skipped blocks still appear in test output (as `SKIPPED`) rather than being silently excluded, so you can track how many snippets are skipped.

@@ -10,24 +10,28 @@ CODE_BLOCK_RE = re.compile(
     re.MULTILINE | re.DOTALL,
 )
 
-# The marker may carry a reason: {/* skip-test: why this cannot run */}
+# Either marker may carry a reason: {/* skip-test: why this cannot run */}
 _SKIP_COMMENT_RE = re.compile(r"\{/\*\s*skip-test\b[:\s]*(?P<reason>.*?)\s*\*/\}")
+
+# A sample the sandbox cannot serve because it needs the model to answer for
+# real, not with the sandbox's one canned completion. These spend credits every
+# time they run, so they take the production token and only execute when the
+# run opts in.
+_PAID_COMMENT_RE = re.compile(r"\{/\*\s*paid-test\b[:\s]*(?P<reason>.*?)\s*\*/\}")
+
+PAID_CALLS_ENV_VAR = "EDEN_AI_RUN_PAID_CALLS"
 
 _SANDBOX_TOKEN_VAR = "EDEN_AI_SANDBOX_API_TOKEN"
 _PRODUCTION_TOKEN_VAR = "EDEN_AI_PRODUCTION_API_TOKEN"
 _MANAGEMENT_KEY_VAR = "EDEN_AI_MANAGEMENT_KEY"
 
-# Pages whose samples cannot run on the sandbox token: they either act on real
-# account resources, or need a real provider answer. The sandbox returns one
-# canned text completion, which carries samples that just read message content
-# but not those that ask the model for structure, since the agent frameworks
-# request a tool call and get prose back.
+# Pages that act on real account resources rather than on a model, so the
+# sandbox token has nothing to act on. These cost nothing to run. Samples that
+# need a real *model* answer are marked per block with {/* paid-test */}
+# instead, since a page usually mixes the two.
 _PRODUCTION_TOKEN_FILES = {
     "v3/how-to/cost-management/monitor-usage.mdx",
     "v3/how-to/user-management/manage-tokens.mdx",
-    "v3/integrations/atomic-agents.mdx",
-    "v3/integrations/pydantic-ai.mdx",
-    "v3/llms/structured-output.mdx",
     "v3/tutorials/multi-environment-tokens.mdx",
 }
 
@@ -43,8 +47,8 @@ _PRODUCTION_BASE_URL_FILES = {
 PRODUCTION_BASE_URL = "https://api.edenai.run"
 
 
-def _token_var_for(source_mdx: str) -> str:
-    if source_mdx in _PRODUCTION_TOKEN_FILES:
+def _token_var_for(source_mdx: str, paid: bool = False) -> str:
+    if paid or source_mdx in _PRODUCTION_TOKEN_FILES:
         return _PRODUCTION_TOKEN_VAR
     return _SANDBOX_TOKEN_VAR
 
@@ -101,6 +105,15 @@ DOCS_ROOT = Path(__file__).resolve().parent.parent
 GENERATED_DIR = Path(__file__).resolve().parent / "generated"
 
 
+def _first_marker(pattern: re.Pattern, lines: list[str]) -> re.Match | None:
+    """Return the first match of a marker pattern across the given lines."""
+    for line in lines:
+        match = pattern.search(line)
+        if match:
+            return match
+    return None
+
+
 def extract_python_blocks(mdx_path: Path) -> list[dict]:
     """Extract all Python code blocks from an .mdx file."""
     content = mdx_path.read_text(encoding="utf-8")
@@ -108,16 +121,18 @@ def extract_python_blocks(mdx_path: Path) -> list[dict]:
     for match in CODE_BLOCK_RE.finditer(content):
         preceding = content[: match.start()]
         recent_lines = preceding.rsplit("\n", 3)[-3:]
-        markers = [_SKIP_COMMENT_RE.search(line) for line in recent_lines]
-        marker = next((m for m in markers if m), None)
+        skip = _first_marker(_SKIP_COMMENT_RE, recent_lines)
+        paid = _first_marker(_PAID_COMMENT_RE, recent_lines)
         code = match.group(1)
         line = preceding.count("\n") + 2
         blocks.append(
             {
                 "code": code,
                 "line": line,
-                "skip": marker is not None,
-                "skip_reason": marker.group("reason") if marker else "",
+                "skip": skip is not None,
+                "skip_reason": skip.group("reason") if skip else "",
+                "paid": paid is not None,
+                "paid_reason": paid.group("reason") if paid else "",
             }
         )
     return blocks
@@ -173,8 +188,6 @@ def build_module(blocks: list[dict], source_mdx: str) -> tuple[str, list[dict]]:
     if not blocks:
         return "", []
 
-    token_var = _token_var_for(source_mdx)
-    needs_production_token = token_var == _PRODUCTION_TOKEN_VAR
     needs_production_base_url = source_mdx in _PRODUCTION_BASE_URL_FILES
 
     module_lines = [
@@ -190,6 +203,9 @@ def build_module(blocks: list[dict], source_mdx: str) -> tuple[str, list[dict]]:
 
     for i, block in enumerate(blocks):
         func_name = f"block_{i + 1}"
+        paid = block.get("paid", False)
+        token_var = _token_var_for(source_mdx, paid)
+        needs_production_token = token_var == _PRODUCTION_TOKEN_VAR
         code = replace_placeholder_file_id(
             replace_base_url(
                 replace_api_keys(replace_management_keys(block["code"]), token_var)
@@ -215,6 +231,8 @@ def build_module(blocks: list[dict], source_mdx: str) -> tuple[str, list[dict]]:
                 "has_input": has_input,
                 "needs_production_token": needs_production_token,
                 "needs_production_base_url": needs_production_base_url,
+                "paid": paid,
+                "paid_reason": block.get("paid_reason", ""),
                 "needs_management_key": needs_management_key,
                 "skip": block.get("skip", False),
                 "skip_reason": block.get("skip_reason", ""),

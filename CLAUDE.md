@@ -21,6 +21,7 @@ All Python snippets in the docs (under `v3/` and at the repo root) are automatic
 
 - To inspect extracted snippets for a page, read the corresponding file in `tests/generated/` (e.g. `tests/generated/v3_how_to_discovery_explore_api.py` for `v3/how-to/discovery/explore-api.mdx`). Do NOT run the extractor or custom Python scripts — just read the generated file directly.
 - When a snippet test fails, **fix the snippet code** (add missing imports, correct logic, etc.) and if needed add dependencies to `tests/requirements.txt`. Do NOT use `{/* skip-test */}` to silence a fixable test failure — `skip-test` is only for genuinely non-runnable fragments.
+- If a snippet fails only because the sandbox returns canned prose where the sample needs the model to answer for real (JSON schema output, a pydantic `output_type`, an Instructor tool call), mark it `{/* paid-test: reason */}` rather than `skip-test`. That block then uses the production token and runs in the weekly CI run, not on every PR.
 - Skipped blocks still appear in test output (as `SKIPPED`) so the total snippet count stays visible. Failed tests include HTTP request/response details automatically.
 
 ## Common Pitfalls in .mdx Code Blocks

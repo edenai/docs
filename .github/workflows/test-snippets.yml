@@ -7,6 +7,11 @@ on:
       - 'v3/**/*.mdx'
       - '*.mdx'
       - 'tests/**'
+  # The docs go stale against a moving API even when nobody edits them: a model
+  # is retired, a response shape changes, a linked page moves. A PR run only
+  # catches what a PR touches, so the suite also runs weekly against main.
+  schedule:
+    - cron: '0 6 * * 1'
 
 # These tests share one Eden AI account, and teardown deletes every upload that
 # appeared while they ran, so overlapping runs would delete each other's files.
@@ -44,6 +49,10 @@ jobs:
           EDEN_AI_SANDBOX_API_TOKEN: ${{ secrets.EDEN_AI_SANDBOX_TOKEN }}
           EDEN_AI_PRODUCTION_API_TOKEN: ${{ secrets.EDEN_AI_PRODUCTION_TOKEN }}
           EDEN_AI_MANAGEMENT_KEY: ${{ secrets.EDEN_AI_MANAGEMENT_KEY }}
+          # A handful of samples need the model to answer for real, which costs
+          # credits on every run. They are reported as skipped on docs PRs and
+          # get their coverage from the weekly run and from a manual dispatch.
+          EDEN_AI_RUN_PAID_CALLS: ${{ github.event_name != 'pull_request' }}
       - name: Coverage summary
         if: always()
         run: |

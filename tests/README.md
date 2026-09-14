@@ -28,6 +28,7 @@ cp tests/.env.example tests/.env
 | `EDEN_AI_PRODUCTION_API_TOKEN` | Optional | Production token, needed by the few pages whose samples require real provider responses (e.g. structured output); skipped if not set |
 | `EDEN_AI_MANAGEMENT_KEY` | Optional | Management key (`mgmt-eden-...`, `manage:read` + `manage:write`), needed by Management API samples (custom API keys, sandbox key creation, monitoring). Samples mint real inference keys in the key's organization; the run revokes them on the way out, and clears any left by a cancelled run before it starts. Cleanup only ever touches keys named after the samples (`production-v1`, `team-backend`, `team-daily`, `dev-testing`). Skipped if not set |
 | `EDEN_AI_BASE_URL` | Optional | Defaults to `https://staging-api.edenai.run`. CI runs against production. The integration guides that drive Eden AI through a framework holding a hardcoded production endpoint (Haystack) are reported as skipped anywhere else |
+| `EDEN_AI_RUN_PAID_CALLS` | Optional | Off by default, so neither a docs PR nor a local run bills the account. Set to `1` to also run the samples marked `{/* paid-test */}`, which need the model to answer for real. CI turns it on for the weekly run and for a manual dispatch, never for a pull request |
 | `EDENAI_API_KEY` | Set for you | Not something you fill in: the suite publishes the token above under this name because the integration frameworks (any-llm, Haystack, Atomic Agents) read the key from the environment rather than taking it as an argument |
 
 ## Running Tests
@@ -124,12 +125,42 @@ person re-deciding whether the block should run:
 
 The comment is invisible in rendered docs. The extractor checks the 3 lines preceding each ` ```python ` fence for the marker. Skipped blocks still appear in test output (as `SKIPPED`) rather than being silently excluded, so you can track how many snippets are skipped.
 
+### Snippets That Need a Real Model Answer
+
+The sandbox token serves one canned text completion. That carries any sample
+which only reads the message content, but not one that asks the model for
+structure: a JSON schema response, a pydantic `output_type`, an Instructor tool
+call. Those need a production token and a real inference call, which costs
+credits every time it runs.
+
+Mark them, in the same place and the same shape as `skip-test`:
+
+```
+{/* paid-test: needs a real model answer, the sandbox returns canned prose */}
+```
+
+The marker does two things. It switches that one block to
+`EDEN_AI_PRODUCTION_API_TOKEN`, whatever the rest of the page uses, and it holds
+the block back unless `EDEN_AI_RUN_PAID_CALLS` is set. So a docs PR and a local
+run report it as `SKIPPED` and spend nothing, and the weekly scheduled run
+executes it.
+
+Reach for this only when the sandbox genuinely cannot serve the sample. It buys
+coverage with money, so a block that would pass on the sandbox should not carry
+it.
+
 
 ## CI (GitHub Actions)
 
 The workflow at `.github/workflows/test-snippets.yml` runs on PRs that touch `v3/**/*.mdx` or `tests/**`:
 
 1. **Execution job**: runs execution tests with the `EDEN_AI_SANDBOX_TOKEN`, `EDEN_AI_PRODUCTION_TOKEN` and `EDEN_AI_MANAGEMENT_KEY` secrets
+
+It also runs weekly, Mondays at 06:00 UTC against `main`, because the docs go
+stale against a moving API even when nobody edits them. The weekly run is the
+only scheduled one that sets `EDEN_AI_RUN_PAID_CALLS`, so the `paid-test`
+samples get their coverage there rather than on every pull request. A manual
+dispatch sets it too.
 
 Installs from `requirements-lock.txt` for reproducible builds.
 

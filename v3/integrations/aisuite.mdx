@@ -32,13 +32,19 @@ Eden AI is OpenAI-compatible, so aisuite talks to it through the `openai` SDK â€
 
 <CodeGroup>
 ```bash pip
-pip install aisuite openai
+pip install git+https://github.com/andrewyng/aisuite.git openai
 ```
 
 ```bash poetry
-poetry add aisuite openai
+poetry add git+https://github.com/andrewyng/aisuite.git openai
 ```
 </CodeGroup>
+
+<Note>
+  The Eden AI provider is on aisuite's `main` branch but has not made it into a
+  PyPI release yet, so install from the repository. Once aisuite publishes a
+  release that includes it, `pip install aisuite openai` is enough.
+</Note>
 
 ## Quick Start
 
@@ -49,7 +55,7 @@ Set your key, then point aisuite at Eden AI by prefixing any model with `edenai:
 EDENAI_API_KEY=your_api_key_here
 ```
 
-{/* skip-test */}
+{/* skip-test: the Eden AI provider is merged upstream but not in any aisuite release yet */}
 ```python Python
 import aisuite as ai
 
@@ -74,7 +80,7 @@ The `edenai` provider automatically uses the Eden AI base URL (`https://api.eden
 aisuite's core benefit: change providers by changing one string. Every Eden AI model is reachable the same way â€” no per-provider SDKs, no code changes:
 
 <CodeGroup>
-{/* skip-test */}
+{/* skip-test: the Eden AI provider is merged upstream but not in any aisuite release yet */}
 ```python Python
 import aisuite as ai
 
@@ -117,7 +123,7 @@ Use the `edenai:<provider>/<model>` format for any Eden AI model:
 Prefer not to use environment variables? Pass the key through the aisuite client config instead:
 
 <CodeGroup>
-{/* skip-test */}
+{/* skip-test: the Eden AI provider is merged upstream but not in any aisuite release yet */}
 ```python Python
 import aisuite as ai
 

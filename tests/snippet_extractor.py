@@ -10,18 +10,37 @@ CODE_BLOCK_RE = re.compile(
     re.MULTILINE | re.DOTALL,
 )
 
-_SKIP_COMMENT_RE = re.compile(r"\{/\*\s*skip-test\s*\*/\}")
+# The marker may carry a reason: {/* skip-test: why this cannot run */}
+_SKIP_COMMENT_RE = re.compile(r"\{/\*\s*skip-test\b[:\s]*(?P<reason>.*?)\s*\*/\}")
 
 _SANDBOX_TOKEN_VAR = "EDEN_AI_SANDBOX_API_TOKEN"
 _PRODUCTION_TOKEN_VAR = "EDEN_AI_PRODUCTION_API_TOKEN"
 _MANAGEMENT_KEY_VAR = "EDEN_AI_MANAGEMENT_KEY"
 
+# Pages whose samples cannot run on the sandbox token: they either act on real
+# account resources, or need a real provider answer. The sandbox returns one
+# canned text completion, which carries samples that just read message content
+# but not those that ask the model for structure, since the agent frameworks
+# request a tool call and get prose back.
 _PRODUCTION_TOKEN_FILES = {
     "v3/how-to/cost-management/monitor-usage.mdx",
     "v3/how-to/user-management/manage-tokens.mdx",
+    "v3/integrations/atomic-agents.mdx",
+    "v3/integrations/pydantic-ai.mdx",
     "v3/llms/structured-output.mdx",
     "v3/tutorials/multi-environment-tokens.mdx",
 }
+
+
+# Guides whose samples reach Eden AI through a third-party SDK that hardcodes
+# the production endpoint. Those samples cannot honour EDEN_AI_BASE_URL, so a
+# run pointed anywhere else reports them as skipped instead of failing on the
+# 401 a staging token gets from production.
+_PRODUCTION_BASE_URL_FILES = {
+    "v3/integrations/haystack.mdx",
+}
+
+PRODUCTION_BASE_URL = "https://api.edenai.run"
 
 
 def _token_var_for(source_mdx: str) -> str:
@@ -71,7 +90,7 @@ _BARE_API_KEY_RE = re.compile(r"\bAPI_KEY\b")
 _API_KEY_ASSIGNMENT_RE = re.compile(r"^\s*API_KEY\s*=", re.MULTILINE)
 _API_KEY_STR_ASSIGNMENT_RE = re.compile(r'^(\s*)API_KEY\s*=\s*"[^"]*"', re.MULTILINE)
 
-_DEFAULT_BASE_URL = "https://staging-api.edenai.run"
+DEFAULT_BASE_URL = "https://staging-api.edenai.run"
 _PLACEHOLDER_FILE_ID = "550e8400-e29b-41d4-a716-446655440000"
 
 _BASE_URL_IN_PLAIN_STR_RE = re.compile(r"""(?<![f])("https://api\.edenai\.run)""")
@@ -89,10 +108,18 @@ def extract_python_blocks(mdx_path: Path) -> list[dict]:
     for match in CODE_BLOCK_RE.finditer(content):
         preceding = content[: match.start()]
         recent_lines = preceding.rsplit("\n", 3)[-3:]
-        skip = any(_SKIP_COMMENT_RE.search(line) for line in recent_lines)
+        markers = [_SKIP_COMMENT_RE.search(line) for line in recent_lines]
+        marker = next((m for m in markers if m), None)
         code = match.group(1)
         line = preceding.count("\n") + 2
-        blocks.append({"code": code, "line": line, "skip": skip})
+        blocks.append(
+            {
+                "code": code,
+                "line": line,
+                "skip": marker is not None,
+                "skip_reason": marker.group("reason") if marker else "",
+            }
+        )
     return blocks
 
 
@@ -148,6 +175,7 @@ def build_module(blocks: list[dict], source_mdx: str) -> tuple[str, list[dict]]:
 
     token_var = _token_var_for(source_mdx)
     needs_production_token = token_var == _PRODUCTION_TOKEN_VAR
+    needs_production_base_url = source_mdx in _PRODUCTION_BASE_URL_FILES
 
     module_lines = [
         f"# Auto-generated from {source_mdx}",
@@ -155,7 +183,7 @@ def build_module(blocks: list[dict], source_mdx: str) -> tuple[str, list[dict]]:
         "",
         "import os",
         "",
-        f'_EDEN_BASE_URL = os.environ.get("EDEN_AI_BASE_URL", "{_DEFAULT_BASE_URL}")',
+        f'_EDEN_BASE_URL = os.environ.get("EDEN_AI_BASE_URL", "{DEFAULT_BASE_URL}")',
     ]
 
     block_functions = []
@@ -186,8 +214,10 @@ def build_module(blocks: list[dict], source_mdx: str) -> tuple[str, list[dict]]:
                 "lines": [line_num],
                 "has_input": has_input,
                 "needs_production_token": needs_production_token,
+                "needs_production_base_url": needs_production_base_url,
                 "needs_management_key": needs_management_key,
                 "skip": block.get("skip", False),
+                "skip_reason": block.get("skip_reason", ""),
             }
         )
 

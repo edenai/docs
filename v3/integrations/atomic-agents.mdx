@@ -47,12 +47,16 @@ Wrap an OpenAI client pointed at Eden AI with Instructor — the same pattern us
 EDENAI_API_KEY=your_api_key_here
 ```
 
-{/* skip-test */}
 ```python Python
 import os
 import instructor
 from openai import OpenAI
-from atomic_agents.agents.base_agent import BaseAgent, BaseAgentConfig
+from atomic_agents import (
+    AgentConfig,
+    AtomicAgent,
+    BasicChatInputSchema,
+    BasicChatOutputSchema,
+)
 
 client = instructor.from_openai(
     OpenAI(
@@ -61,14 +65,14 @@ client = instructor.from_openai(
     )
 )
 
-agent = BaseAgent(
-    config=BaseAgentConfig(
+agent = AtomicAgent[BasicChatInputSchema, BasicChatOutputSchema](
+    config=AgentConfig(
         client=client,
         model="anthropic/claude-sonnet-5",  # <provider>/<model>
     )
 )
 
-response = agent.run(agent.input_schema(chat_message="Hello! How are you?"))
+response = agent.run(BasicChatInputSchema(chat_message="Hello! How are you?"))
 print(response.chat_message)
 ```
 </CodeGroup>
@@ -77,18 +81,36 @@ Both Instructor `TOOLS` and `JSON` modes work unchanged with Eden AI.
 
 ## Switching models
 
-Change the `model` string on `BaseAgentConfig` to reach any Eden AI model — no per-provider SDKs, no code changes:
+Change the `model` string on `AgentConfig` to reach any Eden AI model — no per-provider SDKs, no code changes:
 
 <CodeGroup>
-{/* skip-test */}
 ```python Python
+import os
+import instructor
+from openai import OpenAI
+from atomic_agents import (
+    AgentConfig,
+    AtomicAgent,
+    BasicChatInputSchema,
+    BasicChatOutputSchema,
+)
+
+client = instructor.from_openai(
+    OpenAI(
+        base_url="https://api.edenai.run/v3",
+        api_key=os.getenv("EDENAI_API_KEY"),
+    )
+)
+
 for model in [
     "openai/gpt-5.5",
     "anthropic/claude-sonnet-5",
     "mistral/mistral-large-2512",
 ]:
-    agent = BaseAgent(config=BaseAgentConfig(client=client, model=model))
-    response = agent.run(agent.input_schema(chat_message="Write a haiku about the sea."))
+    agent = AtomicAgent[BasicChatInputSchema, BasicChatOutputSchema](
+        config=AgentConfig(client=client, model=model)
+    )
+    response = agent.run(BasicChatInputSchema(chat_message="Write a haiku about the sea."))
     print(model, "->", response.chat_message)
 ```
 </CodeGroup>

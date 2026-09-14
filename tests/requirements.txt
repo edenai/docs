@@ -18,6 +18,11 @@ PyPDF2
 Pillow
 prometheus_client
 datadog
-# evals pipeline (evals/)
-deepeval>=2.0,<3.0
-httpx>=0.27,<1.0
+
+# integration guides (v3/integrations/)
+any-llm-sdk[edenai]
+# An unrelated atomic-agents 0.1 also exists on PyPI, and the resolver falls
+# back to it when the real framework's pins conflict, so require v2.
+atomic-agents>=2
+edenai-haystack
+pydantic-ai

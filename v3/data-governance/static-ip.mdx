@@ -1,0 +1,81 @@
+---
+sidebarTitle: "Static IP"
+title: "Static IP"
+icon: "network-wired"
+description: "Have Eden AI fetch your file URLs from a fixed European IP address you can whitelist on your own servers."
+---
+
+import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
+
+<TechArticleSchema
+  title={"Static IP"}
+  description={"Have Eden AI fetch your file URLs from a fixed European IP address you can whitelist on your own servers."}
+  path="v3/data-governance/static-ip"
+  articleSection="Data Governance"
+  about={"Data Compliance"}
+  proficiencyLevel="Intermediate"
+  keywords={["Eden AI", "AI API", "static IP", "IP whitelisting", "whitelist IP address", "allowlist", "firewall", "data residency"]}
+  datePublished="2026-09-15T00:00:00Z"
+  dateModified="2026-09-15T00:00:00Z"
+/>
+
+When you send a file as a URL instead of an upload, Eden AI has to reach out to that URL and download the file. By default those downloads leave our infrastructure from a shared pool of addresses that changes over time, which is a problem if the file sits behind a firewall or an IP whitelist on your side.
+
+Static IP is an opt-in feature: once it is enabled on your organization, Eden AI fetches your file URLs through a dedicated egress proxy with a fixed address, so you can whitelist it once on your firewall and forget about it.
+
+## The address to whitelist
+
+We send you the address before we enable the feature for your organization, so you can whitelist it first, rather than publishing it here. What you can plan for in advance:
+
+| | Value |
+|---|---|
+| Format | A single IPv4 address, not a range — one firewall rule covers it |
+| Location | Paris, France (AWS `eu-west-3`) |
+| Direction | Outbound only — Eden AI to your server |
+
+The proxy runs in the same European region as the rest of Eden AI's infrastructure, so enabling it does not move any processing outside the EU. See [Servers Location](/v3/data-governance/servers-location).
+
+<Note>
+Whitelist the single address we give you, not the whole AWS range. We give notice before the address ever changes.
+</Note>
+
+## What it covers
+
+Static IP applies to files **Eden AI downloads on your behalf**:
+
+- Any [Universal AI](/v3/quickstart/first-expert-model-call) call where `input.file` is a URL rather than a file ID from `/v3/upload` — OCR and the document parsers, image, video, translation
+- Both synchronous and asynchronous features, including the fetch performed by a queued job
+- Audio file URLs for speech-to-text
+
+It does **not** apply to:
+
+- **Inbound requests.** This is about traffic leaving Eden AI, not reaching it. Your calls to `api.edenai.run` are unaffected, and you do not need to whitelist anything to call the API.
+- **Direct uploads.** If you send the file through `/v3/upload` or as raw bytes, nothing is fetched from your side, so there is no egress to whitelist.
+- **Image URLs sent to an LLM.** Those URLs are passed through to the model provider, which fetches them from its own infrastructure. Whitelisting Eden AI's address will not help there — upload the image or send it as base64 instead.
+- **Calls to AI providers and webhook deliveries**, which keep using standard egress.
+
+## Enabling it
+
+Static IP is enabled per organization by the Eden AI team, not from the dashboard.
+
+1. [Contact support](/v3/general/support) — the chat bubble on this page or your dedicated channel — and ask for static IP on your organization.
+2. Tell us your organization name, and which hosts you will be fetching files from.
+3. We send you the address to whitelist. Add it to your firewall rules.
+4. Once your rule is in place, we enable the feature on your organization and your file fetches start going through it.
+
+Once enabled it applies to every member of the organization and to every API key it owns. Nothing in your integration changes: the same `input.file` URL you already send is simply fetched from a known address.
+
+<Tip>
+Confirm your firewall rule is live before we flip the flag. Fetches move to the proxy the moment it is on, so a missing rule means downloads start failing.
+</Tip>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Servers Location" icon="location-dot" href="/v3/data-governance/servers-location">
+    Where Eden AI and its providers process your data
+  </Card>
+  <Card title="EU Endpoint" icon="earth-europe" href="/v3/data-governance/eu-endpoint">
+    Route requests through EU-eligible providers via api.eu.edenai.run
+  </Card>
+</CardGroup>

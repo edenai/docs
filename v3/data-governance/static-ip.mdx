@@ -49,7 +49,7 @@ Static IP applies to files **Eden AI downloads on your behalf**:
 
 It does **not** apply to:
 
-- **Inbound requests.** This is about traffic leaving Eden AI, not reaching it. Your calls to `api.edenai.run` are unaffected, and you do not need to whitelist or allowlist anything to call the API.
+- **Inbound requests.** This is about traffic leaving Eden AI, not reaching it. Your calls to `api.edenai.run` are unaffected, and you do not need to whitelist anything to call the API.
 - **Direct uploads.** If you send the file through `/v3/upload` or as raw bytes, nothing is fetched from your side, so there is no egress to whitelist.
 - **Image URLs sent to an LLM.** Those URLs are passed through to the model provider, which fetches them from its own infrastructure. Whitelisting Eden AI's address will not help there — upload the image or send it as base64 instead.
 - **Calls to AI providers and webhook deliveries**, which keep using standard egress.

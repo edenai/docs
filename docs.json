@@ -245,6 +245,7 @@
                   "v3/data-governance/provider-data-policies",
                   "v3/data-governance/servers-location",
                   "v3/data-governance/eu-endpoint",
+                  "v3/data-governance/static-ip",
                   "v3/data-governance/data-retention"
                 ]
               },

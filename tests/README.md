@@ -29,6 +29,7 @@ cp tests/.env.example tests/.env
 | `EDEN_AI_MANAGEMENT_KEY` | Optional | Management key (`mgmt-eden-...`, `manage:read` + `manage:write`), needed by Management API samples (custom API keys, sandbox key creation, monitoring). Samples mint real inference keys in the key's organization; the run revokes them on the way out, and clears any left by a cancelled run before it starts. Cleanup only ever touches keys named after the samples (`production-v1`, `team-backend`, `team-daily`, `dev-testing`). Skipped if not set |
 | `EDEN_AI_BASE_URL` | Optional | Defaults to `https://staging-api.edenai.run`. CI runs against production. The integration guides that drive Eden AI through a framework holding a hardcoded production endpoint (Haystack) are reported as skipped anywhere else |
 | `EDEN_AI_RUN_PAID_CALLS` | Optional | Off by default, so neither a docs PR nor a local run bills the account. Set to `1` to also run the samples marked `{/* paid-test */}`, which need the model to answer for real. CI turns it on for the weekly run and for a manual dispatch, never for a pull request |
+| `EDEN_AI_RUN_QUOTA_CALLS` | Optional | Off everywhere by default, including the weekly run. Set to `1` to also run the samples marked `{/* quota-test */}`, which create an API key and permanently consume one of the plan's 50 slots per user. Only a person or a manual dispatch turns this on |
 | `EDENAI_API_KEY` | Set for you | Not something you fill in: the suite publishes the token above under this name because the integration frameworks (any-llm, Haystack, Atomic Agents) read the key from the environment rather than taking it as an argument |
 
 ## Running Tests
@@ -149,6 +150,46 @@ Reach for this only when the sandbox genuinely cannot serve the sample. It buys
 coverage with money, so a block that would pass on the sandbox should not carry
 it.
 
+### Snippets That Consume Plan Quota
+
+A few samples create something the account is rationed on and never gets back.
+The `POST /v3/manage/keys/` samples on `v3/general/sandbox.mdx` and
+`v3/general/custom-api-keys.mdx` are the ones we have. The plan allows 50 API
+keys **per user** and counts every row ever created: the suite revokes each key
+it makes and revocation succeeds, but it only marks the key `revoked: true` and
+the row keeps its slot. So the cleanup cannot reclaim anything, and once the
+owner reaches 50 every create answers `403 Your plan's API-key limit is
+reached`, which fails the suite for everyone.
+
+Mark them the same way as the other markers:
+
+```
+{/* quota-test: creates an inference key, and a revoked key keeps its slot against the plan limit */}
+```
+
+Unlike `paid-test`, this leaves the block's credentials alone, since what is
+scarce is the resource and not the token. Read-only samples against the same
+endpoints (listing keys, reading usage) are unaffected and still run on every
+PR.
+
+**These never run automatically, not even weekly.** Credits refill, so
+`paid-test` can afford a schedule; key slots do not, so any recurring cadence
+just picks how long the account takes to wedge. Four creates a week exhausts a
+full budget of 50 in three months. Running them takes a deliberate decision:
+
+```bash
+EDEN_AI_RUN_QUOTA_CALLS=1 pytest tests/test_snippets_execute.py -k custom-api-keys
+```
+
+or the `run_quota_calls` checkbox on a manual workflow dispatch. Check there is
+headroom first, and expect every run to cost permanent slots.
+
+The consequence is that these four blocks are not executed by CI at all. They
+are still syntax-checked by `test_snippets_compile.py` like every other
+snippet, but nothing verifies their endpoint or payload until someone runs them
+by hand. If the backend ever stops counting revoked keys against the limit,
+delete the markers and let them run normally again.
+
 
 ## CI (GitHub Actions)
 
@@ -160,7 +201,8 @@ It also runs weekly, Mondays at 06:00 UTC against `main`, because the docs go
 stale against a moving API even when nobody edits them. The weekly run is the
 only scheduled one that sets `EDEN_AI_RUN_PAID_CALLS`, so the `paid-test`
 samples get their coverage there rather than on every pull request. A manual
-dispatch sets it too.
+dispatch sets it too. No schedule sets `EDEN_AI_RUN_QUOTA_CALLS`; only a manual
+dispatch that ticks `run_quota_calls` does.
 
 Installs from `requirements-lock.txt` for reproducible builds.
 

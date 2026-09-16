@@ -9,7 +9,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   title={`Deep Research`}
   description={`Run deep, multi-step web research on a query and return a synthesized answer with sources. Runs as an async job.`}
   path="v3/expert-models/features/web/research-async"
-  articleSection={`Web Features`}
+  articleSection={`Web Tools Features`}
   about={`Web Data API`}
   proficiencyLevel="Intermediate"
   keywords={[`Eden AI`, `AI API`, `web scraping`, `web search`]}
@@ -28,6 +28,7 @@ Model string pattern: `web/research_async/{provider}[/{model}]`
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | prompt | string | Yes | Natural-language research task for the agent |
+| reasoning_depth | enum | No | Research reasoning-effort tier (billed per tier; priced pre-call) |
 | schema | dict | No | JSON schema describing the structured output |
 
 

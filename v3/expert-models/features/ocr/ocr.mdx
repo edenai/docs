@@ -28,7 +28,7 @@ Model string pattern: `ocr/ocr/{provider}[/{model}]`
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | file | file_input | Yes | PDF or image file ID from /v3/upload or direct file URL |
-| language | string | Yes | Document language code |
+| language | string | No | Document language code. Most providers detect the language themselves and ignore this field; providers that cannot detect it reject requests that omit it. Check the provider's supported languages before relying on it. |
 
 
 ## Output

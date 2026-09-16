@@ -19,7 +19,21 @@ _SKIP_COMMENT_RE = re.compile(r"\{/\*\s*skip-test\b[:\s]*(?P<reason>.*?)\s*\*/\}
 # run opts in.
 _PAID_COMMENT_RE = re.compile(r"\{/\*\s*paid-test\b[:\s]*(?P<reason>.*?)\s*\*/\}")
 
+# A sample that consumes a plan-limited resource the account never gets back.
+# Credits refill, so paid-test can afford a weekly cadence; these cannot. The
+# plan allows 50 API keys per user and counts revoked ones, so four creates a
+# week exhausts a fresh budget in three months and then every run fails. The
+# only sustainable automatic cadence is none, so this has its own opt-in and no
+# schedule sets it. It keeps whichever credential the block already uses: what
+# is scarce here is the resource, not the token.
+_QUOTA_COMMENT_RE = re.compile(r"\{/\*\s*quota-test\b[:\s]*(?P<reason>.*?)\s*\*/\}")
+
+# Spends credits, which refill. The weekly run sets this.
 PAID_CALLS_ENV_VAR = "EDEN_AI_RUN_PAID_CALLS"
+
+# Spends a resource that never comes back. Only a human running the suite by
+# hand, or a manual dispatch that asks for it, sets this.
+QUOTA_CALLS_ENV_VAR = "EDEN_AI_RUN_QUOTA_CALLS"
 
 _SANDBOX_TOKEN_VAR = "EDEN_AI_SANDBOX_API_TOKEN"
 _PRODUCTION_TOKEN_VAR = "EDEN_AI_PRODUCTION_API_TOKEN"
@@ -123,6 +137,7 @@ def extract_python_blocks(mdx_path: Path) -> list[dict]:
         recent_lines = preceding.rsplit("\n", 3)[-3:]
         skip = _first_marker(_SKIP_COMMENT_RE, recent_lines)
         paid = _first_marker(_PAID_COMMENT_RE, recent_lines)
+        quota = _first_marker(_QUOTA_COMMENT_RE, recent_lines)
         code = match.group(1)
         line = preceding.count("\n") + 2
         blocks.append(
@@ -133,6 +148,8 @@ def extract_python_blocks(mdx_path: Path) -> list[dict]:
                 "skip_reason": skip.group("reason") if skip else "",
                 "paid": paid is not None,
                 "paid_reason": paid.group("reason") if paid else "",
+                "quota": quota is not None,
+                "quota_reason": quota.group("reason") if quota else "",
             }
         )
     return blocks
@@ -233,6 +250,8 @@ def build_module(blocks: list[dict], source_mdx: str) -> tuple[str, list[dict]]:
                 "needs_production_base_url": needs_production_base_url,
                 "paid": paid,
                 "paid_reason": block.get("paid_reason", ""),
+                "quota": block.get("quota", False),
+                "quota_reason": block.get("quota_reason", ""),
                 "needs_management_key": needs_management_key,
                 "skip": block.get("skip", False),
                 "skip_reason": block.get("skip_reason", ""),

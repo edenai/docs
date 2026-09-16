@@ -66,6 +66,7 @@ The full request and response schemas are in the **Organization Management** sec
 
 ## Create a Key
 
+{/* quota-test: creates an inference key, and a revoked key keeps its slot against the plan limit */}
 <CodeGroup>
 ```python Python
 import requests
@@ -137,6 +138,7 @@ Creating a key returns `403` if your plan's key limit is reached.
 
 Set a spending limit with `balance`:
 
+{/* quota-test: creates an inference key, and a revoked key keeps its slot against the plan limit */}
 <CodeGroup>
 ```python Python
 import requests
@@ -187,6 +189,7 @@ On the [API Keys](https://app.edenai.run/settings/api-keys) page, create or edit
 
 ### Through the API
 
+{/* quota-test: creates an inference key, and a revoked key keeps its slot against the plan limit */}
 <CodeGroup>
 ```python Python
 import requests

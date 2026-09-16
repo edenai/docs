@@ -36,6 +36,7 @@ When you use a sandbox token, Eden AI returns **mock responses** that match the 
 
 **Through the Management API.** Organizations that provision keys from automation create sandbox keys with `POST /v3/manage/keys/` and `"token_type": "sandbox_api_token"`. This endpoint needs a **management key** (`mgmt-eden-…`) with the `manage:write` scope, not an inference key; see the [Management API guide](/v3/organization/management-api) to get one. The response contains the new key's `secret` exactly once.
 
+{/* quota-test: creates an inference key, and a revoked key keeps its slot against the plan limit */}
 <CodeGroup>
 ```python Python
 import requests

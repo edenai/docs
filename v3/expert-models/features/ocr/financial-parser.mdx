@@ -28,7 +28,7 @@ Model string pattern: `ocr/financial_parser/{provider}[/{model}]`
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | file | file_input | Yes | File ID from /v3/upload or direct file URL |
-| language | string | Yes | Document language code |
+| language | string | No | Document language code. Most providers detect the language themselves and ignore this field; providers that cannot detect it reject requests that omit it. Check the provider's supported languages before relying on it. |
 | document_type | enum | No | Specify the type of your document. Can be set to 'auto-detect' for automatic detection if the provider supports it. |
 
 

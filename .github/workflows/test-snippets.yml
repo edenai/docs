@@ -36,6 +36,13 @@ jobs:
           python-version: '3.11'
       - name: Install dependencies
         run: uv pip install -r tests/requirements-lock.txt --system
+      # Its own step, and first: it needs no credentials, so it still reports a
+      # stale model id on a run where the secrets are missing, and a failure
+      # here reads as "the docs name something that does not exist" rather than
+      # being mixed into the snippet results.
+      - name: Check model references
+        run: pytest tests/test_model_references.py
+
       - name: Run tests
         run: pytest tests/test_snippets_execute.py
         env:

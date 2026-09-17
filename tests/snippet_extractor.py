@@ -212,6 +212,16 @@ def sanitize_filename(mdx_path: Path) -> str:
 _EXTRACT_LOCK = GENERATED_DIR / ".extract.lock"
 
 
+def mdx_files() -> list[Path]:
+    """Every published documentation page, in a stable order.
+
+    The published tree is v3/ plus the pages at the repo root. Anything else
+    (ai-tools/, snippets/) is absent from docs.json and is not a page. Shared
+    so the checks that walk the docs cannot disagree about what a page is.
+    """
+    return sorted([*DOCS_ROOT.glob("v3/**/*.mdx"), *DOCS_ROOT.glob("*.mdx")])
+
+
 def extract_all() -> list[dict]:
     """Extract snippets from all .mdx files and write generated modules."""
     GENERATED_DIR.mkdir(parents=True, exist_ok=True)
@@ -219,12 +229,9 @@ def extract_all() -> list[dict]:
     if not init_file.exists():
         init_file.write_text("")
 
-    mdx_files = sorted(
-        list(DOCS_ROOT.glob("v3/**/*.mdx")) + list(DOCS_ROOT.glob("*.mdx"))
-    )
     results = []
 
-    for mdx_path in mdx_files:
+    for mdx_path in mdx_files():
         blocks = extract_python_blocks(mdx_path)
         if not blocks:
             continue

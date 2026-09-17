@@ -114,6 +114,44 @@ This also works with `<CodeGroup>` blocks — place the comment before the `<Cod
 The comment is invisible in rendered docs. The extractor checks the 3 lines preceding each ` ```python ` fence for the marker. Skipped blocks still appear in test output (as `SKIPPED`) rather than being silently excluded, so you can track how many snippets are skipped.
 
 
+## Model Reference Checks
+
+`test_model_references.py` checks every model the docs name against the live
+catalogue, so a page cannot keep recommending an id the API has dropped. It
+covers both naming schemes:
+
+* LLM ids (`anthropic/claude-sonnet-5`), against the seven `/v3/**/models`
+  listings. `/v3/models` alone is chat-only, so checking just that one reports
+  every embedding, image, audio and video model as missing.
+* expert-model paths (`image/explicit_content/amazon`), against `/v3/info`.
+
+Both endpoints are public, so these tests need no credentials and cost nothing.
+CI runs them as their own step, before the snippet tests, so a stale model id
+is still reported on a run where the API secrets are missing. They currently
+validate a bit over 400 references.
+
+A failure names the page, the line and the live alternatives:
+
+```
+v3/llms/image-generation.mdx names 1 model(s) the API does not have:
+  line 49: google/imagen-4.0-generate-001
+      closest ids: google/imagen-4.0-fast-generate-001, google/imagen-4.0-ultra-generate-001
+```
+
+Only backticked fragments that could be an id verbatim are checked. Anything
+holding placeholder or wildcard syntax documents a shape rather than naming a
+model (`audio/tts/{provider}[/{model}]`, `anthropic/*`) and is skipped, as is a
+bare `feature/subfeature`, which names a route.
+
+Known gaps, so nobody reads a green run as more than it is. A fragment is only
+checked when its first segment is a known feature or a known LLM provider, so
+a misspelt provider (`anthropc/claude-sonnet-5`) reads as an unknown namespace
+and passes, and ids carrying an integration's own prefix
+(`edenai:anthropic/claude-sonnet-5` on the aisuite page, `edenai/openai/gpt-5.5`
+on the bifrost page) are not checked either. Closing those needs a way to tell
+a model id from any other slash-separated word in prose, which a backtick alone
+does not give.
+
 ## CI (GitHub Actions)
 
 The workflow at `.github/workflows/test-snippets.yml` runs on PRs that touch `v3/**/*.mdx` or `tests/**`:

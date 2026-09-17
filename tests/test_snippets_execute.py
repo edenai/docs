@@ -9,7 +9,6 @@ from tests.snippet_extractor import (
     DEFAULT_BASE_URL,
     PAID_CALLS_ENV_VAR,
     PRODUCTION_BASE_URL,
-    QUOTA_CALLS_ENV_VAR,
     extract_all,
 )
 
@@ -27,27 +26,17 @@ for _mod in _modules:
         )
 
 
-def _enabled(env_var: str) -> bool:
-    return os.environ.get(env_var, "").strip().lower() in {"1", "true", "yes"}
-
-
 def _paid_calls_enabled() -> bool:
     """Whether this run may spend credits on samples the sandbox cannot serve.
 
     Off by default, so neither a docs PR nor a local run bills the account. The
     weekly run turns it on, which is where these samples get their coverage.
     """
-    return _enabled(PAID_CALLS_ENV_VAR)
-
-
-def _quota_calls_enabled() -> bool:
-    """Whether this run may consume plan quota the account never gets back.
-
-    Off everywhere by default, including the weekly run: the resource does not
-    refill, so any recurring cadence exhausts it and wedges the suite. A person
-    turns this on deliberately, knowing each run costs a permanent slot.
-    """
-    return _enabled(QUOTA_CALLS_ENV_VAR)
+    return os.environ.get(PAID_CALLS_ENV_VAR, "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+    }
 
 
 def _case_id(case: dict) -> str:
@@ -77,10 +66,6 @@ def test_snippet_executes(test_case, fixtures_dir, monkeypatch):
     if test_case["paid"] and not _paid_calls_enabled():
         reason = test_case.get("paid_reason") or "needs a real model answer"
         pytest.skip(f"spends credits ({reason}); set {PAID_CALLS_ENV_VAR}=1 to run")
-
-    if test_case.get("quota") and not _quota_calls_enabled():
-        reason = test_case.get("quota_reason") or "consumes a plan-limited resource"
-        pytest.skip(f"consumes quota ({reason}); set {QUOTA_CALLS_ENV_VAR}=1 to run")
 
     if needs_production_token:
         production_token = os.environ.get("EDEN_AI_PRODUCTION_API_TOKEN")

@@ -2,15 +2,6 @@ name: Test Documentation Snippets
 
 on:
   workflow_dispatch:
-    inputs:
-      run_quota_calls:
-        description: >-
-          Also run the samples that create an API key. The plan allows 50 per
-          user and counts revoked ones, so each run spends slots the account
-          never gets back. Leave off unless you are deliberately verifying
-          those samples and have checked there is headroom.
-        type: boolean
-        default: false
   pull_request:
     paths:
       - 'v3/**/*.mdx'
@@ -62,11 +53,6 @@ jobs:
           # credits on every run. They are reported as skipped on docs PRs and
           # get their coverage from the weekly run and from a manual dispatch.
           EDEN_AI_RUN_PAID_CALLS: ${{ github.event_name != 'pull_request' }}
-          # The samples that create an API key spend a slot the account never
-          # gets back, so no schedule sets this: a weekly cadence would exhaust
-          # the plan's 50 and wedge the suite for everyone. Someone asks for it
-          # on a manual dispatch when it is worth the slots.
-          EDEN_AI_RUN_QUOTA_CALLS: ${{ inputs.run_quota_calls }}
       - name: Coverage summary
         if: always()
         run: |

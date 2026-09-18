@@ -171,8 +171,8 @@ Now loop the three steps over a list of files. Each document is uploaded, launch
 
 The poll loop is **bounded** — it gives up after a fixed number of attempts rather than waiting forever — and a failed or slow document is skipped rather than aborting the whole batch.
 
+{/* skip-test: polls three async OCR jobs to completion, which outlasts the per-test timeout */}
 <CodeGroup>
-{/* skip-test */}
 ```python Python
 import csv
 import time

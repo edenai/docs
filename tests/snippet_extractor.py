@@ -1,12 +1,18 @@
 """Extract Python code snippets from .mdx documentation files."""
 
 import re
+import textwrap
 from pathlib import Path
 
 from filelock import FileLock
 
+# Both the indentation and the label are optional and free-form: a fence nested
+# in a <Step> or <Accordion> is indented, and a <CodeGroup> tab reads
+# "python OpenAI SDK (Multipart)". Insisting on column zero and a single label
+# token silently dropped those blocks, so nothing tested them and nothing
+# counted them as skipped either.
 CODE_BLOCK_RE = re.compile(
-    r"^```python(?:[ \t]+\S+)?[ \t]*\n(.*?)^\s*```",
+    r"^[ \t]*```python(?:[ \t]+[^\n]*?)?[ \t]*\n(.*?)^\s*```",
     re.MULTILINE | re.DOTALL,
 )
 
@@ -90,6 +96,25 @@ MANAGEMENT_KEY_PATTERNS = [
     ),
 ]
 
+# The sandbox page names its placeholder YOUR_SANDBOX_TOKEN rather than
+# YOUR_API_KEY, because the point of the page is that this token is not the
+# production one. It always resolves to the sandbox token, whatever the rest of
+# the file uses.
+SANDBOX_TOKEN_PATTERNS = [
+    (
+        re.compile(r'f"Bearer\s+YOUR_SANDBOX_TOKEN"'),
+        f"f\"Bearer {{os.environ['{_SANDBOX_TOKEN_VAR}']}}\"",
+    ),
+    (
+        re.compile(r'"Bearer\s+YOUR_SANDBOX_TOKEN"'),
+        f"f\"Bearer {{os.environ['{_SANDBOX_TOKEN_VAR}']}}\"",
+    ),
+    (
+        re.compile(r'"YOUR_SANDBOX_TOKEN"'),
+        f'os.environ["{_SANDBOX_TOKEN_VAR}"]',
+    ),
+]
+
 _BARE_API_KEY_RE = re.compile(r"\bAPI_KEY\b")
 _API_KEY_ASSIGNMENT_RE = re.compile(r"^\s*API_KEY\s*=", re.MULTILINE)
 _API_KEY_STR_ASSIGNMENT_RE = re.compile(r'^(\s*)API_KEY\s*=\s*"[^"]*"', re.MULTILINE)
@@ -123,7 +148,9 @@ def extract_python_blocks(mdx_path: Path) -> list[dict]:
         recent_lines = preceding.rsplit("\n", 3)[-3:]
         skip = _first_marker(_SKIP_COMMENT_RE, recent_lines)
         paid = _first_marker(_PAID_COMMENT_RE, recent_lines)
-        code = match.group(1)
+        # A nested fence carries its own indentation, which is not part of the
+        # sample.
+        code = textwrap.dedent(match.group(1))
         line = preceding.count("\n") + 2
         blocks.append(
             {
@@ -153,6 +180,12 @@ def replace_api_keys(code: str, token_var: str = _SANDBOX_TOKEN_VAR) -> str:
 
 def replace_management_keys(code: str) -> str:
     for pattern, replacement in MANAGEMENT_KEY_PATTERNS:
+        code = pattern.sub(replacement, code)
+    return code
+
+
+def replace_sandbox_tokens(code: str) -> str:
+    for pattern, replacement in SANDBOX_TOKEN_PATTERNS:
         code = pattern.sub(replacement, code)
     return code
 
@@ -206,11 +239,11 @@ def build_module(blocks: list[dict], source_mdx: str) -> tuple[str, list[dict]]:
         paid = block.get("paid", False)
         token_var = _token_var_for(source_mdx, paid)
         needs_production_token = token_var == _PRODUCTION_TOKEN_VAR
-        code = replace_placeholder_file_id(
-            replace_base_url(
-                replace_api_keys(replace_management_keys(block["code"]), token_var)
-            )
-        )
+        code = replace_management_keys(block["code"])
+        code = replace_sandbox_tokens(code)
+        code = replace_api_keys(code, token_var)
+        code = replace_base_url(code)
+        code = replace_placeholder_file_id(code)
         line_num = block["line"]
         has_input = "input(" in code
         needs_management_key = _MANAGEMENT_KEY_VAR in code

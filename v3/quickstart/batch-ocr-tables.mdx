@@ -73,6 +73,7 @@ launch = requests.post(
 print(launch.json())  # -> {"public_id": "...", "status": "processing", ...}
 ```
 
+{/* skip-test: the last step polls YOUR_PUBLIC_ID, the job id the step above prints */}
 ```bash cURL
 # 1. Upload the document
 curl -X POST https://api.edenai.run/v3/upload \

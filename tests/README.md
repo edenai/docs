@@ -1,6 +1,6 @@
 # Documentation Snippet Tests
 
-Automated test suite that extracts Python code snippets from `.mdx` documentation files and executes them against the Eden AI API.
+Automated test suite that extracts code snippets from `.mdx` documentation files and executes them against the Eden AI API. Python snippets become importable modules; shell snippets become scripts and are run with bash, so what gets tested is the command a reader would paste.
 
 ## Setup
 
@@ -94,7 +94,34 @@ When adding new `.mdx` files with Python code snippets:
 3. Run `pytest tests/ -v` to verify
 4. The extractor auto-discovers new `.mdx` files (under `v3/` and at the repo root) — no configuration needed
 
+### Shell Snippets
+
+The curl samples are what most readers copy, so they run too. Each block
+becomes a script under `tests/generated/sh/` and is run with bash. The command
+itself is never rewritten; the script wraps it in shims:
+
+- `curl` gains `--fail-with-body`, because curl exits 0 on a 4xx or 5xx and a
+  retired endpoint would otherwise pass in silence.
+- `pip` and `npm` gain `--dry-run`, so an install block resolves the package
+  against its index and lands nothing in the runner's environment.
+
+Two kinds of block run: a curl call to Eden AI, and a plain install. Everything
+else on a page is left alone and never becomes a script, because running it
+would drive somebody else's software (`docker compose up`, `git clone`, an
+admin password reset). That rule lives in `_is_testable_shell`, and
+`tests/test_snippet_extractor.py` asserts no generated script can touch local
+state.
+
+Placeholders resolve the same way they do in Python (`YOUR_API_KEY`,
+`YOUR_MANAGEMENT_KEY`, `YOUR_SANDBOX_TOKEN`, `YOUR_FILE_UUID_OR_URL`). Almost
+every curl body is `-d '{...}'` and the shell expands nothing inside single
+quotes, so a placeholder there is spliced as `'"$VAR"'`. The run uploads a
+document and an image, and a sample gets whichever its model calls for: an
+image model rejects a PDF outright.
+
 ### Skipping Non-Runnable Snippets
+
+The same `{/* skip-test */}` and `{/* paid-test */}` markers work for shell blocks. A marker above a `<CodeGroup>` covers every fence in the group, and a marker directly above one fence covers only that fence.
 
 Some ` ```python ` blocks are illustrative fragments (e.g., `"model": "openai/gpt-4o"`) rather than valid standalone Python, and a few depend on something no test environment can supply (a package that has not shipped the code the page documents, a module that only exists inside another project's tree). To exclude a block from testing while preserving syntax highlighting, add an MDX comment before the fence:
 
@@ -153,7 +180,8 @@ it.
 
 The workflow at `.github/workflows/test-snippets.yml` runs on PRs that touch `v3/**/*.mdx` or `tests/**`:
 
-1. **Execution job**: runs execution tests with the `EDEN_AI_SANDBOX_TOKEN`, `EDEN_AI_PRODUCTION_TOKEN` and `EDEN_AI_MANAGEMENT_KEY` secrets
+1. **Check snippet syntax**: parses every extracted snippet, Python and shell, with no credentials and no API calls, so it still reports a broken snippet on a run where the secrets are missing
+2. **Run Python snippets** and **Run shell snippets**: execution tests with the `EDEN_AI_SANDBOX_TOKEN`, `EDEN_AI_PRODUCTION_TOKEN` and `EDEN_AI_MANAGEMENT_KEY` secrets
 
 It also runs weekly, Mondays at 06:00 UTC against `main`, because the docs go
 stale against a moving API even when nobody edits them. The weekly run is the

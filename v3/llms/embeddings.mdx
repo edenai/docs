@@ -96,6 +96,7 @@ vector = response["data"][0]["embedding"]
 print(f"{model_id}: {len(vector)} dimensions, cost=${response['cost']}")
 ```
 
+{/* skip-test: MODEL_ID is a placeholder the reader fills from GET /v3/embeddings/models */}
 ```bash cURL
 # Replace MODEL_ID with any id returned by GET /v3/embeddings/models
 curl https://api.edenai.run/v3/embeddings \

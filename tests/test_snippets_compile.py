@@ -22,9 +22,7 @@ from tests.snippet_extractor import extract_all
 _modules = extract_all()
 
 
-@pytest.mark.parametrize(
-    "module", _modules, ids=[m["source_mdx"] for m in _modules]
-)
+@pytest.mark.parametrize("module", _modules, ids=[m["source_mdx"] for m in _modules])
 def test_snippet_module_compiles(module):
     """Every extracted snippet on the page is valid Python."""
     source = Path(module["generated_path"]).read_text(encoding="utf-8")

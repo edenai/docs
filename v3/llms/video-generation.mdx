@@ -39,7 +39,7 @@ Video models are **not** in `GET /v3/models` (chat / responses only) nor in `GET
 
 ## Usage
 
-{/* skip-test */}
+{/* skip-test: generating a video runs for minutes, past the per-test timeout */}
 <CodeGroup>
 ```python OpenAI SDK
 from openai import OpenAI
@@ -59,7 +59,7 @@ client.videos.download_content(video.id).write_to_file("boat.mp4")
 
 ### Image-to-Video
 Image-to-video with the SDK's file upload (multipart):
-{/* skip-test */}
+{/* skip-test: continues the sample above, whose client it reuses, and posts a local keyframe.png */}
 <CodeGroup>
 ```python OpenAI SDK (Multipart)
 with open("keyframe.png", "rb") as f:
@@ -72,7 +72,7 @@ with open("keyframe.png", "rb") as f:
 </CodeGroup>
 
 Image-to-video with JSON, referencing an upload or a URL:
-{/* skip-test */}
+{/* skip-test: input_reference needs an image URL a provider can actually fetch */}
 <CodeGroup>
 ```bash cURL (JSON)
 curl -X POST "https://api.edenai.run/v3/videos" \

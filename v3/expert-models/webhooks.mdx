@@ -123,7 +123,7 @@ To verify, reproduce the same canonical JSON before hashing — do **not** re-se
 
     **Receiving and verifying the webhook (Flask):**
 
-    {/* skip-test */}
+    {/* skip-test: a Flask receiver, not a script: it registers route handlers and loads Eden AI's webhook public key from a PEM file */}
     ```python
     import hashlib
     import orjson
@@ -197,7 +197,7 @@ To verify, reproduce the same canonical JSON before hashing — do **not** re-se
 
     **Receiving and verifying the webhook (Express):**
 
-    {/* skip-test */}
+    {/* skip-test: an Express receiver, not a script: it registers a route handler and loads Eden AI's webhook public key from a PEM file */}
     ```javascript
     const express = require("express");
     const crypto = require("crypto");

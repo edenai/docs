@@ -90,7 +90,7 @@ When adding new `.mdx` files with Python code snippets:
 
 1. Use ` ```python ` fencing for code blocks
 2. Make each snippet self-contained (include its own imports, define `url`, `headers`, etc.)
-   - Use `YOUR_API_KEY` as the inference key placeholder and `YOUR_MANAGEMENT_KEY` for Management API (`/v3/manage/...`) calls; the extractor swaps each for the matching environment variable
+   - Use `YOUR_API_KEY` as the inference key placeholder, `YOUR_MANAGEMENT_KEY` for Management API (`/v3/manage/...`) calls, and `YOUR_SANDBOX_TOKEN` where the page is specifically about sandbox tokens; the extractor swaps each for the matching environment variable
 3. Run `pytest tests/ -v` to verify
 4. The extractor auto-discovers new `.mdx` files (under `v3/` and at the repo root) — no configuration needed
 
@@ -116,14 +116,14 @@ This also works with `<CodeGroup>` blocks — place the comment before the `<Cod
 </CodeGroup>
 ```
 
-The marker can carry the reason, which is worth writing every time — it is what stops the next
-person re-deciding whether the block should run:
+The marker carries the reason, and every marker in the docs has one. It is what
+stops the next person re-deciding from scratch whether the block should run:
 
 ```
 {/* skip-test: the Eden AI provider is merged upstream but not in any aisuite release yet */}
 ```
 
-The comment is invisible in rendered docs. The extractor checks the 3 lines preceding each ` ```python ` fence for the marker. Skipped blocks still appear in test output (as `SKIPPED`) rather than being silently excluded, so you can track how many snippets are skipped.
+The comment is invisible in rendered docs. The extractor checks the 3 lines preceding each ` ```python ` fence for the marker. A fence is a fence whatever tab label follows the language (` ```python OpenAI SDK `) and whatever indentation it sits at inside a `<Step>` or `<Accordion>`, so a block cannot escape the suite by being nested or labelled. Skipped blocks still appear in test output (as `SKIPPED`) rather than being silently excluded, so you can track how many snippets are skipped.
 
 ### Snippets That Need a Real Model Answer
 

@@ -1,4 +1,4 @@
-"""Extract Python code snippets from .mdx documentation files."""
+"""Extract code snippets from .mdx documentation files."""
 
 import re
 import textwrap
@@ -6,15 +6,23 @@ from pathlib import Path
 
 from filelock import FileLock
 
-# Both the indentation and the label are optional and free-form: a fence nested
-# in a <Step> or <Accordion> is indented, and a <CodeGroup> tab reads
-# "python OpenAI SDK (Multipart)". Insisting on column zero and a single label
-# token silently dropped those blocks, so nothing tested them and nothing
-# counted them as skipped either.
-CODE_BLOCK_RE = re.compile(
-    r"^[ \t]*```python(?:[ \t]+[^\n]*?)?[ \t]*\n(.*?)^\s*```",
-    re.MULTILINE | re.DOTALL,
-)
+
+def _fence_re(languages: str) -> re.Pattern:
+    """A fenced code block regex for one or more languages.
+
+    Both the indentation and the label are optional and free-form: a fence
+    nested in a <Step> or <Accordion> is indented, and a <CodeGroup> tab reads
+    "python OpenAI SDK (Multipart)". Insisting on column zero and a single
+    label token silently dropped those blocks, so nothing tested them and
+    nothing counted them as skipped either.
+    """
+    return re.compile(
+        rf"^[ \t]*```(?:{languages})(?:[ \t]+[^\n]*?)?[ \t]*\n(.*?)^\s*```",
+        re.MULTILINE | re.DOTALL,
+    )
+
+
+CODE_BLOCK_RE = _fence_re("python")
 
 # Either marker may carry a reason: {/* skip-test: why this cannot run */}
 _SKIP_COMMENT_RE = re.compile(r"\{/\*\s*skip-test\b[:\s]*(?P<reason>.*?)\s*\*/\}")
@@ -139,13 +147,33 @@ def _first_marker(pattern: re.Pattern, lines: list[str]) -> re.Match | None:
     return None
 
 
-def extract_python_blocks(mdx_path: Path) -> list[dict]:
-    """Extract all Python code blocks from an .mdx file."""
+def _marker_lines(preceding: str) -> list[str]:
+    """The lines a marker for the fence that follows may live on.
+
+    The lines just above the fence, plus the lines just above the <CodeGroup>
+    enclosing it. A group is marked as a whole and the marker sits above the
+    group, so looking only above the fence finds it for the first tab and
+    misses it for every other one.
+    """
+    lines = preceding.rsplit("\n", 3)[-3:]
+    all_lines = preceding.split("\n")
+    for i in range(len(all_lines) - 1, -1, -1):
+        stripped = all_lines[i].strip()
+        if stripped == "</CodeGroup>":
+            break
+        if stripped == "<CodeGroup>":
+            lines += all_lines[max(0, i - 3) : i]
+            break
+    return lines
+
+
+def _extract_blocks(mdx_path: Path, fence_re: re.Pattern) -> list[dict]:
+    """Every fenced block matching one language, with its markers resolved."""
     content = mdx_path.read_text(encoding="utf-8")
     blocks = []
-    for match in CODE_BLOCK_RE.finditer(content):
+    for match in fence_re.finditer(content):
         preceding = content[: match.start()]
-        recent_lines = preceding.rsplit("\n", 3)[-3:]
+        recent_lines = _marker_lines(preceding)
         skip = _first_marker(_SKIP_COMMENT_RE, recent_lines)
         paid = _first_marker(_PAID_COMMENT_RE, recent_lines)
         # A nested fence carries its own indentation, which is not part of the
@@ -163,6 +191,11 @@ def extract_python_blocks(mdx_path: Path) -> list[dict]:
             }
         )
     return blocks
+
+
+def extract_python_blocks(mdx_path: Path) -> list[dict]:
+    """Extract all Python code blocks from an .mdx file."""
+    return _extract_blocks(mdx_path, CODE_BLOCK_RE)
 
 
 def replace_api_keys(code: str, token_var: str = _SANDBOX_TOKEN_VAR) -> str:
@@ -293,6 +326,16 @@ def sanitize_filename(mdx_path: Path) -> str:
 _EXTRACT_LOCK = GENERATED_DIR / ".extract.lock"
 
 
+def mdx_files() -> list[Path]:
+    """Every published documentation page, in a stable order.
+
+    The published tree is v3/ plus the pages at the repo root. Anything else
+    (ai-tools/, snippets/) is absent from docs.json and is not a page. Shared
+    so the checks that walk the docs cannot disagree about what a page is.
+    """
+    return sorted([*DOCS_ROOT.glob("v3/**/*.mdx"), *DOCS_ROOT.glob("*.mdx")])
+
+
 def extract_all() -> list[dict]:
     """Extract snippets from all .mdx files and write generated modules."""
     GENERATED_DIR.mkdir(parents=True, exist_ok=True)
@@ -300,12 +343,9 @@ def extract_all() -> list[dict]:
     if not init_file.exists():
         init_file.write_text("")
 
-    mdx_files = sorted(
-        list(DOCS_ROOT.glob("v3/**/*.mdx")) + list(DOCS_ROOT.glob("*.mdx"))
-    )
     results = []
 
-    for mdx_path in mdx_files:
+    for mdx_path in mdx_files():
         blocks = extract_python_blocks(mdx_path)
         if not blocks:
             continue

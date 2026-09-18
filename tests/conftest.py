@@ -116,6 +116,11 @@ def pytest_sessionstart(session: pytest.Session) -> None:
         test_file_id = upload_test_file(minimal_pdf())
         os.environ["_EDEN_TEST_FILE_ID"] = test_file_id
         state["test_file_id"] = test_file_id
+        # An image model rejects a PDF outright, so the image feature samples
+        # need an upload of their own.
+        test_image_id = upload_test_file(minimal_jpeg(), "fixture.jpg")
+        os.environ["_EDEN_TEST_IMAGE_ID"] = test_image_id
+        state["test_image_id"] = test_image_id
 
     path = _shared_state_path(session.config)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -153,6 +158,8 @@ def _load_shared_state(request):
         state = json.loads(path.read_text())
         if "test_file_id" in state:
             os.environ.setdefault("_EDEN_TEST_FILE_ID", state["test_file_id"])
+        if "test_image_id" in state:
+            os.environ.setdefault("_EDEN_TEST_IMAGE_ID", state["test_image_id"])
 
 
 @pytest.fixture(scope="session")

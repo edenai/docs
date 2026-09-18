@@ -73,6 +73,7 @@ response = requests.post(url, headers=headers, json=payload)
 print(response.json())
 ```
 
+{/* skip-test: collection_id has to name a face collection that already holds faces, which a test run has no way to build */}
 ```bash cURL
 curl -X POST https://api.edenai.run/v3/universal-ai \
   -H "Authorization: Bearer YOUR_API_KEY" \

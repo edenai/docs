@@ -75,6 +75,7 @@ response = requests.post(url, headers=headers, json=payload)
 print(response.json())
 ```
 
+{/* skip-test: the run uploads a document and an image, and this one needs video */}
 ```bash cURL
 curl -X POST https://api.edenai.run/v3/universal-ai/async \
   -H "Authorization: Bearer YOUR_API_KEY" \

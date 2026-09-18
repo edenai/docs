@@ -317,6 +317,7 @@ A legacy key that was created before keys had ids and has never been regenerated
 
 Follow-up operations take the key's `id`. Only the fields you send in a `PATCH` are changed; `token_type` cannot be changed.
 
+{/* skip-test: acts on the illustrative key id above, which no account holds */}
 ```bash Update the budget
 curl -X PATCH https://api.edenai.run/v3/manage/keys/3f1c2b6e-8a4d-4f0e-9b7a-2c5d6e7f8a90/ \
   -H "Authorization: Bearer YOUR_MANAGEMENT_KEY" \
@@ -324,6 +325,7 @@ curl -X PATCH https://api.edenai.run/v3/manage/keys/3f1c2b6e-8a4d-4f0e-9b7a-2c5d
   -d '{"balance": "100.00", "active_balance": true}'
 ```
 
+{/* skip-test: acts on the illustrative key id above, which no account holds */}
 ```bash Rotate the secret
 curl -X POST https://api.edenai.run/v3/manage/keys/3f1c2b6e-8a4d-4f0e-9b7a-2c5d6e7f8a90/rotate/ \
   -H "Authorization: Bearer YOUR_MANAGEMENT_KEY"
@@ -331,6 +333,7 @@ curl -X POST https://api.edenai.run/v3/manage/keys/3f1c2b6e-8a4d-4f0e-9b7a-2c5d6
 
 Rotating returns `{"secret": "sk-eden-...", "masked": "...", "name": "production-v1"}`. The previous secret stops working immediately and the new one is shown once.
 
+{/* skip-test: acts on the illustrative key id above, which no account holds */}
 ```bash Revoke
 curl -X DELETE https://api.edenai.run/v3/manage/keys/3f1c2b6e-8a4d-4f0e-9b7a-2c5d6e7f8a90/ \
   -H "Authorization: Bearer YOUR_MANAGEMENT_KEY"

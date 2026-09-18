@@ -36,6 +36,7 @@ When using `response_format`, always include a system or user message that instr
 
 The simplest approach: set `response_format` to `{"type": "json_object"}` and instruct the model to return JSON in your prompt.
 
+{/* paid-test: needs a real model answer, the sandbox returns canned prose */}
 <CodeGroup>
 ```python Python
 import requests
@@ -107,6 +108,7 @@ curl -X POST https://api.edenai.run/v3/chat/completions \
 
 For stricter control, provide a JSON Schema that the model's response must conform to. This guarantees the output matches your expected structure.
 
+{/* paid-test: needs a real model answer, the sandbox returns canned prose */}
 <CodeGroup>
 ```python Python
 import requests

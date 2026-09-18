@@ -27,6 +27,7 @@ from tests.helpers.file_generators import (
     minimal_png,
     multipage_pdf,
 )
+from tests.snippet_extractor import DEFAULT_BASE_URL
 
 load_dotenv(Path(__file__).parent / ".env")
 
@@ -74,6 +75,25 @@ def _clean_up(description: str, action: Callable[[], int]) -> bool:
     return True
 
 
+def pytest_configure(config: pytest.Config) -> None:
+    """Publish the suite's credentials under the names third-party SDKs read.
+
+    The integration guides drive Eden AI through frameworks (any-llm, Haystack)
+    that resolve the key and endpoint from the environment rather than taking
+    them as arguments, so their snippets have no placeholder for the extractor
+    to rewrite. Runs in the controller and in every xdist worker, because each
+    worker executes snippets in its own process.
+    """
+    sandbox_token = os.environ.get("EDEN_AI_SANDBOX_API_TOKEN")
+    if not sandbox_token:
+        return
+    # Individual tests raise this to the production token where the samples
+    # need a real provider answer.
+    os.environ["EDENAI_API_KEY"] = sandbox_token
+    base_url = os.environ.get("EDEN_AI_BASE_URL", DEFAULT_BASE_URL)
+    os.environ["EDENAI_API_BASE"] = f"{base_url}/v3"
+
+
 @pytest.hookimpl(tryfirst=True)
 def pytest_sessionstart(session: pytest.Session) -> None:
     """Clear leftovers, snapshot resources, upload a test file (controller)."""
@@ -96,6 +116,11 @@ def pytest_sessionstart(session: pytest.Session) -> None:
         test_file_id = upload_test_file(minimal_pdf())
         os.environ["_EDEN_TEST_FILE_ID"] = test_file_id
         state["test_file_id"] = test_file_id
+        # An image model rejects a PDF outright, so the image feature samples
+        # need an upload of their own.
+        test_image_id = upload_test_file(minimal_jpeg(), "fixture.jpg")
+        os.environ["_EDEN_TEST_IMAGE_ID"] = test_image_id
+        state["test_image_id"] = test_image_id
 
     path = _shared_state_path(session.config)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -133,6 +158,8 @@ def _load_shared_state(request):
         state = json.loads(path.read_text())
         if "test_file_id" in state:
             os.environ.setdefault("_EDEN_TEST_FILE_ID", state["test_file_id"])
+        if "test_image_id" in state:
+            os.environ.setdefault("_EDEN_TEST_IMAGE_ID", state["test_image_id"])
 
 
 @pytest.fixture(scope="session")

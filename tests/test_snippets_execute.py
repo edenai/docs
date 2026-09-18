@@ -5,7 +5,12 @@ import os
 
 import pytest
 
-from tests.snippet_extractor import extract_all
+from tests.snippet_extractor import (
+    DEFAULT_BASE_URL,
+    PAID_CALLS_ENV_VAR,
+    PRODUCTION_BASE_URL,
+    extract_all,
+)
 
 _modules = extract_all()
 
@@ -19,6 +24,19 @@ for _mod in _modules:
                 "module_name": _mod["module_name"],
             }
         )
+
+
+def _paid_calls_enabled() -> bool:
+    """Whether this run may spend credits on samples the sandbox cannot serve.
+
+    Off by default, so neither a docs PR nor a local run bills the account. The
+    weekly run turns it on, which is where these samples get their coverage.
+    """
+    return os.environ.get(PAID_CALLS_ENV_VAR, "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+    }
 
 
 def _case_id(case: dict) -> str:
@@ -42,10 +60,24 @@ def test_snippet_executes(test_case, fixtures_dir, monkeypatch):
         pytest.skip("EDEN_AI_SANDBOX_API_TOKEN not set — skipping execution tests")
 
     if test_case.get("skip"):
-        pytest.skip("marked with {/* skip-test */}")
+        reason = test_case.get("skip_reason") or "no reason given"
+        pytest.skip(f"marked with skip-test: {reason}")
 
-    if needs_production_token and not os.environ.get("EDEN_AI_PRODUCTION_API_TOKEN"):
-        pytest.skip("EDEN_AI_PRODUCTION_API_TOKEN not set")
+    if test_case["paid"] and not _paid_calls_enabled():
+        reason = test_case.get("paid_reason") or "needs a real model answer"
+        pytest.skip(f"spends credits ({reason}); set {PAID_CALLS_ENV_VAR}=1 to run")
+
+    if needs_production_token:
+        production_token = os.environ.get("EDEN_AI_PRODUCTION_API_TOKEN")
+        if not production_token:
+            pytest.skip("EDEN_AI_PRODUCTION_API_TOKEN not set")
+        # Samples that reach Eden AI through a framework read the key from the
+        # environment, so the extractor has no placeholder to rewrite.
+        monkeypatch.setenv("EDENAI_API_KEY", production_token)
+
+    base_url = os.environ.get("EDEN_AI_BASE_URL", DEFAULT_BASE_URL)
+    if test_case["needs_production_base_url"] and base_url != PRODUCTION_BASE_URL:
+        pytest.skip(f"SDK targets {PRODUCTION_BASE_URL}, suite targets {base_url}")
 
     if test_case["needs_management_key"] and not os.environ.get(
         "EDEN_AI_MANAGEMENT_KEY"

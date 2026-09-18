@@ -94,7 +94,6 @@ curl -X POST https://api.edenai.run/v3/images/generations \
 </CodeGroup>
 
 Because the surface is OpenAI-compatible, the official OpenAI SDK works unchanged — just set `base_url`:
-{/* skip-test */}
 <CodeGroup>
 ```python OpenAI SDK
 from openai import OpenAI
@@ -149,7 +148,7 @@ Unknown fields are forwarded to the provider unchanged.
 ```
 
 ### Saving the image to disk
-{/* skip-test */}
+{/* skip-test: continues the sample above, whose result it reads */}
 <CodeGroup>
 ```python Python
 import base64
@@ -177,7 +176,6 @@ Some providers return a hosted `url` instead of inline `b64_json`. Download the 
 `POST /v3/images/edits` takes the same fields as generations plus an `images` array. Each entry sets exactly one of `file_id` (returned by Eden's `/v3/upload/...` endpoints) or `image_url` (an `https://` URL or a `data:image/...;base64,...` URL). An optional `mask` (same shape) marks the regions to edit.
 
 The endpoint dispatches on `Content-Type`: send `application/json` for the `images[]` form below, or `multipart/form-data` for the classic OpenAI SDK file-upload form.
-{/* skip-test */}
 <CodeGroup>
 ```python Python
 import requests

@@ -1,31 +1,69 @@
-"""Extract Python code snippets from .mdx documentation files."""
+"""Extract code snippets from .mdx documentation files."""
 
 import re
+import textwrap
 from pathlib import Path
 
 from filelock import FileLock
 
-CODE_BLOCK_RE = re.compile(
-    r"^```python(?:[ \t]+\S+)?[ \t]*\n(.*?)^\s*```",
-    re.MULTILINE | re.DOTALL,
-)
 
-_SKIP_COMMENT_RE = re.compile(r"\{/\*\s*skip-test\s*\*/\}")
+def _fence_re(languages: str) -> re.Pattern:
+    """A fenced code block regex for one or more languages.
+
+    Both the indentation and the label are optional and free-form: a fence
+    nested in a <Step> or <Accordion> is indented, and a <CodeGroup> tab reads
+    "python OpenAI SDK (Multipart)". Insisting on column zero and a single
+    label token silently dropped those blocks, so nothing tested them and
+    nothing counted them as skipped either.
+    """
+    return re.compile(
+        rf"^[ \t]*```(?:{languages})(?:[ \t]+[^\n]*?)?[ \t]*\n(.*?)^\s*```",
+        re.MULTILINE | re.DOTALL,
+    )
+
+
+CODE_BLOCK_RE = _fence_re("python")
+SHELL_BLOCK_RE = _fence_re("bash|shell|sh")
+
+# Either marker may carry a reason: {/* skip-test: why this cannot run */}
+_SKIP_COMMENT_RE = re.compile(r"\{/\*\s*skip-test\b[:\s]*(?P<reason>.*?)\s*\*/\}")
+
+# A sample the sandbox cannot serve because it needs the model to answer for
+# real, not with the sandbox's one canned completion. These spend credits every
+# time they run, so they take the production token and only execute when the
+# run opts in.
+_PAID_COMMENT_RE = re.compile(r"\{/\*\s*paid-test\b[:\s]*(?P<reason>.*?)\s*\*/\}")
+
+PAID_CALLS_ENV_VAR = "EDEN_AI_RUN_PAID_CALLS"
 
 _SANDBOX_TOKEN_VAR = "EDEN_AI_SANDBOX_API_TOKEN"
 _PRODUCTION_TOKEN_VAR = "EDEN_AI_PRODUCTION_API_TOKEN"
 _MANAGEMENT_KEY_VAR = "EDEN_AI_MANAGEMENT_KEY"
 
+# Pages that act on real account resources rather than on a model, so the
+# sandbox token has nothing to act on. These cost nothing to run. Samples that
+# need a real *model* answer are marked per block with {/* paid-test */}
+# instead, since a page usually mixes the two.
 _PRODUCTION_TOKEN_FILES = {
     "v3/how-to/cost-management/monitor-usage.mdx",
     "v3/how-to/user-management/manage-tokens.mdx",
-    "v3/llms/structured-output.mdx",
     "v3/tutorials/multi-environment-tokens.mdx",
 }
 
 
-def _token_var_for(source_mdx: str) -> str:
-    if source_mdx in _PRODUCTION_TOKEN_FILES:
+# Guides whose samples reach Eden AI through a third-party SDK that hardcodes
+# the production endpoint. Those samples cannot honour EDEN_AI_BASE_URL, so a
+# run pointed anywhere else reports them as skipped instead of failing on the
+# 401 a staging token gets from production.
+_PRODUCTION_BASE_URL_FILES = {
+    "v3/integrations/haystack.mdx",
+}
+
+PRODUCTION_BASE_URL = "https://api.edenai.run"
+
+
+def _token_var_for(source_mdx: str, paid: bool = False) -> str:
+    if paid or source_mdx in _PRODUCTION_TOKEN_FILES:
         return _PRODUCTION_TOKEN_VAR
     return _SANDBOX_TOKEN_VAR
 
@@ -67,11 +105,30 @@ MANAGEMENT_KEY_PATTERNS = [
     ),
 ]
 
+# The sandbox page names its placeholder YOUR_SANDBOX_TOKEN rather than
+# YOUR_API_KEY, because the point of the page is that this token is not the
+# production one. It always resolves to the sandbox token, whatever the rest of
+# the file uses.
+SANDBOX_TOKEN_PATTERNS = [
+    (
+        re.compile(r'f"Bearer\s+YOUR_SANDBOX_TOKEN"'),
+        f"f\"Bearer {{os.environ['{_SANDBOX_TOKEN_VAR}']}}\"",
+    ),
+    (
+        re.compile(r'"Bearer\s+YOUR_SANDBOX_TOKEN"'),
+        f"f\"Bearer {{os.environ['{_SANDBOX_TOKEN_VAR}']}}\"",
+    ),
+    (
+        re.compile(r'"YOUR_SANDBOX_TOKEN"'),
+        f'os.environ["{_SANDBOX_TOKEN_VAR}"]',
+    ),
+]
+
 _BARE_API_KEY_RE = re.compile(r"\bAPI_KEY\b")
 _API_KEY_ASSIGNMENT_RE = re.compile(r"^\s*API_KEY\s*=", re.MULTILINE)
 _API_KEY_STR_ASSIGNMENT_RE = re.compile(r'^(\s*)API_KEY\s*=\s*"[^"]*"', re.MULTILINE)
 
-_DEFAULT_BASE_URL = "https://staging-api.edenai.run"
+DEFAULT_BASE_URL = "https://staging-api.edenai.run"
 _PLACEHOLDER_FILE_ID = "550e8400-e29b-41d4-a716-446655440000"
 
 _BASE_URL_IN_PLAIN_STR_RE = re.compile(r"""(?<![f])("https://api\.edenai\.run)""")
@@ -80,20 +137,153 @@ _BASE_URL_IN_FSTR_RE = re.compile(r"""(f"[^"]*?)https://api\.edenai\.run""")
 
 DOCS_ROOT = Path(__file__).resolve().parent.parent
 GENERATED_DIR = Path(__file__).resolve().parent / "generated"
+SHELL_DIR = GENERATED_DIR / "sh"
+
+
+def _first_marker(pattern: re.Pattern, lines: list[str]) -> re.Match | None:
+    """Return the first match of a marker pattern across the given lines."""
+    for line in lines:
+        match = pattern.search(line)
+        if match:
+            return match
+    return None
+
+
+def _marker_lines(preceding: str) -> list[str]:
+    """The lines a marker for the fence that follows may live on.
+
+    The lines just above the fence, plus the lines just above the <CodeGroup>
+    enclosing it. A group is marked as a whole and the marker sits above the
+    group, so looking only above the fence finds it for the first tab and
+    misses it for every other one.
+    """
+    lines = preceding.rsplit("\n", 3)[-3:]
+    all_lines = preceding.split("\n")
+    for i in range(len(all_lines) - 1, -1, -1):
+        stripped = all_lines[i].strip()
+        if stripped == "</CodeGroup>":
+            break
+        if stripped == "<CodeGroup>":
+            lines += all_lines[max(0, i - 3) : i]
+            break
+    return lines
+
+
+def _extract_blocks(mdx_path: Path, fence_re: re.Pattern) -> list[dict]:
+    """Every fenced block matching one language, with its markers resolved."""
+    content = mdx_path.read_text(encoding="utf-8")
+    blocks = []
+    for match in fence_re.finditer(content):
+        preceding = content[: match.start()]
+        recent_lines = _marker_lines(preceding)
+        skip = _first_marker(_SKIP_COMMENT_RE, recent_lines)
+        paid = _first_marker(_PAID_COMMENT_RE, recent_lines)
+        # A nested fence carries its own indentation, which is not part of the
+        # sample.
+        code = textwrap.dedent(match.group(1))
+        line = preceding.count("\n") + 2
+        blocks.append(
+            {
+                "code": code,
+                "line": line,
+                "skip": skip is not None,
+                "skip_reason": skip.group("reason") if skip else "",
+                "paid": paid is not None,
+                "paid_reason": paid.group("reason") if paid else "",
+            }
+        )
+    return blocks
+
+
+# In a shell block a placeholder becomes a variable reference, which the runner
+# exports before running the script. Every Authorization header in the docs is
+# double quoted, which is what lets $VAR expand in place.
+_SHELL_PLACEHOLDERS = [
+    (re.compile(r"\bYOUR_MANAGEMENT_KEY\b"), _MANAGEMENT_KEY_VAR),
+    (re.compile(r"\bYOUR_SANDBOX_TOKEN\b"), _SANDBOX_TOKEN_VAR),
+]
+
+_FILE_PLACEHOLDER_RE = re.compile(r"\bYOUR_FILE_(?:UUID_OR_URL|ID)\b")
+
+# The run uploads one document and one image, because an image model rejects a
+# PDF outright. Which one a sample wants is in the feature its model names.
+_IMAGE_MODEL_RE = re.compile(r'"model":\s*"image/')
+_TEST_FILE_VAR = "_EDEN_TEST_FILE_ID"
+_TEST_IMAGE_VAR = "_EDEN_TEST_IMAGE_ID"
+
+_SHELL_API_KEY_RE = re.compile(r"\bYOUR_(?:EDEN_AI_)?API_KEY\b")
+_SHELL_BASE_URL_RE = re.compile(r"https://api\.edenai\.run")
+
+# The shims are what make a shell block testable without touching the command
+# the page shows. curl exits 0 on a 4xx or 5xx unless told otherwise, so a
+# retired endpoint would pass silently; the install commands resolve against
+# their index and leave this environment alone.
+_SHELL_PREAMBLE = """\
+#!/usr/bin/env bash
+# Auto-generated from {source_mdx}
+# Do not edit, regenerated by snippet_extractor.py
+set -euo pipefail
+
+curl() {{ command curl --fail-with-body --show-error "$@"; }}
+pip() {{ command pip "$1" --dry-run "${{@:2}}"; }}
+pip3() {{ command pip3 "$1" --dry-run "${{@:2}}"; }}
+npm() {{ command npm "$1" --dry-run "${{@:2}}"; }}
+
+"""
+
+
+_UNESCAPED_QUOTE_RE = re.compile(r"(?<!\\)'")
+
+
+def _shell_ref(code: str, start: int, var: str) -> str:
+    """A reference to `var` that expands where the placeholder actually sits.
+
+    Almost every curl body is -d '{...}', and the shell expands nothing inside
+    single quotes, so a reference there has to close the quoting, expand, and
+    reopen it. One sample writes an apostrophe as '\\'' , which is why only
+    unescaped quotes count towards knowing which side we are on.
+    """
+    quotes = len(_UNESCAPED_QUOTE_RE.findall(code, 0, start))
+    if quotes % 2:
+        return f"'\"${var}\"'"
+    return f"${var}"
+
+
+def _sub_var(pattern: re.Pattern, var: str, code: str) -> str:
+    """Replace a placeholder with a variable reference, quoting-aware.
+
+    Safe to chain: the single-quoted form adds two quotes, so it leaves the
+    parity that later passes depend on unchanged.
+    """
+    return pattern.sub(lambda m: _shell_ref(code, m.start(), var), code)
+
+
+def shell_command(block: dict, source_mdx: str) -> str:
+    """One shell block with its placeholders resolved, and nothing else."""
+    code = block["code"]
+    for pattern, var in _SHELL_PLACEHOLDERS:
+        code = _sub_var(pattern, var, code)
+    file_var = _TEST_IMAGE_VAR if _IMAGE_MODEL_RE.search(code) else _TEST_FILE_VAR
+    code = _sub_var(_FILE_PLACEHOLDER_RE, file_var, code)
+    token_var = _token_var_for(source_mdx, block.get("paid", False))
+    code = _sub_var(_SHELL_API_KEY_RE, token_var, code)
+    return _SHELL_BASE_URL_RE.sub("$EDEN_AI_BASE_URL", code)
+
+
+def build_shell_script(block: dict, source_mdx: str) -> str:
+    """Wrap one shell block in the shims and resolve its placeholders."""
+    command = shell_command(block, source_mdx).strip("\n")
+    return _SHELL_PREAMBLE.format(source_mdx=source_mdx) + command + "\n"
 
 
 def extract_python_blocks(mdx_path: Path) -> list[dict]:
     """Extract all Python code blocks from an .mdx file."""
-    content = mdx_path.read_text(encoding="utf-8")
-    blocks = []
-    for match in CODE_BLOCK_RE.finditer(content):
-        preceding = content[: match.start()]
-        recent_lines = preceding.rsplit("\n", 3)[-3:]
-        skip = any(_SKIP_COMMENT_RE.search(line) for line in recent_lines)
-        code = match.group(1)
-        line = preceding.count("\n") + 2
-        blocks.append({"code": code, "line": line, "skip": skip})
-    return blocks
+    return _extract_blocks(mdx_path, CODE_BLOCK_RE)
+
+
+def extract_shell_blocks(mdx_path: Path) -> list[dict]:
+    """Extract all shell code blocks from an .mdx file."""
+    return _extract_blocks(mdx_path, SHELL_BLOCK_RE)
 
 
 def replace_api_keys(code: str, token_var: str = _SANDBOX_TOKEN_VAR) -> str:
@@ -111,6 +301,12 @@ def replace_api_keys(code: str, token_var: str = _SANDBOX_TOKEN_VAR) -> str:
 
 def replace_management_keys(code: str) -> str:
     for pattern, replacement in MANAGEMENT_KEY_PATTERNS:
+        code = pattern.sub(replacement, code)
+    return code
+
+
+def replace_sandbox_tokens(code: str) -> str:
+    for pattern, replacement in SANDBOX_TOKEN_PATTERNS:
         code = pattern.sub(replacement, code)
     return code
 
@@ -146,8 +342,7 @@ def build_module(blocks: list[dict], source_mdx: str) -> tuple[str, list[dict]]:
     if not blocks:
         return "", []
 
-    token_var = _token_var_for(source_mdx)
-    needs_production_token = token_var == _PRODUCTION_TOKEN_VAR
+    needs_production_base_url = source_mdx in _PRODUCTION_BASE_URL_FILES
 
     module_lines = [
         f"# Auto-generated from {source_mdx}",
@@ -155,18 +350,21 @@ def build_module(blocks: list[dict], source_mdx: str) -> tuple[str, list[dict]]:
         "",
         "import os",
         "",
-        f'_EDEN_BASE_URL = os.environ.get("EDEN_AI_BASE_URL", "{_DEFAULT_BASE_URL}")',
+        f'_EDEN_BASE_URL = os.environ.get("EDEN_AI_BASE_URL", "{DEFAULT_BASE_URL}")',
     ]
 
     block_functions = []
 
     for i, block in enumerate(blocks):
         func_name = f"block_{i + 1}"
-        code = replace_placeholder_file_id(
-            replace_base_url(
-                replace_api_keys(replace_management_keys(block["code"]), token_var)
-            )
-        )
+        paid = block.get("paid", False)
+        token_var = _token_var_for(source_mdx, paid)
+        needs_production_token = token_var == _PRODUCTION_TOKEN_VAR
+        code = replace_management_keys(block["code"])
+        code = replace_sandbox_tokens(code)
+        code = replace_api_keys(code, token_var)
+        code = replace_base_url(code)
+        code = replace_placeholder_file_id(code)
         line_num = block["line"]
         has_input = "input(" in code
         needs_management_key = _MANAGEMENT_KEY_VAR in code
@@ -186,8 +384,12 @@ def build_module(blocks: list[dict], source_mdx: str) -> tuple[str, list[dict]]:
                 "lines": [line_num],
                 "has_input": has_input,
                 "needs_production_token": needs_production_token,
+                "needs_production_base_url": needs_production_base_url,
+                "paid": paid,
+                "paid_reason": block.get("paid_reason", ""),
                 "needs_management_key": needs_management_key,
                 "skip": block.get("skip", False),
+                "skip_reason": block.get("skip_reason", ""),
             }
         )
 
@@ -212,6 +414,16 @@ def sanitize_filename(mdx_path: Path) -> str:
 _EXTRACT_LOCK = GENERATED_DIR / ".extract.lock"
 
 
+def mdx_files() -> list[Path]:
+    """Every published documentation page, in a stable order.
+
+    The published tree is v3/ plus the pages at the repo root. Anything else
+    (ai-tools/, snippets/) is absent from docs.json and is not a page. Shared
+    so the checks that walk the docs cannot disagree about what a page is.
+    """
+    return sorted([*DOCS_ROOT.glob("v3/**/*.mdx"), *DOCS_ROOT.glob("*.mdx")])
+
+
 def extract_all() -> list[dict]:
     """Extract snippets from all .mdx files and write generated modules."""
     GENERATED_DIR.mkdir(parents=True, exist_ok=True)
@@ -219,12 +431,9 @@ def extract_all() -> list[dict]:
     if not init_file.exists():
         init_file.write_text("")
 
-    mdx_files = sorted(
-        list(DOCS_ROOT.glob("v3/**/*.mdx")) + list(DOCS_ROOT.glob("*.mdx"))
-    )
     results = []
 
-    for mdx_path in mdx_files:
+    for mdx_path in mdx_files():
         blocks = extract_python_blocks(mdx_path)
         if not blocks:
             continue
@@ -250,6 +459,96 @@ def extract_all() -> list[dict]:
                 "block_functions": block_functions,
             }
         )
+
+    return results
+
+
+# What a shell block has to be for the suite to run it. Many pages drive
+# somebody else's software rather than documenting an Eden AI call: they start
+# containers, clone repositories, reset an admin password. Those are never
+# turned into scripts, because a test run must not do any of it.
+_EDEN_HOST_RE = re.compile(r"\$EDEN_AI_BASE_URL|https://api\.eu\.edenai\.run")
+_LOCAL_HOST_RE = re.compile(r"\blocalhost\b|\b127\.0\.0\.1\b")
+_CURL_RE = re.compile(r"(?<![\w-])curl\b")
+_SUPPORTED_INSTALL_RE = re.compile(r"^(?:pip3?|npm)\s+(?:install|add)\b")
+
+# A backstop. What keeps `docker run` out today is the curl requirement below,
+# since naming the Eden AI URL is not the same as calling it: an open-webui
+# sample passes it to docker as an environment variable. This catches the block
+# that does both, which no page has yet and one may acquire.
+_STATEFUL_COMMAND_RE = re.compile(
+    r"^\s*(?:sudo|docker|git|systemctl|kill|chmod|chown|npm\s+run)\b",
+    re.MULTILINE,
+)
+
+
+def _is_testable_shell(command: str) -> bool:
+    """Whether a shell block is one of the two kinds this suite knows how to run.
+
+    Either it calls Eden AI with curl, or it is a plain install whose only
+    effect under the dry-run shim is to resolve a package. An install straight
+    from a git repository is neither: resolving it clones the repository and
+    runs its setup.py.
+    """
+    lines = [
+        line.strip()
+        for line in command.splitlines()
+        if line.strip() and not line.strip().startswith("#")
+    ]
+    if not lines or _STATEFUL_COMMAND_RE.search(command):
+        return False
+
+    if _EDEN_HOST_RE.search(command) and _CURL_RE.search(command):
+        return not _LOCAL_HOST_RE.search(command)
+
+    return all(_SUPPORTED_INSTALL_RE.match(line) for line in lines) and (
+        "git+" not in command
+    )
+
+
+def extract_all_shell() -> list[dict]:
+    """Extract shell snippets from all .mdx files and write one script each.
+
+    A shell block gets a script rather than a function in a shared module: it
+    is run, not imported, and each one has to stand alone the way a reader
+    pasting it into a terminal would.
+    """
+    SHELL_DIR.mkdir(parents=True, exist_ok=True)
+    results = []
+
+    for mdx_path in mdx_files():
+        blocks = extract_shell_blocks(mdx_path)
+        if not blocks:
+            continue
+
+        source_mdx = str(mdx_path.relative_to(DOCS_ROOT))
+        stem = sanitize_filename(mdx_path)
+
+        for i, block in enumerate(blocks):
+            if not _is_testable_shell(shell_command(block, source_mdx)):
+                continue
+            script = build_shell_script(block, source_mdx)
+            script_path = SHELL_DIR / f"{stem}__block_{i + 1}.sh"
+
+            with FileLock(str(_EXTRACT_LOCK)):
+                script_path.write_text(script)
+
+            results.append(
+                {
+                    "source_mdx": source_mdx,
+                    "block_index": i + 1,
+                    "line": block["line"],
+                    "script_path": str(script_path),
+                    "skip": block.get("skip", False),
+                    "skip_reason": block.get("skip_reason", ""),
+                    "paid": block.get("paid", False),
+                    "paid_reason": block.get("paid_reason", ""),
+                    "needs_management_key": f"${_MANAGEMENT_KEY_VAR}" in script,
+                    "needs_production_token": f"${_PRODUCTION_TOKEN_VAR}" in script,
+                    "needs_test_file": _TEST_FILE_VAR in script
+                    or _TEST_IMAGE_VAR in script,
+                }
+            )
 
     return results
 

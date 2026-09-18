@@ -115,7 +115,7 @@ curl -X POST https://api.edenai.run/v3/universal-ai \
 
 Control output style and quality for image generation:
 
-{/* skip-test */}
+{/* skip-test: downloads the generated image from its result URL and opens it in a desktop viewer, neither of which a test run can do */}
 <CodeGroup>
 ```python Python
 import requests
@@ -156,7 +156,6 @@ img.show()
 
 Pass provider-specific voice parameters:
 
-{/* skip-test */}
 <CodeGroup>
 ```python Python
 import requests

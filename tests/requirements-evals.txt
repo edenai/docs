@@ -1,0 +1,10 @@
+# Ask AI evaluation pipeline (tests/evals/).
+#
+# Kept out of requirements.txt because deepeval's dependency tree holds the
+# integration frameworks the snippet tests exercise several major versions
+# behind what the docs tell readers to install (pydantic-ai 1.x instead of 2.x,
+# for one), which would make those snippet tests prove nothing.
+-r requirements.txt
+
+deepeval>=2.0,<3.0
+httpx>=0.27,<1.0

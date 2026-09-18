@@ -7,6 +7,11 @@ on:
       - 'v3/**/*.mdx'
       - '*.mdx'
       - 'tests/**'
+  # The docs go stale against a moving API even when nobody edits them: a model
+  # is retired, a response shape changes, a linked page moves. A PR run only
+  # catches what a PR touches, so the suite also runs weekly against main.
+  schedule:
+    - cron: '0 6 * * 1'
 
 # These tests share one Eden AI account, and teardown deletes every upload that
 # appeared while they ran, so overlapping runs would delete each other's files.
@@ -33,16 +38,43 @@ jobs:
       - uses: astral-sh/setup-uv@v5
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          # atomic-agents, exercised by the Atomic Agents guide, needs 3.12+.
+          python-version: '3.13'
       - name: Install dependencies
         run: uv pip install -r tests/requirements-lock.txt --system
-      - name: Run tests
+      # No credentials and no API calls, so this still reports a snippet that
+      # is not valid Python or bash on a run where the secrets are missing, and
+      # it covers the blocks the execution suites hold back.
+      - name: Check snippet syntax
+        run: pytest tests/test_snippets_compile.py tests/test_snippet_extractor.py --no-cov
+        env:
+          EDEN_AI_BASE_URL: ${{ vars.EDEN_AI_BASE_URL || 'https://staging-api.edenai.run' }}
+
+      - name: Run Python snippets
         run: pytest tests/test_snippets_execute.py
         env:
           EDEN_AI_BASE_URL: ${{ vars.EDEN_AI_BASE_URL || 'https://staging-api.edenai.run' }}
           EDEN_AI_SANDBOX_API_TOKEN: ${{ secrets.EDEN_AI_SANDBOX_TOKEN }}
           EDEN_AI_PRODUCTION_API_TOKEN: ${{ secrets.EDEN_AI_PRODUCTION_TOKEN }}
           EDEN_AI_MANAGEMENT_KEY: ${{ secrets.EDEN_AI_MANAGEMENT_KEY }}
+          # A handful of samples need the model to answer for real, which costs
+          # credits on every run. They are reported as skipped on docs PRs and
+          # get their coverage from the weekly run and from a manual dispatch.
+          EDEN_AI_RUN_PAID_CALLS: ${{ github.event_name != 'pull_request' }}
+
+      # The curl samples are what most readers copy, and nothing ran them until
+      # now. Each block runs as its own bash script, so what gets tested is the
+      # command on the page rather than a translation of it.
+      - name: Run shell snippets
+        if: always()
+        run: pytest tests/test_snippets_shell.py --no-cov
+        env:
+          EDEN_AI_BASE_URL: ${{ vars.EDEN_AI_BASE_URL || 'https://staging-api.edenai.run' }}
+          EDEN_AI_SANDBOX_API_TOKEN: ${{ secrets.EDEN_AI_SANDBOX_TOKEN }}
+          EDEN_AI_PRODUCTION_API_TOKEN: ${{ secrets.EDEN_AI_PRODUCTION_TOKEN }}
+          EDEN_AI_MANAGEMENT_KEY: ${{ secrets.EDEN_AI_MANAGEMENT_KEY }}
+          EDEN_AI_RUN_PAID_CALLS: ${{ github.event_name != 'pull_request' }}
+
       - name: Coverage summary
         if: always()
         run: |

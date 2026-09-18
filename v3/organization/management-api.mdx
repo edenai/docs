@@ -44,6 +44,7 @@ only at creation. The org owner can always do this; the owner can also grant the
 permission to other members via roles.
 </Step>
 <Step title="Mint an auth (worker) key">
+{/* skip-test: reads $ISSUER_KEY, which the reader exports in the step above */}
 ```bash
 curl -X POST https://api.edenai.run/v3/manage/auth-keys \
   -H "Authorization: Bearer $ISSUER_KEY" \
@@ -53,6 +54,7 @@ curl -X POST https://api.edenai.run/v3/manage/auth-keys \
 Returns a `mgmt-eden-…` auth key (shown once). An issuer key can never mint another issuer key.
 </Step>
 <Step title="Mint an inference key">
+{/* skip-test: reads $AUTH_KEY, which the step above prints for the reader to export */}
 ```bash
 curl -X POST https://api.edenai.run/v3/manage/keys \
   -H "Authorization: Bearer $AUTH_KEY" \

@@ -73,8 +73,8 @@ Every webhook request Eden AI sends includes these headers:
 | `model`             | `string \| null`        | Provider-specific model, if any.                                                       |
 | `created_at`        | `string` (ISO 8601)     | When the job was created.                                                              |
 | `finished_at`       | `string` (ISO 8601)     | When the job finished.                                                                 |
-| `output`            | `object`                | Normalized result. Present only on `status: "success"`.                                |
-| `error`             | `object`                | `{ "message": "..." }`. Present only on `status: "fail"`.                              |
+| `output`            | `object \| null`        | Normalized result. `null` on `status: "fail"`.                                         |
+| `error`             | `object \| null`        | `{ "message": "..." }`. `null` on `status: "success"`.                                 |
 | `original_response` | `any`                   | Raw provider response. Only present when the request had `show_original_response: true`. |
 | `user_parameters`   | `object`                | Echo of `user_webhook_parameters`. Absent if not set.                                  |
 

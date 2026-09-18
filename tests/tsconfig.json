@@ -1,0 +1,25 @@
+{
+  // Type-checks the generated .mts and .cts snippets against the real SDK
+  // typings. node strips types rather than checking them, so without this a
+  // renamed option or a wrong field on a typed SDK call would run happily and
+  // only fail if the API itself happened to object.
+  "compilerOptions": {
+    "noEmit": true,
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "target": "es2023",
+    "types": ["node"],
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    // node runs these by stripping the annotations out, which only works
+    // for syntax that erases to nothing. An enum or a namespace compiles
+    // here and then fails the moment somebody runs the sample, so tsc is
+    // asked to refuse it too.
+    "erasableSyntaxOnly": true,
+    // A documentation sample is written to be read, not to satisfy
+    // noImplicitAny. Turning strict on flags an untyped parameter in nearly
+    // every block and buries the findings this check exists for.
+    "strict": false
+  },
+  "include": ["generated/js/*.mts", "generated/js/*.cts"]
+}

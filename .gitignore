@@ -6,6 +6,9 @@ __pycache__/
 # Generated test modules
 tests/generated/
 
+# Packages the generated JS snippets import, restored from tests/package-lock.json
+tests/node_modules/
+
 # Coverage reports
 htmlcov/
 coverage.xml

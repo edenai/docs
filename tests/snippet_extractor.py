@@ -17,13 +17,18 @@ def _fence_re(languages: str) -> re.Pattern:
     nothing counted them as skipped either.
     """
     return re.compile(
-        rf"^[ \t]*```(?:{languages})(?:[ \t]+[^\n]*?)?[ \t]*\n(.*?)^\s*```",
+        rf"^[ \t]*```(?P<lang>{languages})(?:[ \t]+[^\n]*?)?[ \t]*\n"
+        r"(?P<code>.*?)^\s*```",
         re.MULTILINE | re.DOTALL,
     )
 
 
 CODE_BLOCK_RE = _fence_re("python")
 SHELL_BLOCK_RE = _fence_re("bash|shell|sh")
+
+# javascript and typescript share a runner, and the fence language is what
+# decides whether node is handed a .mjs or a .mts to strip types from.
+JS_BLOCK_RE = _fence_re("javascript|typescript|js|ts")
 
 # Either marker may carry a reason: {/* skip-test: why this cannot run */}
 _SKIP_COMMENT_RE = re.compile(r"\{/\*\s*skip-test\b[:\s]*(?P<reason>.*?)\s*\*/\}")
@@ -36,9 +41,9 @@ _PAID_COMMENT_RE = re.compile(r"\{/\*\s*paid-test\b[:\s]*(?P<reason>.*?)\s*\*/\}
 
 PAID_CALLS_ENV_VAR = "EDEN_AI_RUN_PAID_CALLS"
 
-_SANDBOX_TOKEN_VAR = "EDEN_AI_SANDBOX_API_TOKEN"
-_PRODUCTION_TOKEN_VAR = "EDEN_AI_PRODUCTION_API_TOKEN"
-_MANAGEMENT_KEY_VAR = "EDEN_AI_MANAGEMENT_KEY"
+SANDBOX_TOKEN_VAR = "EDEN_AI_SANDBOX_API_TOKEN"
+PRODUCTION_TOKEN_VAR = "EDEN_AI_PRODUCTION_API_TOKEN"
+MANAGEMENT_KEY_VAR = "EDEN_AI_MANAGEMENT_KEY"
 
 # Pages that act on real account resources rather than on a model, so the
 # sandbox token has nothing to act on. These cost nothing to run. Samples that
@@ -62,10 +67,10 @@ _PRODUCTION_BASE_URL_FILES = {
 PRODUCTION_BASE_URL = "https://api.edenai.run"
 
 
-def _token_var_for(source_mdx: str, paid: bool = False) -> str:
+def token_var_for(source_mdx: str, paid: bool = False) -> str:
     if paid or source_mdx in _PRODUCTION_TOKEN_FILES:
-        return _PRODUCTION_TOKEN_VAR
-    return _SANDBOX_TOKEN_VAR
+        return PRODUCTION_TOKEN_VAR
+    return SANDBOX_TOKEN_VAR
 
 
 API_KEY_PATTERNS = [
@@ -93,15 +98,15 @@ API_KEY_PATTERNS = [
 MANAGEMENT_KEY_PATTERNS = [
     (
         re.compile(r'f"Bearer\s+YOUR_MANAGEMENT_KEY"'),
-        f"f\"Bearer {{os.environ['{_MANAGEMENT_KEY_VAR}']}}\"",
+        f"f\"Bearer {{os.environ['{MANAGEMENT_KEY_VAR}']}}\"",
     ),
     (
         re.compile(r'"Bearer\s+YOUR_MANAGEMENT_KEY"'),
-        f"f\"Bearer {{os.environ['{_MANAGEMENT_KEY_VAR}']}}\"",
+        f"f\"Bearer {{os.environ['{MANAGEMENT_KEY_VAR}']}}\"",
     ),
     (
         re.compile(r'"YOUR_MANAGEMENT_KEY"'),
-        f'os.environ["{_MANAGEMENT_KEY_VAR}"]',
+        f'os.environ["{MANAGEMENT_KEY_VAR}"]',
     ),
 ]
 
@@ -112,15 +117,15 @@ MANAGEMENT_KEY_PATTERNS = [
 SANDBOX_TOKEN_PATTERNS = [
     (
         re.compile(r'f"Bearer\s+YOUR_SANDBOX_TOKEN"'),
-        f"f\"Bearer {{os.environ['{_SANDBOX_TOKEN_VAR}']}}\"",
+        f"f\"Bearer {{os.environ['{SANDBOX_TOKEN_VAR}']}}\"",
     ),
     (
         re.compile(r'"Bearer\s+YOUR_SANDBOX_TOKEN"'),
-        f"f\"Bearer {{os.environ['{_SANDBOX_TOKEN_VAR}']}}\"",
+        f"f\"Bearer {{os.environ['{SANDBOX_TOKEN_VAR}']}}\"",
     ),
     (
         re.compile(r'"YOUR_SANDBOX_TOKEN"'),
-        f'os.environ["{_SANDBOX_TOKEN_VAR}"]',
+        f'os.environ["{SANDBOX_TOKEN_VAR}"]',
     ),
 ]
 
@@ -180,11 +185,12 @@ def _extract_blocks(mdx_path: Path, fence_re: re.Pattern) -> list[dict]:
         paid = _first_marker(_PAID_COMMENT_RE, recent_lines)
         # A nested fence carries its own indentation, which is not part of the
         # sample.
-        code = textwrap.dedent(match.group(1))
+        code = textwrap.dedent(match.group("code"))
         line = preceding.count("\n") + 2
         blocks.append(
             {
                 "code": code,
+                "lang": match.group("lang"),
                 "line": line,
                 "skip": skip is not None,
                 "skip_reason": skip.group("reason") if skip else "",
@@ -195,24 +201,34 @@ def _extract_blocks(mdx_path: Path, fence_re: re.Pattern) -> list[dict]:
     return blocks
 
 
+# The placeholder vocabulary of the docs, shared by every runner. These match
+# what a page writes; how a reference to the resolved value is rendered is the
+# one part that differs per language ($VAR, ${process.env.VAR}, os.environ[...]),
+# and each runner owns that itself.
+MANAGEMENT_KEY_RE = re.compile(r"\bYOUR_MANAGEMENT_KEY\b")
+SANDBOX_TOKEN_RE = re.compile(r"\bYOUR_SANDBOX_TOKEN\b")
+FILE_PLACEHOLDER_RE = re.compile(r"\bYOUR_FILE_(?:UUID_OR_URL|ID)\b")
+API_KEY_RE = re.compile(r"\bYOUR_(?:EDEN_AI_)?API_KEY\b")
+BASE_URL_RE = re.compile(r"https://api\.edenai\.run")
+
+BASE_URL_VAR = "EDEN_AI_BASE_URL"
+
 # In a shell block a placeholder becomes a variable reference, which the runner
 # exports before running the script. Every Authorization header in the docs is
 # double quoted, which is what lets $VAR expand in place.
 _SHELL_PLACEHOLDERS = [
-    (re.compile(r"\bYOUR_MANAGEMENT_KEY\b"), _MANAGEMENT_KEY_VAR),
-    (re.compile(r"\bYOUR_SANDBOX_TOKEN\b"), _SANDBOX_TOKEN_VAR),
+    (MANAGEMENT_KEY_RE, MANAGEMENT_KEY_VAR),
+    (SANDBOX_TOKEN_RE, SANDBOX_TOKEN_VAR),
 ]
-
-_FILE_PLACEHOLDER_RE = re.compile(r"\bYOUR_FILE_(?:UUID_OR_URL|ID)\b")
 
 # The run uploads one document and one image, because an image model rejects a
 # PDF outright. Which one a sample wants is in the feature its model names.
-_IMAGE_MODEL_RE = re.compile(r'"model":\s*"image/')
-_TEST_FILE_VAR = "_EDEN_TEST_FILE_ID"
-_TEST_IMAGE_VAR = "_EDEN_TEST_IMAGE_ID"
-
-_SHELL_API_KEY_RE = re.compile(r"\bYOUR_(?:EDEN_AI_)?API_KEY\b")
-_SHELL_BASE_URL_RE = re.compile(r"https://api\.edenai\.run")
+# The key is quoted in JSON and bare in a JavaScript object literal, and the
+# quotes differ too, so the match has to allow all of it: getting this wrong
+# hands a sample the wrong fixture and the provider rejects it.
+IMAGE_MODEL_RE = re.compile(r"""["']?model["']?\s*:\s*["']image/""")
+TEST_FILE_VAR = "_EDEN_TEST_FILE_ID"
+TEST_IMAGE_VAR = "_EDEN_TEST_IMAGE_ID"
 
 # The shims are what make a shell block testable without touching the command
 # the page shows. curl exits 0 on a 4xx or 5xx unless told otherwise, so a
@@ -263,11 +279,11 @@ def shell_command(block: dict, source_mdx: str) -> str:
     code = block["code"]
     for pattern, var in _SHELL_PLACEHOLDERS:
         code = _sub_var(pattern, var, code)
-    file_var = _TEST_IMAGE_VAR if _IMAGE_MODEL_RE.search(code) else _TEST_FILE_VAR
-    code = _sub_var(_FILE_PLACEHOLDER_RE, file_var, code)
-    token_var = _token_var_for(source_mdx, block.get("paid", False))
-    code = _sub_var(_SHELL_API_KEY_RE, token_var, code)
-    return _SHELL_BASE_URL_RE.sub("$EDEN_AI_BASE_URL", code)
+    file_var = TEST_IMAGE_VAR if IMAGE_MODEL_RE.search(code) else TEST_FILE_VAR
+    code = _sub_var(FILE_PLACEHOLDER_RE, file_var, code)
+    token_var = token_var_for(source_mdx, block.get("paid", False))
+    code = _sub_var(API_KEY_RE, token_var, code)
+    return BASE_URL_RE.sub("$EDEN_AI_BASE_URL", code)
 
 
 def build_shell_script(block: dict, source_mdx: str) -> str:
@@ -286,7 +302,12 @@ def extract_shell_blocks(mdx_path: Path) -> list[dict]:
     return _extract_blocks(mdx_path, SHELL_BLOCK_RE)
 
 
-def replace_api_keys(code: str, token_var: str = _SANDBOX_TOKEN_VAR) -> str:
+def extract_js_blocks(mdx_path: Path) -> list[dict]:
+    """Extract all JavaScript and TypeScript code blocks from an .mdx file."""
+    return _extract_blocks(mdx_path, JS_BLOCK_RE)
+
+
+def replace_api_keys(code: str, token_var: str = SANDBOX_TOKEN_VAR) -> str:
     for pattern, replacement_template in API_KEY_PATTERNS:
         replacement = replacement_template.format(token_var=token_var)
         code = pattern.sub(replacement, code)
@@ -358,8 +379,8 @@ def build_module(blocks: list[dict], source_mdx: str) -> tuple[str, list[dict]]:
     for i, block in enumerate(blocks):
         func_name = f"block_{i + 1}"
         paid = block.get("paid", False)
-        token_var = _token_var_for(source_mdx, paid)
-        needs_production_token = token_var == _PRODUCTION_TOKEN_VAR
+        token_var = token_var_for(source_mdx, paid)
+        needs_production_token = token_var == PRODUCTION_TOKEN_VAR
         code = replace_management_keys(block["code"])
         code = replace_sandbox_tokens(code)
         code = replace_api_keys(code, token_var)
@@ -367,7 +388,7 @@ def build_module(blocks: list[dict], source_mdx: str) -> tuple[str, list[dict]]:
         code = replace_placeholder_file_id(code)
         line_num = block["line"]
         has_input = "input(" in code
-        needs_management_key = _MANAGEMENT_KEY_VAR in code
+        needs_management_key = MANAGEMENT_KEY_VAR in code
 
         module_lines.append("")
         module_lines.append("")
@@ -411,7 +432,7 @@ def sanitize_filename(mdx_path: Path) -> str:
     return name
 
 
-_EXTRACT_LOCK = GENERATED_DIR / ".extract.lock"
+EXTRACT_LOCK = GENERATED_DIR / ".extract.lock"
 
 
 def mdx_files() -> list[Path]:
@@ -433,32 +454,35 @@ def extract_all() -> list[dict]:
 
     results = []
 
-    for mdx_path in mdx_files():
-        blocks = extract_python_blocks(mdx_path)
-        if not blocks:
-            continue
+    # One acquisition for the whole pass rather than one per file. Every xdist
+    # worker imports every suite module and so runs this, and they all contend
+    # on the single lock file.
+    with FileLock(str(EXTRACT_LOCK)):
+        for mdx_path in mdx_files():
+            blocks = extract_python_blocks(mdx_path)
+            if not blocks:
+                continue
 
-        source_mdx = str(mdx_path.relative_to(DOCS_ROOT))
-        module_name = sanitize_filename(mdx_path)
-        module_code, block_functions = build_module(blocks, source_mdx)
-        generated_path = GENERATED_DIR / f"{module_name}.py"
+            source_mdx = str(mdx_path.relative_to(DOCS_ROOT))
+            module_name = sanitize_filename(mdx_path)
+            module_code, block_functions = build_module(blocks, source_mdx)
+            generated_path = GENERATED_DIR / f"{module_name}.py"
 
-        with FileLock(str(_EXTRACT_LOCK)):
             generated_path.write_text(module_code)
 
-        has_input = any(bf["has_input"] for bf in block_functions)
+            has_input = any(bf["has_input"] for bf in block_functions)
 
-        results.append(
-            {
-                "source_mdx": source_mdx,
-                "module_name": module_name,
-                "generated_path": str(generated_path),
-                "snippet_count": len(blocks),
-                "has_input": has_input,
-                "blocks": blocks,
-                "block_functions": block_functions,
-            }
-        )
+            results.append(
+                {
+                    "source_mdx": source_mdx,
+                    "module_name": module_name,
+                    "generated_path": str(generated_path),
+                    "snippet_count": len(blocks),
+                    "has_input": has_input,
+                    "blocks": blocks,
+                    "block_functions": block_functions,
+                }
+            )
 
     return results
 
@@ -516,39 +540,42 @@ def extract_all_shell() -> list[dict]:
     SHELL_DIR.mkdir(parents=True, exist_ok=True)
     results = []
 
-    for mdx_path in mdx_files():
-        blocks = extract_shell_blocks(mdx_path)
-        if not blocks:
-            continue
-
-        source_mdx = str(mdx_path.relative_to(DOCS_ROOT))
-        stem = sanitize_filename(mdx_path)
-
-        for i, block in enumerate(blocks):
-            if not _is_testable_shell(shell_command(block, source_mdx)):
+    # One acquisition for the whole pass rather than one per file. Every xdist
+    # worker imports every suite module and so runs this, and they all contend
+    # on the single lock file.
+    with FileLock(str(EXTRACT_LOCK)):
+        for mdx_path in mdx_files():
+            blocks = extract_shell_blocks(mdx_path)
+            if not blocks:
                 continue
-            script = build_shell_script(block, source_mdx)
-            script_path = SHELL_DIR / f"{stem}__block_{i + 1}.sh"
 
-            with FileLock(str(_EXTRACT_LOCK)):
+            source_mdx = str(mdx_path.relative_to(DOCS_ROOT))
+            stem = sanitize_filename(mdx_path)
+
+            for i, block in enumerate(blocks):
+                if not _is_testable_shell(shell_command(block, source_mdx)):
+                    continue
+                script = build_shell_script(block, source_mdx)
+                script_path = SHELL_DIR / f"{stem}__block_{i + 1}.sh"
+
                 script_path.write_text(script)
 
-            results.append(
-                {
-                    "source_mdx": source_mdx,
-                    "block_index": i + 1,
-                    "line": block["line"],
-                    "script_path": str(script_path),
-                    "skip": block.get("skip", False),
-                    "skip_reason": block.get("skip_reason", ""),
-                    "paid": block.get("paid", False),
-                    "paid_reason": block.get("paid_reason", ""),
-                    "needs_management_key": f"${_MANAGEMENT_KEY_VAR}" in script,
-                    "needs_production_token": f"${_PRODUCTION_TOKEN_VAR}" in script,
-                    "needs_test_file": _TEST_FILE_VAR in script
-                    or _TEST_IMAGE_VAR in script,
-                }
-            )
+                results.append(
+                    {
+                        "source_mdx": source_mdx,
+                        "block_index": i + 1,
+                        "line": block["line"],
+                        "script_path": str(script_path),
+                        "skip": block.get("skip", False),
+                        "skip_reason": block.get("skip_reason", ""),
+                        "paid": block.get("paid", False),
+                        "paid_reason": block.get("paid_reason", ""),
+                        "needs_management_key": f"${MANAGEMENT_KEY_VAR}" in script,
+                        "needs_production_token": f"${PRODUCTION_TOKEN_VAR}" in script,
+                        "needs_test_file": TEST_FILE_VAR in script
+                        or TEST_IMAGE_VAR in script,
+                    }
+                )
 
     return results
 

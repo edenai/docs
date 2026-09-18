@@ -1,6 +1,6 @@
 # Documentation Snippet Tests
 
-Automated test suite that extracts code snippets from `.mdx` documentation files and executes them against the Eden AI API. Python snippets become importable modules; shell snippets become scripts and are run with bash, so what gets tested is the command a reader would paste.
+Automated test suite that extracts code snippets from `.mdx` documentation files and executes them against the Eden AI API. Python snippets become importable modules; shell, JavaScript and TypeScript snippets become standalone scripts and are run with bash or node, so what gets tested is the code a reader would paste rather than a translation of it.
 
 ## Setup
 
@@ -14,6 +14,11 @@ uv pip install -r tests/requirements.txt
 
 # The Ask AI eval pipeline (tests/evals/) has its own file, which includes the above
 uv pip install -r tests/requirements-evals.txt
+
+# The packages the JavaScript and TypeScript samples import, and the tsc
+# that type-checks them. Needs node 24, which strips TypeScript types
+# without a flag. Skip this and those suites report as skipped.
+npm ci --prefix tests
 
 # Set up environment variables
 cp tests/.env.example tests/.env
@@ -119,9 +124,70 @@ quotes, so a placeholder there is spliced as `'"$VAR"'`. The run uploads a
 document and an image, and a sample gets whichever its model calls for: an
 image model rejects a PDF outright.
 
+### JavaScript and TypeScript Snippets
+
+Every `javascript` and `typescript` fence becomes its own script under
+`tests/generated/js/` and is run with node. No build step: a `.mjs` or `.cjs`
+runs as it is, and node strips the annotations off a `.mts` or `.cts` on load,
+which is why the extension carries the language. A block using `require()` and
+no `import` becomes CommonJS; everything else is ESM, because almost every
+sample here uses top-level `await`.
+
+`fetch` resolves on a 4xx or 5xx, exactly as curl exits 0 on one, so a block
+calling it is wrapped the way a curl block is: the sample is untouched and
+`globalThis.fetch` is replaced with one that throws on a failed response. The
+SDK blocks raise on their own and keep the real `fetch`.
+
+Placeholders resolve as they do elsewhere, but a JavaScript quote interpolates
+nothing, so `'Bearer YOUR_API_KEY'` becomes
+`` `Bearer ${process.env.EDEN_AI_SANDBOX_API_TOKEN}` ``: the quotes around the
+placeholder change with it. A sample reading `process.env.EDEN_AI_API_KEY`
+directly is already an expression and is substituted as it stands.
+
+A block runs only if node can run it at all: everything it imports has to be a
+builtin or one of the packages in `tests/package.json`. A React component, an
+Express receiver and an editor-extension registration cannot be run, so they
+are reported as skipped with the reason naming the package, rather than left
+to fail on a missing import or dropped from the run. `unrunnable_reason`
+produces that reason, and `tests/test_js_script.py` asserts that every JS fence
+in the docs turns up in the suite either way, so what the docs contain and what
+the suite looked at cannot quietly drift apart.
+
+The allowlist is read from `tests/package.json` rather than restated, so adding
+a package for a new sample is one edit. The builtins are deliberately not
+node's whole list: `child_process` and the networking modules would let a
+sample run other software on the runner, which is what the shell rules exist to
+prevent.
+
+A block node cannot run for a reason no import reveals, such as reading from an
+`<input>` element on the page, carries a `{/* skip-test: ... */}` marker like
+any other non-runnable block.
+
+The packages are pinned exactly and `tests/package-lock.json` is committed, so
+a run tests the docs rather than whatever npm resolved that morning. Install
+them with `npm ci` from `tests/`.
+
+#### Type checking
+
+Running a TypeScript block proves it executes; it does not prove it compiles,
+because node strips the types rather than checking them. `tsc --noEmit` runs
+over the generated `.mts` and `.cts` files against the real SDK typings, so a
+renamed option or a field the SDK no longer returns fails here even when the
+API tolerates it at runtime. It found two such bugs on its first run.
+
+`strict` is off: a documentation sample is written to be read, not to satisfy
+`noImplicitAny`, and turning it on flags an untyped parameter in nearly every
+block. `erasableSyntaxOnly` is on, because an `enum` or a `namespace` compiles
+fine and then fails the moment somebody runs the sample.
+
+This is also where a TypeScript block is syntax-checked. `node --check` is not
+used on it: it falls back to parsing a `.mts` as CommonJS when the file has no
+import of its own, and then reports a plain type annotation as a syntax error
+in a file node runs quite happily.
+
 ### Skipping Non-Runnable Snippets
 
-The same `{/* skip-test */}` and `{/* paid-test */}` markers work for shell blocks. A marker above a `<CodeGroup>` covers every fence in the group, and a marker directly above one fence covers only that fence.
+The same `{/* skip-test */}` and `{/* paid-test */}` markers work for shell, JavaScript and TypeScript blocks. A marker above a `<CodeGroup>` covers every fence in the group, and a marker directly above one fence covers only that fence.
 
 Some ` ```python ` blocks are illustrative fragments (e.g., `"model": "openai/gpt-4o"`) rather than valid standalone Python, and a few depend on something no test environment can supply (a package that has not shipped the code the page documents, a module that only exists inside another project's tree). To exclude a block from testing while preserving syntax highlighting, add an MDX comment before the fence:
 
@@ -180,8 +246,8 @@ it.
 
 The workflow at `.github/workflows/test-snippets.yml` runs on PRs that touch `v3/**/*.mdx` or `tests/**`:
 
-1. **Check snippet syntax**: parses every extracted snippet, Python and shell, with no credentials and no API calls, so it still reports a broken snippet on a run where the secrets are missing
-2. **Run Python snippets** and **Run shell snippets**: execution tests with the `EDEN_AI_SANDBOX_TOKEN`, `EDEN_AI_PRODUCTION_TOKEN` and `EDEN_AI_MANAGEMENT_KEY` secrets
+1. **Check snippet syntax**: parses every extracted snippet, Python, shell and JavaScript, and type-checks the TypeScript ones. No credentials and no API calls, so it still reports a broken snippet on a run where the secrets are missing. It needs the npm packages, which is why `npm ci` runs before it
+2. **Run Python snippets**, **Run shell snippets** and **Run JS and TS snippets**: execution tests with the `EDEN_AI_SANDBOX_TOKEN`, `EDEN_AI_PRODUCTION_TOKEN` and `EDEN_AI_MANAGEMENT_KEY` secrets
 
 It also runs weekly, Mondays at 06:00 UTC against `main`, because the docs go
 stale against a moving API even when nobody edits them. The weekly run is the
@@ -189,7 +255,7 @@ only scheduled one that sets `EDEN_AI_RUN_PAID_CALLS`, so the `paid-test`
 samples get their coverage there rather than on every pull request. A manual
 dispatch sets it too.
 
-Installs from `requirements-lock.txt` for reproducible builds.
+Installs from `requirements-lock.txt` and `tests/package-lock.json` for reproducible builds.
 
 To set up: add `EDEN_AI_SANDBOX_TOKEN`, `EDEN_AI_PRODUCTION_TOKEN` and `EDEN_AI_MANAGEMENT_KEY` as repository secrets in GitHub. Without `EDEN_AI_MANAGEMENT_KEY` the Management API samples are reported as skipped, not failed.
 

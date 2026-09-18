@@ -17,13 +17,15 @@ See `README.md` for repository structure, local development setup, and publishin
 
 ## Working with Documentation Snippets
 
-All Python snippets in the docs (under `v3/` and at the repo root) are automatically tested, and so are the curl and install commands in ` ```bash ` blocks. See `tests/README.md` for setup, running tests, and how to test specific pages.
+All Python snippets in the docs (under `v3/` and at the repo root) are automatically tested, and so are the curl and install commands in ` ```bash ` blocks and the samples in ` ```javascript ` and ` ```typescript ` blocks. See `tests/README.md` for setup, running tests, and how to test specific pages.
 
-- To inspect extracted snippets for a page, read the corresponding file in `tests/generated/` (e.g. `tests/generated/v3_how_to_discovery_explore_api.py` for `v3/how-to/discovery/explore-api.mdx`). Do NOT run the extractor or custom Python scripts — just read the generated file directly.
+- To inspect extracted snippets for a page, read the corresponding file in `tests/generated/` (e.g. `tests/generated/v3_how_to_discovery_explore_api.py` for `v3/how-to/discovery/explore-api.mdx`; shell blocks land in `tests/generated/sh/`, JS and TS in `tests/generated/js/`). Do NOT run the extractor or custom Python scripts — just read the generated file directly.
 - When a snippet test fails, **fix the snippet code** (add missing imports, correct logic, etc.) and if needed add dependencies to `tests/requirements.txt`. Do NOT use `{/* skip-test */}` to silence a fixable test failure — `skip-test` is only for genuinely non-runnable fragments, and every marker in the docs carries its reason as `{/* skip-test: why */}`, so write one.
 - If a snippet fails only because the sandbox returns canned prose where the sample needs the model to answer for real (JSON schema output, a pydantic `output_type`, an Instructor tool call), mark it `{/* paid-test: reason */}` rather than `skip-test`. That block then uses the production token and runs in the weekly CI run, not on every PR.
-- Every generated module is syntax-checked by `tests/test_snippets_compile.py`, including blocks that never execute, so a skipped snippet still cannot contain invalid Python or bash.
+- Every generated module is syntax-checked by `tests/test_snippets_compile.py`, including blocks that never execute, so a skipped snippet still cannot contain invalid Python, bash or JavaScript. The TypeScript blocks are type-checked there too, against the real SDK typings.
 - A shell block runs only if it is a curl call to Eden AI or a plain `pip`/`npm` install. Anything that drives other software (docker, git clone) is never turned into a script. Do NOT add such a command expecting it to be tested.
+- A JS or TS block runs only if node can run it: every import must be a node builtin or a package listed in `tests/package.json`. A block importing anything else (a React component, an Express receiver) is reported as SKIPPED with the reason naming the package, not dropped. If a new sample needs a package, add it to `tests/package.json` (pinned) and commit the refreshed lockfile; the allowlist is read from that file. A block node cannot run for a reason no import shows, such as reading from a browser `<input>`, needs a `{/* skip-test: why */}` marker like any other.
+- TypeScript samples must use erasable syntax only, because node runs them by stripping the annotations out. No `enum`, no `namespace`, no parameter properties: `tsc` rejects them so the sample cannot ship broken.
 - Skipped blocks still appear in test output (as `SKIPPED`) so the total snippet count stays visible. Failed tests include HTTP request/response details automatically.
 
 ## Common Pitfalls in .mdx Code Blocks

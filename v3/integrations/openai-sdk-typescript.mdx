@@ -271,7 +271,7 @@ async function analyzeImage() {
     }
   );
 
-  const { file_id } = await uploadResponse.json();
+  const { file_id } = (await uploadResponse.json()) as { file_id: string };
 
   // Use file_id in chat
   const stream = await client.chat.completions.create({
@@ -601,8 +601,6 @@ Programmatically discover models:
 
 <CodeGroup>
 ```typescript TypeScript
-import fetch from 'node-fetch';
-
 async function listModels() {
   const response = await fetch('https://api.edenai.run/v3/models', {
     headers: {

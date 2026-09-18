@@ -5,6 +5,7 @@ import os
 
 import pytest
 
+from tests.helpers.script_snippets import paid_calls_enabled
 from tests.snippet_extractor import (
     DEFAULT_BASE_URL,
     PAID_CALLS_ENV_VAR,
@@ -24,19 +25,6 @@ for _mod in _modules:
                 "module_name": _mod["module_name"],
             }
         )
-
-
-def _paid_calls_enabled() -> bool:
-    """Whether this run may spend credits on samples the sandbox cannot serve.
-
-    Off by default, so neither a docs PR nor a local run bills the account. The
-    weekly run turns it on, which is where these samples get their coverage.
-    """
-    return os.environ.get(PAID_CALLS_ENV_VAR, "").strip().lower() in {
-        "1",
-        "true",
-        "yes",
-    }
 
 
 def _case_id(case: dict) -> str:
@@ -63,7 +51,7 @@ def test_snippet_executes(test_case, fixtures_dir, monkeypatch):
         reason = test_case.get("skip_reason") or "no reason given"
         pytest.skip(f"marked with skip-test: {reason}")
 
-    if test_case["paid"] and not _paid_calls_enabled():
+    if test_case["paid"] and not paid_calls_enabled():
         reason = test_case.get("paid_reason") or "needs a real model answer"
         pytest.skip(f"spends credits ({reason}); set {PAID_CALLS_ENV_VAR}=1 to run")
 

@@ -80,6 +80,7 @@ curl -X POST https://api.edenai.run/v3/upload \
   -F "purpose=assistants"
     ```
 
+{/* skip-test: reads the file from an <input> element in a browser page, which node has no equivalent of */}
 ```javascript JavaScript
 const formData = new FormData();
 formData.append('file', fileInput.files[0]);

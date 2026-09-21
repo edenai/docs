@@ -38,6 +38,16 @@ Every link on every published page is checked by `tests/test_links.py`, which re
 - Links inside code fences are examples, not links, and are ignored. Do not rely on that to park a link that does not resolve.
 - The links that leave the docs, and the two OpenAPI specs the API reference tabs render from, are in `tests/test_links_external.py`. The specs are checked on every run; the third-party links only on the weekly one, since they depend on somebody else's site being up.
 
+## Configuration Blocks on Integration Pages
+
+The JSON, YAML and TOML blocks under `v3/integrations/` are configuration a reader pastes into another tool, so nothing runs them. `tests/test_config_blocks.py` parses each one and checks every name inside it. See `tests/README.md` for the details.
+
+- A block must parse as the language its fence declares. If it is a fragment or a menu of alternative values for one key rather than a whole file, mark it `{/* skip-test: why */}` like any other block. The model ids inside it are still checked.
+- Every model a config names must exist in the live catalog, which is the union of seven routes. Do NOT check a new model id against `/v3/models` alone: that route is chat only, and an embeddings or image model will look invalid.
+- A base URL is checked by requesting `/models` underneath it, because `https://api.edenai.run/v3` on its own answers 404 by design.
+- What counts as a model id is decided by the catalog's own provider list, not a hardcoded one, so `image/gif` and `ghcr.io/open-webui/open-webui:main` are correctly not models. A new provider needs no change here.
+- `nginx` blocks are out of scope: no parser reads them and they name no models.
+
 ## Common Pitfalls in .mdx Code Blocks
 
 - Double underscores (`__name__`) can render as bold in some contexts — always verify inside code fences

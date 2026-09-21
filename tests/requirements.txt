@@ -13,6 +13,8 @@ langgraph~=1.0
 chromadb
 pydantic
 python-dotenv
+# reads the YAML configuration blocks on the integration pages
+PyYAML
 aiohttp
 PyPDF2
 Pillow

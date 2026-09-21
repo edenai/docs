@@ -276,13 +276,51 @@ knowing before you add a check:
   in `tests/links.py`. A test reads those scripts to confirm each one really
   is bound, so the allowlist cannot become somewhere a broken anchor hides.
 
+## Configuration blocks
+
+The integration pages hand a reader a file to paste into some other program:
+Continue, Kilo Code, LibreChat, Codex CLI, OpenCode. There is no code to run,
+so no snippet runner covers them. `tests/test_config_blocks.py` covers the
+JSON, YAML and TOML blocks under `v3/integrations/` instead, and checks the
+three things that can be wrong with a config:
+
+- **It parses** as the language its fence declares, so pasting it does not
+  break the file it goes in.
+- **Every model it names is one Eden AI serves.** The catalog is the union of
+  seven routes, because `/v3/models` is hardcoded to the chat endpoints and
+  lists chat models only. A config that sets an embeddings model alongside its
+  chat models would be called broken by `/v3/models` alone.
+- **Every Eden AI URL points at something.** A base URL is checked by asking
+  for `/models` underneath it, since a base URL on its own answers 404 by
+  design and always will.
+
+This runs on every pull request rather than weekly, unlike the third-party
+links. The split is about whose site has to be up: the model catalog is Eden
+AI's own public API, needs no credential, and a model id going stale is worth
+catching on the pull request that introduces it.
+
+Working out what is a model id is most of the job here, and it is decided by
+data rather than by a list. A config block is full of strings with a slash in
+them that are not models: docker volume mounts, image tags, MIME types, URLs.
+A shape rule drops what cannot be an id at all, and then only what begins with
+a provider the catalog actually lists is treated as a model. That is why
+`image/gif` is not a model reference and nothing had to say so.
+
+A block that is not a whole file, a menu of alternative values for one key or
+a single line of a larger document, carries the same
+`{/* skip-test: reason */}` marker every other runner honours. The names
+inside it are still checked, because a menu of models goes stale like any
+other. `nginx` blocks are out of scope: no parser reads them and they name no
+models.
+
 ## CI (GitHub Actions)
 
 The workflow at `.github/workflows/test-snippets.yml` runs on PRs that touch `v3/**/*.mdx`, `docs.json`, `snippets/**` or `tests/**`:
 
 1. **Check snippet syntax**: parses every extracted snippet, Python, shell and JavaScript, and type-checks the TypeScript ones. No credentials and no API calls, so it still reports a broken snippet on a run where the secrets are missing. It needs the npm packages, which is why `npm ci` runs before it
 2. **Check documentation links**: follows every link on every page, and fetches the two OpenAPI specs the API reference tabs render from. No credentials
-3. **Run Python snippets**, **Run shell snippets** and **Run JS and TS snippets**: execution tests with the `EDEN_AI_SANDBOX_TOKEN`, `EDEN_AI_PRODUCTION_TOKEN` and `EDEN_AI_MANAGEMENT_KEY` secrets
+3. **Check integration configuration blocks**: parses the JSON, YAML and TOML config on the integration pages and checks every model and URL it names against the live catalog. No credentials
+4. **Run Python snippets**, **Run shell snippets** and **Run JS and TS snippets**: execution tests with the `EDEN_AI_SANDBOX_TOKEN`, `EDEN_AI_PRODUCTION_TOKEN` and `EDEN_AI_MANAGEMENT_KEY` secrets
 
 It also runs weekly, Mondays at 06:00 UTC against `main`, because the docs go
 stale against a moving API even when nobody edits them. The weekly run is the

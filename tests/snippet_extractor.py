@@ -30,6 +30,11 @@ SHELL_BLOCK_RE = _fence_re("bash|shell|sh")
 # decides whether node is handed a .mjs or a .mts to strip types from.
 JS_BLOCK_RE = _fence_re("javascript|typescript|js|ts")
 
+# Configuration a reader pastes into another tool's config file. There is no
+# program to run, so these are parsed and read rather than executed. nginx is
+# deliberately absent: no parser reads it and it names no Eden AI models.
+CONFIG_BLOCK_RE = _fence_re("json|yaml|yml|toml")
+
 # Either marker may carry a reason: {/* skip-test: why this cannot run */}
 _SKIP_COMMENT_RE = re.compile(r"\{/\*\s*skip-test\b[:\s]*(?P<reason>.*?)\s*\*/\}")
 
@@ -305,6 +310,11 @@ def extract_shell_blocks(mdx_path: Path) -> list[dict]:
 def extract_js_blocks(mdx_path: Path) -> list[dict]:
     """Extract all JavaScript and TypeScript code blocks from an .mdx file."""
     return _extract_blocks(mdx_path, JS_BLOCK_RE)
+
+
+def extract_config_blocks(mdx_path: Path) -> list[dict]:
+    """Extract all JSON, YAML and TOML config blocks from an .mdx file."""
+    return _extract_blocks(mdx_path, CONFIG_BLOCK_RE)
 
 
 def replace_api_keys(code: str, token_var: str = SANDBOX_TOKEN_VAR) -> str:

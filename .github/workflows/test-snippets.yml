@@ -87,6 +87,11 @@ jobs:
         env:
           EDEN_AI_CHECK_EXTERNAL_LINKS: ${{ github.event_name != 'pull_request' }}
 
+      # Needs no credential: the model catalog is public.
+      - name: Check integration configuration blocks
+        if: always()
+        run: pytest tests/test_config_blocks.py --no-cov
+
       - name: Run Python snippets
         run: pytest tests/test_snippets_execute.py
         env:

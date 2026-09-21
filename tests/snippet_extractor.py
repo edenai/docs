@@ -438,9 +438,10 @@ EXTRACT_LOCK = GENERATED_DIR / ".extract.lock"
 def mdx_files() -> list[Path]:
     """Every published documentation page, in a stable order.
 
-    The published tree is v3/ plus the pages at the repo root. Anything else
-    (ai-tools/, snippets/) is absent from docs.json and is not a page. Shared
-    so the checks that walk the docs cannot disagree about what a page is.
+    The published tree is v3/ plus the pages at the repo root. A file under
+    snippets/ is absent from docs.json and is not a page: it is included into
+    one. Shared so the checks that walk the docs cannot disagree about what a
+    page is.
     """
     return sorted([*DOCS_ROOT.glob("v3/**/*.mdx"), *DOCS_ROOT.glob("*.mdx")])
 

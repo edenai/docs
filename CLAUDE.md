@@ -28,6 +28,16 @@ All Python snippets in the docs (under `v3/` and at the repo root) are automatic
 - TypeScript samples must use erasable syntax only, because node runs them by stripping the annotations out. No `enum`, no `namespace`, no parameter properties: `tsc` rejects them so the sample cannot ship broken.
 - Skipped blocks still appear in test output (as `SKIPPED`) so the total snippet count stays visible. Failed tests include HTTP request/response details automatically.
 
+## Links
+
+Every link on every published page is checked by `tests/test_links.py`, which reads files and makes no requests. See `tests/README.md` for the details.
+
+- A link to a page that does not exist fails the build, as does an anchor naming a heading the target page does not have. Anchors follow github-slugger: `## Extended Thinking (Claude)` is `#extended-thinking-claude`.
+- Renaming or deleting a page means updating `docs.json` and every page that links to it. A page that ends up in neither the navigation nor any other page's links fails the reachability check, because nobody can reach it.
+- `#chat` and `#manage-cookies` are click targets bound by `intercom-chat.js` and `cookie-consent.js`, not headings. They are allowlisted in `tests/links.py`, and a test confirms each is really bound. Do NOT add an entry there to silence a broken anchor.
+- Links inside code fences are examples, not links, and are ignored. Do not rely on that to park a link that does not resolve.
+- The links that leave the docs, and the two OpenAPI specs the API reference tabs render from, are in `tests/test_links_external.py`. The specs are checked on every run; the third-party links only on the weekly one, since they depend on somebody else's site being up.
+
 ## Common Pitfalls in .mdx Code Blocks
 
 - Double underscores (`__name__`) can render as bold in some contexts — always verify inside code fences

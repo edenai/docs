@@ -16,6 +16,7 @@ from pathlib import Path
 
 import pytest
 
+from tests.helpers.env import env_flag
 from tests.snippet_extractor import (
     DEFAULT_BASE_URL,
     MANAGEMENT_KEY_VAR,
@@ -35,11 +36,7 @@ def paid_calls_enabled() -> bool:
     Off by default, so neither a docs PR nor a local run bills the account. The
     weekly run turns it on, which is where these samples get their coverage.
     """
-    return os.environ.get(PAID_CALLS_ENV_VAR, "").strip().lower() in {
-        "1",
-        "true",
-        "yes",
-    }
+    return env_flag(PAID_CALLS_ENV_VAR)
 
 
 def skip_unless_runnable(block: dict) -> None:

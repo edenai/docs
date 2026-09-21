@@ -1,6 +1,6 @@
 # Documentation Snippet Tests
 
-Automated test suite that extracts code snippets from `.mdx` documentation files and executes them against the Eden AI API. Python snippets become importable modules; shell, JavaScript and TypeScript snippets become standalone scripts and are run with bash or node, so what gets tested is the code a reader would paste rather than a translation of it.
+Automated test suite that checks the documentation against reality. It extracts the code snippets from `.mdx` files and executes them against the Eden AI API: Python snippets become importable modules; shell, JavaScript and TypeScript snippets become standalone scripts and are run with bash or node, so what gets tested is the code a reader would paste rather than a translation of it. It also follows every link on every published page, which is the other half of a page being correct.
 
 ## Setup
 
@@ -34,6 +34,7 @@ cp tests/.env.example tests/.env
 | `EDEN_AI_MANAGEMENT_KEY` | Optional | Management key (`mgmt-eden-...`, `manage:read` + `manage:write`), needed by Management API samples (custom API keys, sandbox key creation, monitoring). Samples mint real inference keys in the key's organization; the run revokes them on the way out, and clears any left by a cancelled run before it starts. Cleanup only ever touches keys named after the samples (`production-v1`, `team-backend`, `team-daily`, `dev-testing`). Skipped if not set |
 | `EDEN_AI_BASE_URL` | Optional | Defaults to `https://staging-api.edenai.run`. CI runs against production. The integration guides that drive Eden AI through a framework holding a hardcoded production endpoint (Haystack) are reported as skipped anywhere else |
 | `EDEN_AI_RUN_PAID_CALLS` | Optional | Off by default, so neither a docs PR nor a local run bills the account. Set to `1` to also run the samples marked `{/* paid-test */}`, which need the model to answer for real. CI turns it on for the weekly run and for a manual dispatch, never for a pull request |
+| `EDEN_AI_CHECK_EXTERNAL_LINKS` | Optional | Off by default. Set to `1` to also follow the links that leave the docs. They depend on somebody else's site being up, so CI checks them on the weekly run rather than on a pull request |
 | `EDENAI_API_KEY` | Set for you | Not something you fill in: the suite publishes the token above under this name because the integration frameworks (any-llm, Haystack, Atomic Agents) read the key from the environment rather than taking it as an argument |
 
 ## Running Tests
@@ -242,18 +243,53 @@ Reach for this only when the sandbox genuinely cannot serve the sample. It buys
 coverage with money, so a block that would pass on the sandbox should not carry
 it.
 
+## Links
+
+`tests/test_links.py` follows every link on every published page: internal
+links, relative links to a sibling page, anchors to a section, and images. It
+reads files and makes no requests, so it runs on every pull request and needs
+nothing set up. It also checks that `docs.json` names no page that has been
+deleted, and that no published page has become unreachable, meaning nothing in
+the navigation and no other page points at it.
+
+`tests/test_links_external.py` needs the network. It has two halves:
+
+- The **OpenAPI specs** `docs.json` points the API reference tabs at. Mintlify
+  renders those tabs by fetching the spec, so one that stops resolving, or
+  answers with something that is not a spec, empties a section of the site
+  without anything in this repository changing. Checked on every run.
+- The **external links**, everything the docs send a reader to. Checked only
+  when `EDEN_AI_CHECK_EXTERNAL_LINKS` is set, which CI does on the weekly run.
+  A pull request should not go red because someone else's site is down.
+
+Working out what is *not* a link is most of the job, so three rules are worth
+knowing before you add a check:
+
+- Code is blanked out first, fenced and inline. An MDX page documents MDX, so
+  a fence can contain link markup that is an example rather than a link. The
+  blanking keeps the line count, so a failure names the line you will open.
+- Headings are read from the same blanked text. A Python comment inside a
+  fence starts with `#`, and a heading scan that does not blank fences first
+  invents headings for a broken anchor to resolve against.
+- `#chat` and `#manage-cookies` are not headings. They are click targets bound
+  by `intercom-chat.js` and `cookie-consent.js`, listed in `JS_HOOK_ANCHORS`
+  in `tests/links.py`. A test reads those scripts to confirm each one really
+  is bound, so the allowlist cannot become somewhere a broken anchor hides.
+
 ## CI (GitHub Actions)
 
-The workflow at `.github/workflows/test-snippets.yml` runs on PRs that touch `v3/**/*.mdx` or `tests/**`:
+The workflow at `.github/workflows/test-snippets.yml` runs on PRs that touch `v3/**/*.mdx`, `docs.json`, `snippets/**` or `tests/**`:
 
 1. **Check snippet syntax**: parses every extracted snippet, Python, shell and JavaScript, and type-checks the TypeScript ones. No credentials and no API calls, so it still reports a broken snippet on a run where the secrets are missing. It needs the npm packages, which is why `npm ci` runs before it
-2. **Run Python snippets**, **Run shell snippets** and **Run JS and TS snippets**: execution tests with the `EDEN_AI_SANDBOX_TOKEN`, `EDEN_AI_PRODUCTION_TOKEN` and `EDEN_AI_MANAGEMENT_KEY` secrets
+2. **Check documentation links**: follows every link on every page, and fetches the two OpenAPI specs the API reference tabs render from. No credentials
+3. **Run Python snippets**, **Run shell snippets** and **Run JS and TS snippets**: execution tests with the `EDEN_AI_SANDBOX_TOKEN`, `EDEN_AI_PRODUCTION_TOKEN` and `EDEN_AI_MANAGEMENT_KEY` secrets
 
 It also runs weekly, Mondays at 06:00 UTC against `main`, because the docs go
 stale against a moving API even when nobody edits them. The weekly run is the
-only scheduled one that sets `EDEN_AI_RUN_PAID_CALLS`, so the `paid-test`
-samples get their coverage there rather than on every pull request. A manual
-dispatch sets it too.
+only scheduled one that sets `EDEN_AI_RUN_PAID_CALLS` and
+`EDEN_AI_CHECK_EXTERNAL_LINKS`, so the `paid-test` samples and the third-party
+links get their coverage there rather than on every pull request. A manual
+dispatch sets both too.
 
 Installs from `requirements-lock.txt` and `tests/package-lock.json` for reproducible builds.
 

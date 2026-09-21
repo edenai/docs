@@ -6,6 +6,10 @@ on:
     paths:
       - 'v3/**/*.mdx'
       - '*.mdx'
+      # A link breaks when a page is renamed in the navigation or a shared
+      # snippet changes, neither of which touches a page.
+      - 'docs.json'
+      - 'snippets/**'
       - 'tests/**'
   # The docs go stale against a moving API even when nobody edits them: a model
   # is retired, a response shape changes, a linked page moves. A PR run only
@@ -66,6 +70,22 @@ jobs:
         run: pytest tests/test_snippets_compile.py tests/test_snippet_extractor.py tests/test_js_script.py --no-cov
         env:
           EDEN_AI_BASE_URL: ${{ vars.EDEN_AI_BASE_URL || 'https://staging-api.edenai.run' }}
+
+      # A reader hits a broken link far more often than a broken snippet, and
+      # never reports it. These read files and make no requests, so they cost
+      # nothing on a pull request. The two OpenAPI specs are the exception:
+      # Mintlify renders the API reference tabs by fetching them, so a spec
+      # that stops resolving empties a section of the site with nothing here
+      # having changed, and that is worth a request on every run.
+      #
+      # The third-party links are checked on the weekly run instead. Fifteen
+      # of them are github.com, which rate-limits an unauthenticated runner,
+      # and a docs PR should not go red because somebody else's site is down.
+      - name: Check documentation links
+        if: always()
+        run: pytest tests/test_links.py tests/test_links_external.py --no-cov
+        env:
+          EDEN_AI_CHECK_EXTERNAL_LINKS: ${{ github.event_name != 'pull_request' }}
 
       - name: Run Python snippets
         run: pytest tests/test_snippets_execute.py

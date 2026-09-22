@@ -2,6 +2,7 @@
 title: "System One (Decisions)"
 description: "Ask typed questions about text and get calibrated probabilities back instead of prose. One request, no streaming, billed on input only."
 icon: "scale-balanced"
+tag: "Alpha"
 ---
 
 
@@ -23,15 +24,23 @@ A System One model answers **typed questions about text**. You send some state a
 
 It never writes prose. That is the point: the answer is a value your code can branch on without parsing, and the schema is guaranteed.
 
+<Warning>
+**Alpha.** This endpoint is new. Its request and response shapes, the model ids it
+exposes, and its pricing can change in ways that break existing integrations, and
+they can change without a deprecation period. It is safe to experiment with and
+risky to put on a critical path. If you do depend on it, keep the call behind a
+small adapter of your own so a shape change is one edit rather than many.
+</Warning>
+
 ## When to use one
 
 Reach for this when you are making the same small judgement over and over and the possible answers are known in advance:
 
-- **Routing** — which team, queue, or model should handle this?
-- **Classification** — which category, out of up to 255?
-- **Triage and scoring** — how severe, how urgent, how positive, on your own rubric?
-- **Gating** — is this a refund request, is this spam, is this ready to send?
-- **Cheap pre-filters** — decide whether an expensive model needs to run at all.
+- **Routing**: which team, queue, or model should handle this?
+- **Classification**: which category, out of up to 255?
+- **Triage and scoring**: how severe, how urgent, how positive, on your own rubric?
+- **Gating**: is this a refund request, is this spam, is this ready to send?
+- **Cheap pre-filters**: decide whether an expensive model needs to run at all.
 
 It is the wrong tool for anything that needs words back: chat, summarisation, extraction, code, or an explanation of its own reasoning. Use [chat completions](/v3/llms/chat-completions) for those.
 
@@ -88,7 +97,7 @@ curl https://api.edenai.run/v3/systemone/models
 
 Every question has a `type` and, optionally, `instructions`. What `criteria` means depends on the type.
 
-### `noul` — is this true?
+### `noul`: is this true?
 
 Returns a single probability from 0 to 1. Values near 1 mean yes, near 0 mean no, and near 0.5 mean the model is genuinely unsure.
 
@@ -103,7 +112,7 @@ Returns a single probability from 0 to 1. Values near 1 mean yes, near 0 mean no
 { "type": "noul", "noul": 0.98 }
 ```
 
-### `choice` — which one of these?
+### `choice`: which one of these?
 
 Returns the winning option plus the probability of every option and a confidence. Up to 255 options.
 
@@ -128,7 +137,7 @@ Returns the winning option plus the probability of every option and a confidence
 }
 ```
 
-### `score` — which level?
+### `score`: which level?
 
 Returns a position on your rubric. `criteria` is an **ordered** list, and the score is the probability-weighted average, so it can land between levels. The `legend` echoes your rubric back so you can read the number.
 
@@ -370,6 +379,6 @@ Validation is done by the provider and passed through unchanged, so you get the 
 
 ## Related
 
-- [Chat completions](/v3/llms/chat-completions) — when you need words back.
-- [Listing models](/v3/llms/listing-models) — discovery across every V3 catalog.
-- [Structured output](/v3/llms/structured-output) — when you want a schema-shaped answer out of a generative model instead.
+- [Chat completions](/v3/llms/chat-completions), for when you need words back.
+- [Listing models](/v3/llms/listing-models), for discovery across every V3 catalog.
+- [Structured output](/v3/llms/structured-output), for when you want a schema-shaped answer out of a generative model instead.

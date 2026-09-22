@@ -123,17 +123,17 @@ endpoints:
       models:
         default:
           - "anthropic/claude-sonnet-latest"
-          - "openai/gpt-4"
-          - "openai/gpt-4-turbo"
-          - "google/gemini-2.5-pro"
-          - "google/gemini-2.5-flash"
+          - "openai/gpt-latest"
+          - "openai/gpt-latest"
+          - "vertex/gemini-2.5-pro"
+          - "vertex/gemini-flash-latest"
           - "cohere/command-a-03-2025"
-          - "openai/gpt-3.5-turbo"
+          - "openai/gpt-mini-latest"
         fetch: false
       titleConvo: true
-      titleModel: "openai/gpt-3.5-turbo"
+      titleModel: "openai/gpt-mini-latest"
       summarize: false
-      summaryModel: "openai/gpt-3.5-turbo"
+      summaryModel: "openai/gpt-mini-latest"
       forcePrompt: false
       modelDisplayLabel: "Eden AI"
 ```
@@ -167,9 +167,9 @@ endpoints:
       models:
         default:
           - "anthropic/claude-sonnet-latest"
-          - "anthropic/claude-opus-4-5"
+          - "anthropic/claude-opus-latest"
           - "anthropic/claude-sonnet-latest"
-          - "anthropic/claude-haiku-4-5"
+          - "anthropic/claude-haiku-latest"
       modelDisplayLabel: "Claude (Eden AI)"
 
     - name: "Eden AI - OpenAI"
@@ -177,10 +177,10 @@ endpoints:
       baseURL: "https://api.edenai.run/v3"
       models:
         default:
-          - "openai/gpt-4"
-          - "openai/gpt-4-turbo"
-          - "openai/gpt-4o"
-          - "openai/gpt-3.5-turbo"
+          - "openai/gpt-latest"
+          - "openai/gpt-latest"
+          - "openai/gpt-latest"
+          - "openai/gpt-mini-latest"
       modelDisplayLabel: "OpenAI (Eden AI)"
 
     - name: "Eden AI - Google"
@@ -188,8 +188,8 @@ endpoints:
       baseURL: "https://api.edenai.run/v3"
       models:
         default:
-          - "google/gemini-2.5-pro"
-          - "google/gemini-2.5-flash"
+          - "vertex/gemini-2.5-pro"
+          - "vertex/gemini-flash-latest"
       modelDisplayLabel: "Google (Eden AI)"
 ```
 </CodeGroup>
@@ -218,8 +218,8 @@ endpoints:
       baseURL: "https://api.edenai.run/v3"
       models:
         default:
-          - "openai/gpt-4o"
-          - "google/gemini-2.5-pro"
+          - "openai/gpt-latest"
+          - "vertex/gemini-2.5-pro"
           - "anthropic/claude-sonnet-latest"
       # Enable file uploads
       fileConfig:
@@ -251,7 +251,7 @@ endpoints:
       models:
         default:
           - "anthropic/claude-sonnet-latest"
-          - "openai/gpt-4"
+          - "openai/gpt-latest"
       # Add custom presets
       presets:
         - title: "Code Assistant"
@@ -260,12 +260,12 @@ endpoints:
           system_message: "You are an expert programmer. Provide clean, well-documented code."
 
         - title: "Creative Writer"
-          model: "openai/gpt-4"
+          model: "openai/gpt-latest"
           temperature: 0.9
           system_message: "You are a creative writer. Be imaginative and engaging."
 
         - title: "Data Analyst"
-          model: "google/gemini-2.5-pro"
+          model: "vertex/gemini-2.5-pro"
           temperature: 0.3
           system_message: "You are a data analyst. Provide clear, data-driven insights."
 ```
@@ -471,7 +471,7 @@ If responses are slow:
 
 1. **Use faster models** for chat titles:
    ```yaml
-   titleModel: "openai/gpt-3.5-turbo"
+   titleModel: "openai/gpt-mini-latest"
    ```
 
 2. **Disable unnecessary features**:
@@ -580,9 +580,9 @@ endpoints:
   custom:
     - name: "Eden AI"
       # Use GPT-3.5 for titles (cheaper)
-      titleModel: "openai/gpt-3.5-turbo"
+      titleModel: "openai/gpt-mini-latest"
       # Use Claude Haiku for summaries (fast & cheap)
-      summaryModel: "anthropic/claude-haiku-4-5"
+      summaryModel: "anthropic/claude-haiku-latest"
 ```
 </CodeGroup>
 

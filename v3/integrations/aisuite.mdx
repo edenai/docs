@@ -24,7 +24,7 @@ Use aisuite with Eden AI to call 500+ AI models through one unified, OpenAI-styl
 
 [aisuite](https://github.com/andrewyng/aisuite) is a lightweight Python library (from Andrew Ng's team) that gives you a single, OpenAI-style Chat Completions interface across many providers — swap providers by changing one string. **Eden AI is a built-in aisuite provider**, so you reach models from OpenAI, Anthropic, Google, Mistral, Cohere, Meta and more behind one key, with EU-based, GDPR-aligned inference.
 
-You select a model with the `provider:model_id` syntax. For Eden AI, the provider is `edenai` and the model id follows Eden AI's `provider/model` scheme — for example `edenai:anthropic/claude-sonnet-5`.
+You select a model with the `provider:model_id` syntax. For Eden AI, the provider is `edenai` and the model id follows Eden AI's `provider/model` scheme — for example `edenai:vertex/gemini-flash-latest`.
 
 ## Installation
 
@@ -62,7 +62,7 @@ import aisuite as ai
 client = ai.Client()
 
 response = client.chat.completions.create(
-    model="edenai:anthropic/claude-sonnet-5",  # edenai:<provider>/<model>
+    model="edenai:vertex/gemini-flash-latest",  # edenai:<provider>/<model>
     messages=[
         {"role": "system", "content": "You are a helpful assistant."},
         {"role": "user", "content": "Hello! How are you?"},
@@ -89,8 +89,8 @@ messages = [{"role": "user", "content": "Write a haiku about the sea."}]
 
 for model in [
     "edenai:openai/gpt-5.5",
-    "edenai:anthropic/claude-sonnet-5",
-    "edenai:mistral/mistral-large-2512",
+    "edenai:anthropic/claude-sonnet-latest",
+    "edenai:mistral/mistral-large-latest",
 ]:
     response = client.chat.completions.create(model=model, messages=messages)
     print(model, "->", response.choices[0].message.content)
@@ -106,17 +106,17 @@ Use the `edenai:<provider>/<model>` format for any Eden AI model:
 - `edenai:openai/gpt-5-mini`
 
 **Anthropic**
-- `edenai:anthropic/claude-sonnet-5`
-- `edenai:anthropic/claude-opus-4-8`
-- `edenai:anthropic/claude-haiku-4-5`
+- `edenai:anthropic/claude-sonnet-latest`
+- `edenai:anthropic/claude-opus-latest`
+- `edenai:anthropic/claude-haiku-latest`
 
 **Google**
-- `edenai:google/gemini-2.5-pro`
-- `edenai:google/gemini-3.5-flash`
+- `edenai:vertex/gemini-2.5-pro`
+- `edenai:vertex/gemini-flash-latest`
 
 **Mistral**
-- `edenai:mistral/mistral-large-2512`
-- `edenai:mistral/mistral-small-2603`
+- `edenai:mistral/mistral-large-latest`
+- `edenai:mistral/mistral-small-latest`
 
 ## Passing configuration explicitly
 
@@ -130,7 +130,7 @@ import aisuite as ai
 client = ai.Client({"edenai": {"api_key": "YOUR_EDENAI_API_KEY"}})
 
 response = client.chat.completions.create(
-    model="edenai:mistral/mistral-large-2512",
+    model="edenai:mistral/mistral-large-latest",
     messages=[{"role": "user", "content": "Say hello in French."}],
 )
 print(response.choices[0].message.content)

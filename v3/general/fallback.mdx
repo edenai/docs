@@ -53,8 +53,8 @@ Add a `fallbacks` array to your request with one or more backup models (LLM) or 
     }
 
     payload = {
-        "model": "google/gemini-2.5-pro",
-        "fallbacks": ["openai/gpt-4o"],
+        "model": "vertex/gemini-2.5-pro",
+        "fallbacks": ["openai/gpt-latest"],
         "messages": [
             {"role": "user", "content": [{"type": "text", "text": "hi"}]}
         ],
@@ -72,8 +72,8 @@ Add a `fallbacks` array to your request with one or more backup models (LLM) or 
       -H "Authorization: Bearer YOUR_API_KEY" \
       -H "Content-Type: application/json" \
       -d '{
-        "model": "google/gemini-2.5-pro",
-        "fallbacks": ["openai/gpt-4o"],
+        "model": "vertex/gemini-2.5-pro",
+        "fallbacks": ["openai/gpt-latest"],
         "messages": [{"role": "user", "content": [{"type": "text", "text": "hi"}]}],
         "reasoning_effort": "none"
       }'
@@ -161,7 +161,7 @@ To turn it off and have the request fail on the first provider instead:
 ## Things worth knowing
 
 - **Repeats are kept, not deduplicated.** Listing the same model twice (`["a/m", "b/m", "a/m"]`) means it is genuinely attempted twice. A rate limit or a 5xx does not repeat deterministically, and Eden AI never re-attempts the *same* target on its own, so a deliberate repeat is the only way to get one. Trying a *different* provider of the same model is a separate mechanism: provider-level failover, which applies to provider-less names unless you set `routing.allow_fallbacks: false` (see above).
-- **A provider-less name works in `fallbacks` too.** It resolves to one provider of that model, so `{"model": "openai/gpt-4o", "fallbacks": ["gpt-5.6-sol"]}` is valid.
+- **A provider-less name works in `fallbacks` too.** It resolves to one provider of that model, so `{"model": "openai/gpt-latest", "fallbacks": ["gpt-5.6-sol"]}` is valid.
 - **Region tags are per entry.** `{"model": "<model>@eu", "fallbacks": ["<model>@us"]}` is two attempts in two regions, not one model with one region.
 - **Failed attempts cost nothing.** You are billed only for the attempt that produced a response.
 

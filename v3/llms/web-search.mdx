@@ -40,7 +40,7 @@ headers = {
 }
 
 payload = {
-    "model": "google/gemini-flash-latest",
+    "model": "vertex/gemini-flash-latest",
     "messages": [
         {"role": "user", "content": "What are the latest developments in AI regulation in 2025?"}
     ],
@@ -62,7 +62,7 @@ const headers = {
 };
 
 const payload = {
-  model: 'google/gemini-flash-latest',
+  model: 'vertex/gemini-flash-latest',
   messages: [
     { role: 'user', content: 'What are the latest developments in AI regulation in 2025?' }
   ],
@@ -86,7 +86,7 @@ curl -X POST https://api.edenai.run/v3/chat/completions \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "google/gemini-flash-latest",
+    "model": "vertex/gemini-flash-latest",
     "messages": [
       {"role": "user", "content": "What are the latest developments in AI regulation in 2025?"}
     ],
@@ -146,7 +146,7 @@ headers = {
 }
 
 payload = {
-    "model": "google/gemini-flash-latest",
+    "model": "vertex/gemini-flash-latest",
     "messages": [
         {
             "role": "system",

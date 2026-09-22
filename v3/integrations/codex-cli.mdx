@@ -91,8 +91,8 @@ model = "azure/gpt-5.2-codex"         # Azure-hosted alternative
 
 ```toml Other providers
 model = "anthropic/claude-sonnet-latest"
-model = "google/gemini-2.5-pro"
-model = "openai/gpt-4o"
+model = "vertex/gemini-2.5-pro"
+model = "openai/gpt-latest"
 ```
 </CodeGroup>
 
@@ -129,7 +129,7 @@ echo $EDENAI_API_KEY
 curl -X POST https://api.edenai.run/v3/chat/completions \
   -H "Authorization: Bearer $EDENAI_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"model": "openai/gpt-4o-mini", "messages": [{"role": "user", "content": "ping"}]}'
+  -d '{"model": "openai/gpt-mini-latest", "messages": [{"role": "user", "content": "ping"}]}'
 ```
 
 ### Model not found

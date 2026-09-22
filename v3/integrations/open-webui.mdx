@@ -120,14 +120,14 @@ In the Open WebUI interface:
   <CodeBlock title="Models to Add">
 ```
     anthropic/claude-sonnet-latest
-    anthropic/claude-opus-4-5
-    anthropic/claude-haiku-4-5
-    openai/gpt-4
-    openai/gpt-4-turbo
-    openai/gpt-4o
-    openai/gpt-3.5-turbo
-    google/gemini-2.5-flash
-    google/gemini-2.5-pro
+    anthropic/claude-opus-latest
+    anthropic/claude-haiku-latest
+    openai/gpt-latest
+    openai/gpt-latest
+    openai/gpt-latest
+    openai/gpt-mini-latest
+    vertex/gemini-flash-latest
+    vertex/gemini-2.5-pro
     cohere/command-a-03-2025
 ```
   </CodeBlock>
@@ -275,7 +275,7 @@ Define model capabilities and pricing:
   "models": [
     {
       "id": "anthropic/claude-sonnet-latest",
-      "name": "Claude 3.5 Sonnet",
+      "name": "Claude Sonnet",
       "owned_by": "anthropic",
       "created": 1729900800,
       "object": "model",
@@ -288,8 +288,8 @@ Define model capabilities and pricing:
       }
     },
     {
-      "id": "openai/gpt-4o",
-      "name": "GPT-4o",
+      "id": "openai/gpt-latest",
+      "name": "GPT",
       "owned_by": "openai",
       "created": 1715300000,
       "object": "model",
@@ -321,7 +321,7 @@ ADMIN_EMAIL=admin@example.com
 
 # Model access control
 ENABLE_MODEL_FILTER=true
-MODEL_FILTER_LIST=anthropic/claude-sonnet-latest,openai/gpt-4
+MODEL_FILTER_LIST=anthropic/claude-sonnet-latest,openai/gpt-latest
 ```
 </CodeGroup>
 
@@ -583,7 +583,7 @@ Configure cheaper models for embeddings:
 RAG_EMBEDDING_MODEL=text-embedding-3-small
 
 # Use GPT-3.5 for simple tasks
-DEFAULT_MODEL=openai/gpt-3.5-turbo
+DEFAULT_MODEL=openai/gpt-mini-latest
 ```
 </CodeGroup>
 

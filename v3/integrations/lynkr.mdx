@@ -58,7 +58,7 @@ lynkr start                       # OpenAI-compatible endpoint on port 8081
 curl -X POST http://localhost:8081/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "mistral/mistral-small-2603",
+    "model": "mistral/mistral-small-latest",
     "messages": [{"role": "user", "content": "Hello from Lynkr + Eden AI"}]
   }'
 ```
@@ -90,9 +90,9 @@ export MODEL_PROVIDER=edenai
 
 <CodeGroup>
 ```bash Tier-based
-export TIER_SIMPLE=edenai:mistral/mistral-small-2603
+export TIER_SIMPLE=edenai:mistral/mistral-small-latest
 export TIER_MEDIUM=edenai:openai/gpt-5-mini
-export TIER_HARD=edenai:anthropic/claude-sonnet-5
+export TIER_HARD=edenai:anthropic/claude-sonnet-latest
 export TIER_EXPERT=edenai:openai/gpt-5.5
 ```
 </CodeGroup>
@@ -106,16 +106,16 @@ Use the `provider/model` format for any Eden AI model:
 - `openai/gpt-5-mini`
 
 **Anthropic**
-- `anthropic/claude-sonnet-5`
-- `anthropic/claude-haiku-4-5`
+- `anthropic/claude-sonnet-latest`
+- `anthropic/claude-haiku-latest`
 
 **Google**
-- `google/gemini-2.5-pro`
-- `google/gemini-3.5-flash`
+- `vertex/gemini-2.5-pro`
+- `vertex/gemini-flash-latest`
 
 **Mistral**
-- `mistral/mistral-large-2512`
-- `mistral/mistral-small-2603`
+- `mistral/mistral-large-latest`
+- `mistral/mistral-small-latest`
 
 ## Environment Variables
 

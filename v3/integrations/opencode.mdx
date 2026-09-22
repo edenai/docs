@@ -153,7 +153,7 @@ Run `/models` and pick any Eden AI model. To set a default instead, add a top-le
 
 {/* skip-test: one key of the config above, not a whole file */}
 ```json
-"model": "edenai/anthropic/claude-sonnet-latest"
+"model": "edenai/vertex/gemini-flash-latest"
 ```
 
 <Note>
@@ -204,7 +204,7 @@ Restart OpenCode after regenerating the file — the config is read at startup.
 
 ### `UnknownError` right after sending a message
 
-Usually a mistyped model reference — OpenCode reports an unknown model as a generic server error rather than a "model not found" message. Use `edenai/` followed by the *complete* Eden AI model ID (`edenai/anthropic/claude-sonnet-latest`, not `edenai/claude-sonnet-latest`); it must match a key under `provider.edenai.models` in your config. Run `opencode models` to see the exact strings OpenCode loaded.
+Usually a mistyped model reference — OpenCode reports an unknown model as a generic server error rather than a "model not found" message. Use `edenai/` followed by the *complete* Eden AI model ID (`edenai/vertex/gemini-flash-latest`, not `edenai/gemini-flash-latest`); it must match a key under `provider.edenai.models` in your config. Run `opencode models` to see the exact strings OpenCode loaded.
 
 ### Connection issues
 

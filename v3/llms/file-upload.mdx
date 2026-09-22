@@ -129,7 +129,7 @@ headers = {
 }
 
 payload = {
-    "model": "openai/gpt-4o",
+    "model": "openai/gpt-latest",
     "messages": [
         {
             "role": "user",
@@ -261,9 +261,9 @@ file_id = upload_response.json()["file_id"]
 
 # Query with multiple models without re-uploading
 models = [
-    "openai/gpt-4o",
+    "openai/gpt-latest",
     "anthropic/claude-sonnet-latest",
-    "google/gemini-2.5-flash"
+    "vertex/gemini-flash-latest"
 ]
 
 for model in models:

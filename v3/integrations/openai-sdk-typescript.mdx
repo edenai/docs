@@ -57,7 +57,7 @@ const client = new OpenAI({
 
 async function main() {
   const stream = await client.chat.completions.create({
-    model: 'openai/gpt-4',
+    model: 'openai/gpt-latest',
     messages: [{ role: 'user', content: 'Hello! How are you?' }],
     stream: true,
   });
@@ -82,7 +82,7 @@ const client = new OpenAI({
 });
 
 const stream = await client.chat.completions.create({
-  model: 'anthropic/claude-sonnet-latest',
+  model: 'vertex/gemini-flash-latest',
   messages: [{ role: 'user', content: 'Hello!' }],
   stream: true,
 });
@@ -105,7 +105,7 @@ const client = new OpenAI({
 
 async function main() {
   const stream = await client.chat.completions.create({
-    model: 'openai/gpt-4',
+    model: 'openai/gpt-latest',
     messages: [{ role: 'user', content: 'Hello!' }],
     stream: true,
   });
@@ -127,19 +127,19 @@ main();
 Access models from multiple providers:
 
 ### OpenAI
-- `openai/gpt-4`
-- `openai/gpt-4-turbo`
-- `openai/gpt-4o`
-- `openai/gpt-3.5-turbo`
+- `openai/gpt-latest`
+- `openai/gpt-latest`
+- `openai/gpt-latest`
+- `openai/gpt-mini-latest`
 
 ### Anthropic
 - `anthropic/claude-sonnet-latest`
-- `anthropic/claude-opus-4-5`
+- `anthropic/claude-opus-latest`
 - `anthropic/claude-sonnet-latest`
 
 ### Google
-- `google/gemini-2.5-pro`
-- `google/gemini-2.5-flash`
+- `vertex/gemini-2.5-pro`
+- `vertex/gemini-flash-latest`
 
 ### Cohere and Meta Llama
 - `cohere/command-a-03-2025`
@@ -167,7 +167,7 @@ async function chat() {
 
   // First interaction
   const stream1 = await client.chat.completions.create({
-    model: 'anthropic/claude-sonnet-latest',
+    model: 'vertex/gemini-flash-latest',
     messages,
     stream: true,
   });
@@ -187,7 +187,7 @@ async function chat() {
 
   // Continue conversation
   const stream2 = await client.chat.completions.create({
-    model: 'anthropic/claude-sonnet-latest',
+    model: 'vertex/gemini-flash-latest',
     messages,
     stream: true,
   });
@@ -218,7 +218,7 @@ const client = new OpenAI({
 });
 
 const stream = await client.chat.completions.create({
-  model: 'openai/gpt-4',
+  model: 'openai/gpt-latest',
   messages: [
     { role: 'user', content: 'Write a creative story about AI.' },
   ],
@@ -275,7 +275,7 @@ async function analyzeImage() {
 
   // Use file_id in chat
   const stream = await client.chat.completions.create({
-    model: 'openai/gpt-4o',
+    model: 'openai/gpt-latest',
     messages: [
       {
         role: 'user',
@@ -316,7 +316,7 @@ const client = new OpenAI({
 async function safeChat() {
   try {
     const stream = await client.chat.completions.create({
-      model: 'openai/gpt-4',
+      model: 'openai/gpt-latest',
       messages: [{ role: 'user', content: 'Hello!' }],
       stream: true,
     });
@@ -367,7 +367,7 @@ const client = new OpenAI({
 
 app.post('/api/chat', async (req, res) => {
   try {
-    const { messages, model = 'openai/gpt-4' } = req.body;
+    const { messages, model = 'openai/gpt-latest' } = req.body;
 
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
@@ -428,7 +428,7 @@ export function ChatComponent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: updatedMessages,
-          model: 'anthropic/claude-sonnet-latest',
+          model: 'vertex/gemini-flash-latest',
         }),
       });
 
@@ -562,7 +562,7 @@ async function main() {
 
       try {
         const stream = await client.chat.completions.create({
-          model: 'anthropic/claude-sonnet-latest',
+          model: 'vertex/gemini-flash-latest',
           messages,
           temperature: 0.7,
           stream: true,

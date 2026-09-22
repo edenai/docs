@@ -49,7 +49,7 @@ headers = {
 }
 
 payload = {
-    "model": "openai/gpt-4",
+    "model": "openai/gpt-latest",
     "messages": [
         {"role": "user", "content": "Hello! How are you?"}
     ]
@@ -65,7 +65,7 @@ curl -X POST https://api.edenai.run/v3/chat/completions \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-4",
+    "model": "openai/gpt-latest",
     "messages": [{"role": "user", "content": "Hello!"}]
   }'
 ```
@@ -78,7 +78,7 @@ const response = await fetch('https://api.edenai.run/v3/chat/completions', {
     'Content-Type': 'application/json'
   },
   body: JSON.stringify({
-    model: 'openai/gpt-4',
+    model: 'openai/gpt-latest',
     messages: [{role: 'user', content: 'Hello!'}]
   })
 });
@@ -118,7 +118,7 @@ client = OpenAI(
 )
 
 response = client.chat.completions.create(
-    model="anthropic/claude-sonnet-latest",
+    model="vertex/gemini-flash-latest",
     messages=[{"role": "user", "content": "Hello!"}]
 )
 
@@ -129,9 +129,9 @@ print(response.choices[0].message.content)
 
 Use the format `provider/model`:
 
-- `openai/gpt-4`
+- `openai/gpt-latest`
 - `anthropic/claude-sonnet-latest`
-- `google/gemini-2.5-flash`
+- `vertex/gemini-flash-latest`
 - `mistral/mistral-large-latest`
 
 <Card title="List all available models" icon="list" href="/v3/llms/listing-models">

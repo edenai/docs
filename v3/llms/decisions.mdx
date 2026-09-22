@@ -1,7 +1,6 @@
 ---
-title: "System One (Decisions)"
-sidebarTitle: "System One"
-description: "Ask typed questions about text and get calibrated probabilities back instead of prose. One request, no streaming, billed on input only."
+title: "Decisions"
+description: "Ask typed questions about text and get calibrated probabilities back instead of prose. Decision models, which TypeSafe calls System One, answer in one request with no streaming and bill on input only."
 icon: "scale-balanced"
 tag: "Alpha"
 ---
@@ -10,18 +9,20 @@ tag: "Alpha"
 import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
 
 <TechArticleSchema
-  title={"System One (Decisions)"}
-  description={"Ask typed questions about text and get calibrated probabilities back instead of prose. One request, no streaming, billed on input only."}
-  path="v3/llms/system-one"
+  title={"Decisions"}
+  description={"Ask typed questions about text and get calibrated probabilities back instead of prose. Decision models, which TypeSafe calls System One, answer in one request with no streaming and bill on input only."}
+  path="v3/llms/decisions"
   articleSection="LLMs"
   about={"LLM API"}
   proficiencyLevel="Intermediate"
-  keywords={["Eden AI", "AI API", "LLM API", "decision model", "classification", "TypeSafe", "Jev"]}
+  keywords={["Eden AI", "AI API", "LLM API", "decision model", "decisions", "classification", "routing", "System One", "TypeSafe", "Jev"]}
   datePublished="2026-09-22T00:00:00Z"
   dateModified="2026-09-22T00:00:00Z"
 />
 
-A System One model answers **typed questions about text**. You send some state and the questions you want answered, and you get back a choice, a score, or a probability, each with a confidence, in a single pass.
+A decision model answers **typed questions about text**. You send some state and the questions you want answered, and you get back a choice, a score, or a probability, each with a confidence, in a single pass.
+
+TypeSafe calls this class of model **System One**, after the fast, intuitive thinking in Kahneman's *Thinking, Fast and Slow*. Their model Jev is the first of them, and the one Eden AI serves today. The endpoint is named `/v3/systemone` so their SDK works against Eden AI by changing only its base URL.
 
 It never writes prose. That is the point: the answer is a value your code can branch on without parsing, and the schema is guaranteed.
 

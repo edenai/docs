@@ -28,7 +28,7 @@ risky to put on a critical path. If you do depend on it, keep the call behind a
 small adapter of your own so a shape change is one edit rather than many.
 </Warning>
 
-A decision model answers **typed questions about text**. You send some state and the questions you want answered, and you get back a choice, a score, or a probability, each with a confidence, in a single pass.
+A decision model answers **typed questions about text**. You send some state and the questions you want answered, and you get back a choice, a score, or a probability, in a single pass. A choice and a score each come with a confidence and the full probability distribution behind them. A probability needs neither, because the number is already the answer and its own confidence.
 
 TypeSafe calls this class of model **System One**, after the fast, intuitive thinking in Kahneman's *Thinking, Fast and Slow*. Their model Jev is the first of them, and the one Eden AI serves today. Eden AI names the endpoint for the capability rather than the vendor, so a second provider of decision models lands on the same path. The request and response bodies match TypeSafe's own, but the path does not, so point your client at `/v3/alpha/decisions` directly rather than swapping a base URL.
 
@@ -261,9 +261,30 @@ curl -X POST https://api.edenai.run/v3/alpha/decisions \
   -H "Content-Type: application/json" \
   -d '{
     "model": "typesafe/jev-latest",
-    "state": "I was charged twice for my subscription. Please refund me.",
+    "state": "Hi, I'"'"'ve been trying to connect my Stripe account for 3 days and the integration keeps failing. I'"'"'m losing sales. Please help ASAP.",
     "questions": {
-      "is_billing": { "type": "noul", "instructions": "Is this message about billing?" }
+      "department": {
+        "type": "choice",
+        "instructions": "Which team should handle this?",
+        "criteria": {
+          "billing": "Payments, invoicing, refunds",
+          "technical": "Bugs, outages, integrations",
+          "sales": "Pricing, upgrades, new accounts"
+        }
+      },
+      "frustration": {
+        "type": "score",
+        "instructions": "How frustrated is the customer?",
+        "criteria": [
+          "Calm, just stating facts",
+          "Frustrated but civil",
+          "Very angry, strong language"
+        ]
+      },
+      "is_urgent": {
+        "type": "noul",
+        "instructions": "Does this message express urgency?"
+      }
     }
   }'
 ```
@@ -374,7 +395,7 @@ Validation is done by the provider and passed through unchanged, so you get the 
 
 - **Ask several questions at once.** The state is read once no matter how many questions ride along, so batching is close to free.
 - **Retrieve before you judge.** Send the relevant slice of state, not your whole document store. Input is what you pay for.
-- **Use `confidence` as a routing signal.** Send low-confidence decisions to a human or to a bigger model rather than treating every answer as final.
+- **Use `confidence` as a routing signal.** Send low-confidence decisions to a human or to a bigger model rather than treating every answer as final. A `noul` answer has no `confidence` field, so use how far its probability sits from `0.5`.
 - **Describe criteria, do not just name them.** A bare option key works, but a sentence about when it applies works better, and a structured description better still.
 - **Order score levels from low to high.** The index is the score, so the ordering is the rubric.
 - **Pin a version if a threshold matters.** Responses report the concrete version they came from. If you have tuned thresholds against one, record which.

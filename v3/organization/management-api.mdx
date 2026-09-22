@@ -40,7 +40,7 @@ every hop, but it can still mint its way down to inference, so **store it like a
 <Steps>
 <Step title="Generate an issuer key">
 From the dashboard (**Account → Management Keys**), generate an **issuer key**. Copy it once; it is shown
-only at creation. The org owner can always do this; the owner can also grant the *Manage API keys*
+only at creation. The org owner can always do this; the owner can also grant the *API Key Management*
 permission to other members via roles.
 </Step>
 <Step title="Mint an auth (worker) key">
@@ -84,6 +84,24 @@ key's organization.
 | `GET · PATCH · DELETE /v3/manage/keys/{key_id}` | `manage:read` · `manage:write` | Read / update / revoke an inference key |
 | `POST /v3/manage/keys/{key_id}/rotate` | `manage:write` | Rotate an inference key's secret |
 | `GET /v3/manage/members` · `/usage` · `/keys/{key_id}/usage` · `/whoami` | `manage:read` | Members, usage, key introspection |
+| `PATCH /v3/manage/members/{email}/role` | `manage:write` | Set a member's role |
+| `GET /v3/manage/groups` | `manage:read` | List the organization's directory-synced groups |
+| `GET /v3/manage/groups/{external_group_id}` | `manage:read` | Retrieve one group and its members |
+
+### Members and roles
+
+`PATCH /v3/manage/members/{email}/role` assigns a role to a member by email and returns the updated
+member. The organization owner's role cannot be changed, and a `manage:write` key may not assign a
+role that grants more than member management, so it cannot promote anyone to a role holding
+organization configuration or billing authority.
+
+### Groups
+
+Groups are `DirectorySyncGroup` records synced from your identity provider over SCIM. They are
+read-only here: they are created and maintained in the identity provider, never through this API.
+`external_group_id` is the group's id in that provider and is what the detail URL takes. Each group
+returns the emails of its active members, matching `/v3/manage/members`, so the two can be
+correlated. A group belonging to another organization returns `404`.
 
 ## Migrating from a dashboard-only key
 

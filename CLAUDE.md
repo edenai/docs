@@ -17,11 +17,36 @@ See `README.md` for repository structure, local development setup, and publishin
 
 ## Working with Documentation Snippets
 
-All Python snippets in the docs (under `v3/` and at the repo root) are automatically tested. See `tests/README.md` for setup, running tests, and how to test specific pages.
+All Python snippets in the docs (under `v3/` and at the repo root) are automatically tested, and so are the curl and install commands in ` ```bash ` blocks and the samples in ` ```javascript ` and ` ```typescript ` blocks. See `tests/README.md` for setup, running tests, and how to test specific pages.
 
-- To inspect extracted snippets for a page, read the corresponding file in `tests/generated/` (e.g. `tests/generated/v3_how_to_discovery_explore_api.py` for `v3/how-to/discovery/explore-api.mdx`). Do NOT run the extractor or custom Python scripts — just read the generated file directly.
-- When a snippet test fails, **fix the snippet code** (add missing imports, correct logic, etc.) and if needed add dependencies to `tests/requirements.txt`. Do NOT use `{/* skip-test */}` to silence a fixable test failure — `skip-test` is only for genuinely non-runnable fragments.
+- To inspect extracted snippets for a page, read the corresponding file in `tests/generated/` (e.g. `tests/generated/v3_how_to_discovery_explore_api.py` for `v3/how-to/discovery/explore-api.mdx`; shell blocks land in `tests/generated/sh/`, JS and TS in `tests/generated/js/`). Do NOT run the extractor or custom Python scripts — just read the generated file directly.
+- When a snippet test fails, **fix the snippet code** (add missing imports, correct logic, etc.) and if needed add dependencies to `tests/requirements.txt`. Do NOT use `{/* skip-test */}` to silence a fixable test failure — `skip-test` is only for genuinely non-runnable fragments, and every marker in the docs carries its reason as `{/* skip-test: why */}`, so write one.
+- If a snippet fails only because the sandbox returns canned prose where the sample needs the model to answer for real (JSON schema output, a pydantic `output_type`, an Instructor tool call), mark it `{/* paid-test: reason */}` rather than `skip-test`. That block then uses the production token and runs in the weekly CI run, not on every PR.
+- Every generated module is syntax-checked by `tests/test_snippets_compile.py`, including blocks that never execute, so a skipped snippet still cannot contain invalid Python, bash or JavaScript. The TypeScript blocks are type-checked there too, against the real SDK typings.
+- A shell block runs only if it is a curl call to Eden AI or a plain `pip`/`npm` install. Anything that drives other software (docker, git clone) is never turned into a script. Do NOT add such a command expecting it to be tested.
+- A JS or TS block runs only if node can run it: every import must be a node builtin or a package listed in `tests/package.json`. A block importing anything else (a React component, an Express receiver) is reported as SKIPPED with the reason naming the package, not dropped. If a new sample needs a package, add it to `tests/package.json` (pinned) and commit the refreshed lockfile; the allowlist is read from that file. A block node cannot run for a reason no import shows, such as reading from a browser `<input>`, needs a `{/* skip-test: why */}` marker like any other.
+- TypeScript samples must use erasable syntax only, because node runs them by stripping the annotations out. No `enum`, no `namespace`, no parameter properties: `tsc` rejects them so the sample cannot ship broken.
 - Skipped blocks still appear in test output (as `SKIPPED`) so the total snippet count stays visible. Failed tests include HTTP request/response details automatically.
+
+## Links
+
+Every link on every published page is checked by `tests/test_links.py`, which reads files and makes no requests. See `tests/README.md` for the details.
+
+- A link to a page that does not exist fails the build, as does an anchor naming a heading the target page does not have. Anchors follow github-slugger: `## Extended Thinking (Claude)` is `#extended-thinking-claude`.
+- Renaming or deleting a page means updating `docs.json` and every page that links to it. A page that ends up in neither the navigation nor any other page's links fails the reachability check, because nobody can reach it.
+- `#chat` and `#manage-cookies` are click targets bound by `intercom-chat.js` and `cookie-consent.js`, not headings. They are allowlisted in `tests/links.py`, and a test confirms each is really bound. Do NOT add an entry there to silence a broken anchor.
+- Links inside code fences are examples, not links, and are ignored. Do not rely on that to park a link that does not resolve.
+- The links that leave the docs, and the two OpenAPI specs the API reference tabs render from, are in `tests/test_links_external.py`. The specs are checked on every run; the third-party links only on the weekly one, since they depend on somebody else's site being up.
+
+## Configuration Blocks on Integration Pages
+
+The JSON, YAML and TOML blocks under `v3/integrations/` are configuration a reader pastes into another tool, so nothing runs them. `tests/test_config_blocks.py` parses each one and checks every name inside it. See `tests/README.md` for the details.
+
+- A block must parse as the language its fence declares. If it is a fragment or a menu of alternative values for one key rather than a whole file, mark it `{/* skip-test: why */}` like any other block. The model ids inside it are still checked.
+- Every model a config names must exist in the live catalog, which is the union of seven routes. Do NOT check a new model id against `/v3/models` alone: that route is chat only, and an embeddings or image model will look invalid.
+- A base URL is checked by requesting `/models` underneath it, because `https://api.edenai.run/v3` on its own answers 404 by design.
+- What counts as a model id is decided by the catalog's own provider list, not a hardcoded one, so `image/gif` and `ghcr.io/open-webui/open-webui:main` are correctly not models. A new provider needs no change here.
+- `nginx` blocks are out of scope: no parser reads them and they name no models.
 
 ## Common Pitfalls in .mdx Code Blocks
 

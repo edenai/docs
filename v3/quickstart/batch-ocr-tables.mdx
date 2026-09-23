@@ -73,6 +73,7 @@ launch = requests.post(
 print(launch.json())  # -> {"public_id": "...", "status": "processing", ...}
 ```
 
+{/* skip-test: the last step polls YOUR_PUBLIC_ID, the job id the step above prints */}
 ```bash cURL
 # 1. Upload the document
 curl -X POST https://api.edenai.run/v3/upload \
@@ -171,8 +172,8 @@ Now loop the three steps over a list of files. Each document is uploaded, launch
 
 The poll loop is **bounded** — it gives up after a fixed number of attempts rather than waiting forever — and a failed or slow document is skipped rather than aborting the whole batch.
 
+{/* skip-test: polls three async OCR jobs to completion, which outlasts the per-test timeout */}
 <CodeGroup>
-{/* skip-test */}
 ```python Python
 import csv
 import time

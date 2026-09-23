@@ -49,7 +49,7 @@ OpenAI-compatible chat completions endpoint. **Always returns Server-Sent Events
 
 ```json
 {
-  "model": "openai/gpt-4",
+  "model": "openai/gpt-latest",
   "messages": [
     {"role": "system", "content": "You are a helpful assistant."},
     {"role": "user", "content": "Hello!"}
@@ -76,17 +76,17 @@ provider/model_name
 ```
 
 **Examples:**
-- `openai/gpt-4`
-- `openai/gpt-4-turbo`
-- `openai/gpt-4o`
-- `openai/gpt-4o-mini`
-- `anthropic/claude-opus-4-5`
-- `anthropic/claude-sonnet-4-5`
-- `anthropic/claude-haiku-4-5`
-- `google/gemini-2.5-flash`
-- `google/gemini-2.5-pro`
-- `cohere/command-r-plus`
-- `mistral/mistral-large`
+- `openai/gpt-latest`
+- `openai/gpt-latest`
+- `openai/gpt-latest`
+- `openai/gpt-mini-latest`
+- `anthropic/claude-opus-latest`
+- `anthropic/claude-sonnet-latest`
+- `anthropic/claude-haiku-latest`
+- `vertex/gemini-flash-latest`
+- `vertex/gemini-2.5-pro`
+- `cohere/command-r-plus-08-2024`
+- `mistral/mistral-large-latest`
 
 #### Message Content Types
 
@@ -197,7 +197,7 @@ curl -X POST https://api.edenai.run/v3/chat/completions \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-4",
+    "model": "openai/gpt-latest",
     "messages": [
       {"role": "user", "content": "Explain quantum computing in simple terms"}
     ],
@@ -209,7 +209,7 @@ curl -X POST https://api.edenai.run/v3/chat/completions \
 **With system message:**
 ```json
 {
-  "model": "anthropic/claude-sonnet-4-5",
+  "model": "vertex/gemini-flash-latest",
   "messages": [
     {
       "role": "system",
@@ -228,7 +228,7 @@ curl -X POST https://api.edenai.run/v3/chat/completions \
 **Multi-turn conversation:**
 ```json
 {
-  "model": "openai/gpt-4",
+  "model": "openai/gpt-latest",
   "messages": [
     {"role": "system", "content": "You are a coding assistant."},
     {"role": "user", "content": "How do I reverse a string in Python?"},
@@ -241,7 +241,7 @@ curl -X POST https://api.edenai.run/v3/chat/completions \
 **Vision with image:**
 ```json
 {
-  "model": "openai/gpt-4o",
+  "model": "openai/gpt-latest",
   "messages": [
     {
       "role": "user",
@@ -262,7 +262,7 @@ curl -X POST https://api.edenai.run/v3/chat/completions \
 **Document analysis with uploaded file:**
 ```json
 {
-  "model": "anthropic/claude-opus-4-5",
+  "model": "anthropic/claude-opus-latest",
   "messages": [
     {
       "role": "user",
@@ -284,7 +284,7 @@ curl -X POST https://api.edenai.run/v3/chat/completions \
 **Using your own API key:**
 ```json
 {
-  "model": "openai/gpt-4",
+  "model": "openai/gpt-latest",
   "messages": [{"role": "user", "content": "Hello"}],
   "user_provided_api_key": "sk-..."
 }
@@ -1739,7 +1739,7 @@ llm_result = requests.post(
     "https://api.edenai.run/v3/chat/completions",
     headers={"Authorization": f"Bearer {API_KEY}"},
     json={
-        "model": "openai/gpt-4",
+        "model": "openai/gpt-latest",
         "messages": [
             {
                 "role": "user",
@@ -1763,7 +1763,7 @@ response = requests.post(
     "https://api.edenai.run/v3/chat/completions",
     headers={"Authorization": f"Bearer {API_KEY}"},
     json={
-        "model": "openai/gpt-4",
+        "model": "openai/gpt-latest",
         "messages": [{"role": "user", "content": "Write a story"}]
     },
     stream=True
@@ -1992,7 +1992,7 @@ response = requests.post(
     f"{BASE_URL}/chat/completions",
     headers={"Authorization": f"Bearer {API_KEY}"},
     json={
-        "model": "anthropic/claude-sonnet-4-5",
+        "model": "vertex/gemini-flash-latest",
         "messages": [
             {
                 "role": "user",

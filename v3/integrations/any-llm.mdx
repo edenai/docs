@@ -24,7 +24,7 @@ Use any-llm (Mozilla AI) with Eden AI to call 500+ AI models through one unified
 
 [any-llm](https://github.com/mozilla-ai/any-llm) is a lightweight Python library from **Mozilla AI** that lets you talk to any LLM provider through a single `completion()` interface — swap providers by changing one string. **Eden AI is a built-in any-llm provider**, so you reach models from OpenAI, Anthropic, Google, Mistral and 500+ more behind one key, with EU-based, GDPR-aligned inference.
 
-You select a model with the `provider:model_id` syntax. For Eden AI, the provider is `edenai` and the model id follows Eden AI's `provider/model` scheme — for example `edenai:anthropic/claude-sonnet-5`.
+You select a model with the `provider:model_id` syntax. For Eden AI, the provider is `edenai` and the model id follows Eden AI's `provider/model` scheme — for example `edenai:anthropic/claude-sonnet-latest`.
 
 ## Installation
 
@@ -49,12 +49,11 @@ Set your key, then point any-llm at Eden AI by prefixing any model with `edenai:
 EDENAI_API_KEY=your_api_key_here
 ```
 
-{/* skip-test */}
 ```python Python
 from any_llm import completion
 
 response = completion(
-    model="edenai:anthropic/claude-sonnet-5",  # edenai:<provider>/<model>
+    model="edenai:vertex/gemini-flash-latest",  # edenai:<provider>/<model>
     messages=[{"role": "user", "content": "Hello! How are you?"}],
 )
 
@@ -69,7 +68,6 @@ The `edenai` provider automatically uses the Eden AI base URL (`https://api.eden
 any-llm's core benefit: change providers by changing one string. Every Eden AI model is reachable the same way:
 
 <CodeGroup>
-{/* skip-test */}
 ```python Python
 from any_llm import completion
 
@@ -77,8 +75,8 @@ messages = [{"role": "user", "content": "Write a haiku about the sea."}]
 
 for model in [
     "edenai:openai/gpt-5.5",
-    "edenai:anthropic/claude-sonnet-5",
-    "edenai:mistral/mistral-large-2512",
+    "edenai:anthropic/claude-sonnet-latest",
+    "edenai:mistral/mistral-large-latest",
 ]:
     response = completion(model=model, messages=messages)
     print(model, "->", response.choices[0].message.content)
@@ -90,12 +88,11 @@ for model in [
 Eden AI supports streaming through any-llm — pass `stream=True`:
 
 <CodeGroup>
-{/* skip-test */}
 ```python Python
 from any_llm import completion
 
 stream = completion(
-    model="edenai:mistral/mistral-small-2603",
+    model="edenai:mistral/mistral-small-latest",
     messages=[{"role": "user", "content": "Count from one to five."}],
     stream=True,
 )
@@ -116,24 +113,23 @@ Use the `edenai:<provider>/<model>` format for any Eden AI model:
 - `edenai:openai/gpt-5-mini`
 
 **Anthropic**
-- `edenai:anthropic/claude-sonnet-5`
-- `edenai:anthropic/claude-opus-4-8`
-- `edenai:anthropic/claude-haiku-4-5`
+- `edenai:anthropic/claude-sonnet-latest`
+- `edenai:anthropic/claude-opus-latest`
+- `edenai:anthropic/claude-haiku-latest`
 
 **Google**
-- `edenai:google/gemini-2.5-pro`
-- `edenai:google/gemini-3.5-flash`
+- `edenai:vertex/gemini-2.5-pro`
+- `edenai:vertex/gemini-flash-latest`
 
 **Mistral**
-- `edenai:mistral/mistral-large-2512`
-- `edenai:mistral/mistral-small-2603`
+- `edenai:mistral/mistral-large-latest`
+- `edenai:mistral/mistral-small-latest`
 
 ## Embeddings
 
 The Eden AI provider also supports embeddings:
 
 <CodeGroup>
-{/* skip-test */}
 ```python Python
 from any_llm import embedding
 

@@ -58,7 +58,7 @@ Then pick a model from the picker, or set a default:
 <CodeGroup>
 ```json kilo.json
 {
-  "model": "edenai/anthropic/claude-sonnet-5"
+  "model": "edenai/vertex/gemini-flash-latest"
 }
 ```
 </CodeGroup>
@@ -77,7 +77,7 @@ export EDENAI_API_KEY="your_api_key_here"
       "env": ["EDENAI_API_KEY"]
     }
   },
-  "model": "edenai/anthropic/claude-sonnet-5"
+  "model": "edenai/vertex/gemini-flash-latest"
 }
 ```
 </CodeGroup>
@@ -86,10 +86,11 @@ export EDENAI_API_KEY="your_api_key_here"
 
 Eden AI model IDs are already `vendor/model`, so a full reference in Kilo has **three** segments, `edenai/<vendor>/<model>`:
 
+{/* skip-test: one-line examples of a single key, not a whole config file */}
 <CodeGroup>
 ```json Examples
-{ "model": "edenai/openai/gpt-4o-mini" }
-{ "model": "edenai/google/gemini-3.6-flash" }
+{ "model": "edenai/openai/gpt-mini-latest" }
+{ "model": "edenai/vertex/gemini-flash-latest" }
 { "model": "edenai/zai/glm-5.2" }
 ```
 </CodeGroup>
@@ -112,14 +113,14 @@ The picker lists the Eden AI models in the catalogue Kilo refreshes, which is sm
   "provider": {
     "edenai": {
       "models": {
-        "anthropic/claude-haiku-4-5": {
+        "anthropic/claude-haiku-latest": {
           "name": "Claude Haiku 4.5",
           "cost": { "input": 1, "output": 5, "cache_read": 0.1 }
         }
       }
     }
   },
-  "model": "edenai/anthropic/claude-haiku-4-5"
+  "model": "edenai/anthropic/claude-haiku-latest"
 }
 ```
 </CodeGroup>

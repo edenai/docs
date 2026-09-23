@@ -215,7 +215,7 @@ curl -X POST https://api.edenai.run/v3/v1/messages \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "anthropic/claude-sonnet-4-6",
+    "model": "anthropic/claude-sonnet-latest",
     "system": [
       {
         "type": "text",
@@ -251,7 +251,7 @@ Gemini accepts `cache_control` on a Chat Completions content block:
 
 ```json
 {
-  "model": "google/gemini-3.5-flash-lite",
+  "model": "vertex/gemini-3.5-flash-lite",
   "messages": [
     {
       "role": "system",

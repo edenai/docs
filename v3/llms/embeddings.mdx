@@ -96,6 +96,7 @@ vector = response["data"][0]["embedding"]
 print(f"{model_id}: {len(vector)} dimensions, cost=${response['cost']}")
 ```
 
+{/* skip-test: MODEL_ID is a placeholder the reader fills from GET /v3/embeddings/models */}
 ```bash cURL
 # Replace MODEL_ID with any id returned by GET /v3/embeddings/models
 curl https://api.edenai.run/v3/embeddings \
@@ -196,7 +197,7 @@ Unknown top-level fields are forwarded to the underlying provider, so provider-s
 ## Batching
 
 Pass a list to `input` to embed multiple strings in one call. Items in `data` keep their `index` matching the input order — that's the property the [worked example](#worked-example-semantic-search) relies on. Batching is significantly cheaper and faster than one call per string.
-{/* skip-test */}
+{/* skip-test: a payload fragment, model_id comes from the sample above it */}
 ```python Python
 payload = {
     "model": model_id,

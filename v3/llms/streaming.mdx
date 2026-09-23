@@ -44,7 +44,6 @@ Each line starts with `data: ` followed by JSON or the `[DONE]` marker.
 
 ## Python with OpenAI SDK
 
-{/* skip-test */}
 <CodeGroup>
 ```python Python
 from openai import OpenAI
@@ -55,7 +54,7 @@ client = OpenAI(
 )
 
 stream = client.chat.completions.create(
-    model="anthropic/claude-sonnet-latest",
+    model="vertex/gemini-flash-latest",
     messages=[{"role": "user", "content": "Tell me a short story"}],
     stream=True
 )
@@ -83,7 +82,7 @@ const headers = {
 };
 
 const payload = {
-  model: 'openai/gpt-4',
+  model: 'openai/gpt-latest',
   messages: [{role: 'user', content: 'Tell me a short story'}],
   stream: true
 };

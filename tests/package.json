@@ -1,0 +1,16 @@
+{
+  "name": "edenai-docs-snippet-tests",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Packages the JavaScript and TypeScript samples in the docs tell readers to install. Nothing here ships: it exists so the scripts generated into tests/generated/js/ can resolve their imports, and so tsc can check the typed ones against the real SDK typings. Versions are pinned exactly and the lockfile is committed, so a run tests the docs rather than whatever npm resolved that morning.",
+  "devDependencies": {
+    "@langchain/core": "1.2.11",
+    "@langchain/openai": "1.5.13",
+    "@types/node": "24.13.5",
+    "dotenv": "17.4.2",
+    "form-data": "4.0.6",
+    "node-fetch": "3.3.2",
+    "openai": "7.15.0",
+    "typescript": "7.0.2"
+  }
+}

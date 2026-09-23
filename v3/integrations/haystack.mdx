@@ -53,7 +53,6 @@ Set your key, then generate a chat response with the `EdenAIChatGenerator`:
 EDENAI_API_KEY=your_api_key_here
 ```
 
-{/* skip-test */}
 ```python Python
 from haystack.dataclasses import ChatMessage
 from haystack_integrations.components.generators.edenai import EdenAIChatGenerator
@@ -72,7 +71,6 @@ The generator reads your key from the `EDENAI_API_KEY` environment variable by d
 Change providers by changing the `model` string. Every Eden AI model is reachable the same way:
 
 <CodeGroup>
-{/* skip-test */}
 ```python Python
 from haystack.dataclasses import ChatMessage
 from haystack_integrations.components.generators.edenai import EdenAIChatGenerator
@@ -80,7 +78,7 @@ from haystack_integrations.components.generators.edenai import EdenAIChatGenerat
 messages = [ChatMessage.from_user("Write a haiku about the sea.")]
 
 for model in [
-    "openai/gpt-4o-mini",
+    "openai/gpt-mini-latest",
     "anthropic/claude-sonnet-latest",
     "mistral/mistral-large-latest",
 ]:
@@ -94,7 +92,6 @@ for model in [
 Pass a `streaming_callback` to stream tokens as they are generated:
 
 <CodeGroup>
-{/* skip-test */}
 ```python Python
 from haystack.components.generators.utils import print_streaming_chunk
 from haystack.dataclasses import ChatMessage
@@ -113,7 +110,6 @@ generator.run([ChatMessage.from_user("Count from one to five.")])
 Use `EdenAITextEmbedder` to embed a query and `EdenAIDocumentEmbedder` to embed documents, so you can build a fully sovereign RAG stack (retrieval and generation) on EU-hosted models:
 
 <CodeGroup>
-{/* skip-test */}
 ```python Python
 from haystack import Document
 from haystack.document_stores.in_memory import InMemoryDocumentStore
@@ -143,10 +139,10 @@ print(retriever.run(query_embedding=query_embedding)["documents"])
 Use the `provider/model` format for any Eden AI model:
 
 **Chat**
-- `openai/gpt-4o-mini`
+- `openai/gpt-mini-latest`
 - `anthropic/claude-sonnet-latest`
 - `mistral/mistral-large-latest`
-- `google/gemini-2.5-flash`
+- `vertex/gemini-flash-latest`
 
 **Embeddings**
 - `openai/text-embedding-3-small`

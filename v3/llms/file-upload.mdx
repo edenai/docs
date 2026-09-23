@@ -80,6 +80,7 @@ curl -X POST https://api.edenai.run/v3/upload \
   -F "purpose=assistants"
     ```
 
+{/* skip-test: reads the file from an <input> element in a browser page, which node has no equivalent of */}
 ```javascript JavaScript
 const formData = new FormData();
 formData.append('file', fileInput.files[0]);
@@ -128,7 +129,7 @@ headers = {
 }
 
 payload = {
-    "model": "openai/gpt-4o",
+    "model": "openai/gpt-latest",
     "messages": [
         {
             "role": "user",
@@ -260,9 +261,9 @@ file_id = upload_response.json()["file_id"]
 
 # Query with multiple models without re-uploading
 models = [
-    "openai/gpt-4o",
+    "openai/gpt-latest",
     "anthropic/claude-sonnet-latest",
-    "google/gemini-2.5-flash"
+    "vertex/gemini-flash-latest"
 ]
 
 for model in models:

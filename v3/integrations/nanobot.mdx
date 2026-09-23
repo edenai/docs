@@ -51,7 +51,7 @@ nanobot reads `~/.nanobot/config.json`. Add the `edenai` provider and point a mo
   "modelPresets": {
     "primary": {
       "provider": "edenai",
-      "model": "anthropic/claude-sonnet-latest",
+      "model": "vertex/gemini-flash-latest",
       "maxTokens": 8192
     }
   },
@@ -88,7 +88,7 @@ If your config predates a schema change, run `nanobot onboard --refresh` first. 
 
 ## Model naming
 
-Eden AI model IDs are `provider/model`, and nanobot forwards the ID unchanged, including the vendor prefix. So the preset above sends `anthropic/claude-sonnet-latest` upstream as-is.
+Eden AI model IDs are `provider/model`, and nanobot forwards the ID unchanged, including the vendor prefix. So the preset above sends `vertex/gemini-flash-latest` upstream as-is.
 
 The live catalogue is public and needs no authentication, so you can browse it before choosing:
 
@@ -98,7 +98,7 @@ curl https://api.edenai.run/v3/models
 ```
 </CodeGroup>
 
-Read the catalogue rather than copying a model list from a guide. Availability and pricing change, and IDs are retired over time. `anthropic/claude-sonnet-latest` is an alias that always resolves to the current Sonnet, which makes it a safe default for a config you do not want to revisit.
+Read the catalogue rather than copying a model list from a guide. Availability and pricing change, and IDs are retired over time. `vertex/gemini-flash-latest` is an alias that always resolves to the current Gemini Flash, which makes it a safe default for a config you do not want to revisit.
 
 ## Switching models
 
@@ -115,7 +115,7 @@ Change one value to move a preset to another vendor:
     },
     "cheap": {
       "provider": "edenai",
-      "model": "mistral/mistral-small-2603",
+      "model": "mistral/mistral-small-latest",
       "maxTokens": 4096
     }
   }

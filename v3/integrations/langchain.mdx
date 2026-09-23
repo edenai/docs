@@ -45,7 +45,7 @@ from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
 
 llm = ChatOpenAI(
-    model="openai/gpt-4",
+    model="openai/gpt-latest",
     api_key="YOUR_EDEN_AI_API_KEY",
     base_url="https://api.edenai.run/v3"
 )
@@ -68,8 +68,8 @@ import { ChatOpenAI } from "@langchain/openai";
 import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 
 const llm = new ChatOpenAI({
-  modelName: "openai/gpt-4",
-  openAIApiKey: "YOUR_EDEN_AI_API_KEY",
+  model: "openai/gpt-latest",
+  apiKey: "YOUR_EDEN_AI_API_KEY",
   configuration: {
     baseURL: "https://api.edenai.run/v3",
   },
@@ -90,9 +90,9 @@ console.log(response.content);
 
 Pass any `provider/model` string as the `model` (or `modelName`) parameter. For example:
 
-- `openai/gpt-4` — GPT-4
+- `openai/gpt-latest` — GPT-4
 - `anthropic/claude-sonnet-latest` — Claude Sonnet
-- `google/gemini-2.5-flash` — Gemini Flash
+- `vertex/gemini-flash-latest` — Gemini Flash
 
 ## Prompt Templates
 
@@ -102,7 +102,7 @@ from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 
 llm = ChatOpenAI(
-    model="openai/gpt-4",
+    model="openai/gpt-latest",
     api_key="YOUR_EDEN_AI_API_KEY",
     base_url="https://api.edenai.run/v3"
 )
@@ -133,7 +133,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 
 llm = ChatOpenAI(
-    model="openai/gpt-4",
+    model="openai/gpt-latest",
     api_key="YOUR_EDEN_AI_API_KEY",
     base_url="https://api.edenai.run/v3"
 )
@@ -167,7 +167,7 @@ from langchain_openai import ChatOpenAI
 load_dotenv()
 
 llm = ChatOpenAI(
-    model="openai/gpt-4",
+    model="openai/gpt-latest",
     api_key=os.getenv("EDEN_AI_API_KEY"),
     base_url="https://api.edenai.run/v3"
 )

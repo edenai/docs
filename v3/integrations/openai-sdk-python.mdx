@@ -51,7 +51,7 @@ client = OpenAI(
 )
 
 response = client.chat.completions.create(
-    model="openai/gpt-4",
+    model="openai/gpt-latest",
     messages=[
         {"role": "user", "content": "Hello! How are you?"}
     ]
@@ -66,19 +66,19 @@ print(response.choices[0].message.content)
 Access models from multiple providers using the `provider/model` format:
 
 **OpenAI**
-- `openai/gpt-4`
-- `openai/gpt-4-turbo`
-- `openai/gpt-4o`
-- `openai/gpt-3.5-turbo`
+- `openai/gpt-latest`
+- `openai/gpt-latest`
+- `openai/gpt-latest`
+- `openai/gpt-mini-latest`
 
 **Anthropic**
 - `anthropic/claude-sonnet-latest`
-- `anthropic/claude-opus-4-5`
-- `anthropic/claude-haiku-4-5`
+- `anthropic/claude-opus-latest`
+- `anthropic/claude-haiku-latest`
 
 **Google**
-- `google/gemini-2.5-pro`
-- `google/gemini-2.5-flash`
+- `vertex/gemini-2.5-pro`
+- `vertex/gemini-flash-latest`
 
 **Cohere**
 - `cohere/command-a-03-2025`
@@ -107,7 +107,7 @@ messages = [
 ]
 
 response = client.chat.completions.create(
-    model="anthropic/claude-sonnet-latest",
+    model="vertex/gemini-flash-latest",
     messages=messages
 )
 
@@ -121,7 +121,7 @@ messages.append({"role": "assistant", "content": assistant_response})
 messages.append({"role": "user", "content": "What's the population?"})
 
 response = client.chat.completions.create(
-    model="anthropic/claude-sonnet-latest",
+    model="vertex/gemini-flash-latest",
     messages=messages
 )
 
@@ -154,7 +154,7 @@ file_id = upload_response.json()["file_id"]
 
 # Use the file_id in a chat message
 response = client.chat.completions.create(
-    model="openai/gpt-4o",
+    model="openai/gpt-latest",
     messages=[
         {
             "role": "user",
@@ -185,7 +185,7 @@ client = OpenAI(
 
 try:
     response = client.chat.completions.create(
-        model="openai/gpt-4",
+        model="openai/gpt-latest",
         messages=[{"role": "user", "content": "Hello!"}]
     )
 

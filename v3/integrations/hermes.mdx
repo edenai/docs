@@ -108,10 +108,10 @@ Hermes requires **function calling**, so pick a model that supports it. Any `pro
 | Model | Best for |
 |---|---|
 | `anthropic/claude-sonnet-latest` | **Recommended default** — balanced reasoning, reliable tool calling |
-| `anthropic/claude-opus-4-8` | Maximum capability |
-| `anthropic/claude-haiku-4-5` | Fast and cheap |
+| `anthropic/claude-opus-latest` | Maximum capability |
+| `anthropic/claude-haiku-latest` | Fast and cheap |
 | `openai/gpt-5` | OpenAI's frontier model |
-| `google/gemini-2.5-pro` | Long context, multimodal |
+| `vertex/gemini-2.5-pro` | Long context, multimodal |
 
 Browse the full catalog at [app.edenai.run/models](https://app.edenai.run/models).
 
@@ -128,7 +128,7 @@ hermes fallback add
 The setup above uses Hermes' generic `custom` provider, which is the fastest way to get running. For a **native `--provider eden-ai` experience** — so Eden AI shows up in `hermes model`, `hermes doctor`, and the setup wizard — install Eden AI as a **standalone model-provider plugin**. Drop a directory under `$HERMES_HOME/plugins/model-providers/eden-ai/`, with no changes to the Hermes repo:
 
 <CodeGroup>
-{/* skip-test */}
+{/* skip-test: imports Hermes' own `providers` module, which only exists inside a Hermes plugin directory */}
 ```python __init__.py
 from providers import register_provider
 from providers.base import ProviderProfile
@@ -142,11 +142,11 @@ eden_ai = ProviderProfile(
     env_vars=("EDENAI_API_KEY",),
     base_url="https://api.edenai.run/v3",
     auth_type="api_key",
-    default_aux_model="mistral/mistral-small-2603",
+    default_aux_model="mistral/mistral-small-latest",
     fallback_models=(
-        "anthropic/claude-sonnet-5",
+        "anthropic/claude-sonnet-latest",
         "openai/gpt-5.5",
-        "mistral/mistral-small-2603",
+        "mistral/mistral-small-latest",
     ),
 )
 

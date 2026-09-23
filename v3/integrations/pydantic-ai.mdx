@@ -42,7 +42,6 @@ poetry add pydantic-ai
 Point Pydantic AI's OpenAI model at Eden AI:
 
 <CodeGroup>
-{/* skip-test */}
 ```python Python
 from pydantic_ai import Agent
 from pydantic_ai.models.openai import OpenAIChatModel
@@ -71,24 +70,24 @@ Access models from multiple providers using the `provider/model` format:
 - `openai/gpt-5-mini`
 
 **Anthropic**
-- `anthropic/claude-sonnet-5`
-- `anthropic/claude-opus-4-8`
-- `anthropic/claude-haiku-4-5`
+- `anthropic/claude-sonnet-latest`
+- `anthropic/claude-opus-latest`
+- `anthropic/claude-haiku-latest`
 
 **Google**
-- `google/gemini-2.5-pro`
-- `google/gemini-3.5-flash`
+- `vertex/gemini-2.5-pro`
+- `vertex/gemini-flash-latest`
 
 **Mistral**
-- `mistral/mistral-large-2512`
-- `mistral/mistral-small-2603`
+- `mistral/mistral-large-latest`
+- `mistral/mistral-small-latest`
 
 ## Structured Output
 
 Pydantic AI's signature feature works unchanged — define a Pydantic `output_type` and the agent returns a validated object, whichever Eden AI model you choose:
 
 <CodeGroup>
-{/* skip-test */}
+{/* paid-test: needs a real model answer, the sandbox returns canned prose */}
 ```python Python
 from pydantic import BaseModel
 from pydantic_ai import Agent
@@ -101,7 +100,7 @@ class City(BaseModel):
     population: int
 
 model = OpenAIChatModel(
-    "anthropic/claude-sonnet-5",
+    "anthropic/claude-sonnet-latest",
     provider=OpenAIProvider(
         api_key="YOUR_EDEN_AI_API_KEY",
         base_url="https://api.edenai.run/v3",
@@ -119,14 +118,13 @@ print(result.output)  # City(name='Paris', country='France', population=...)
 Keep conversation history across runs with `message_history`:
 
 <CodeGroup>
-{/* skip-test */}
 ```python Python
 from pydantic_ai import Agent
 from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
 
 model = OpenAIChatModel(
-    "anthropic/claude-sonnet-5",
+    "anthropic/claude-sonnet-latest",
     provider=OpenAIProvider(
         api_key="YOUR_EDEN_AI_API_KEY",
         base_url="https://api.edenai.run/v3",
@@ -149,7 +147,6 @@ print(result.output)
 ## Error Handling
 
 <CodeGroup>
-{/* skip-test */}
 ```python Python
 from pydantic_ai import Agent
 from pydantic_ai.models.openai import OpenAIChatModel
@@ -182,7 +179,6 @@ except UnexpectedModelBehavior as e:
 EDEN_AI_API_KEY=your_api_key_here
 ```
 
-{/* skip-test */}
 ```python Python
 import os
 from pydantic_ai.models.openai import OpenAIChatModel

@@ -63,7 +63,7 @@ To pin specific models instead, name them and supply the key from the environmen
 <CodeGroup>
 ```yaml config.yaml
 model_providers:
-  - model: edenai/anthropic/claude-sonnet-latest
+  - model: edenai/vertex/gemini-flash-latest
     access_key: $EDENAI_API_KEY
     base_url: https://api.edenai.run/v3
     default: true
@@ -102,7 +102,7 @@ curl https://api.edenai.run/v3/models
 ```
 </CodeGroup>
 
-Read the catalogue rather than copying a list from a guide, since IDs are retired over time. `anthropic/claude-sonnet-latest` is an alias that always resolves to the current Sonnet, which makes it a safe default.
+Read the catalogue rather than copying a list from a guide, since IDs are retired over time. `vertex/gemini-flash-latest` is an alias that always resolves to the current Gemini Flash, which makes it a safe default.
 
 ## Routing preferences
 

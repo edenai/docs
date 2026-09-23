@@ -66,31 +66,31 @@ Replace the configuration with:
 {
   "models": [
     {
-      "title": "Claude 3.5 Sonnet",
+      "title": "Claude Sonnet",
       "provider": "openai",
       "model": "anthropic/claude-sonnet-latest",
       "apiKey": "YOUR_EDEN_AI_API_KEY",
       "apiBase": "https://api.edenai.run/v3"
     },
     {
-      "title": "GPT-4",
+      "title": "GPT",
       "provider": "openai",
-      "model": "openai/gpt-4",
+      "model": "openai/gpt-latest",
       "apiKey": "YOUR_EDEN_AI_API_KEY",
       "apiBase": "https://api.edenai.run/v3"
     },
     {
-      "title": "Gemini Pro",
+      "title": "Gemini Flash",
       "provider": "openai",
-      "model": "google/gemini-2.5-flash",
+      "model": "vertex/gemini-flash-latest",
       "apiKey": "YOUR_EDEN_AI_API_KEY",
       "apiBase": "https://api.edenai.run/v3"
     }
   ],
   "tabAutocompleteModel": {
-    "title": "GPT-3.5 Turbo",
+    "title": "GPT Mini",
     "provider": "openai",
-    "model": "openai/gpt-3.5-turbo",
+    "model": "openai/gpt-mini-latest",
     "apiKey": "YOUR_EDEN_AI_API_KEY",
     "apiBase": "https://api.edenai.run/v3"
   },
@@ -120,30 +120,30 @@ You can add any model from Eden AI's catalog:
 {
   "models": [
     {
-      "title": "Claude 3.5 Sonnet",
+      "title": "Claude Sonnet",
       "provider": "openai",
       "model": "anthropic/claude-sonnet-latest",
       "apiKey": "YOUR_EDEN_AI_API_KEY",
       "apiBase": "https://api.edenai.run/v3"
     },
     {
-      "title": "Claude 3 Opus",
+      "title": "Claude Opus",
       "provider": "openai",
-      "model": "anthropic/claude-opus-4-5",
+      "model": "anthropic/claude-opus-latest",
       "apiKey": "YOUR_EDEN_AI_API_KEY",
       "apiBase": "https://api.edenai.run/v3"
     },
     {
-      "title": "GPT-4 Turbo",
+      "title": "GPT",
       "provider": "openai",
-      "model": "openai/gpt-4-turbo",
+      "model": "openai/gpt-latest",
       "apiKey": "YOUR_EDEN_AI_API_KEY",
       "apiBase": "https://api.edenai.run/v3"
     },
     {
       "title": "Gemini 2.5 Pro",
       "provider": "openai",
-      "model": "google/gemini-2.5-pro",
+      "model": "vertex/gemini-2.5-pro",
       "apiKey": "YOUR_EDEN_AI_API_KEY",
       "apiBase": "https://api.edenai.run/v3"
     },
@@ -204,7 +204,7 @@ Configure fast models for autocomplete:
   "tabAutocompleteModel": {
     "title": "Fast Autocomplete",
     "provider": "openai",
-    "model": "openai/gpt-3.5-turbo",
+    "model": "openai/gpt-mini-latest",
     "apiKey": "YOUR_EDEN_AI_API_KEY",
     "apiBase": "https://api.edenai.run/v3"
   }
@@ -228,6 +228,7 @@ Use slash commands for common tasks:
 
 Add codebase context for better responses:
 
+{/* skip-test: elides the models array with [...] to focus on contextProviders */}
 <CodeGroup>
 ```json config.json
 {
@@ -263,7 +264,7 @@ Configure temperature and other parameters per model:
 {
   "models": [
     {
-      "title": "Claude 3.5 Sonnet (Creative)",
+      "title": "Claude Sonnet (Creative)",
       "provider": "openai",
       "model": "anthropic/claude-sonnet-latest",
       "apiKey": "YOUR_EDEN_AI_API_KEY",
@@ -274,7 +275,7 @@ Configure temperature and other parameters per model:
       }
     },
     {
-      "title": "Claude 3.5 Sonnet (Precise)",
+      "title": "Claude Sonnet (Precise)",
       "provider": "openai",
       "model": "anthropic/claude-sonnet-latest",
       "apiKey": "YOUR_EDEN_AI_API_KEY",
@@ -298,7 +299,7 @@ Use environment variables for API keys:
 {
   "models": [
     {
-      "title": "Claude 3.5 Sonnet",
+      "title": "Claude Sonnet",
       "provider": "openai",
       "model": "anthropic/claude-sonnet-latest",
       "apiKey": "${EDEN_AI_API_KEY}",
@@ -433,9 +434,9 @@ If Continue doesn't understand your codebase:
 
 ### 1. Choose the Right Model
 
-- **Quick edits**: Use `openai/gpt-3.5-turbo` for speed
+- **Quick edits**: Use `openai/gpt-mini-latest` for speed
 - **Complex reasoning**: Use `anthropic/claude-sonnet-latest`
-- **Autocomplete**: Use `openai/gpt-3.5-turbo` for low latency
+- **Autocomplete**: Use `openai/gpt-mini-latest` for low latency
 
 ### 2. Provide Context
 

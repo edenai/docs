@@ -6,7 +6,16 @@ on:
     paths:
       - 'v3/**/*.mdx'
       - '*.mdx'
+      # A link breaks when a page is renamed in the navigation or a shared
+      # snippet changes, neither of which touches a page.
+      - 'docs.json'
+      - 'snippets/**'
       - 'tests/**'
+  # The docs go stale against a moving API even when nobody edits them: a model
+  # is retired, a response shape changes, a linked page moves. A PR run only
+  # catches what a PR touches, so the suite also runs weekly against main.
+  schedule:
+    - cron: '0 6 * * 1'
 
 # These tests share one Eden AI account, and teardown deletes every upload that
 # appeared while they ran, so overlapping runs would delete each other's files.
@@ -33,16 +42,94 @@ jobs:
       - uses: astral-sh/setup-uv@v5
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          # atomic-agents, exercised by the Atomic Agents guide, needs 3.12+.
+          python-version: '3.13'
+      # node runs the JavaScript samples, strips the types off the TypeScript
+      # ones, and supplies the tsc that checks them. 24 is what the docs tell
+      # readers to use and what strips types without a flag.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: tests/package-lock.json
       - name: Install dependencies
         run: uv pip install -r tests/requirements-lock.txt --system
-      - name: Run tests
+      # The packages the samples import. Pinned and locked, so a run tests the
+      # docs rather than whatever npm resolved that morning.
+      - name: Install snippet packages
+        run: npm ci
+        working-directory: tests
+
+      # No credentials, so this still reports a snippet that is not valid
+      # Python, bash or JavaScript on a run where the secrets are missing, and
+      # it covers the blocks the execution suites hold back. The TypeScript
+      # type check lives here too: it needs the SDK typings that npm just
+      # installed, but no token. The only requests it makes are the
+      # unauthenticated 404 probes that prove a dead endpoint still fails.
+      - name: Check snippet syntax
+        run: pytest tests/test_snippets_compile.py tests/test_snippet_extractor.py tests/test_js_script.py --no-cov
+        env:
+          EDEN_AI_BASE_URL: ${{ vars.EDEN_AI_BASE_URL || 'https://staging-api.edenai.run' }}
+
+      # A reader hits a broken link far more often than a broken snippet, and
+      # never reports it. These read files and make no requests, so they cost
+      # nothing on a pull request. The two OpenAPI specs are the exception:
+      # Mintlify renders the API reference tabs by fetching them, so a spec
+      # that stops resolving empties a section of the site with nothing here
+      # having changed, and that is worth a request on every run.
+      #
+      # The third-party links are checked on the weekly run instead. Fifteen
+      # of them are github.com, which rate-limits an unauthenticated runner,
+      # and a docs PR should not go red because somebody else's site is down.
+      - name: Check documentation links
+        if: always()
+        run: pytest tests/test_links.py tests/test_links_external.py --no-cov
+        env:
+          EDEN_AI_CHECK_EXTERNAL_LINKS: ${{ github.event_name != 'pull_request' }}
+
+      # Needs no credential: the model catalog is public.
+      - name: Check integration configuration blocks
+        if: always()
+        run: pytest tests/test_config_blocks.py --no-cov
+
+      - name: Run Python snippets
         run: pytest tests/test_snippets_execute.py
         env:
           EDEN_AI_BASE_URL: ${{ vars.EDEN_AI_BASE_URL || 'https://staging-api.edenai.run' }}
           EDEN_AI_SANDBOX_API_TOKEN: ${{ secrets.EDEN_AI_SANDBOX_TOKEN }}
           EDEN_AI_PRODUCTION_API_TOKEN: ${{ secrets.EDEN_AI_PRODUCTION_TOKEN }}
           EDEN_AI_MANAGEMENT_KEY: ${{ secrets.EDEN_AI_MANAGEMENT_KEY }}
+          # A handful of samples need the model to answer for real, which costs
+          # credits on every run. They are reported as skipped on docs PRs and
+          # get their coverage from the weekly run and from a manual dispatch.
+          EDEN_AI_RUN_PAID_CALLS: ${{ github.event_name != 'pull_request' }}
+
+      # The curl samples are what most readers copy, and nothing ran them until
+      # now. Each block runs as its own bash script, so what gets tested is the
+      # command on the page rather than a translation of it.
+      - name: Run shell snippets
+        if: always()
+        run: pytest tests/test_snippets_shell.py --no-cov
+        env:
+          EDEN_AI_BASE_URL: ${{ vars.EDEN_AI_BASE_URL || 'https://staging-api.edenai.run' }}
+          EDEN_AI_SANDBOX_API_TOKEN: ${{ secrets.EDEN_AI_SANDBOX_TOKEN }}
+          EDEN_AI_PRODUCTION_API_TOKEN: ${{ secrets.EDEN_AI_PRODUCTION_TOKEN }}
+          EDEN_AI_MANAGEMENT_KEY: ${{ secrets.EDEN_AI_MANAGEMENT_KEY }}
+          EDEN_AI_RUN_PAID_CALLS: ${{ github.event_name != 'pull_request' }}
+
+      # The TypeScript SDK guide is the one integration page written entirely
+      # in another language, and nothing ran it until now. Each block runs as
+      # its own script, so what gets tested is the code on the page.
+      - name: Run JS and TS snippets
+        if: always()
+        run: pytest tests/test_snippets_js.py --no-cov
+        env:
+          EDEN_AI_BASE_URL: ${{ vars.EDEN_AI_BASE_URL || 'https://staging-api.edenai.run' }}
+          EDEN_AI_SANDBOX_API_TOKEN: ${{ secrets.EDEN_AI_SANDBOX_TOKEN }}
+          EDEN_AI_PRODUCTION_API_TOKEN: ${{ secrets.EDEN_AI_PRODUCTION_TOKEN }}
+          EDEN_AI_MANAGEMENT_KEY: ${{ secrets.EDEN_AI_MANAGEMENT_KEY }}
+          EDEN_AI_RUN_PAID_CALLS: ${{ github.event_name != 'pull_request' }}
+
       - name: Coverage summary
         if: always()
         run: |

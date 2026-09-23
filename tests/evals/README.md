@@ -14,13 +14,16 @@ Evaluation pipeline for the [docs.edenai.co](https://docs.edenai.co) "Ask AI" fe
 
 ## Setup
 
-Uses the shared repo-root venv. Eval-specific deps (`deepeval`, `httpx`) are listed in `tests/requirements.txt`.
+Uses the shared repo-root venv. Eval-specific deps (`deepeval`, `httpx`) live in
+`tests/requirements-evals.txt`, which pulls in `tests/requirements.txt` as well. They are
+kept apart because deepeval's dependency tree holds several of the integration frameworks
+the snippet tests exercise well behind the versions the docs tell readers to install.
 
 ```bash
 # From repo root (if venv not set up yet)
 uv venv .venv
 source .venv/bin/activate
-uv pip install -r tests/requirements.txt
+uv pip install -r tests/requirements-evals.txt
 ```
 
 Add the eval keys to the shared `tests/.env` (see `tests/.env.example` for the full template):

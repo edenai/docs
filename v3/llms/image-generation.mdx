@@ -46,7 +46,7 @@ The image surface spans many providers. A few common model strings:
 
 | Provider | Model string |
 |---|---|
-| Google | `google/gemini-2.5-flash-image`, `google/gemini-3-pro-image-preview`, `google/imagen-4.0-generate-001` |
+| Google | `vertex/gemini-2.5-flash-image`, `vertex/gemini-3-pro-image`, `vertex/gemini-3.1-flash-image` |
 | OpenAI | `openai/gpt-image-1`, `openai/gpt-image-1-mini` |
 | Stability | `stabilityai/sd3.5-large` |
 | Amazon | `amazon/amazon.nova-canvas-v1:0` |
@@ -66,7 +66,7 @@ headers = {
 }
 
 payload = {
-    "model": "google/gemini-2.5-flash-image",
+    "model": "vertex/gemini-2.5-flash-image",
     "prompt": "A nano banana dish in a fancy restaurant, cinematic lighting",
     "size": "1024x1024",
     "n": 1,
@@ -85,7 +85,7 @@ curl -X POST https://api.edenai.run/v3/images/generations \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "google/gemini-2.5-flash-image",
+    "model": "vertex/gemini-2.5-flash-image",
     "prompt": "A nano banana dish in a fancy restaurant, cinematic lighting",
     "size": "1024x1024",
     "n": 1
@@ -94,7 +94,6 @@ curl -X POST https://api.edenai.run/v3/images/generations \
 </CodeGroup>
 
 Because the surface is OpenAI-compatible, the official OpenAI SDK works unchanged — just set `base_url`:
-{/* skip-test */}
 <CodeGroup>
 ```python OpenAI SDK
 from openai import OpenAI
@@ -102,7 +101,7 @@ from openai import OpenAI
 client = OpenAI(base_url="https://api.edenai.run/v3", api_key="YOUR_API_KEY")
 
 result = client.images.generate(
-    model="google/gemini-2.5-flash-image",
+    model="vertex/gemini-2.5-flash-image",
     prompt="A nano banana dish in a fancy restaurant, cinematic lighting",
     size="1024x1024",
     n=1,
@@ -115,7 +114,7 @@ print(result.data[0].url or result.data[0].b64_json[:60])
 
 | Field | Required | Description |
 |---|---|---|
-| `model` | yes | `provider/model`, e.g. `google/gemini-2.5-flash-image` |
+| `model` | yes | `provider/model`, e.g. `vertex/gemini-2.5-flash-image` |
 | `prompt` | yes | Text description of the image to generate (1–32,000 chars) |
 | `n` | no | Number of images to generate (1–10) |
 | `size` | no | Output resolution, e.g. `1024x1024`, `1536x1024`, `auto`. Allowed values depend on the model |
@@ -149,7 +148,7 @@ Unknown fields are forwarded to the provider unchanged.
 ```
 
 ### Saving the image to disk
-{/* skip-test */}
+{/* skip-test: continues the sample above, whose result it reads */}
 <CodeGroup>
 ```python Python
 import base64
@@ -177,7 +176,6 @@ Some providers return a hosted `url` instead of inline `b64_json`. Download the 
 `POST /v3/images/edits` takes the same fields as generations plus an `images` array. Each entry sets exactly one of `file_id` (returned by Eden's `/v3/upload/...` endpoints) or `image_url` (an `https://` URL or a `data:image/...;base64,...` URL). An optional `mask` (same shape) marks the regions to edit.
 
 The endpoint dispatches on `Content-Type`: send `application/json` for the `images[]` form below, or `multipart/form-data` for the classic OpenAI SDK file-upload form.
-{/* skip-test */}
 <CodeGroup>
 ```python Python
 import requests
@@ -189,7 +187,7 @@ headers = {
 }
 
 payload = {
-    "model": "google/gemini-2.5-flash-image",
+    "model": "vertex/gemini-2.5-flash-image",
     "prompt": "Add a small red hat",
     "images": [
         {"image_url": "https://example.com/photo.png"}

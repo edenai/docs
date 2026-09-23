@@ -120,7 +120,9 @@ If a stream fails partway through, the error frame carries a **corrected** block
 
 ## Scope
 
-Available on the LLM endpoints (`/v3/chat/completions`, `/v3/responses` and `/v3/v1/messages`) in both streaming and non-streaming form. It is not returned by `/v3/universal-ai`.
+Available on the LLM endpoints (`/v3/chat/completions`, `/v3/responses` and `/v3/v1/messages`) in both streaming and non-streaming form, as well as synchronous calls to `/v3/universal-ai`. It is not returned by asynchronous Universal AI jobs (`/v3/universal-ai/async`).
+
+On `/v3/universal-ai`, the block omits `strategy` and `endpoints` because Universal AI does not rank sellers. Instead, it reports `mode` (`sync`).
 
 ## Next Steps
 

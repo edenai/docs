@@ -14,10 +14,10 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "LLM API", "observability", "debugging", "provider routing"]}
   datePublished="2026-08-19T00:00:00Z"
-  dateModified="2026-09-01T00:00:00Z"
+  dateModified="2026-09-23T00:00:00Z"
 />
 
-Eden AI makes decisions on your behalf on every LLM request: which provider serves a model sold by several, which region it runs in, whether to retry elsewhere when one fails, and whether to use your own provider key. None of that is visible in a normal response, because the answer looks the same whoever produced it.
+Eden AI makes decisions on your behalf on every request: which provider serves a model sold by several, which region it runs in, whether to retry elsewhere when one fails, and whether to use your own provider key. None of that is visible in a normal response, because the answer looks the same whoever produced it.
 
 Send the `x-edenai-metadata` header to have Eden AI attach what it decided.
 
@@ -120,9 +120,41 @@ If a stream fails partway through, the error frame carries a **corrected** block
 
 ## Scope
 
-Available on the LLM endpoints (`/v3/chat/completions`, `/v3/responses` and `/v3/v1/messages`) in both streaming and non-streaming form, as well as synchronous calls to `/v3/universal-ai`. It is not returned by asynchronous Universal AI jobs (`/v3/universal-ai/async`).
+| Endpoint | Block |
+|---|---|
+| `/v3/chat/completions`, `/v3/responses`, `/v3/v1/messages` | Yes, streaming and non-streaming |
+| `/v3/embeddings`, `/v3/moderations`, `/v3/alpha/decisions` | Yes |
+| `/v3/images/generations`, `/v3/images/edits`, `/v3/audio/transcriptions` | Yes |
+| `/v3/universal-ai` | Yes, synchronous calls only, with a shorter block (below) |
+| `/v3/audio/speech` | No. The body is raw audio; the `x-edenai-provider` and `x-edenai-cost` response headers name the provider and the cost |
+| `/v3/videos`, `/v3/universal-ai/async` | No |
 
-On `/v3/universal-ai`, the block omits `strategy` and `endpoints` because Universal AI does not rank sellers. Instead, it reports `mode` (`sync`).
+The block is also omitted when the response is served from [cache](/v3/general/caching), because no provider was called for it.
+
+### Universal AI
+
+Universal AI never ranks sellers: you name the provider and, optionally, [fallbacks](/v3/general/fallback). The block has no `strategy` or `endpoints`, and reports `mode` instead:
+
+```json
+"edenai_metadata": {
+  "requested": "image/face_compare/facepp",
+  "mode": "sync",
+  "region": "global",
+  "summary": "served=facepp",
+  "attempt": 1,
+  "is_byok": false,
+  "attempts": [
+    {"provider": "facepp", "model": "facepp", "status": 200, "region": "global"}
+  ]
+}
+```
+
+| Field | Meaning |
+|---|---|
+| `mode` | `sync` |
+| `summary` | Which provider served, or `served=none` when every attempt failed |
+
+The other fields mean the same as above. A failed attempt reports the provider's own status, even though Universal AI always answers HTTP 200 with `"status": "fail"`.
 
 ## Next Steps
 

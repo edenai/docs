@@ -1,0 +1,407 @@
+---
+title: "Decisions"
+description: "Ask typed questions about text and get calibrated probabilities back instead of prose. Decision models, which TypeSafe calls System One, answer in one request with no streaming and bill on input only."
+icon: "scale-balanced"
+tag: "Alpha"
+---
+
+
+import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
+
+<TechArticleSchema
+  title={"Decisions"}
+  description={"Ask typed questions about text and get calibrated probabilities back instead of prose. Decision models, which TypeSafe calls System One, answer in one request with no streaming and bill on input only."}
+  path="v3/llms/decisions"
+  articleSection="LLMs"
+  about={"LLM API"}
+  proficiencyLevel="Intermediate"
+  keywords={["Eden AI", "AI API", "LLM API", "decision model", "decisions", "classification", "routing", "System One", "TypeSafe", "Jev"]}
+  datePublished="2026-09-22T00:00:00Z"
+  dateModified="2026-09-22T00:00:00Z"
+/>
+
+<Warning>
+**Alpha.** This endpoint is new. Its request and response shapes, the model ids it
+exposes, and its pricing can change in ways that break existing integrations, and
+they can change without a deprecation period. It is safe to experiment with and
+risky to put on a critical path. If you do depend on it, keep the call behind a
+small adapter of your own so a shape change is one edit rather than many.
+</Warning>
+
+A decision model answers **typed questions about text**. You send some state and the questions you want answered, and you get back a choice, a score, or a probability, in a single pass. A choice and a score each come with a confidence and the full probability distribution behind them. A probability needs neither, because the number is already the answer and its own confidence.
+
+TypeSafe calls this class of model **System One**, after the fast, intuitive thinking in Kahneman's *Thinking, Fast and Slow*. Their model Jev is the first of them, and the one Eden AI serves today. Eden AI names the endpoint for the capability rather than the vendor, so a second provider of decision models lands on the same path. The request and response bodies match TypeSafe's own, but the path does not, so point your client at `/v3/alpha/decisions` directly rather than swapping a base URL.
+
+It never writes prose. That is the point: the answer is a value your code can branch on without parsing, and the schema is guaranteed.
+
+## When to use one
+
+Reach for this when you are making the same small judgement over and over and the possible answers are known in advance:
+
+- **Routing**: which team, queue, or model should handle this?
+- **Classification**: which category, out of up to 255?
+- **Triage and scoring**: how severe, how urgent, how positive, on your own rubric?
+- **Gating**: is this a refund request, is this spam, is this ready to send?
+- **Cheap pre-filters**: decide whether an expensive model needs to run at all.
+
+It is the wrong tool for anything that needs words back: chat, summarisation, extraction, code, or an explanation of its own reasoning. Use [chat completions](/v3/llms/chat-completions) for those.
+
+<Note>
+A decision model also cannot reliably count items or do arithmetic, and it reads
+instructions literally. Phrase questions positively where you can: negations and
+implications are easy to get wrong.
+</Note>
+
+## Endpoints
+
+```
+GET  /v3/alpha/decisions/models      List available decision models
+POST /v3/alpha/decisions             Ask questions about some state
+```
+
+Models are identified as `provider/model`, the same format used everywhere else in V3.
+
+There is **no streaming**. A decision is one request and one JSON body, typically well under a second.
+
+## List available models
+
+<CodeGroup>
+```python Python
+import requests
+
+response = requests.get("https://api.edenai.run/v3/alpha/decisions/models")
+print(response.json())
+```
+
+```typescript TypeScript
+const response = await fetch("https://api.edenai.run/v3/alpha/decisions/models");
+console.log(await response.json());
+```
+
+```bash cURL
+curl https://api.edenai.run/v3/alpha/decisions/models
+```
+</CodeGroup>
+
+```json
+{
+  "object": "list",
+  "data": [
+    { "id": "typesafe/jev-latest", "object": "model", "owned_by": "typesafe" },
+    { "id": "typesafe/jev-preview", "object": "model", "owned_by": "typesafe" }
+  ]
+}
+```
+
+`jev-latest` is the current stable model. `jev-preview` is the newest build, stable or not. Both resolve to a concrete version, which the response reports back in its `model` field.
+
+## The three question types
+
+Every question has a `type` and, optionally, `instructions`. What `criteria` means depends on the type.
+
+### `noul`: is this true?
+
+Returns a single probability from 0 to 1. Values near 1 mean yes, near 0 mean no, and near 0.5 mean the model is genuinely unsure.
+
+```json
+{
+  "type": "noul",
+  "instructions": "Does this message express urgency?"
+}
+```
+
+```json
+{ "type": "noul", "noul": 0.98 }
+```
+
+### `choice`: which one of these?
+
+Returns the winning option plus the probability of every option and a confidence. Up to 255 options.
+
+```json
+{
+  "type": "choice",
+  "instructions": "Which team should handle this?",
+  "criteria": {
+    "billing": "Payments, invoicing, refunds",
+    "technical": "Bugs, outages, integrations",
+    "sales": "Pricing, upgrades, new accounts"
+  }
+}
+```
+
+```json
+{
+  "type": "choice",
+  "choice": "technical",
+  "confidence": 0.89,
+  "probabilities": { "technical": 0.93, "billing": 0.07, "sales": 0.0 }
+}
+```
+
+### `score`: which level?
+
+Returns a position on your rubric. `criteria` is an **ordered** list, and the score is the probability-weighted average, so it can land between levels. The `legend` echoes your rubric back so you can read the number.
+
+```json
+{
+  "type": "score",
+  "instructions": "How frustrated is the customer?",
+  "criteria": [
+    "Calm, just stating facts",
+    "Frustrated but civil",
+    "Very angry, strong language"
+  ]
+}
+```
+
+```json
+{
+  "type": "score",
+  "score": 1.0,
+  "confidence": 1.0,
+  "legend": { "0": "Calm, just stating facts", "1": "Frustrated but civil", "2": "Very angry, strong language" },
+  "probabilities": { "0": 0.0, "1": 1.0, "2": 0.0 }
+}
+```
+
+## Worked example: triaging a support ticket
+
+One request can carry as many questions as you like, and they are answered together over the same state. Asking three questions costs barely more than asking one, because the state is only read once.
+
+<CodeGroup>
+```python Python
+import requests
+
+response = requests.post(
+    "https://api.edenai.run/v3/alpha/decisions",
+    headers={"Authorization": "Bearer YOUR_API_KEY"},
+    json={
+        "model": "typesafe/jev-latest",
+        "state": "Hi, I've been trying to connect my Stripe account for 3 days "
+                 "and the integration keeps failing. I'm losing sales. Please help ASAP.",
+        "questions": {
+            "department": {
+                "type": "choice",
+                "instructions": "Which team should handle this?",
+                "criteria": {
+                    "billing": "Payments, invoicing, refunds",
+                    "technical": "Bugs, outages, integrations",
+                    "sales": "Pricing, upgrades, new accounts",
+                },
+            },
+            "frustration": {
+                "type": "score",
+                "instructions": "How frustrated is the customer?",
+                "criteria": [
+                    "Calm, just stating facts",
+                    "Frustrated but civil",
+                    "Very angry, strong language",
+                ],
+            },
+            "is_urgent": {
+                "type": "noul",
+                "instructions": "Does this message express urgency?",
+            },
+        },
+    },
+)
+
+answers = response.json()["answers"]
+if answers["is_urgent"]["noul"] > 0.9 and answers["frustration"]["score"] >= 1:
+    escalate(to=answers["department"]["choice"])
+```
+
+```typescript TypeScript
+const response = await fetch("https://api.edenai.run/v3/alpha/decisions", {
+  method: "POST",
+  headers: {
+    Authorization: "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    model: "typesafe/jev-latest",
+    state:
+      "Hi, I've been trying to connect my Stripe account for 3 days and the " +
+      "integration keeps failing. I'm losing sales. Please help ASAP.",
+    questions: {
+      department: {
+        type: "choice",
+        instructions: "Which team should handle this?",
+        criteria: {
+          billing: "Payments, invoicing, refunds",
+          technical: "Bugs, outages, integrations",
+          sales: "Pricing, upgrades, new accounts",
+        },
+      },
+      frustration: {
+        type: "score",
+        instructions: "How frustrated is the customer?",
+        criteria: [
+          "Calm, just stating facts",
+          "Frustrated but civil",
+          "Very angry, strong language",
+        ],
+      },
+      is_urgent: {
+        type: "noul",
+        instructions: "Does this message express urgency?",
+      },
+    },
+  }),
+});
+
+const { answers } = await response.json();
+if (answers.is_urgent.noul > 0.9) escalate(answers.department.choice);
+```
+
+```bash cURL
+curl -X POST https://api.edenai.run/v3/alpha/decisions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "typesafe/jev-latest",
+    "state": "Hi, I'"'"'ve been trying to connect my Stripe account for 3 days and the integration keeps failing. I'"'"'m losing sales. Please help ASAP.",
+    "questions": {
+      "department": {
+        "type": "choice",
+        "instructions": "Which team should handle this?",
+        "criteria": {
+          "billing": "Payments, invoicing, refunds",
+          "technical": "Bugs, outages, integrations",
+          "sales": "Pricing, upgrades, new accounts"
+        }
+      },
+      "frustration": {
+        "type": "score",
+        "instructions": "How frustrated is the customer?",
+        "criteria": [
+          "Calm, just stating facts",
+          "Frustrated but civil",
+          "Very angry, strong language"
+        ]
+      },
+      "is_urgent": {
+        "type": "noul",
+        "instructions": "Does this message express urgency?"
+      }
+    }
+  }'
+```
+</CodeGroup>
+
+```json
+{
+  "model": "jev-1.13.0",
+  "answers": {
+    "department": { "type": "choice", "choice": "technical", "confidence": 0.89, "probabilities": { "technical": 0.93, "billing": 0.07, "sales": 0.0 } },
+    "frustration": { "type": "score", "score": 1.0, "confidence": 1.0, "legend": { "0": "Calm, just stating facts", "1": "Frustrated but civil", "2": "Very angry, strong language" }, "probabilities": { "0": 0.0, "1": 1.0, "2": 0.0 } },
+    "is_urgent": { "type": "noul", "noul": 0.98 }
+  },
+  "usage": { "input_tokens": 430, "output_tokens": 73 },
+  "cost": 0.00001806
+}
+```
+
+## Request body
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `model` | string | yes | `provider/model`, for example `typesafe/jev-latest`. |
+| `state` | string, object, or array | yes | The content every question in this request refers to. |
+| `questions` | object | yes | At least one question, keyed by a name you choose. The answers come back under the same names. |
+
+`state` does not have to be a string. Pass an object or an array when the shape itself carries meaning, and the model will read the structure:
+
+```json
+{
+  "state": {
+    "subject": "Duplicate charge",
+    "message": "I was charged twice.",
+    "plan": "pro",
+    "previous_tickets": 3
+  }
+}
+```
+
+## Structured criteria
+
+`instructions` and every `criteria` value can be an object or an array instead of a string. Use that when a one-line description is not enough to separate two options:
+
+```json
+{
+  "type": "choice",
+  "instructions": "Which team owns this?",
+  "criteria": {
+    "billing": {
+      "what": "Payments, invoicing and refunds",
+      "not_for": "Questions about pricing tiers",
+      "examples": ["charged twice", "refund not received"]
+    },
+    "technical": {
+      "what": "Bugs, outages and integrations",
+      "examples": ["webhook returns 500"]
+    }
+  }
+}
+```
+
+Score levels take the same treatment, with `summary` and `signals` per level. Richer criteria cost a few more input tokens and usually buy noticeably higher confidence, which is the trade this model is built for.
+
+## Response
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `model` | string | The concrete version that answered, for example `jev-1.13.0`, even when you asked for an alias. |
+| `answers` | object | One answer per question, under the name you gave it. Each answer's `type` matches its question. |
+| `usage` | object | `input_tokens` and `output_tokens`. |
+| `cost` | number | What the call cost, in USD. |
+
+## Pricing
+
+Decision models are billed on **input only**. Output is free, so the cost of a call depends entirely on how much state and criteria you send.
+
+| Input tokens | Output tokens | Cost |
+| --- | --- | --- |
+| 1,000,000 | any | $0.042 |
+| 430 | 73 | $0.00001806 |
+
+The worked example above is the second row. At that rate a million triage decisions cost roughly $20, which is what makes this viable as a pre-filter in front of a larger model.
+
+Check [the models catalog](https://app.edenai.run/models) for the current rate per model.
+
+## Errors
+
+Validation is done by the provider and passed through unchanged, so you get the precise field that was wrong along with a request id you can quote in support:
+
+```json
+{
+  "error": {
+    "message": "questions.q.score.criteria: List should have at least 1 item after validation, not 0 (request_id=req_01a0c48b5785)",
+    "type": "invalid_request_error",
+    "code": "invalid_parameter"
+  }
+}
+```
+
+| Status | Meaning |
+| --- | --- |
+| 400 | Unknown model. Check `GET /v3/alpha/decisions/models` for what is callable. |
+| 402 | Not enough credits. |
+| 422 | The request did not validate, for example a question with no `criteria` or an empty score rubric. |
+| 429 | Rate limited. |
+
+## Best practices
+
+- **Ask several questions at once.** The state is read once no matter how many questions ride along, so batching is close to free.
+- **Retrieve before you judge.** Send the relevant slice of state, not your whole document store. Input is what you pay for.
+- **Use `confidence` as a routing signal.** Send low-confidence decisions to a human or to a bigger model rather than treating every answer as final. A `noul` answer has no `confidence` field, so use how far its probability sits from `0.5`.
+- **Describe criteria, do not just name them.** A bare option key works, but a sentence about when it applies works better, and a structured description better still.
+- **Order score levels from low to high.** The index is the score, so the ordering is the rubric.
+- **Pin a version if a threshold matters.** Responses report the concrete version they came from. If you have tuned thresholds against one, record which.
+
+## Related
+
+- [Chat completions](/v3/llms/chat-completions), for when you need words back.
+- [Listing models](/v3/llms/listing-models), for discovery across every V3 catalog.
+- [Structured output](/v3/llms/structured-output), for when you want a schema-shaped answer out of a generative model instead.

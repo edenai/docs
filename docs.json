@@ -223,6 +223,7 @@
                   "v3/general/sandbox",
                   "v3/general/custom-api-keys",
                   "v3/general/monitoring",
+                  "v3/general/tags",
                   "v3/general/support",
                   "v3/general/byok"
                 ]

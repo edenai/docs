@@ -1,0 +1,271 @@
+---
+icon: "tags"
+title: "Tags"
+description: "Label your API calls with key/value tags, such as client=acme or project=invoices, to split your usage and cost per customer, project or environment."
+---
+import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
+
+<TechArticleSchema
+  title={"Tags"}
+  description={"Label your API calls with key/value tags, such as client=acme or project=invoices, to split your usage and cost per customer, project or environment."}
+  path="v3/general/tags"
+  articleSection="General"
+  about={"API Configuration"}
+  proficiencyLevel="Beginner"
+  keywords={["Eden AI", "AI API", "tags", "cost attribution", "usage", "monitoring", "billing"]}
+  datePublished="2026-09-24T00:00:00Z"
+  dateModified="2026-09-24T00:00:00Z"
+/>
+
+Tags are key/value labels you put on a call, such as `client=acme` or `project=invoices`. Eden AI stores them with the request, so you can split your usage and cost per customer, project or environment in the dashboard, without creating one API key for each.
+
+There is nothing to set up: add tags to a call and they appear in your usage within a minute.
+
+## Adding tags to a call
+
+### With the `X-EdenAI-Tags` header
+
+The header works on every v3 endpoint, including file uploads, [video generation](/v3/llms/video-generation) and collections. Write `key=value` pairs separated by commas:
+
+```bash cURL
+curl -X POST https://api.edenai.run/v3/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "X-EdenAI-Tags: client=acme,project=invoices" \
+  -d '{
+    "model": "openai/gpt-latest",
+    "messages": [{"role": "user", "content": "Hello"}]
+  }'
+```
+
+Spaces around a pair are ignored. If the header is sent more than once, for example because a proxy adds its own, all of its pairs are kept.
+
+### With a `tags` field in the body
+
+On JSON endpoints, send a `tags` object instead: chat completions, Responses, Messages, embeddings, image generation, moderations, decisions, text to speech and Universal AI.
+
+```python Python
+import requests
+
+url = "https://api.edenai.run/v3/chat/completions"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json",
+}
+payload = {
+    "model": "openai/gpt-latest",
+    "messages": [{"role": "user", "content": "Hello"}],
+    "tags": {"client": "acme", "project": "invoices"},
+}
+
+response = requests.post(url, headers=headers, json=payload)
+print(response.json()["choices"][0]["message"]["content"])
+```
+
+Endpoints that take a file upload (transcriptions, image edits) read the header only. Video generation does too, and refuses a `tags` field in its body.
+
+A `tags` field that is not an object, such as the list some SDKs send, is ignored rather than refused.
+
+### Sending both
+
+The header and the body are merged by key. When both set the same key, the body wins:
+
+| Sent | Recorded |
+|---|---|
+| Header `client=acme,env=prod` and body `{"client": "globex"}` | `client=globex`, `env=prod` |
+
+## Rules
+
+| | Rule |
+|---|---|
+| Number | At most 10 tags per call, counted after the header and body are merged |
+| Keys | 1 to 64 characters, stored in lowercase: `Client` is recorded as `client` |
+| Values | 1 to 128 characters, kept as sent: `Acme` and `acme` are two different values |
+| Characters | Letters `A-Z` and `a-z`, digits, and `-` `_` `.` `:` `/`, in both keys and values. No spaces, commas, `=` or accented letters |
+| Types | Values are strings. In the body, send `"42"`, not `42` |
+| Reserved | Keys starting with `eden:` |
+| Duplicates | A key can appear once in the header and once in the body. Keys are compared in lowercase, so `Client=a,client=b` in one header is a duplicate |
+
+<Warning>
+Tags are kept as long as your usage data, and every distinct value is a separate line in your usage breakdown. Use a small set of stable values, such as a customer, project, environment or feature name. Do not put personal data (emails, names) or per-request ids in tags.
+</Warning>
+
+## Examples by client
+
+<CodeGroup>
+```python OpenAI SDK
+from openai import OpenAI
+
+client = OpenAI(
+    api_key="YOUR_API_KEY",
+    base_url="https://api.edenai.run/v3",
+    # Sent on every call made with this client
+    default_headers={"X-EdenAI-Tags": "client=acme,env=prod"},
+)
+
+response = client.chat.completions.create(
+    model="openai/gpt-latest",
+    messages=[{"role": "user", "content": "Hello"}],
+    # Added to this call only; wins over the header on the same key
+    extra_body={"tags": {"project": "invoices"}},
+)
+print(response.choices[0].message.content)
+```
+
+```python Anthropic SDK
+from anthropic import Anthropic
+
+client = Anthropic(
+    api_key="YOUR_API_KEY",
+    base_url="https://api.edenai.run/v3",
+    default_headers={"X-EdenAI-Tags": "client=acme,env=prod"},
+)
+
+message = client.messages.create(
+    model="anthropic/claude-haiku-latest",
+    max_tokens=256,
+    messages=[{"role": "user", "content": "Hello"}],
+    extra_body={"tags": {"project": "invoices"}},
+)
+print(message.content[0].text)
+```
+
+```python LiteLLM
+import litellm
+
+response = litellm.completion(
+    # "openai/" selects LiteLLM's OpenAI-compatible client; the rest is the Eden AI model
+    model="openai/openai/gpt-latest",
+    api_base="https://api.edenai.run/v3",
+    api_key="YOUR_API_KEY",
+    messages=[{"role": "user", "content": "Hello"}],
+    extra_headers={"X-EdenAI-Tags": "client=acme,project=invoices"},
+)
+print(response.choices[0].message.content)
+```
+
+```bash Claude Code
+# Add to the variables from the Claude Code setup page
+export ANTHROPIC_CUSTOM_HEADERS="X-EdenAI-Tags: client=acme,project=invoices"
+```
+
+```json OpenCode
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "edenai": {
+      "options": {
+        "baseURL": "https://api.edenai.run/v3",
+        "headers": {
+          "X-EdenAI-Tags": "client=acme,project=invoices"
+        }
+      }
+    }
+  }
+}
+```
+</CodeGroup>
+
+For [Claude Code](/v3/integrations/claude-code) and [OpenCode](/v3/integrations/opencode), start from their setup pages; the lines above only add the tags.
+
+## Reading the tags back
+
+Add the `x-edenai-metadata: enabled` header and the response lists the tags recorded for the call in `edenai_metadata.tags`, after the merge and with keys in lowercase:
+
+```json
+{
+  "edenai_metadata": {
+    "...": "...",
+    "tags": {
+      "client": "acme",
+      "project": "invoices"
+    }
+  }
+}
+```
+
+An untagged call returns `"tags": {}`. See [Request Metadata](/v3/llms/request-metadata) for the rest of the block and the endpoints that return it.
+
+## Invalid tags
+
+A call with an invalid tag is refused with HTTP `400` before any provider is called, so it is not billed. The message names the tag and the rule it breaks, and the error uses the endpoint's own format:
+
+<CodeGroup>
+```json OpenAI-compatible endpoints
+{
+  "error": {
+    "message": "tag client=ac me: only letters, digits and - _ . : / are allowed",
+    "type": "invalid_request_error",
+    "param": null,
+    "code": "invalid_parameter"
+  }
+}
+```
+
+```json Messages
+{
+  "type": "error",
+  "error": {
+    "type": "invalid_request_error",
+    "message": "tag client=ac me: only letters, digits and - _ . : / are allowed"
+  }
+}
+```
+
+```json Universal AI
+{
+  "detail": {
+    "error": "Invalid tags",
+    "message": "tag client=ac me: only letters, digits and - _ . : / are allowed"
+  }
+}
+```
+</CodeGroup>
+
+Other messages you may see:
+
+| Problem | Message |
+|---|---|
+| More than 10 tags | `at most 10 tags per call, got 11` |
+| A header segment without `=` | `tag 'client' in the header is not key=value` |
+| The same key twice | `tag 'client' appears twice in the header` |
+| A value that is not a string | `tag 'build': keys and values must be strings` |
+| A value that is too long | `tag 'client': value must be 1 to 128 characters` |
+| An `eden:` key | `tag 'eden:source': the 'eden:' prefix is reserved` |
+
+The refused call still appears in your request log with status `400`.
+
+## Seeing your usage by tag
+
+In the [dashboard](https://app.edenai.run/), open **Monitoring**:
+
+- **Filters**, then **Tags**: pick a key, then one or more values, to include or exclude them. Active filters show as badges above the charts.
+- **Explore**, **Group by**, then **Tag**: choose a key to split cost and calls by its values. Calls without that key are grouped as **Untagged**.
+- **Requests**: each request shows its tags. In a request's details, click a tag to filter the list by it.
+- **Export CSV** on the Requests tab: every request in the selected period and filters, with one column per tag key. An export holds up to 100,000 requests and 50 tag columns; tags beyond those are grouped in an `other_tags` column. You can export 20 times per hour.
+
+Tags apply from the call that carries them: calls made before you started tagging show as untagged.
+
+## Good to know
+
+- Tags are never sent to the model provider.
+- Two calls that differ only by their tags return the same [cached](/v3/general/caching) response.
+- The OpenAI `metadata` and `user` fields are not tags: they are forwarded to the provider as before.
+- `/v2` endpoints ignore tags.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Request Metadata" icon="circle-info" href="/v3/llms/request-metadata">
+    See the tags and routing recorded for a call
+  </Card>
+  <Card title="Monitoring" icon="chart-line" href="/v3/general/monitoring">
+    Pull account-level usage into your own tools
+  </Card>
+  <Card title="Custom API Keys" icon="key" href="/v3/general/custom-api-keys">
+    Separate keys with their own spending limits
+  </Card>
+  <Card title="Caching" icon="database" href="/v3/general/caching">
+    How repeated calls are served
+  </Card>
+</CardGroup>

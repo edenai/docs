@@ -86,7 +86,7 @@ The response gains one extra top-level key, `edenai_metadata`:
 | `endpoints.total` | How many providers offer the requested model |
 | `endpoints.available` | Each of them, with `primary` (chosen first) and `reachable` (usable for this request) |
 | `attempts` | Every provider actually called, in order, each with its HTTP `status` and `region` |
-| `tags` | Key/value tags recorded for this request, or `{}` when untagged. See [Caller Tags](#caller-tags) |
+| `tags` | The [tags](/v3/general/tags) recorded for this call, or `{}` when it has none |
 
 ### Strategy values
 
@@ -98,27 +98,9 @@ The response gains one extra top-level key, `edenai_metadata`:
 | `alias` | You named an alias, which resolved to a specific model |
 | `routed` | You named a model without a provider, so Eden AI picked one. See [Provider Routing](/v3/llms/provider-routing) |
 
-## Caller Tags
+## Tags
 
-Label calls with key/value tags for usage tracking, analytics, and billing attribution. The tags are recorded on observatory logs and echoed back in `edenai_metadata.tags` when metadata is enabled.
-
-Provide tags through either:
-
-- The `X-EdenAI-Tags` header: `X-EdenAI-Tags: client=acme,project=invoices` (separated by commas, multiple header instances are merged)
-- The `tags` request body property: `"tags": {"client": "acme", "project": "invoices"}` on JSON endpoints
-
-When both the header and the request body define the same key, the body value takes precedence.
-
-### Tag constraints
-
-- At most 10 tags per call
-- Keys must be 1 to 64 characters (case insensitive, converted to lowercase)
-- Values must be 1 to 128 characters (case preserved)
-- Allowed characters: alphanumeric characters, underscores, dots, colons, slashes, and hyphens
-- The `eden:` key prefix is reserved for internal platform tags
-- Repeated keys within one source are rejected with HTTP 400
-
-Tags are stored on internal telemetry records. They are never forwarded to upstream model providers, and they are excluded from response cache keys.
+`tags` lists the [tags](/v3/general/tags) recorded for the call, from the `X-EdenAI-Tags` header and the `tags` body field, merged, with keys in lowercase. It is `{}` when the call has none.
 
 ## Reading it on a stream
 
@@ -144,7 +126,7 @@ If a stream fails partway through, the error frame carries a **corrected** block
 - **Verifying BYOK.** `is_byok` confirms your own key was used, without reading a bill.
 - **Verifying data residency.** `region` reports where the request was actually served, not merely what you asked for.
 - **Attributing cost.** The provider in `attempts` is the one you were billed for.
-- **Verifying caller tags.** `tags` reflects the labels recorded with the request for usage grouping and reporting.
+- **Checking your tags.** `tags` shows exactly what was recorded for your usage breakdown, after the header and body are merged.
 
 ## Scope
 

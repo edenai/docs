@@ -25,7 +25,7 @@ There is nothing to set up: add tags to a call and they appear in your usage wit
 
 ### With the `X-EdenAI-Tags` header
 
-The header works on every v3 endpoint, including file uploads, [video generation](/v3/llms/video-generation) and collections. Write `key=value` pairs separated by commas:
+The header works on every v3 endpoint that runs a model, including the ones that take a file (transcriptions, image edits, [video generation](/v3/llms/video-generation)) and collections. Write `key=value` pairs separated by commas:
 
 ```bash cURL
 curl -X POST https://api.edenai.run/v3/chat/completions \
@@ -130,14 +130,15 @@ message = client.messages.create(
 print(message.content[0].text)
 ```
 
+{/* skip-test: LiteLLM's edenai provider is only in the 1.104 pre-release, not in the stable LiteLLM the suite installs */}
 ```python LiteLLM
-import litellm
+import os
+from litellm import completion
 
-response = litellm.completion(
-    # "openai/" selects LiteLLM's OpenAI-compatible client; the rest is the Eden AI model
-    model="openai/openai/gpt-latest",
-    api_base="https://api.edenai.run/v3",
-    api_key="YOUR_API_KEY",
+os.environ["EDENAI_API_KEY"] = "YOUR_API_KEY"
+
+response = completion(
+    model="edenai/openai/gpt-mini-latest",
     messages=[{"role": "user", "content": "Hello"}],
     extra_headers={"X-EdenAI-Tags": "client=acme,project=invoices"},
 )
@@ -166,7 +167,7 @@ export ANTHROPIC_CUSTOM_HEADERS="X-EdenAI-Tags: client=acme,project=invoices"
 ```
 </CodeGroup>
 
-For [Claude Code](/v3/integrations/claude-code) and [OpenCode](/v3/integrations/opencode), start from their setup pages; the lines above only add the tags.
+For [Claude Code](/v3/integrations/claude-code) and [OpenCode](/v3/integrations/opencode), start from their setup pages; the lines above only add the tags. LiteLLM's `edenai/` provider needs LiteLLM 1.104 or later.
 
 ## Reading the tags back
 
@@ -249,6 +250,7 @@ Tags apply from the call that carries them: calls made before you started taggin
 ## Good to know
 
 - Tags are never sent to the model provider.
+- `/v3/upload` only stores a file for later calls and is not part of your usage, so tags sent to it are ignored. Tag the call that uses the file.
 - Two calls that differ only by their tags return the same [cached](/v3/general/caching) response.
 - The OpenAI `metadata` and `user` fields are not tags: they are forwarded to the provider as before.
 - `/v2` endpoints ignore tags.

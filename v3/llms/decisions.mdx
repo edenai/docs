@@ -209,7 +209,7 @@ response = requests.post(
 
 answers = response.json()["answers"]
 if answers["is_urgent"]["noul"] > 0.9 and answers["frustration"]["score"] >= 1:
-    escalate(to=answers["department"]["choice"])
+    print(f"Escalate to the {answers['department']['choice']} team")
 ```
 
 ```typescript TypeScript
@@ -252,7 +252,9 @@ const response = await fetch("https://api.edenai.run/v3/alpha/decisions", {
 });
 
 const { answers } = await response.json();
-if (answers.is_urgent.noul > 0.9) escalate(answers.department.choice);
+if (answers.is_urgent.noul > 0.9 && answers.frustration.score >= 1) {
+  console.log(`Escalate to the ${answers.department.choice} team`);
+}
 ```
 
 ```bash cURL

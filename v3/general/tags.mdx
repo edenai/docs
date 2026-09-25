@@ -14,7 +14,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Beginner"
   keywords={["Eden AI", "AI API", "tags", "cost attribution", "usage", "monitoring", "billing"]}
   datePublished="2026-09-24T00:00:00Z"
-  dateModified="2026-09-24T00:00:00Z"
+  dateModified="2026-09-25T00:00:00Z"
 />
 
 Tags are key/value labels you put on a call, such as `client=acme` or `project=invoices`. Eden AI stores them with the request, so you can split your usage and cost per customer, project or environment in the dashboard, without creating one API key for each.
@@ -252,7 +252,7 @@ Tags apply from the call that carries them: calls made before you started taggin
 - Tags are never sent to the model provider.
 - `/v3/upload` only stores a file for later calls and is not part of your usage, so tags sent to it are ignored. Tag the call that uses the file.
 - Two calls that differ only by their tags return the same [cached](/v3/general/caching) response.
-- The OpenAI `metadata` and `user` fields are not tags: they are forwarded to the provider as before.
+- The OpenAI `metadata` and `user` fields are not tags, and tagging does not change how they are handled.
 - `/v2` endpoints ignore tags.
 
 ## Next Steps

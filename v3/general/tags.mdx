@@ -23,6 +23,10 @@ There is nothing to set up: add tags to a call and they appear in your usage wit
 
 ## Adding tags to a call
 
+### As default tags on an API key
+
+You can configure default tags on an API key in the dashboard or through the Management API. Every call made with that key automatically inherits those tags, without needing to pass them on each request.
+
 ### With the `X-EdenAI-Tags` header
 
 The header works on every v3 endpoint that runs a model, including the ones that take a file (transcriptions, image edits, [video generation](/v3/llms/video-generation)) and collections. Write `key=value` pairs separated by commas:
@@ -66,25 +70,35 @@ Endpoints that take a file upload (transcriptions, image edits) read the header 
 
 A `tags` field that is not an object, such as the list some SDKs send, is ignored rather than refused.
 
-### Sending both
+### Combining sources and precedence
 
-The header and the body are merged by key. When both set the same key, the body wins:
+Tags can come from three sources: the API key's default tags, the `X-EdenAI-Tags` header, and the body `tags` field.
 
-| Sent | Recorded |
+They are merged by key in order of precedence:
+
+1. API key default tags
+2. The `X-EdenAI-Tags` header
+3. The body `tags` field
+
+Each source wins over the previous on the same key:
+
+| Sources | Recorded |
 |---|---|
+| Key `client=acme,env=dev`, header `env=prod`, body `{"project": "invoices"}` | `client=acme`, `env=prod`, `project=invoices` |
+| Key `client=acme` and body `{"client": "globex"}` | `client=globex` |
 | Header `client=acme,env=prod` and body `{"client": "globex"}` | `client=globex`, `env=prod` |
 
 ## Rules
 
 | | Rule |
 |---|---|
-| Number | At most 10 tags per call, counted after the header and body are merged |
+| Number | At most 10 tags per call, counted after merging the API key defaults, header, and body |
 | Keys | 1 to 64 characters, stored in lowercase: `Client` is recorded as `client` |
 | Values | 1 to 128 characters, kept as sent: `Acme` and `acme` are two different values |
 | Characters | Letters `A-Z` and `a-z`, digits, and `-` `_` `.` `:` `/`, in both keys and values. No spaces, commas, `=` or accented letters |
 | Types | Values are strings. In the body, send `"42"`, not `42` |
 | Reserved | Keys starting with `eden:` |
-| Duplicates | A key can appear once in the header and once in the body. Keys are compared in lowercase, so `Client=a,client=b` in one header is a duplicate |
+| Duplicates | The same key can appear across sources, with later sources winning. Within a single source, keys are compared in lowercase, so `Client=a,client=b` in one header is a duplicate |
 
 <Warning>
 Tags are kept as long as your usage data, and every distinct value is a separate line in your usage breakdown. Use a small set of stable values, such as a customer, project, environment or feature name. Do not put personal data (emails, names) or per-request ids in tags.
@@ -227,12 +241,14 @@ Other messages you may see:
 
 | Problem | Message |
 |---|---|
-| More than 10 tags | `at most 10 tags per call, got 11` |
+| More than 10 tags | `at most 10 tags per call, got 11` (or `... got 11 (3 set on the API key)` when key defaults contribute) |
 | A header segment without `=` | `tag 'client' in the header is not key=value` |
 | The same key twice | `tag 'client' appears twice in the header` |
 | A value that is not a string | `tag 'build': keys and values must be strings` |
 | A value that is too long | `tag 'client': value must be 1 to 128 characters` |
 | An `eden:` key | `tag 'eden:source': the 'eden:' prefix is reserved` |
+
+If an API key has an invalid default tag stored, the invalid tag is dropped and logged rather than refusing the call, since the caller cannot fix it on the request.
 
 The refused call still appears in your request log with status `400`.
 
@@ -253,7 +269,7 @@ Tags apply from the call that carries them: calls made before you started taggin
 - `/v3/upload` only stores a file for later calls and is not part of your usage, so tags sent to it are ignored. Tag the call that uses the file.
 - Two calls that differ only by their tags return the same [cached](/v3/general/caching) response.
 - The OpenAI `metadata` and `user` fields are not tags, and tagging does not change how they are handled.
-- `/v2` endpoints ignore tags.
+- `/v2` endpoints ignore tags, including API key default tags.
 
 ## Next Steps
 

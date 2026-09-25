@@ -270,7 +270,8 @@
                       "v3/integrations/haystack",
                       "v3/integrations/atomic-agents",
                       "v3/integrations/repowise",
-                      "v3/integrations/any-llm"
+                      "v3/integrations/any-llm",
+                      "v3/integrations/symfony"
                     ]
                   },
                   {

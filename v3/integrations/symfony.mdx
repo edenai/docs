@@ -1,0 +1,325 @@
+---
+title: "Symfony AI"
+icon: "/integration-logo/symfony-icondoc.svg"
+description: "Use Symfony AI with Eden AI to reach 500+ AI models, plus OCR, speech and image models, from one PHP platform."
+---
+
+import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
+
+<TechArticleSchema
+  title={"Symfony AI"}
+  description={"Use Symfony AI with Eden AI to reach 500+ AI models, plus OCR, speech and image models, from one PHP platform."}
+  path="v3/integrations/symfony"
+  articleSection="AI Frameworks"
+  about={"LLM Framework Integration"}
+  proficiencyLevel="Intermediate"
+  keywords={["Eden AI", "AI API", "Symfony", "PHP", "Symfony AI", "OCR"]}
+  datePublished="2026-09-25T00:00:00Z"
+  dateModified="2026-09-25T00:00:00Z"
+/>
+
+Use Symfony AI with Eden AI to reach 500+ AI models, plus OCR, speech and image models, from one PHP platform.
+
+## Overview
+
+Symfony AI ships an official Eden AI bridge for its Platform component. It covers both halves of the Eden AI V3 API:
+
+- The OpenAI-compatible endpoints, `/v3/chat/completions` and `/v3/embeddings`, with streaming and tool calling.
+- The expert models served by `/v3/universal-ai`: OCR, document parsing, text to speech, speech to text, image analysis and image generation.
+
+The bridge landed in Symfony AI v0.14.0. Binary content is uploaded through Eden AI's upload endpoint for you, and long-running transcriptions come back as a job handle rather than a blocking call.
+
+## Installation
+
+<CodeGroup>
+```bash composer
+composer require symfony/ai-eden-ai-platform
+```
+</CodeGroup>
+
+## Configuration
+
+Store your key in the environment, then declare the platform in your bundle configuration:
+
+<CodeGroup>
+```bash .env
+EDENAI_API_KEY=your_api_key_here
+```
+
+```yaml config/packages/ai.yaml
+ai:
+    platform:
+        edenai:
+            api_key: '%env(EDENAI_API_KEY)%'
+    agent:
+        default:
+            model: 'openai/gpt-4o-mini'
+```
+</CodeGroup>
+
+Get your key from the [Eden AI dashboard](https://app.edenai.run/).
+
+## Quick Start
+
+Outside a Symfony application, build the platform directly from the factory:
+
+<CodeGroup>
+```php PHP
+use Symfony\AI\Platform\Bridge\EdenAi\Factory;
+use Symfony\AI\Platform\Message\Message;
+use Symfony\AI\Platform\Message\MessageBag;
+
+$platform = Factory::createPlatform($apiKey);
+
+$messages = new MessageBag(Message::ofUser('What is the Symfony framework?'));
+echo $platform->invoke('openai/gpt-4o-mini', $messages)->asText();
+
+$vectors = $platform->invoke('openai/text-embedding-3-small', 'Some text')->asVectors();
+```
+</CodeGroup>
+
+Switching provider is a change of model string, nothing else.
+
+## Streaming
+
+Pass `stream` in the options and iterate the result. Tokens arrive as they are produced:
+
+<CodeGroup>
+```php PHP
+use Symfony\AI\Platform\Bridge\EdenAi\Factory;
+use Symfony\AI\Platform\Message\Message;
+use Symfony\AI\Platform\Message\MessageBag;
+
+$platform = Factory::createPlatform($apiKey);
+
+$messages = new MessageBag(Message::ofUser('List the first 50 prime numbers.'));
+$result = $platform->invoke('openai/gpt-4o-mini', $messages, [
+    'stream' => true,
+]);
+
+foreach ($result->asStream() as $chunk) {
+    echo $chunk;
+}
+```
+</CodeGroup>
+
+## Agents and Tool Calling
+
+The platform plugs into Symfony's Agent component, so tools work the same way they do with any other bridge. The agent decides when to call a tool, runs it, and feeds the result back to the model:
+
+<CodeGroup>
+```php PHP
+use Symfony\AI\Agent\Agent;
+use Symfony\AI\Agent\Bridge\Wikipedia\Wikipedia;
+use Symfony\AI\Agent\Toolbox\Toolbox;
+use Symfony\AI\Platform\Bridge\EdenAi\Factory;
+use Symfony\AI\Platform\Message\Message;
+use Symfony\AI\Platform\Message\MessageBag;
+
+$platform = Factory::createPlatform($apiKey);
+
+$toolbox = new Toolbox([new Wikipedia($httpClient)]);
+$agent = new Agent($platform, 'openai/gpt-4o', toolbox: $toolbox);
+
+$messages = new MessageBag(Message::ofUser('Who is the current chancellor of Germany?'));
+echo $agent->call($messages)->getContent();
+```
+</CodeGroup>
+
+Point the agent at a different model string to run the same toolbox on another provider.
+
+## OCR and Document Parsing
+
+Pass a `Document` or an `Image` for a local file, or a `DocumentUrl` or `ImageUrl` for a remote one. A local file is uploaded through `/v3/upload` before the request, so both forms behave the same from your code:
+
+<CodeGroup>
+```php PHP
+use Symfony\AI\Platform\Bridge\EdenAi\DocumentParser\Result\DocumentParsingResult;
+use Symfony\AI\Platform\Bridge\EdenAi\Factory;
+use Symfony\AI\Platform\Message\Content\Document;
+use Symfony\AI\Platform\Message\Content\DocumentUrl;
+
+$platform = Factory::createPlatform($apiKey);
+
+// Resume parsing from a local PDF, uploaded automatically
+$result = $platform->invoke('ocr/resume_parser/openai/gpt-4o', Document::fromFile('./resume.pdf'));
+
+$parsing = $result->asObject();
+\assert($parsing instanceof DocumentParsingResult);
+
+echo json_encode($parsing->getExtractedData(), \JSON_PRETTY_PRINT | \JSON_UNESCAPED_UNICODE);
+
+// Invoice parsing from a URL
+$result = $platform->invoke('ocr/financial_parser/affinda', new DocumentUrl('https://example.com/invoice.pdf'), [
+    'language' => 'en',
+    'document_type' => 'invoice',
+]);
+
+$invoice = $result->asObject();
+\assert($invoice instanceof DocumentParsingResult);
+```
+</CodeGroup>
+
+Plain OCR returns raw text and bounding boxes instead of structured fields. Input parameters such as `language` go in the options array, or inline in the model name (`ocr/ocr/google?language=en`):
+
+<CodeGroup>
+```php PHP
+use Symfony\AI\Platform\Bridge\EdenAi\Factory;
+use Symfony\AI\Platform\Bridge\EdenAi\Ocr\Result\OcrResult;
+use Symfony\AI\Platform\Message\Content\ImageUrl;
+
+$platform = Factory::createPlatform($apiKey);
+
+$result = $platform->invoke('ocr/ocr/google', new ImageUrl('https://example.com/scan.jpg'), [
+    'language' => 'en',
+]);
+
+$ocr = $result->asObject();
+\assert($ocr instanceof OcrResult);
+
+echo $ocr->getText();
+```
+</CodeGroup>
+
+<Note>
+Not every provider reads an uploaded file. `ocr/financial_parser/openai` returns a successful but empty result when its input is a file ID, while it parses the same document handed over as a URL. `ocr/financial_parser/affinda` reads both. Pass a `DocumentUrl` to the providers behaving that way.
+</Note>
+
+## Speech and Image Models
+
+Audio, document and image content is uploaded before the request, so a local file works the same way as a URL:
+
+<CodeGroup>
+```php PHP
+use Symfony\AI\Platform\Bridge\EdenAi\Factory;
+use Symfony\AI\Platform\Message\Content\Audio;
+use Symfony\AI\Platform\Message\Content\ImageUrl;
+
+$platform = Factory::createPlatform($apiKey);
+
+// Text to speech, returned as binary data
+$result = $platform->invoke('audio/tts/amazon/neural', 'Your order has shipped and arrives on Thursday.');
+$result->asFile('notification.mp3');
+
+// Speech to text from a local file, uploaded automatically
+$result = $platform->invoke('audio/speech_to_text_async/deepgram', Audio::fromFile('./call.mp3'), [
+    'language' => 'en',
+]);
+echo $result->asText();
+
+// Object detection
+$analysis = $platform->invoke('image/object_detection/google', new ImageUrl('https://example.com/photo.jpg'))->asObject();
+foreach ($analysis->getItems() as $item) {
+    echo $item['label'];
+}
+
+// Image generation
+$result = $platform->invoke('image/generation/stabilityai', 'A product photo of a leather backpack on a white background');
+$result->asFile('backpack.png');
+```
+</CodeGroup>
+
+Image analysis also covers explicit content, logo detection, face detection, AI detection and deepfake detection.
+
+## Asynchronous Jobs
+
+Speech to text runs on `/v3/universal-ai/async`. When a provider answers fast enough, the transcription is in the response and the call is over. Otherwise the invocation returns a `JobResult`, a handle you can wait on straight away or store and pick up from a worker later:
+
+<CodeGroup>
+```php PHP
+use Symfony\AI\Platform\Bridge\EdenAi\Factory;
+use Symfony\AI\Platform\Exception\JobTimeoutException;
+use Symfony\AI\Platform\Job\JobRunner;
+use Symfony\AI\Platform\Result\JobResult;
+
+$result = $platform->invoke('audio/speech_to_text_async/deepgram', 'https://example.com/audio.mp3');
+
+if ($result->getResult() instanceof JobResult) {
+    $handle = $result->asJob();
+    $jobClient = Factory::createJobClient($apiKey);
+
+    try {
+        $result = (new JobRunner())->wait($jobClient, $handle, maxDuration: 60);
+    } catch (JobTimeoutException) {
+        // The handle holds no connection, so store it and resume later
+        $this->queue->dispatch(new ResumeTranscription($handle->getId()));
+
+        return;
+    }
+}
+
+echo $result->asText();
+```
+</CodeGroup>
+
+The bridge never blocks inside `invoke()`. How long to wait, and whether to wait at all, stays your decision. Pass a `webhook_receiver` option to be notified out of band instead, and resolve the handle when the webhook fires.
+
+Inside a Symfony application the job client is a service, autowirable by name:
+
+<CodeGroup>
+```php PHP
+use Symfony\AI\Platform\Job\JobClientInterface;
+use Symfony\AI\Platform\Job\JobRunner;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
+
+public function __construct(
+    #[Autowire(service: 'ai.platform.job_client.edenai')]
+    private JobClientInterface $edenaiJobClient,
+    private JobRunner $jobRunner,
+) {
+}
+```
+</CodeGroup>
+
+## Available Models
+
+Chat and embeddings use the `provider/model` format:
+
+**Chat**
+- `openai/gpt-4o-mini`
+- `anthropic/claude-sonnet-5`
+- `mistral/mistral-large-latest`
+- `google/gemini-2.5-flash`
+
+**Embeddings**
+- `openai/text-embedding-3-small`
+- `mistral/mistral-embed`
+
+Expert models use `feature/subfeature/provider`, and some take the backing model as a fourth segment:
+
+- `ocr/ocr/google`
+- `ocr/financial_parser/affinda`
+- `ocr/resume_parser/openai/gpt-4o`
+- `audio/tts/amazon/neural`
+- `image/object_detection/google`
+
+Browse the full list in the [Eden AI models catalog](https://www.edenai.co/models), or call [List LLM Models](/v3/llms/listing-models).
+
+## Dynamic Model Catalog
+
+The bundled `ModelCatalog` curates a subset of what Eden AI serves. To reach anything else, register it through the `$additionalModels` argument, or hand the factory a `ModelApiCatalog`, which discovers the current catalog from Eden AI's public endpoints:
+
+<CodeGroup>
+```php PHP
+use Symfony\AI\Platform\Bridge\EdenAi\Factory;
+use Symfony\AI\Platform\Bridge\EdenAi\ModelApiCatalog;
+
+$platform = Factory::createPlatform($apiKey, $httpClient, new ModelApiCatalog($httpClient));
+
+// No catalog entry needed for this one
+$result = $platform->invoke('audio/tts/elevenlabs/eleven_multilingual_v2', 'Welcome!');
+```
+</CodeGroup>
+
+Expert subfeatures the bridge has no result converter for stay hidden from that catalog, so an unsupported model fails at lookup time rather than during conversion.
+
+## Runnable Examples
+
+Symfony ships working scripts for every capability above, in [examples/edenai](https://github.com/symfony/ai/tree/main/examples/edenai): chat, streaming, tool calling, embeddings, OCR, invoice and resume parsing, text to speech, speech to text with and without upload, object detection, logo detection and image generation.
+
+## Next Steps
+
+- [Chat Completions](/v3/llms/chat-completions) - Core LLM endpoint
+- [List LLM Models](/v3/llms/listing-models) - Browse available providers and models
+- [Expert Models](/v3/expert-models/features) - OCR, speech, image and text features
+- [Symfony AI documentation](https://symfony.com/doc/current/ai/components/platform/edenai.html) - The bridge reference on symfony.com

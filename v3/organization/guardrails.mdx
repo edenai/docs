@@ -26,7 +26,7 @@ A **guardrail** is a reusable usage policy that controls:
 You create a guardrail once, then attach it to a **role**, a **member**, or an individual **API token**. For example, one team can be limited to a curated set of models, a shared token can be capped to a low request rate, or a member can be given a monthly spending cap.
 
 <Note>
-Guardrails are part of the advanced organisation features. See [plans and pricing](https://www.edenai.co/pricing) for availability.
+Guardrails are part of the advanced organization features. See [plans and pricing](https://www.edenai.co/pricing) for availability.
 </Note>
 
 ## Creating a guardrail
@@ -85,7 +85,7 @@ The rate limit uses the format `N/period`, where `period` is `second`, `minute`,
 5000/hour
 ```
 
-Leave the rate limit empty on a guardrail to inherit it from the next level up (role → organisation default).
+Leave the rate limit empty on a guardrail to inherit it from the next level up (role → organization default).
 
 ## Budget cap
 
@@ -120,7 +120,7 @@ A guardrail does nothing until it's attached to something. You can assign it to:
 When a request comes in, Eden AI resolves the policy **per field, most specific wins**:
 
 ```
-token  →  member  →  role  →  organisation default
+token  →  member  →  role  →  organization default
 ```
 
 For **model rules** and **rate limit** independently, Eden AI uses the value from the most specific level that has it set, and inherits the rest. So a token can override the model rules while still inheriting its role's rate limit.
@@ -133,6 +133,6 @@ Guardrails are configured in the dashboard; there is no API for them yet. To aut
 
 ## Related
 
-- [Users & Organisation](/v3/organization/users-organisation): roles, permissions, and members.
+- [Users & Organization](/v3/organization/users-organisation): roles, permissions, and members.
 - [Custom API Keys](/v3/general/custom-api-keys): per-token budgets, which cap a single key rather than a member.
 - [Rate Limits](/v3/overview/rate-limits): how default rate limiting works.

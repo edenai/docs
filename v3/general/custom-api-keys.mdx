@@ -14,18 +14,18 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "rate limits", "billing", "monitoring"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-09-11T00:00:00Z"
+  dateModified="2026-09-25T00:00:00Z"
 />
 
 Custom API keys let you create additional keys beyond your main account key. Each key can have its own budget, expiration, and type, giving you fine-grained control over access and spending.
 
 ## Use Cases
 
-- **Environment separation** — dedicated keys for development, staging, and production
-- **Team access** — separate keys for different team members or projects
-- **Budget control** — set credit limits per key to cap spending
-- **Security** — rotate or revoke individual keys without affecting other integrations
-- **Usage tracking** — monitor consumption per key
+- **Environment separation**: dedicated keys for development, staging, and production
+- **Team access**: separate keys for different team members or projects
+- **Budget control**: set credit limits per key to cap spending
+- **Security**: rotate or revoke individual keys without affecting other integrations
+- **Usage tracking**: monitor consumption per key
 
 ## Token Types
 
@@ -57,7 +57,7 @@ All requests use `Authorization: Bearer <management_key>` and act on the organiz
 | `/v3/manage/keys/` | `POST` | `manage:write` | Create a key. The response contains the `secret` **once**. |
 | `/v3/manage/keys/` | `GET` | `manage:read` | List keys (paginated, revoked keys included). |
 | `/v3/manage/keys/{key_id}/` | `GET` | `manage:read` | Get one key. |
-| `/v3/manage/keys/{key_id}/` | `PATCH` | `manage:write` | Update the name or spending controls. |
+| `/v3/manage/keys/{key_id}/` | `PATCH` | `manage:write` | Update the name, spending controls or default tags. |
 | `/v3/manage/keys/{key_id}/` | `DELETE` | `manage:write` | Revoke a key permanently. |
 | `/v3/manage/keys/{key_id}/rotate/` | `POST` | `manage:write` | Replace the secret, keeping the key's id, name and settings. |
 | `/v3/manage/keys/{key_id}/usage/` | `GET` | `manage:read` | Consumption of one key. See [Monitoring](/v3/general/monitoring). |
@@ -109,6 +109,7 @@ The response is the key resource plus a `secret` field:
   "active_balance": true,
   "balance": null,
   "expire_time": null,
+  "default_tags": null,
   "revoked": false,
   "revoked_at": null,
   "secret": "sk-eden-..."
@@ -130,6 +131,7 @@ Request fields:
 | `active_balance` | boolean, default `true` | Whether `balance` is enforced. |
 | `expire_time` | ISO 8601 datetime | Hard expiry, at least one day ahead. |
 | `balance_reset_period`, `balance_reset_amount` | see below | Periodic budget refill. |
+| `default_tags` | object of strings, e.g. `{"client": "acme"}` | Tags added to every call made with the key. See [Default Tags](#default-tags). |
 
 Creating a key returns `403` if your plan's key limit is reached.
 
@@ -183,7 +185,7 @@ A budget can either **reinitialize automatically** each day, week, or month, or 
 
 ### In the dashboard
 
-On the [API Keys](https://app.edenai.run/settings/api-keys) page, create or edit a key and turn on **Spending Limit**. Set the **Reset allowance** (the amount restored each period) and choose a **Resets** frequency — **Daily**, **Weekly**, **Monthly**, or **Never**. A reset frequency is always selected when a spending limit is on; it defaults to **Monthly**. Choose **Never** for a one-time budget that does not renew. A separate **Current balance** field shows what's available right now; editing the allowance only takes effect at the next reset.
+On the [API Keys](https://app.edenai.run/settings/api-keys) page, create or edit a key and turn on **Spending Limit**. Set the **Reset allowance** (the amount restored each period) and choose a **Resets** frequency: **Daily**, **Weekly**, **Monthly**, or **Never**. A reset frequency is always selected when a spending limit is on; it defaults to **Monthly**. Choose **Never** for a one-time budget that does not renew. A separate **Current balance** field shows what's available right now; editing the allowance only takes effect at the next reset.
 
 ### Through the API
 
@@ -231,7 +233,7 @@ curl -X POST https://api.edenai.run/v3/manage/keys/ \
 
 Behaviour to know:
 
-- Setting a reset period **automatically enforces the budget** (`active_balance` becomes `true`) — you don't have to set it separately.
+- Setting a reset period **automatically enforces the budget** (`active_balance` becomes `true`), so you don't have to set it separately.
 - `balance_reset_amount` is the reset **target**, kept separate from the live `balance` (the amount remaining right now). They are not the same field.
 - A new periodic key **starts the period full**: if you don't pass a starting `balance`, it begins at `balance_reset_amount`. Passing an explicit `balance` lets a key start partway through a period.
 - Resets run at **midnight Europe/Paris time**: daily every night, weekly on Monday, monthly on the 1st.
@@ -240,6 +242,24 @@ Behaviour to know:
 <Note>
 This per-key reset is distinct from the **per-member budget cap** you can set on a [guardrail](/v3/organization/guardrails#budget-cap). A key budget is a hard cap on one key (it stops at $0); a member budget is a soft periodic spend cap that follows a person across all their keys.
 </Note>
+
+## Default Tags
+
+`default_tags` adds [tags](/v3/general/tags) to every call made with the key, so its usage is split per customer, project or environment without any change to your requests. A tag the call sends itself, in the `X-EdenAI-Tags` header or the body, wins over the key's default on the same key.
+
+{/* skip-test: acts on the illustrative key id above, which no account holds */}
+```bash Set default tags
+curl -X PATCH https://api.edenai.run/v3/manage/keys/3f1c2b6e-8a4d-4f0e-9b7a-2c5d6e7f8a90/ \
+  -H "Authorization: Bearer YOUR_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"default_tags": {"client": "acme", "env": "prod"}}'
+```
+
+- They follow the same [rules](/v3/general/tags#rules) as call tags: at most 10, keys stored in lowercase, values kept as sent.
+- A `PATCH` replaces them as a whole. Send `null` or `{}` to remove them.
+- They apply from the next call made with the key, and rotating the key keeps them.
+
+In the dashboard, turn on **Default Tags** when you create or edit a key.
 
 ## List All Keys
 
@@ -285,6 +305,7 @@ curl -X GET "https://api.edenai.run/v3/manage/keys/?limit=100" \
       "active_balance": true,
       "balance": null,
       "expire_time": null,
+      "default_tags": null,
       "revoked": false,
       "revoked_at": null
     },
@@ -297,6 +318,7 @@ curl -X GET "https://api.edenai.run/v3/manage/keys/?limit=100" \
       "active_balance": true,
       "balance": 42.17,
       "expire_time": null,
+      "default_tags": {"team": "backend"},
       "revoked": true,
       "revoked_at": "2026-08-30T09:12:44Z"
     }
@@ -348,8 +370,9 @@ Use clear naming conventions like `env-project-purpose` (e.g., `prod-billing-api
 </Tip>
 
 - **Set budgets on non-production keys** to prevent accidental overspending during development.
-- **Use a periodic reset** (`balance_reset_period`) for recurring allowances — e.g. a $10/day CI key — instead of topping up manually.
+- **Use a periodic reset** (`balance_reset_period`) for recurring allowances, such as a $10/day CI key, instead of topping up manually.
 - **Use sandbox keys for CI/CD** to validate integrations without incurring costs.
 - **Rotate keys periodically** with the rotate endpoint: the key keeps its id, name and budget, so nothing else needs to change.
 - **Set expiration dates** on temporary keys (e.g., for contractors or short-term projects).
 - **Attribute keys to members** with `member` so [usage reports](/v3/general/monitoring) show who spent what.
+- **Give a key default tags** when it serves one customer or environment, so its usage is split by tag without touching the calls.

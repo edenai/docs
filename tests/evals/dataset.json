@@ -50,7 +50,7 @@
     {
         "id": "q07",
         "question": "How do I use BYOK (Bring Your Own Key) with Eden AI?",
-        "expected_output": "In the Eden AI dashboard, navigate to provider settings, select a provider (e.g. OpenAI, Google, Anthropic), enter your own provider API key, and save. Requests to that provider then use your key and are billed directly by the provider. You still get Eden AI's unified API, monitoring, routing, and fallback. You can mix BYOK for some providers with Eden AI billing for others.",
+        "expected_output": "In the Eden AI dashboard, open Settings > Bring Your Own Keys, select a provider (e.g. OpenAI, Google, Anthropic), enter your own provider API key, and click Save Keys. Requests to that provider then use your key and are billed directly by the provider. You still get Eden AI's unified API, monitoring, routing, and fallback. You can mix BYOK for some providers with Eden AI billing for others.",
         "source_doc": "v3/general/byok.mdx",
         "category": "general",
         "difficulty": "basic"

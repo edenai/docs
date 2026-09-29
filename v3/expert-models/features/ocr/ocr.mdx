@@ -42,6 +42,7 @@ Model string pattern: `ocr/ocr/{provider}[/{model}]`
 | &nbsp;&nbsp;&nbsp;&nbsp;top | float | Yes |  |
 | &nbsp;&nbsp;&nbsp;&nbsp;width | float | Yes |  |
 | &nbsp;&nbsp;&nbsp;&nbsp;height | float | Yes |  |
+| usage | dict | No |  |
 
 
 ## Available Providers
@@ -51,8 +52,17 @@ Model string pattern: `ocr/ocr/{provider}[/{model}]`
 | amazon | `ocr/ocr/amazon` | $1.5 per 1,000 pages |
 | api4ai | `ocr/ocr/api4ai` | $3 per 1,000 requests |
 | google | `ocr/ocr/google` | $1.5 per 1,000 pages |
+| ionos | `ocr/ocr/ionos` | $0.33 per 1,000,000 tokens |
+| ionos (lightonai/LightOnOCR-2-1B) | `ocr/ocr/ionos/lightonai/LightOnOCR-2-1B` | $0.33 per 1,000,000 tokens |
 | microsoft | `ocr/ocr/microsoft` | $1 per 1,000 pages |
-| mistral | `ocr/ocr/mistral` | $1 per 1,000 pages |
+| mistral | `ocr/ocr/mistral` | $4 per 1,000 pages |
+| mistral (mistral-ocr-2512) | `ocr/ocr/mistral/mistral-ocr-2512` | $2 per 1,000 pages |
+| mistral (mistral-ocr-3) | `ocr/ocr/mistral/mistral-ocr-3` | $2 per 1,000 pages |
+| mistral (mistral-ocr-3-0) | `ocr/ocr/mistral/mistral-ocr-3-0` | $2 per 1,000 pages |
+| mistral (mistral-ocr-4) | `ocr/ocr/mistral/mistral-ocr-4` | $4 per 1,000 pages |
+| mistral (mistral-ocr-4-0) | `ocr/ocr/mistral/mistral-ocr-4-0` | $4 per 1,000 pages |
+| mistral (mistral-ocr-4-1) | `ocr/ocr/mistral/mistral-ocr-4-1` | $4 per 1,000 pages |
+| mistral (mistral-ocr-latest) | `ocr/ocr/mistral/mistral-ocr-latest` | $4 per 1,000 pages |
 | sentisight | `ocr/ocr/sentisight` | $0.75 per 1,000 files |
 
 

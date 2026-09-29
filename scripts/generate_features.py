@@ -507,6 +507,50 @@ def _existing_schema_dates(feature: str, sf_name: str) -> tuple[str | None, str 
     return find("datePublished"), find("dateModified")
 
 
+_TEST_MARKER_RE = re.compile(r"^\{/\*\s*(?:skip|paid)-test\b.*\*/\}$")
+
+
+def _carry_test_markers(old: str, new: str) -> str:
+    """Put the {/* skip-test */} and {/* paid-test */} markers back on a regenerated page.
+
+    Those markers are written by hand, on the page, for a snippet the test run
+    cannot execute (a curl call that needs an audio file, a face collection
+    that must already exist). The generator knows nothing about them, so
+    without this every run would strip them and the next test run would fail
+    on snippets that were never meant to run. Each marker is keyed by the fence
+    line it sits on, counted by occurrence, and goes back above the same fence.
+    """
+    markers: dict[tuple[str, int], str] = {}
+    seen: dict[str, int] = {}
+    pending: str | None = None
+    for line in old.splitlines():
+        if _TEST_MARKER_RE.match(line.strip()):
+            pending = line
+        elif line.startswith("```") and line.strip() != "```":
+            index = seen.get(line, 0)
+            seen[line] = index + 1
+            if pending is not None:
+                markers[(line, index)] = pending
+            pending = None
+        elif line.strip():
+            pending = None
+    if not markers:
+        return new
+
+    out: list[str] = []
+    seen = {}
+    for line in new.splitlines(keepends=True):
+        key = line.rstrip("\n")
+        if key.startswith("```") and key.strip() != "```":
+            index = seen.get(key, 0)
+            seen[key] = index + 1
+            marker = markers.get((key, index))
+            if marker is not None and not (out and _TEST_MARKER_RE.match(out[-1].strip())):
+                out.append(marker + "\n")
+        out.append(line)
+    return "".join(out)
+
+
 def _render_techarticle_schema(
     feature: str, sf_name: str, fullname: str, description: str, section: str
 ) -> str:
@@ -801,6 +845,8 @@ def main() -> None:
                 ) from e
 
             content = generate_subfeature_page(fname, sf, detail, feature_section_name(feat))
+            if page_path.exists():
+                content = _carry_test_markers(page_path.read_text(), content)
             page_path.write_text(content)
     print("  Generating index page...")
     index_content = generate_index_page(features)

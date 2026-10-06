@@ -11,6 +11,8 @@ on:
       - 'docs.json'
       - 'snippets/**'
       - 'tests/**'
+      # The feature pages' titles, descriptions and redirects come from here.
+      - 'scripts/**'
   # The docs go stale against a moving API even when nobody edits them: a model
   # is retired, a response shape changes, a linked page moves. A PR run only
   # catches what a PR touches, so the suite also runs weekly against main.
@@ -86,6 +88,13 @@ jobs:
         run: pytest tests/test_links.py tests/test_links_external.py --no-cov
         env:
           EDEN_AI_CHECK_EXTERNAL_LINKS: ${{ github.event_name != 'pull_request' }}
+
+      # What a search result shows: every page's title and description, the
+      # copy <TechArticleSchema> keeps of them, and the generator that writes
+      # them for the feature pages. Reads files only.
+      - name: Check page titles and descriptions
+        if: always()
+        run: pytest tests/test_page_metadata.py tests/test_generate_features.py --no-cov
 
       # Needs no credential: the model catalog is public.
       - name: Check integration configuration blocks

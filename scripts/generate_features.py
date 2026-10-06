@@ -28,6 +28,8 @@ INFO_ENDPOINT = f"{API_BASE}/v3/info"
 DOCS_ROOT = Path(__file__).resolve().parent.parent
 FEATURES_DIR = DOCS_ROOT / "v3" / "expert-models" / "features"
 DOCS_JSON_PATH = DOCS_ROOT / "docs.json"
+# Where a feature page the API drops redirects to.
+FEATURES_INDEX_URL = "/v3/expert-models/features"
 
 # Fallback icon when no keyword match is found
 DEFAULT_FEATURE_ICON = "cube"
@@ -166,6 +168,17 @@ def escape_frontmatter(text: str) -> str:
     return text.replace("\\", "\\\\").replace('"', '\\"')
 
 
+# A sentence ends at . ! or ? before whitespace or the end of the text, but not
+# at the full stop of "e.g." or "i.e.", which once cut a description off at "(e.g.".
+_SENTENCE_END_RE = re.compile(r"(?<!\be\.g)(?<!\bi\.e)[.!?](?=\s|$)")
+
+# The API appends "(type of file allowed: jpg, png)" to some descriptions. The
+# input schema on the page already says which files are accepted.
+_FILE_TYPES_NOTE_RE = re.compile(r"\s*\(type of files? allowed:[^)]*\)", re.IGNORECASE)
+
+PAGE_DESCRIPTION_MAX = 200
+
+
 def truncate_at_sentence(text: str, max_len: int) -> str:
     """Truncate at the last complete sentence before max_len.
 
@@ -178,10 +191,30 @@ def truncate_at_sentence(text: str, max_len: int) -> str:
     if len(text) <= max_len:
         return text
     window = text[:max_len]
-    boundaries = [m.end() for m in re.finditer(r"[.!?](?=\s|$)", window)]
+    boundaries = [m.end() for m in _SENTENCE_END_RE.finditer(window)]
     if boundaries:
         return window[: boundaries[-1]].strip()
     return window.rsplit(" ", 1)[0].strip()
+
+
+def page_description(text: str) -> str:
+    """The description of a feature page, made of whole sentences only.
+
+    It is the snippet Google shows under the search result. Google adds its own
+    ellipsis to a description longer than it shows, which reads fine, while a
+    sentence cut short here has none and reads as broken. So when not even the
+    first sentence fits, the first sentence is kept whole.
+    """
+    text = _FILE_TYPES_NOTE_RE.sub("", text).strip()
+    ends = [m.end() for m in _SENTENCE_END_RE.finditer(text)]
+    fitting = [end for end in ends if end <= PAGE_DESCRIPTION_MAX]
+    if fitting:
+        text = text[: fitting[-1]]
+    elif ends:
+        text = text[: ends[0]]
+    if text and not text.endswith((".", "!", "?")):
+        text += "."
+    return text
 
 
 _HTML_TAG_RE = re.compile(r"<[^>]+>")
@@ -557,7 +590,7 @@ def generate_subfeature_page(
 
     code_example = build_code_example(feature, sf_name, models, detail)
 
-    truncated_desc = truncate_at_sentence(description, 200)
+    truncated_desc = page_description(description)
     safe_title = escape_frontmatter(fullname)
     safe_desc = escape_frontmatter(truncated_desc)
     schema_block = _render_techarticle_schema(
@@ -675,10 +708,35 @@ def _find_group(node: object, name: str) -> dict | None:
     return None
 
 
-def update_docs_json(features: list[dict]) -> None:
-    """Read docs.json, update the feature subgroups inside Expert Models, write back."""
+def updated_redirects(
+    redirects: list[dict], removed: list[str], generated: set[str]
+) -> list[dict]:
+    """docs.json's redirects, with one for each deleted page and none onto a live one.
+
+    A page the API drops is indexed by Google, so its URL sends readers to the
+    features index rather than to a 404. A page the API brings back loses that
+    redirect again, since a redirect from a live page would hide it.
+    """
+    kept = [r for r in redirects if r.get("source", "").lstrip("/") not in generated]
+    sources = {r.get("source") for r in kept}
+    for page in removed:
+        if f"/{page}" not in sources:
+            kept.append({"source": f"/{page}", "destination": FEATURES_INDEX_URL})
+    return kept
+
+
+def update_docs_json(features: list[dict], removed: list[str]) -> None:
+    """Read docs.json, update the feature nav and redirects, write back.
+
+    `removed` names the pages cleanup_stale_pages deleted, each of which gets a
+    redirect.
+    """
     with open(DOCS_JSON_PATH, "r") as f:
         docs = json.load(f)
+
+    docs["redirects"] = updated_redirects(
+        docs.get("redirects", []), removed, generated_pages(features)
+    )
 
     feature_subgroups = _build_feature_subgroups(features)
 
@@ -726,27 +784,39 @@ def update_docs_json(features: list[dict]) -> None:
 # ------------------------
 
 
-def cleanup_stale_pages(features: list[dict]) -> None:
-    """Remove .mdx files under v3/expert-models/features/ that no longer map to an API feature."""
-    expected_files: set[Path] = {FEATURES_DIR / "index.mdx"}
+def generated_pages(features: list[dict]) -> set[str]:
+    """Every page this script writes, named as docs.json names a page."""
+    pages = {"v3/expert-models/features/index"}
     for feat in features:
-        fname = feat["name"]
         for sf in feat.get("subfeatures", []):
-            sf_slug = slug(sf["name"])
-            expected_files.add(FEATURES_DIR / fname / f"{sf_slug}.mdx")
+            pages.add(f"v3/expert-models/features/{feat['name']}/{slug(sf['name'])}")
+    return pages
+
+
+def cleanup_stale_pages(features: list[dict]) -> list[str]:
+    """Remove .mdx files under v3/expert-models/features/ that no longer map to an API feature.
+
+    Returns the pages it removed, named as docs.json names a page.
+    """
+    expected = generated_pages(features)
+    removed: list[str] = []
 
     if not FEATURES_DIR.exists():
-        return
+        return removed
 
-    for mdx_file in FEATURES_DIR.rglob("*.mdx"):
-        if mdx_file not in expected_files:
+    for mdx_file in sorted(FEATURES_DIR.rglob("*.mdx")):
+        page = mdx_file.relative_to(DOCS_ROOT).with_suffix("").as_posix()
+        if page not in expected:
             print(f"  Removing stale page: {mdx_file.relative_to(DOCS_ROOT)}")
             mdx_file.unlink()
+            removed.append(page)
 
     # Remove empty subdirectories
     for dirpath in sorted(FEATURES_DIR.rglob("*"), reverse=True):
         if dirpath.is_dir() and not any(dirpath.iterdir()):
             dirpath.rmdir()
+
+    return removed
 
 
 # ----------
@@ -807,10 +877,10 @@ def main() -> None:
     (FEATURES_DIR / "index.mdx").write_text(index_content)
 
     print("  Cleaning up stale pages...")
-    cleanup_stale_pages(features)
+    removed = cleanup_stale_pages(features)
 
-    print("  Updating docs.json navigation...")
-    update_docs_json(features)
+    print("  Updating docs.json navigation and redirects...")
+    update_docs_json(features, removed)
 
     print(f"Done! Generated {total_subfeatures} feature pages + index.")
 

@@ -189,6 +189,25 @@ def _config_entries() -> list[tuple[str, object]]:
     return list(_entries(json.loads(DOCS_JSON.read_text(encoding="utf-8"))))
 
 
+def page_file(name: str) -> Path | None:
+    """The .mdx file a page name lands on, or None if it lands nowhere.
+
+    Names a page the way docs.json does, with or without a leading slash. A
+    directory lands on its index, which is how a redirect to
+    /v3/expert-models/features reaches the features reference.
+    """
+    base = DOCS_ROOT / name.strip("/")
+    for candidate in (base.parent / f"{base.name}.mdx", base / "index.mdx"):
+        if candidate.is_file():
+            return candidate
+    return None
+
+
+def redirects() -> list[dict]:
+    """Every redirect docs.json declares, each a source and a destination."""
+    return json.loads(DOCS_JSON.read_text(encoding="utf-8")).get("redirects", [])
+
+
 def nav_pages() -> list[str]:
     """Every page docs.json puts in the navigation, in the order it lists them."""
     pages = [

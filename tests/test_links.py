@@ -4,6 +4,9 @@ A broken link is the one docs bug a reader always hits and never reports. The
 snippet suites cover the code on a page; nothing covered the prose around it,
 so a page could be renamed and every link to it kept pointing at a 404.
 
+The redirects in docs.json are links too, from a URL that no longer has a
+page: each has to land on a page, and none may start from one that exists.
+
 These checks read files and make no requests, so they run on every pull
 request next to the syntax checks. The links that need the network, the
 external URLs and the two OpenAPI specs the API reference renders from, live
@@ -35,7 +38,9 @@ from tests.links import (
     heading_slugs,
     linked_pages,
     nav_pages,
+    page_file,
     readable_text,
+    redirects,
     resolve_target,
     slugify,
 )
@@ -223,9 +228,28 @@ def test_an_image_points_at_a_file_in_the_repository(link):
 @pytest.mark.parametrize("page", nav_pages(), ids=lambda p: p)
 def test_every_page_in_the_navigation_exists(page):
     """docs.json names a page that was renamed or deleted and the tab 404s."""
-    if not (DOCS_ROOT / f"{page}.mdx").is_file():
-        if not (DOCS_ROOT / page / "index.mdx").is_file():
-            pytest.fail(f"docs.json lists {page}, which has no .mdx file")
+    if page_file(page) is None:
+        pytest.fail(f"docs.json lists {page}, which has no .mdx file")
+
+
+@pytest.mark.parametrize("redirect", redirects(), ids=lambda r: r["source"])
+def test_a_redirect_lands_on_a_page(redirect):
+    """A redirect kept the old URL of a moved page alive; it must not 404 itself."""
+    if page_file(redirect["destination"]) is None:
+        pytest.fail(
+            f"docs.json redirects {redirect['source']} to "
+            f"{redirect['destination']}, which is not a page"
+        )
+
+
+@pytest.mark.parametrize("redirect", redirects(), ids=lambda r: r["source"])
+def test_a_redirect_does_not_start_from_a_live_page(redirect):
+    """Either the page came back and the redirect is stale, or it hides the page."""
+    if page_file(redirect["source"]) is not None:
+        pytest.fail(
+            f"docs.json redirects {redirect['source']}, which is still a page. "
+            "Remove the redirect or the page"
+        )
 
 
 def test_every_published_page_is_reachable():
@@ -292,6 +316,7 @@ def test_the_docs_still_contain_the_links_these_checks_claim_to_cover():
     assert len(_PAGE_LINKS) > 200
     assert len(_ANCHOR_LINKS) > 10
     assert len(nav_pages()) > 100
+    assert redirects()
 
 
 def test_docs_json_is_the_file_the_navigation_checks_read():

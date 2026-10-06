@@ -15,6 +15,18 @@ See `README.md` for repository structure, local development setup, and publishin
 - Model format: `provider/model` for LLM, `feature/subfeature/provider[/model]` for Universal AI
 - Token types: `api_token` (production) and `sandbox_api_token` (testing, no real provider calls)
 
+## Page Titles and Descriptions
+
+Page titles and descriptions are written for the search a developer would type to find the page. Mintlify uses `title` as the page heading and as the HTML `<title>`, with ` - Eden AI Documentation` appended, and `description` as the meta description Google shows under the result. CodeRabbit reviews pages against this section.
+
+- Name the page after the query, not an internal feature name or a generic word: "Speech to Text API", not "Speech To Text (async)" or "Overview". Put the main keyword first, so it survives when Google truncates the title. One main query per page; no keyword lists.
+- Keep `title` under about 40 characters: the suffix adds 24, and Google cuts the result around 60. When the sidebar needs a shorter label, set `sidebarTitle` rather than shortening the title.
+- Every `title` is unique across the docs. Two pages with the same title compete for the same query.
+- `description` is one or two complete sentences, 120 to 160 characters, saying what the reader can do on the page and containing the main keyword. It does not repeat the title.
+- Most pages repeat `title` and `description` as props of `<TechArticleSchema>`, which builds the structured data and the social preview image. Change both copies together.
+- Pages under `v3/expert-models/features/` are generated: their title and description come from the API through `scripts/generate_features.py`, so change them there, not in the page.
+- Unless the user has already chosen the title, or it is a product name (an integration page titled "n8n"), look for evidence of what people search before settling on one: Google Search Console queries for the docs site, if the user can share them, and how competing API platforms and the providers' own docs title the same topic (search the web for this). Propose two or three titles, each with the query it targets, and let the user pick. Either way, the PR description states the target query of each new page, or of a retitle that changes the main keyword, and where the query came from.
+
 ## Working with Documentation Snippets
 
 All Python snippets in the docs (under `v3/` and at the repo root) are automatically tested, and so are the curl and install commands in ` ```bash ` blocks and the samples in ` ```javascript ` and ` ```typescript ` blocks. See `tests/README.md` for setup, running tests, and how to test specific pages.
@@ -33,7 +45,7 @@ All Python snippets in the docs (under `v3/` and at the repo root) are automatic
 Every link on every published page is checked by `tests/test_links.py`, which reads files and makes no requests. See `tests/README.md` for the details.
 
 - A link to a page that does not exist fails the build, as does an anchor naming a heading the target page does not have. Anchors follow github-slugger: `## Extended Thinking (Claude)` is `#extended-thinking-claude`.
-- Renaming or deleting a page means updating `docs.json` and every page that links to it. A page that ends up in neither the navigation nor any other page's links fails the reachability check, because nobody can reach it.
+- Moving, renaming or deleting a page's file means updating `docs.json` and every page that links to it, and adding a `redirects` entry from the old path (to the closest page, for a deleted one) so the old URL keeps working and keeps its search ranking. A page that ends up in neither the navigation nor any other page's links fails the reachability check, because nobody can reach it.
 - `#chat` and `#manage-cookies` are click targets bound by `intercom-chat.js` and `cookie-consent.js`, not headings. They are allowlisted in `tests/links.py`, and a test confirms each is really bound. Do NOT add an entry there to silence a broken anchor.
 - Links inside code fences are examples, not links, and are ignored. Do not rely on that to park a link that does not resolve.
 - The links that leave the docs, and the two OpenAPI specs the API reference tabs render from, are in `tests/test_links_external.py`. The specs are checked on every run; the third-party links only on the weekly one, since they depend on somebody else's site being up.

@@ -202,7 +202,7 @@ print(result["data"][0]["b64_json"][:60])
 </CodeGroup>
 
 <Info>
-`image_url` with an `https://` URL works for providers that accept remote URLs (e.g. Gemini). For `openai/gpt-image-*`, pass a `data:` URL or upload the file via `/v3/upload/...` and reference it by `file_id` instead — those models do not accept remote URLs.
+Eden AI fetches remote `https://` URLs and `file_id` uploads to bytes automatically before forwarding them to the provider, so `image_url` works across all providers including `openai/gpt-image-*`. Images are capped at 20 MB per file.
 </Info>
 
 ## Listing image models

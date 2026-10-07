@@ -249,8 +249,9 @@ it.
 links, relative links to a sibling page, anchors to a section, and images. It
 reads files and makes no requests, so it runs on every pull request and needs
 nothing set up. It also checks that `docs.json` names no page that has been
-deleted, and that no published page has become unreachable, meaning nothing in
-the navigation and no other page points at it.
+deleted, that no published page has become unreachable, meaning nothing in
+the navigation and no other page points at it, and that every redirect in
+`docs.json` lands on a page and does not start from one that still exists.
 
 `tests/test_links_external.py` needs the network. It has two halves:
 
@@ -275,6 +276,29 @@ knowing before you add a check:
   by `intercom-chat.js` and `cookie-consent.js`, listed in `JS_HOOK_ANCHORS`
   in `tests/links.py`. A test reads those scripts to confirm each one really
   is bound, so the allowlist cannot become somewhere a broken anchor hides.
+
+## Page titles and descriptions
+
+A page's frontmatter `title` and `description` are what a search result
+shows: the title, with ` - Eden AI Documentation` appended, and the snippet
+under it. How to write them is in CLAUDE.md, and CodeRabbit reviews the
+judgment part. `tests/test_page_metadata.py` checks the part that can be
+counted:
+
+- Every page declares a `title` and a `description`. Without a title Mintlify
+  falls back to the file name.
+- A title is at most 60 characters, where Google cuts it even without the
+  suffix, and no two pages share one. CLAUDE.md asks for about 40.
+- `<TechArticleSchema>` repeats the title, the description and the page's
+  path exactly. It adds a second structured-data block beside the one
+  Mintlify builds from the frontmatter, so a retitle has to change both
+  copies, or Google reads two different headlines for one page.
+
+The pages under `v3/expert-models/features/` take theirs from
+`scripts/generate_features.py`, so a fix to one of them goes in the
+generator. `tests/test_generate_features.py` covers how it writes a
+description (whole sentences only) and the redirect it adds to `docs.json`
+when the API drops a feature, so the old URL does not 404.
 
 ## Configuration blocks
 
@@ -315,12 +339,13 @@ models.
 
 ## CI (GitHub Actions)
 
-The workflow at `.github/workflows/test-snippets.yml` runs on PRs that touch `v3/**/*.mdx`, `docs.json`, `snippets/**` or `tests/**`:
+The workflow at `.github/workflows/test-snippets.yml` runs on PRs that touch `v3/**/*.mdx`, `docs.json`, `snippets/**`, `tests/**` or `scripts/**`:
 
 1. **Check snippet syntax**: parses every extracted snippet, Python, shell and JavaScript, and type-checks the TypeScript ones. No credentials and no API calls, so it still reports a broken snippet on a run where the secrets are missing. It needs the npm packages, which is why `npm ci` runs before it
 2. **Check documentation links**: follows every link on every page, and fetches the two OpenAPI specs the API reference tabs render from. No credentials
-3. **Check integration configuration blocks**: parses the JSON, YAML and TOML config on the integration pages and checks every model and URL it names against the live catalog. No credentials
-4. **Run Python snippets**, **Run shell snippets** and **Run JS and TS snippets**: execution tests with the `EDEN_AI_SANDBOX_TOKEN`, `EDEN_AI_PRODUCTION_TOKEN` and `EDEN_AI_MANAGEMENT_KEY` secrets
+3. **Check page titles and descriptions**: every page's title and description, the copy its structured data keeps, and the feature page generator. No credentials and no requests
+4. **Check integration configuration blocks**: parses the JSON, YAML and TOML config on the integration pages and checks every model and URL it names against the live catalog. No credentials
+5. **Run Python snippets**, **Run shell snippets** and **Run JS and TS snippets**: execution tests with the `EDEN_AI_SANDBOX_TOKEN`, `EDEN_AI_PRODUCTION_TOKEN` and `EDEN_AI_MANAGEMENT_KEY` secrets
 
 It also runs weekly, Mondays at 06:00 UTC against `main`, because the docs go
 stale against a moving API even when nobody edits them. The weekly run is the

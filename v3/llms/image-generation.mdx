@@ -1,14 +1,15 @@
 ---
 icon: "image"
-title: "Image Generation"
-description: "Generate and edit images with the OpenAI-compatible /v3/images endpoints."
+title: "OpenAI-Compatible Image API"
+sidebarTitle: "Image Generation"
+description: "Generate and edit images with GPT Image, Gemini and other models through Eden AI's OpenAI-compatible endpoints, from any OpenAI client."
 ---
 
 import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
 
 <TechArticleSchema
-  title={"Image Generation"}
-  description={"Generate and edit images with the OpenAI-compatible /v3/images endpoints."}
+  title={"OpenAI-Compatible Image API"}
+  description={"Generate and edit images with GPT Image, Gemini and other models through Eden AI's OpenAI-compatible endpoints, from any OpenAI client."}
   path="v3/llms/image-generation"
   articleSection="LLMs"
   about={"LLM API"}
@@ -188,9 +189,9 @@ headers = {
 
 payload = {
     "model": "vertex/gemini-2.5-flash-image",
-    "prompt": "Add a small red hat",
+    "prompt": "Make the background dark blue",
     "images": [
-        {"image_url": "https://example.com/photo.png"}
+        {"image_url": "https://www.edenai.co/docs/images/hero-light.png"}
     ],
     "size": "1024x1024",
 }

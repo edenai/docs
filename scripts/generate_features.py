@@ -541,9 +541,13 @@ def _existing_schema_dates(feature: str, sf_name: str) -> tuple[str | None, str 
 
 
 def _render_techarticle_schema(
-    feature: str, sf_name: str, fullname: str, description: str, section: str
+    feature: str, sf_name: str, title: str, description: str, section: str
 ) -> str:
-    """Render the TechArticleSchema MDX component for a feature page."""
+    """Render the TechArticleSchema MDX component for a feature page.
+
+    `title` and `description` are the page's own, so its structured data and
+    its frontmatter name the page the same way.
+    """
     about, extra_kw = _FEATURE_SCHEMA_META.get(feature, ("AI API", ["expert models"]))
     keywords = ["Eden AI", "AI API"] + extra_kw
     keywords_js = "[" + ", ".join(_js_str(k) for k in keywords) + "]"
@@ -558,7 +562,7 @@ def _render_techarticle_schema(
     return (
         'import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";\n\n'
         "<TechArticleSchema\n"
-        f"  title={{{_js_str(fullname)}}}\n"
+        f"  title={{{_js_str(title)}}}\n"
         f"  description={{{_js_str(description)}}}\n"
         f'  path="{path}"\n'
         f"  articleSection={{{_js_str(section)}}}\n"
@@ -591,17 +595,17 @@ def generate_subfeature_page(
     code_example = build_code_example(feature, sf_name, models, detail)
 
     truncated_desc = page_description(description)
-    safe_title = escape_frontmatter(fullname)
-    safe_desc = escape_frontmatter(truncated_desc)
-    schema_block = _render_techarticle_schema(
-        feature, sf_name, fullname, truncated_desc, section
-    )
-
     # The page title doubles as the search result title, so it carries "API"
     # (what people search for); the sidebar keeps the bare feature name.
+    title = f"{fullname} API"
+    safe_desc = escape_frontmatter(truncated_desc)
+    schema_block = _render_techarticle_schema(
+        feature, sf_name, title, truncated_desc, section
+    )
+
     page = f"""---
-title: "{safe_title} API"
-sidebarTitle: "{safe_title}"
+title: "{escape_frontmatter(title)}"
+sidebarTitle: "{escape_frontmatter(fullname)}"
 description: "{safe_desc}"
 ---
 

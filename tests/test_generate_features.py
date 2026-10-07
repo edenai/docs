@@ -11,8 +11,33 @@ behind that Google has indexed. These tests cover both and make no requests.
 import json
 
 from scripts import generate_features as gen
+from tests.page_metadata import frontmatter, schema_props
 
 FEATURES = [{"name": "text", "subfeatures": [{"name": "moderation"}]}]
+
+
+# --- the page -------------------------------------------------------------
+
+
+def test_a_generated_page_gives_its_structured_data_the_same_title(
+    tmp_path, monkeypatch
+):
+    """The search title carries "API", in the frontmatter and in <TechArticleSchema> alike."""
+    monkeypatch.setattr(gen, "FEATURES_DIR", tmp_path)
+    subfeature = {
+        "name": "moderation",
+        "fullname": "Text Moderation",
+        "description": "Scan text for offensive content.",
+    }
+    page = tmp_path / "page.mdx"
+    page.write_text(gen.generate_subfeature_page("text", subfeature, {}, "Text"))
+
+    meta, schema = frontmatter(page), schema_props(page)
+
+    assert meta["title"] == "Text Moderation API"
+    assert meta["sidebarTitle"] == "Text Moderation"
+    assert schema["title"] == meta["title"]
+    assert schema["description"] == meta["description"]
 
 
 # --- the description ------------------------------------------------------

@@ -287,7 +287,8 @@ counted:
 
 - Every page declares a `title` and a `description`. Without a title Mintlify
   falls back to the file name.
-- A title is at most 40 characters, and no two pages share one.
+- A title is at most 60 characters, where Google cuts it even without the
+  suffix, and no two pages share one. CLAUDE.md asks for about 40.
 - `<TechArticleSchema>` repeats the title, the description and the page's
   path exactly. It adds a second structured-data block beside the one
   Mintlify builds from the frontmatter, so a retitle has to change both

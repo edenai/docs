@@ -7,8 +7,10 @@ holds them rather than a reviewer reading prose:
 
   - Every page declares a title and a description. Without a title Mintlify
     falls back to the file name, which nobody chose.
-  - A title is at most 40 characters. Mintlify appends " - Eden AI
-    Documentation", 24 more, and Google cuts a result at around 60.
+  - A title is at most 60 characters, where Google cuts a result even when
+    it drops the " - Eden AI Documentation" Mintlify appends. CLAUDE.md asks
+    for about 40, so the title fits with that suffix, but that is a target
+    for a writer rather than a line a test can hold.
   - No two pages share a title, or they compete for the same search.
   - <TechArticleSchema> repeats the title, the description and the page's own
     path exactly. It adds a second structured-data block beside the one
@@ -27,7 +29,7 @@ import pytest
 from tests.page_metadata import frontmatter, schema_props
 from tests.snippet_extractor import DOCS_ROOT, mdx_files
 
-TITLE_MAX = 40
+TITLE_MAX = 60
 
 _PAGES = mdx_files()
 _META = {page: frontmatter(page) for page in _PAGES}

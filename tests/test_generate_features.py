@@ -50,6 +50,17 @@ def test_e_g_does_not_end_a_sentence():
     assert gen.truncate_at_sentence(text, 60) == "Compare two faces."
 
 
+def test_a_capitalised_e_g_does_not_end_a_sentence_either():
+    text = (
+        "Works on scanned documents. E.g. passports, "
+        + "ID cards, " * 20
+        + "and licences."
+    )
+
+    assert len(text) > gen.PAGE_DESCRIPTION_MAX
+    assert gen.page_description(text) == "Works on scanned documents."
+
+
 def test_a_page_description_ends_at_the_last_sentence_that_fits():
     first = "Detect deepfake and synthetically manipulated video."
     second = " Returns an overall score and a prediction for each frame."

@@ -169,8 +169,9 @@ def escape_frontmatter(text: str) -> str:
 
 
 # A sentence ends at . ! or ? before whitespace or the end of the text, but not
-# at the full stop of "e.g." or "i.e.", which once cut a description off at "(e.g.".
-_SENTENCE_END_RE = re.compile(r"(?<!\be\.g)(?<!\bi\.e)[.!?](?=\s|$)")
+# at the full stop of "e.g." or "i.e." in either case, which once cut a
+# description off at "(e.g.".
+_SENTENCE_END_RE = re.compile(r"(?<!\be\.g)(?<!\bi\.e)[.!?](?=\s|$)", re.IGNORECASE)
 
 # The API appends "(type of file allowed: jpg, png)" to some descriptions. The
 # input schema on the page already says which files are accepted.

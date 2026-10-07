@@ -564,8 +564,11 @@ def generate_subfeature_page(
         feature, sf_name, fullname, truncated_desc, section
     )
 
+    # The page title doubles as the search result title, so it carries "API"
+    # (what people search for); the sidebar keeps the bare feature name.
     page = f"""---
-title: "{safe_title}"
+title: "{safe_title} API"
+sidebarTitle: "{safe_title}"
 description: "{safe_desc}"
 ---
 

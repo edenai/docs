@@ -310,8 +310,10 @@ def _placeholder_for_field(field: dict) -> str:
     """Return a realistic JSON placeholder value that passes the field's minLength."""
     placeholder = _default_placeholder(field)
     min_length = field.get("minLength")
-    if min_length and field.get("type", "string") == "string" and len(json.loads(placeholder)) < min_length:
-        return json.dumps(_LONG_TEXT_PLACEHOLDER)
+    if min_length and field.get("type", "string") == "string":
+        value = json.loads(placeholder)
+        if isinstance(value, str) and len(value) < min_length:
+            return json.dumps(_LONG_TEXT_PLACEHOLDER)
     return placeholder
 
 

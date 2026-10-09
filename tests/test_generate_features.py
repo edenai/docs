@@ -207,3 +207,9 @@ def test_a_field_without_a_meaningful_minimum_keeps_its_one_line_example():
     field = {"name": "text", "type": "string", "required": True, "minLength": 1}
 
     assert gen._placeholder_for_field(field) == gen._default_placeholder(field)
+
+
+def test_a_placeholder_that_is_not_text_is_left_alone_whatever_the_minimum():
+    field = {"name": "speakers", "type": "string", "required": True, "minLength": 5}
+
+    assert gen._placeholder_for_field(field) == gen._default_placeholder(field)

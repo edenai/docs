@@ -222,13 +222,14 @@ Type `/imagine` followed by your prompt in the chat.
 
 ### Web Search
 
-Enable web search for up-to-date information:
+Enable web search using Eden AI's Perplexity compatible search endpoint (see [Perplexity Search](/v3/llms/perplexity-search) for available providers):
 
 <CodeGroup>
 ```bash .env
 ENABLE_RAG_WEB_SEARCH=true
-RAG_WEB_SEARCH_ENGINE=searxng
-SEARXNG_QUERY_URL=https://searx.be/search?q=<query>
+RAG_WEB_SEARCH_ENGINE=perplexity_search
+PERPLEXITY_API_KEY=your_eden_ai_api_key
+PERPLEXITY_SEARCH_API_URL=https://api.edenai.run/v3/search/tavily
 ```
 </CodeGroup>
 

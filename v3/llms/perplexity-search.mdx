@@ -1,0 +1,166 @@
+---
+icon: "magnifying-glass"
+title: "Perplexity Search API"
+sidebarTitle: "Perplexity Search"
+description: "Search the web through Eden AI using any Perplexity client: query Tavily, Linkup, or Firecrawl with domain and country filters via standard endpoints."
+---
+
+import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
+
+<TechArticleSchema
+  title={"Perplexity Search API"}
+  description={"Search the web through Eden AI using any Perplexity client: query Tavily, Linkup, or Firecrawl with domain and country filters via standard endpoints."}
+  path="v3/llms/perplexity-search"
+  articleSection="LLMs"
+  about={"Search API"}
+  proficiencyLevel="Intermediate"
+  keywords={["Eden AI", "AI API", "search API", "Perplexity compatible", "web search", "tavily", "linkup", "firecrawl"]}
+  datePublished="2026-10-09T00:00:00Z"
+  dateModified="2026-10-09T00:00:00Z"
+/>
+
+Search the web through Eden AI using any client built for the Perplexity Search API. Point your client at `https://api.edenai.run/v3` to run web searches across Eden AI providers such as `tavily`, `linkup`, and `firecrawl`.
+
+## Overview
+
+The surface is a facade over `POST /v3/universal-ai` for `web/search`: it shares the same providers, pricing, provider parameters allowlist, and request history. Unlike universal-ai's `200 {"status": "fail"}`, search failures return standard HTTP error codes in the OpenAI error envelope.
+
+| Method | Path | Purpose |
+|---|---|---|
+| `POST` | `/v3/search` | Search with the provider specified in the request body `model` |
+| `POST` | `/v3/search/{provider}` | Search with the provider named in the URL path |
+| `GET` | `/v3/search/models` | List search providers available in your region |
+
+Both `POST` endpoints accept the same request body and return the same response structure. When a request specifies a provider in both the URL path and the body `model`, both values must match (returning HTTP 400 otherwise). When neither specifies a provider, the endpoint returns HTTP 400 listing available providers.
+
+<Warning>
+Search providers are **not** listed in `GET /v3/models` (which covers chat completions only). Use `GET /v3/search/models` to discover callable search providers.
+</Warning>
+
+## Usage
+
+{/* skip-test: requires external perplexity package */}
+<CodeGroup>
+```python Perplexity Python SDK
+from perplexity import Perplexity
+
+client = Perplexity(api_key="YOUR_API_KEY", base_url="https://api.edenai.run/v3")
+
+search = client.search.create(
+    query="latest Eden AI release notes",
+    max_results=5,
+    extra_body={"model": "tavily"},
+)
+for result in search.results:
+    print(result.title, result.url, result.snippet)
+```
+
+```bash cURL (Body Model)
+curl -X POST https://api.edenai.run/v3/search \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "latest Eden AI release notes",
+    "model": "tavily",
+    "max_results": 5
+  }'
+```
+
+```bash cURL (Path Provider)
+curl -X POST https://api.edenai.run/v3/search/tavily \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "Eden AI",
+    "search_domain_filter": ["edenai.co"],
+    "country": "FR"
+  }'
+```
+</CodeGroup>
+
+### Open WebUI
+
+Open WebUI provides a built-in `perplexity_search` engine that posts `{query, max_results}` to a configurable URL and reads `results[].title/url/snippet`. Because Open WebUI sends a fixed request body without a `model` parameter, specify the provider in the URL path:
+
+1. Open Admin Panel, navigate to Settings, then Web Search.
+2. Select **Perplexity Search** as the search engine.
+3. Set your Eden AI API key as the API key.
+4. Set Search API URL to `https://api.edenai.run/v3/search/tavily` (or `/linkup`, `/firecrawl`).
+
+Alternatively, configure Open WebUI via environment variables:
+
+```bash .env
+ENABLE_RAG_WEB_SEARCH=true
+RAG_WEB_SEARCH_ENGINE=perplexity_search
+PERPLEXITY_API_KEY=your_eden_ai_api_key
+PERPLEXITY_SEARCH_API_URL=https://api.edenai.run/v3/search/tavily
+```
+
+## Request Fields
+
+| Field | Type | Maps to | Notes |
+|---|---|---|---|
+| `query` | string | `input.query` | Required. The search query string. Multi-query lists are rejected (HTTP 422). |
+| `model` | string | provider | Provider name (`tavily`, `linkup`, or `firecrawl`). Optional when specified in the URL path. |
+| `max_results` | integer (1 to 20) | `input.max_results` | Number of results to return (default: 10). |
+| `search_domain_filter` | list[string] | `include_domains` / `exclude_domains` | Domains to include or exclude. Plain entries include domains, while entries with a minus prefix (`-domain.com`) exclude them. Allow and deny entries cannot be mixed. Supported by Tavily and Linkup. Not supported by Firecrawl (HTTP 400). |
+| `country` | string (ISO 3166-1 alpha-2) | `country` | Case-insensitive two-letter country code. Supported by Tavily for its 166 supported countries. Not supported by Linkup or Firecrawl (HTTP 400). |
+
+Unknown fields are rejected with HTTP 422 rather than silently dropped, so unsupported Perplexity parameters (such as `search_recency_filter`, `search_language_filter`, or `max_tokens_per_page`) fail immediately. Eden-specific universal-ai parameters (such as `fallbacks`, `provider_params`, or `@edenai` routing) are not accepted on this surface: use `POST /v3/universal-ai` with `web/search/<provider>` for advanced configuration. Caller tags remain supported via the `X-EdenAI-Tags` request header.
+
+## Response Structure
+
+```json
+{
+  "id": "4d2f1a2c-3f43-4f26-9f2b-0b2f6a4e9f1e",
+  "results": [
+    {
+      "title": "Eden AI",
+      "url": "https://www.edenai.co/",
+      "snippet": "One API for all AI providers.",
+      "date": null,
+      "last_updated": null
+    }
+  ],
+  "provider": "tavily",
+  "cost": 0.008
+}
+```
+
+* `results[].snippet`: The text snippet returned by the search provider.
+* `results[].title`: The title of the page (empty string when not provided).
+* `results[].date` and `results[].last_updated`: Always `null` because search providers do not return standardized timestamp metadata.
+* `provider` and `cost`: Eden AI extensions indicating the executed provider and the cost in USD. These are also returned via `x-edenai-provider` and `x-edenai-cost` HTTP response headers.
+* `id`: The Eden AI request identifier.
+* With the `x-edenai-metadata: enabled` header, the response body also includes `edenai_metadata`.
+
+## Errors
+
+Errors follow the OpenAI envelope `{"error": {"message", "type", "code"}}`:
+
+* HTTP 400 for conflicting providers, missing providers, or unsupported filters (such as country filtering on Linkup).
+* HTTP 404 for unknown providers.
+* HTTP 422 for schema validation errors or unrecognized fields.
+* Provider errors: If a provider returns a client error (400, 404, 422, 429), its status and error message are forwarded. Upstream provider outages or account authentication issues (401 or 403 on Eden AI's provider credentials) return HTTP 502.
+* Authentication errors (401 or 403) and rate limits (429) return the platform `{"detail": ...}` format because they trigger before the route handler executes.
+
+## Limitations
+
+* **Recency filter:** Date filters such as Tavily `time_range`, Firecrawl `tbs`, or Linkup date bounds are not yet mapped.
+* **Firecrawl filters:** Firecrawl search does not currently support `search_domain_filter` or `country` via this endpoint.
+* **Search depth:** Searches run at standard depth (Tavily `basic`, Linkup `standard`). Higher depth tiers require `POST /v3/universal-ai` with custom `provider_params`.
+
+## Pricing
+
+Search queries through this surface carry the exact same pricing as universal-ai `web/search`: billing follows the provider credit reporting or tier counts in `info_pricing`. There are no additional fees for using the Perplexity-compatible facade.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="LLM Web Search" icon="brain" href="/v3/llms/web-search">
+    Enable web search during LLM chat completions
+  </Card>
+  <Card title="Open WebUI" icon="plug" href="/v3/integrations/open-webui">
+    Connect Open WebUI to Eden AI for chat and search
+  </Card>
+</CardGroup>

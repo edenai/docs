@@ -29,7 +29,7 @@ Model string pattern: `audio/tts/{provider}[/{model}]`
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | text | string | Yes | Text to convert to speech |
-| voice | string | No | Voice identifier to use for synthesis, can be name or id. For supported voices for your provider/model, please check each provider's documentation. |
+| voice | string | No | Voice to synthesize with: a voice `id` or `name` from `GET /v3/info/audio/tts/voices?model=...`, matched case-insensitively. Omit it to use the model's default voice. A voice id the catalog does not know is sent to the provider unchanged. |
 | speed | float | No | Speed multiplier for speech synthesis |
 | audio_format | string | No | Desired audio format (e.g., 'mp3', 'wav') |
 | speaking_pitch | int | No | Increase or decrease the speaking pitch by a percentage from -100% to 100%, 0 is normal. |
@@ -47,35 +47,36 @@ Model string pattern: `audio/tts/{provider}[/{model}]`
 
 | Provider | Model String | Price |
 |----------|-------------|-------|
-| amazon (neural) | `audio/tts/amazon/neural` | $0.016 per 1,000 chars |
-| amazon (standard) | `audio/tts/amazon/standard` | $0.004 per 1,000 chars |
-| deepgram (aura) | `audio/tts/deepgram/aura` | $0.015 per 1,000 chars |
-| deepgram (aura-2) | `audio/tts/deepgram/aura-2` | $0.03 per 1,000 chars |
-| elevenlabs | `audio/tts/elevenlabs` | $0.3 per 1,000 chars |
-| elevenlabs (eleven_flash_v2) | `audio/tts/elevenlabs/eleven_flash_v2` | $0.3 per 1,000 chars |
-| elevenlabs (eleven_flash_v2_5) | `audio/tts/elevenlabs/eleven_flash_v2_5` | $0.3 per 1,000 chars |
-| elevenlabs (eleven_multilingual_v2) | `audio/tts/elevenlabs/eleven_multilingual_v2` | $0.3 per 1,000 chars |
-| elevenlabs (eleven_turbo_v2) | `audio/tts/elevenlabs/eleven_turbo_v2` | $0.3 per 1,000 chars |
-| elevenlabs (eleven_turbo_v2_5) | `audio/tts/elevenlabs/eleven_turbo_v2_5` | $0.3 per 1,000 chars |
-| elevenlabs (eleven_v3) | `audio/tts/elevenlabs/eleven_v3` | $0.3 per 1,000 chars |
-| google (casual) | `audio/tts/google/casual` | $16 per 1,000,000 chars |
-| google (chirp3-hd) | `audio/tts/google/chirp3-hd` | $30 per 1,000,000 chars |
-| google (chirp-hd) | `audio/tts/google/chirp-hd` | $30 per 1,000,000 chars |
+| amazon (neural) | `audio/tts/amazon/neural` | $0.016 per 1,000 characters |
+| amazon (standard) | `audio/tts/amazon/standard` | $0.004 per 1,000 characters |
+| deepgram (aura) | `audio/tts/deepgram/aura` | $0.015 per 1,000 characters |
+| deepgram (aura-2) | `audio/tts/deepgram/aura-2` | $0.03 per 1,000 characters |
+| elevenlabs | `audio/tts/elevenlabs` | $0.3 per 1,000 characters |
+| elevenlabs (eleven_flash_v2) | `audio/tts/elevenlabs/eleven_flash_v2` | $0.3 per 1,000 characters |
+| elevenlabs (eleven_flash_v2_5) | `audio/tts/elevenlabs/eleven_flash_v2_5` | $0.3 per 1,000 characters |
+| elevenlabs (eleven_multilingual_v2) | `audio/tts/elevenlabs/eleven_multilingual_v2` | $0.3 per 1,000 characters |
+| elevenlabs (eleven_turbo_v2) | `audio/tts/elevenlabs/eleven_turbo_v2` | $0.3 per 1,000 characters |
+| elevenlabs (eleven_turbo_v2_5) | `audio/tts/elevenlabs/eleven_turbo_v2_5` | $0.3 per 1,000 characters |
+| elevenlabs (eleven_v3) | `audio/tts/elevenlabs/eleven_v3` | $0.3 per 1,000 characters |
+| google (casual) | `audio/tts/google/casual` | $16 per 1,000,000 characters |
+| google (chirp3-hd) | `audio/tts/google/chirp3-hd` | $30 per 1,000,000 characters |
+| google (chirp-hd) | `audio/tts/google/chirp-hd` | $30 per 1,000,000 characters |
 | google (gemini-2.5-flash-tts) | `audio/tts/google/gemini-2.5-flash-tts` | $0.006 per minute |
 | google (gemini-2.5-pro-tts) | `audio/tts/google/gemini-2.5-pro-tts` | $0.012 per minute |
 | google (gemini-3.1-flash-tts-preview) | `audio/tts/google/gemini-3.1-flash-tts-preview` | $0.012 per minute |
-| google (neural2) | `audio/tts/google/neural2` | $16 per 1,000,000 chars |
-| google (news) | `audio/tts/google/news` | $160 per 1,000,000 chars |
-| google (polyglot) | `audio/tts/google/polyglot` | $16 per 1,000,000 chars |
-| google (standard) | `audio/tts/google/standard` | $4 per 1,000,000 chars |
-| google (studio) | `audio/tts/google/studio` | $160 per 1,000,000 chars |
-| google (wavenet) | `audio/tts/google/wavenet` | $4 per 1,000,000 chars |
-| lovoai | `audio/tts/lovoai` | $160 per 1,000,000 chars |
-| microsoft (neural) | `audio/tts/microsoft/neural` | $16 per 1,000,000 chars |
-| microsoft (neural-hd) | `audio/tts/microsoft/neural-hd` | $30 per 1,000,000 chars |
+| google (neural2) | `audio/tts/google/neural2` | $16 per 1,000,000 characters |
+| google (news) | `audio/tts/google/news` | $160 per 1,000,000 characters |
+| google (polyglot) | `audio/tts/google/polyglot` | $16 per 1,000,000 characters |
+| google (standard) | `audio/tts/google/standard` | $4 per 1,000,000 characters |
+| google (studio) | `audio/tts/google/studio` | $160 per 1,000,000 characters |
+| google (wavenet) | `audio/tts/google/wavenet` | $4 per 1,000,000 characters |
+| gradium | `audio/tts/gradium` | $5.78e-05 per character |
+| lovoai | `audio/tts/lovoai` | $160 per 1,000,000 characters |
+| microsoft (neural) | `audio/tts/microsoft/neural` | $16 per 1,000,000 characters |
+| microsoft (neural-hd) | `audio/tts/microsoft/neural-hd` | $30 per 1,000,000 characters |
 | openai (gpt-4o-mini-tts) | `audio/tts/openai/gpt-4o-mini-tts` | $0.015 per minute |
-| openai (tts-1) | `audio/tts/openai/tts-1` | $15 per 1,000,000 chars |
-| openai (tts-1-hd) | `audio/tts/openai/tts-1-hd` | $30 per 1,000,000 chars |
+| openai (tts-1) | `audio/tts/openai/tts-1` | $15 per 1,000,000 characters |
+| openai (tts-1-hd) | `audio/tts/openai/tts-1-hd` | $30 per 1,000,000 characters |
 
 
 ## Quick Start

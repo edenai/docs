@@ -1,34 +1,33 @@
 ---
-title: "Topic Extraction API"
-sidebarTitle: "Topic Extraction"
-description: "Topic analysis is a Natural Language Processing (NLP) technique that allows us to automatically extract meaning from text by identifying recurrent themes or topics."
+title: "Text Anonymization"
+description: "The personally identifiable information (PII) detection feature can identify and redact sensitive information in unstructured text."
 ---
 
 import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
 
 <TechArticleSchema
-  title={`Topic Extraction API`}
-  description={`Topic analysis is a Natural Language Processing (NLP) technique that allows us to automatically extract meaning from text by identifying recurrent themes or topics.`}
-  path="v3/expert-models/features/text/topic-extraction"
+  title={`Text Anonymization`}
+  description={`The personally identifiable information (PII) detection feature can identify and redact sensitive information in unstructured text.`}
+  path="v3/expert-models/features/text/anonymization"
   articleSection={`Text Features`}
   about={`NLP API`}
   proficiencyLevel="Intermediate"
   keywords={[`Eden AI`, `AI API`, `text analysis`, `NLP`]}
-  datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-05-07T00:00:00Z"
+  datePublished="2026-09-29T00:00:00Z"
+  dateModified="2026-09-29T00:00:00Z"
 />
 
 ## Endpoint
 
 `POST /v3/universal-ai` (sync)
 
-Model string pattern: `text/topic_extraction/{provider}[/{model}]`
+Model string pattern: `text/anonymization/{provider}[/{model}]`
 
 ## Input
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| text | string | Yes | Text to analyze for topics |
+| text | string | Yes | Text to detect personal information in |
 | language | string | No | ISO 639-1 language code |
 
 
@@ -36,19 +35,23 @@ Model string pattern: `text/topic_extraction/{provider}[/{model}]`
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| **items** | array[object] | No |  |
-| &nbsp;&nbsp;&nbsp;&nbsp;category | string | Yes |  |
-| &nbsp;&nbsp;&nbsp;&nbsp;importance | float | Yes |  |
+| result | string | Yes |  |
+| **entities** | array[object] | No |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;offset | int | Yes |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;length | int | Yes |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;category | enum | Yes |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;subcategory | enum | Yes |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;original_label | string | Yes |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;content | string | Yes |  |
+| &nbsp;&nbsp;&nbsp;&nbsp;confidence_score | float | Yes |  |
 
 
 ## Available Providers
 
 | Provider | Model String | Price |
 |----------|-------------|-------|
-| google | `text/topic_extraction/google` | $0.6 per 1,000,000 characters |
-| openai | `text/topic_extraction/openai` | $10 per 1,000,000 tokens |
-| openai (gpt-4o) | `text/topic_extraction/openai/gpt-4o` | $10 per 1,000,000 tokens |
-| tenstorrent | `text/topic_extraction/tenstorrent` | $2 per 1,000,000 characters |
+| amazon | `text/anonymization/amazon` | $1 per 1,000,000 characters |
+| microsoft | `text/anonymization/microsoft` | $0.25 per 1,000,000 characters |
 
 
 ## Quick Start
@@ -65,7 +68,7 @@ headers = {
 }
 
 payload = {
-    "model": "text/topic_extraction/google",
+    "model": "text/anonymization/amazon",
     "input": {
         "text": "The quick brown fox jumps over the lazy dog.",
         "language": "en"
@@ -81,7 +84,7 @@ curl -X POST https://api.edenai.run/v3/universal-ai \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "text/topic_extraction/google",
+    "model": "text/anonymization/amazon",
     "input": {"text": "The quick brown fox jumps over the lazy dog.", "language": "en"}
   }'
 ```

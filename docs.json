@@ -102,7 +102,7 @@
                   "v3/llms/chat-completions",
                   "v3/llms/responses",
                   "v3/llms/embeddings",
-              "v3/llms/decisions",
+                  "v3/llms/decisions",
                   "v3/llms/file-upload",
                   "v3/llms/structured-output",
                   "v3/llms/web-search",
@@ -131,6 +131,7 @@
                     "pages": [
                       "v3/expert-models/features/text/ai-detection",
                       "v3/expert-models/features/text/moderation",
+                      "v3/expert-models/features/text/anonymization",
                       "v3/expert-models/features/text/spell-check",
                       "v3/expert-models/features/text/topic-extraction",
                       "v3/expert-models/features/text/named-entity-recognition",
@@ -138,7 +139,7 @@
                     ]
                   },
                   {
-                    "group": "Web Features",
+                    "group": "Web Tools Features",
                     "icon": "globe",
                     "expanded": false,
                     "pages": [

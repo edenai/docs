@@ -142,9 +142,39 @@ for model in details.get("models", []):
 ```
 </CodeGroup>
 
+## Response Fields
+
+### Subfeature Details
+
+| Field | Description |
+|-------|-------------|
+| `feature`, `subfeature` | Names used in the `model` string (e.g. `text` and `moderation`) |
+| `feature_fullname`, `subfeature_fullname` | Display names |
+| `description` | What the subfeature does |
+| `mode` | `sync` for subfeatures you call with `POST /v3/universal-ai`, `async` for those you call with `POST /v3/universal-ai/async` and then poll |
+| `endpoints` | The operations you can call, each as `METHOD /path`: `create` for a sync subfeature, `create`, `get`, `list`, and `delete` for an async one. Subfeatures backed by collections (`image/face_recognition`) add `create_collection`, `add_item`, and the other collection operations |
+| `models` | List of available models with pricing, documentation links, and input constraints |
+| `request_schema` | Top-level request body schema expected by the endpoint, showing where inputs nest |
+| `input_schema` | Schema of the parameters accepted inside the `input` object |
+| `output_schema` | Schema of the standardized response returned inside the `output` object |
+| `provider_params` | For each provider, the `provider_params` it accepts on subfeatures that restrict them, or `null` on the others. See [Provider Parameters](/v3/expert-models/provider-parameters#parameter-validation-and-allowlisting) |
+
+### Model Metadata
+
+Each entry in the `models` list contains:
+
+| Field | Description |
+|-------|-------------|
+| `model` | Full model identifier string (e.g. `text/moderation/google`) |
+| `pricing` | Cost information including `price`, `price_unit_quantity`, `price_unit_type` (such as `request`, `second`, `execution_time`, `character`), and `currency` (`USD`) |
+| `regions` | Regions the model is served from, as `code` and `name` objects (e.g. `eu` and `Europe`); empty when no region is recorded for the model |
+| `documentation_url` | Direct URL to official provider documentation for the model or provider, or `null` |
+| `requires_reference_images` | Boolean flag indicating whether the model requires `reference_images` (e.g. image edit models) |
+| `requires_video` | Boolean flag indicating whether the model requires a source `video` input (e.g. video editing models) |
+
 ## List Text to Speech Voices
 
-Discover voices accepted by Universal AI `audio/tts` models:
+`GET /v3/info/audio/tts/voices` lists the voices the `audio/tts` models accept. Send a voice's `id`, or its `name`, as `input.voice` in a `POST /v3/universal-ai` request:
 
 <CodeGroup>
 ```bash cURL
@@ -180,41 +210,30 @@ data.forEach(voice => console.log(voice.id, voice.name, voice.gender));
 
 ### Query Parameters
 
+All three are optional. Without `model`, the list covers every text to speech model available to you, which runs to thousands of voices.
+
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `model` | string | Restrict to one model, such as `audio/tts/google/wavenet` |
-| `language` | string | Filter by BCP-47 language tag, such as `en-US` |
-| `gender` | string | Filter by voice gender: `male`, `female`, or `unknown` |
+| `model` | string | Restrict to one model, given as its full id, such as `audio/tts/google/wavenet`. A model that is not available to you answers `404` |
+| `language` | string | Keep voices speaking this language. A bare code (`en`) matches every region, while `en-US` matches that locale only. Multilingual voices are always kept |
+| `gender` | string | Keep voices of this gender: `male`, `female`, or `unknown` |
 
-## Response Fields
+### Voice Fields
 
-### Subfeature Details
-
-| Field | Description |
-|-------|-------------|
-| `feature`, `subfeature` | Names used in the `model` string (e.g. `text` and `moderation`) |
-| `feature_fullname`, `subfeature_fullname` | Display names |
-| `description` | What the subfeature does |
-| `mode` | `sync` for subfeatures you call with `POST /v3/universal-ai`, `async` for those you call with `POST /v3/universal-ai/async` and then poll |
-| `endpoints` | The operations you can call, each as `METHOD /path`: `create` for a sync subfeature, `create`, `get`, `list`, and `delete` for an async one. Subfeatures backed by collections (`image/face_recognition`) add `create_collection`, `add_item`, and the other collection operations |
-| `models` | List of available models with pricing, documentation links, and input constraints |
-| `request_schema` | Top-level request body schema expected by the endpoint, showing where inputs nest |
-| `input_schema` | Schema of the parameters accepted inside the `input` object |
-| `output_schema` | Schema of the standardized response returned inside the `output` object |
-| `provider_params` | For each provider, the `provider_params` it accepts on subfeatures that restrict them, or `null` on the others. See [Provider Parameters](/v3/expert-models/provider-parameters#parameter-validation-and-allowlisting) |
-
-### Model Metadata
-
-Each entry in the `models` list contains:
+Each entry in `data` contains:
 
 | Field | Description |
 |-------|-------------|
-| `model` | Full model identifier string (e.g. `text/moderation/google`) |
-| `pricing` | Cost information including `price`, `price_unit_quantity`, `price_unit_type` (such as `request`, `second`, `execution_time`, `character`), and `currency` (`USD`) |
-| `regions` | Regions the model is served from, as `code` and `name` objects (e.g. `eu` and `Europe`); empty when no region is recorded for the model |
-| `documentation_url` | Direct URL to official provider documentation for the model or provider, or `null` |
-| `requires_reference_images` | Boolean flag indicating whether the model requires `reference_images` (e.g. image edit models) |
-| `requires_video` | Boolean flag indicating whether the model requires a source `video` input (e.g. video editing models) |
+| `id` | Voice identifier, to send as `input.voice` |
+| `name` | Display name, also accepted as `input.voice` (case does not matter) |
+| `provider` | Provider that serves the voice |
+| `models` | The `audio/tts` models that accept the voice |
+| `languages` | BCP-47 locales the voice speaks, empty for a multilingual voice |
+| `gender` | `male`, `female`, or `unknown` |
+| `preview_url` | Audio sample hosted by the provider, or `null` |
+| `default` | `true` for the voice used when a request to one of its `models` omits `input.voice` |
+
+A voice the catalog lists but the model does not accept is rejected with `400`, and the error lists voices the model does accept. An id the catalog does not know, such as a cloned voice, is sent to the provider unchanged. Because a voice belongs to one provider, `audio/tts` requests do not accept [`fallbacks`](/v3/general/fallback#things-worth-knowing).
 
 <Tip>
 You can also browse all features and providers visually in the [Eden AI model catalog](https://app.edenai.run/models).

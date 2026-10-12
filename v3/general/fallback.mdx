@@ -164,7 +164,8 @@ To turn it off and have the request fail on the first provider instead:
 - **A provider-less name works in `fallbacks` too.** It resolves to one provider of that model, so `{"model": "openai/gpt-latest", "fallbacks": ["gpt-5.6-sol"]}` is valid.
 - **Region tags are per entry.** `{"model": "<model>@eu", "fallbacks": ["<model>@us"]}` is two attempts in two regions, not one model with one region.
 - **Failed attempts cost nothing.** You are billed only for the attempt that produced a response.
-- **Text to speech does not support fallbacks.** Requests to `audio/tts` (Universal AI) and `/v3/audio/speech` reject `fallbacks` with HTTP 400, because a voice identifier belongs to a single provider and cannot fall back to another provider.
+- **Text to speech does not support fallbacks.** A Universal AI `audio/tts` request that sets `fallbacks` is rejected with HTTP 400, because a voice belongs to a single provider.
+- **The OpenAI-compatible audio and image endpoints take one model.** `/v3/audio/speech`, `/v3/audio/transcriptions`, `/v3/images/generations` and `/v3/images/edits` do not support `fallbacks`.
 
 ## Seeing what was tried
 

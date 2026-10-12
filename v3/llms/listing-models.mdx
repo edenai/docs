@@ -138,13 +138,43 @@ What to expect from the shape:
 
 Every model listing takes the same parameter: `/v3/models`, `/v3/embeddings/models`, `/v3/moderations/models`, `/v3/audio/transcriptions/models`, `/v3/audio/speech/models`, `/v3/images/models` and `/v3/videos/models`.
 
+## Model aliases
+
+Some models are available under a **stable alias**, a version-agnostic name that always points to the current release, alongside versioned or dated snapshot IDs:
+
+- **Stable alias:** `google/gemini-flash-latest`, `anthropic/claude-sonnet-latest`, `deepseek/deepseek-chat`
+- **Versioned snapshot:** `anthropic/claude-opus-4-5-20251101`
+
+Use the **stable alias** when you want your integration to keep working as providers ship new versions. **Pin a versioned snapshot** when you need a fixed, reproducible model. Either form works as the `model` parameter. Alias entries report the concrete model they currently resolve to in the `alias_of` field, as in the response example above.
+
+The catalog lists both forms when a provider exposes them, so you may see a stable alias (e.g. `anthropic/claude-opus-4-5`) and one or more dated snapshots (e.g. `anthropic/claude-opus-4-5-20251101`) side by side. Use the stable alias to always get the latest version, or a dated snapshot to pin to a specific release.
+
+## Capabilities
+
+The `capabilities` object describes what each model supports:
+
+| Field | Description |
+|-------|-------------|
+| `input_modalities` | Input types the model accepts: `text`, `image`, `audio`, `video`, `file` |
+| `output_modalities` | Output types the model produces |
+| `supports_reasoning` | Model supports extended thinking / reasoning mode |
+| `supports_web_search` | Model can perform live web searches via [`web_search_options`](/v3/llms/web-search) |
+| `supports_function_calling` | Model supports function/tool calling |
+| `supports_tool_choice` | Model supports the `tool_choice` parameter |
+| `supports_prompt_caching` | Model supports [prompt caching](/v3/llms/prompt-caching) |
+| `supports_response_schema` | Model supports structured output with a response schema |
+| `supports_system_messages` | Model accepts system messages |
+| `supports_computer_use` | Model supports computer-use tooling |
+| `supports_parallel_function_calling` | Model can call multiple tools in one turn |
+| `supports_assistant_prefill` | Model accepts a pre-filled assistant message |
+| `supports_native_streaming` | Model supports native streaming responses |
+| `supports_embedding_image_input` | Model accepts image input for embeddings |
+
+Some models expose extra provider-specific keys (e.g. `supports_pdf_input`, `supports_audio_input`), and a few return `"capabilities": null`. Treat a missing key or a `null` object as "not supported".
+
 ## List Speech Voices
 
-To discover voices accepted by speech models on `/v3/audio/speech`, query `/v3/audio/voices`:
-
-```
-GET /v3/audio/voices
-```
+`GET /v3/audio/voices` lists the voices the `/v3/audio/speech` models accept. Send a voice's `id`, or its `name`, as `voice` in `POST /v3/audio/speech`:
 
 <CodeGroup>
 ```bash cURL
@@ -180,47 +210,30 @@ data.forEach(voice => console.log(voice.id, voice.name, voice.gender));
 
 ### Query Parameters
 
+All three are optional. Without `model`, the list covers every speech model available to you.
+
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `model` | string | Restrict to one model, such as `openai/tts-1`. Accepts a model id or any of its active aliases. |
-| `language` | string | Keep voices speaking this language. A bare code (`fr`) matches every region, while `fr-CA` matches that locale only. Multilingual voices are always kept. |
-| `gender` | string | Keep voices of this gender: `male`, `female`, or `unknown`. |
+| `model` | string | Restrict to one model, such as `openai/tts-1`. Accepts a model id or any of its active aliases. A model that is not available to you answers `404` |
+| `language` | string | Keep voices speaking this language. A bare code (`fr`) matches every region, while `fr-CA` matches that locale only. Multilingual voices are always kept |
+| `gender` | string | Keep voices of this gender: `male`, `female`, or `unknown` |
 
-Each voice object reports its `id`, `name`, `gender`, `languages`, `provider`, and the `models` accepting it. Send the voice `id` or `name` as `voice` in `POST /v3/audio/speech`.
+### Voice Fields
 
-## Model aliases
-
-Some models are available under a **stable alias**, a version-agnostic name that always points to the current release, alongside versioned or dated snapshot IDs:
-
-- **Stable alias:** `google/gemini-flash-latest`, `anthropic/claude-sonnet-latest`, `deepseek/deepseek-chat`
-- **Versioned snapshot:** `anthropic/claude-opus-4-5-20251101`
-
-Use the **stable alias** when you want your integration to keep working as providers ship new versions. **Pin a versioned snapshot** when you need a fixed, reproducible model. Either form works as the `model` parameter. Alias entries report the concrete model they currently resolve to in the `alias_of` field, as in the response example above.
-
-The catalog lists both forms when a provider exposes them, so you may see a stable alias (e.g. `anthropic/claude-opus-4-5`) and one or more dated snapshots (e.g. `anthropic/claude-opus-4-5-20251101`) side by side. Use the stable alias to always get the latest version, or a dated snapshot to pin to a specific release.
-
-## Capabilities
-
-The `capabilities` object describes what each model supports:
+Each entry in `data` contains:
 
 | Field | Description |
 |-------|-------------|
-| `input_modalities` | Input types the model accepts: `text`, `image`, `audio`, `video`, `file` |
-| `output_modalities` | Output types the model produces |
-| `supports_reasoning` | Model supports extended thinking / reasoning mode |
-| `supports_web_search` | Model can perform live web searches via [`web_search_options`](/v3/llms/web-search) |
-| `supports_function_calling` | Model supports function/tool calling |
-| `supports_tool_choice` | Model supports the `tool_choice` parameter |
-| `supports_prompt_caching` | Model supports [prompt caching](/v3/llms/prompt-caching) |
-| `supports_response_schema` | Model supports structured output with a response schema |
-| `supports_system_messages` | Model accepts system messages |
-| `supports_computer_use` | Model supports computer-use tooling |
-| `supports_parallel_function_calling` | Model can call multiple tools in one turn |
-| `supports_assistant_prefill` | Model accepts a pre-filled assistant message |
-| `supports_native_streaming` | Model supports native streaming responses |
-| `supports_embedding_image_input` | Model accepts image input for embeddings |
+| `id` | Voice identifier, to send as `voice` |
+| `name` | Display name, also accepted as `voice` (case does not matter) |
+| `provider` | Provider that serves the voice |
+| `models` | The speech models that accept the voice, as `provider/model` ids |
+| `languages` | BCP-47 locales the voice speaks, empty for a multilingual voice |
+| `gender` | `male`, `female`, or `unknown` |
+| `preview_url` | Audio sample hosted by the provider, or `null` |
+| `default` | `true` for the voice used when a request to one of its `models` omits `voice` |
 
-Some models expose extra provider-specific keys (e.g. `supports_pdf_input`, `supports_audio_input`), and a few return `"capabilities": null`. Treat a missing key or a `null` object as "not supported".
+A voice the catalog lists but the model does not accept is rejected with `400`, and the error lists voices the model does accept. An id the catalog does not know, such as a cloned voice, is sent to the provider unchanged.
 
 <Tip>
 You can also browse all features and providers visually in the [Eden AI model catalog](https://app.edenai.run/models).

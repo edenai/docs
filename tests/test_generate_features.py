@@ -6,7 +6,8 @@ those pages has to live in the generator: an edit to a page is gone by the
 next run. Two of its outputs reach Google directly. The page description is
 the snippet under the search result, and a page the API drops leaves a URL
 behind that Google has indexed. These tests cover both, plus the quick start
-example on every page, and make no requests.
+example on every page and the provider_params allowlist on the pages of the
+subfeatures that enforce one, and make no requests.
 """
 
 import json
@@ -39,6 +40,49 @@ def test_a_generated_page_gives_its_structured_data_the_same_title(
     assert meta["sidebarTitle"] == "Text Moderation"
     assert schema["title"] == meta["title"]
     assert schema["description"] == meta["description"]
+
+
+# --- the provider_params allowlist ----------------------------------------
+
+VIDEO_GENERATION = {"name": "generation_async", "fullname": "Video Generation"}
+
+
+def _video_generation_page(tmp_path, monkeypatch, detail: dict) -> str:
+    monkeypatch.setattr(gen, "FEATURES_DIR", tmp_path)
+    return gen.generate_subfeature_page("video", VIDEO_GENERATION, detail, "Video")
+
+
+def test_a_subfeature_with_an_allowlist_lists_it_for_each_provider(tmp_path, monkeypatch):
+    detail = {
+        "provider_params": {
+            "google": ["aspectratio", "seed"],
+            "amazon": ["videogenerationconfig.seed"],
+        }
+    }
+
+    page = _video_generation_page(tmp_path, monkeypatch, detail)
+
+    assert "## Provider Parameters" in page
+    assert "| amazon | `videogenerationconfig.seed` |" in page
+    assert "| google | `aspectratio`, `seed` |" in page
+    assert page.index("## Available Providers") < page.index("## Provider Parameters")
+    assert page.index("## Provider Parameters") < page.index("## Quick Start")
+
+
+def test_a_provider_that_accepts_no_provider_params_says_so(tmp_path, monkeypatch):
+    page = _video_generation_page(tmp_path, monkeypatch, {"provider_params": {"openai": []}})
+
+    assert "| openai | None |" in page
+
+
+def test_a_subfeature_without_an_allowlist_keeps_its_page_unchanged(tmp_path, monkeypatch):
+    """`null` means any provider_params are forwarded: no section, and no stray blank line."""
+    with_null = _video_generation_page(tmp_path, monkeypatch, {"provider_params": None})
+    without_field = _video_generation_page(tmp_path, monkeypatch, {})
+
+    assert "## Provider Parameters" not in with_null
+    assert with_null == without_field
+    assert "_No providers currently available._\n\n\n## Quick Start" in with_null
 
 
 # --- the description ------------------------------------------------------

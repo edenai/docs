@@ -76,6 +76,21 @@ Model string pattern: `video/generation_async/{provider}[/{model}]`
 | pixverse (v5.5) | `video/generation_async/pixverse/v5.5` | $0.004 per token |
 | pixverse (v6) | `video/generation_async/pixverse/v6` | $0.004 per token |
 
+## Provider Parameters
+
+This subfeature accepts only the [`provider_params`](/v3/expert-models/provider-parameters#parameter-validation-and-allowlisting) listed for each provider, and rejects any other with `400 Bad Request`. Each entry is a path in the provider's own request format, lowercased, with nested keys joined by dots: send it as nested objects, in the casing the provider documents.
+
+| Provider | Accepted parameters |
+|----------|---------------------|
+| amazon | `texttovideoparams.images.format`, `texttovideoparams.images.source.bytes`, `texttovideoparams.text`, `videogenerationconfig.dimension`, `videogenerationconfig.fps`, `videogenerationconfig.seed` |
+| bytedance | `camerafixed`, `content.image_url.url`, `duration`, `ratio`, `resolution`, `seed`, `watermark` |
+| google | `aspectratio`, `compressionquality`, `enhanceprompt`, `generateaudio`, `negativeprompt`, `persongeneration`, `resizemode`, `seed`, `video.uri` |
+| minimax | `fast_pretreatment`, `first_frame_image`, `last_frame_image`, `prompt_optimizer`, `subject_reference.image` |
+| openai | `input_reference`, `prompt` |
+| pixverse | `aspect_ratio`, `duration`, `generate_audio_switch`, `generate_multi_clip_switch`, `img_id`, `img_ids`, `lip_sync_tts_content`, `lip_sync_tts_speaker_id`, `lip_sync_tts_switch`, `model`, `motion_mode`, `negative_prompt`, `prompt`, `quality`, `seed`, `sound_effect_content`, `sound_effect_switch`, `template_id`, `water_mark` |
+| pruna | `aspect_ratio`, `disable_prompt_upsampling`, `fps`, `negative_prompt`, `prompt`, `prompt_upsampling`, `seed`, `strength_negative_prompt`, `video_prompt`, `voice`, `voice_language`, `voice_prompt` |
+| xai | `aspect_ratio`, `duration`, `image.url`, `prompt` |
+
 
 ## Quick Start
 

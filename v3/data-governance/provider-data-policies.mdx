@@ -2,21 +2,21 @@
 sidebarTitle: "Provider Data Policies"
 title: "Provider Data Use & Retention"
 icon: "user-shield"
-description: "Whether each AI provider trains on your data, how long they keep it, and which ones offer Zero Data Retention (ZDR), for every model available through Eden AI."
+description: "Compare each provider's incorporation country, training policy, retention period, and Zero Data Retention (ZDR) options for models on Eden AI."
 ---
 
 import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
 
 <TechArticleSchema
   title={"Provider Data Use & Retention"}
-  description={"Whether each AI provider trains on your data, how long they keep it, and which ones offer Zero Data Retention (ZDR), for every model available through Eden AI."}
+  description={"Compare each provider's incorporation country, training policy, retention period, and Zero Data Retention (ZDR) options for models on Eden AI."}
   path="v3/data-governance/provider-data-policies"
   articleSection="Data Governance"
   about={"Data Compliance"}
   proficiencyLevel="Intermediate"
-  keywords={["Eden AI", "AI API", "ZDR", "Zero Data Retention", "data privacy", "GDPR", "model training"]}
+  keywords={["Eden AI", "AI API", "ZDR", "Zero Data Retention", "data privacy", "GDPR", "incorporation country", "model training"]}
   datePublished="2026-06-29T00:00:00Z"
-  dateModified="2026-08-28T00:00:00Z"
+  dateModified="2026-10-07T00:00:00Z"
 />
 
 When you call a model through Eden AI, your request is forwarded to the underlying provider, whose own policy governs what happens to it.
@@ -27,88 +27,90 @@ Eden AI stores no request or response content by default, and never trains on yo
 
 ## How each provider handles your data
 
-The tables below show, for each provider on Eden AI, whether it may train on your data (**Trains?**), whether **Zero Data Retention** (nothing stored) is available (**ZDR**), and how long data is kept otherwise (**Retention**). When ZDR is in effect, retention is **None**.
+The tables below show, for each provider on Eden AI, the country where the company selling the API is incorporated (**Incorporated in**), whether it may train on your data (**Trains?**), whether **Zero Data Retention** (nothing stored) is available (**ZDR**), and how long data is kept otherwise (**Retention**). When ZDR is in effect, retention is **None**.
+
+**Incorporated in** is the country where the provider's company is incorporated. It is not where your data is processed, and the laws of other countries, such as the GDPR, can apply as well. For processing location, see [EU data residency](#eu-data-residency).
 
 <Note>
-  This information was last updated on 27 August 2026.
+  The incorporation countries were added on 7 October 2026. The rest was last updated on 27 August 2026.
 </Note>
 
 ### LLM providers
 
-| Provider | Trains? | ZDR | Retention |
-|---|---|---|---|
-| Amazon Bedrock | No | **Yes** | None |
-| Anthropic | No | No | 30 days |
-| ByteDance | No | No | Not specified |
-| Cerebras | No | **Yes** | None |
-| Cloudflare | No | **Yes** | None |
-| Cohere | No | No | 30 days |
-| DashScope (legacy) | No | No | None |
-| Databricks | No | **Yes** | None |
-| DeepInfra | No | **Yes** | None |
-| DeepSeek | May train | No | No auto-deletion |
-| Fireworks | No | **Yes** | None |
-| Flex AI | No | **Yes** | None |
-| Google (AI Studio) | No | No | Up to ~55 days |
-| Google (Vertex) | No | **Yes** | None |
-| Groq | No | **Yes** | None |
-| Infomaniak | No | **Yes** | None |
-| IONOS | No | **Yes** | None |
-| Lilac | No | **Yes** | None |
-| Microsoft Azure | No | **Yes** | None |
-| MiniMax | May train | No | Not stated |
-| Mistral | No | **Yes** | None |
-| Moonshot | May train | No | Not stated |
-| Nebius | No | **Yes** | None |
-| OpenAI | No | No | 30 days |
-| OVHcloud | No | **Yes** | None |
-| Perplexity | No | **Yes** | None |
-| Qwen | No | **Yes** | None |
-| Scaleway | No | **Yes** | None |
-| TensorX | No | **Yes** | None |
-| Together | No | **Yes** | None |
-| xAI | No | **Yes** | None |
-| Z.ai | No | **Yes** | None |
+| Provider | Incorporated in | Trains? | ZDR | Retention |
+|---|---|---|---|---|
+| Amazon Bedrock | United States | No | **Yes** | None |
+| Anthropic | United States | No | No | 30 days |
+| ByteDance | China | No | No | Not specified |
+| Cerebras | United States | No | **Yes** | None |
+| Cloudflare | United States | No | **Yes** | None |
+| Cohere | Canada | No | No | 30 days |
+| DashScope (legacy) | China | No | No | None |
+| Databricks | United States | No | **Yes** | None |
+| DeepInfra | United States | No | **Yes** | None |
+| DeepSeek | China | May train | No | No auto-deletion |
+| Fireworks | United States | No | **Yes** | None |
+| Flex AI | France | No | **Yes** | None |
+| Google (AI Studio) | United States | No | No | Up to ~55 days |
+| Google (Vertex) | United States | No | **Yes** | None |
+| Groq | United States | No | **Yes** | None |
+| Infomaniak | Switzerland | No | **Yes** | None |
+| IONOS | Germany | No | **Yes** | None |
+| Lilac | United States | No | **Yes** | None |
+| Microsoft Azure | United States | No | **Yes** | None |
+| MiniMax | China | May train | No | Not stated |
+| Mistral | France | No | **Yes** | None |
+| Moonshot | China | May train | No | Not stated |
+| Nebius | Netherlands | No | **Yes** | None |
+| OpenAI | United States | No | No | 30 days |
+| OVHcloud | France | No | **Yes** | None |
+| Perplexity | United States | No | **Yes** | None |
+| Qwen | China | No | **Yes** | None |
+| Scaleway | France | No | **Yes** | None |
+| TensorX | Ireland | No | **Yes** | None |
+| Together | United States | No | **Yes** | None |
+| xAI | United States | No | **Yes** | None |
+| Z.ai | China | No | **Yes** | None |
 
 ### Expert Model providers
 
 Beyond LLMs, Eden AI offers Expert Models for OCR, document parsing, image, audio, video, and translation. The providers below are specific to those features; the LLM providers above also serve some Expert Models, with the same data handling. **Trains?** reads "May train" only where a provider trains on your data with no opt-out.
 
-| Provider | Trains? | ZDR | Retention |
-|---|---|---|---|
-| Affinda | No | No | No auto-deletion |
-| API4AI | No | **Yes** | None |
-| AssemblyAI | No | **Yes** | None |
-| Base64.ai | No | **Yes** | None |
-| Clarifai | No | No | No auto-deletion |
-| ClipDrop | No | No | Not documented |
-| Deepgram | No | **Yes** | None |
-| DeepL | No | **Yes** | None |
-| Eagle Doc | No | **Yes** | None |
-| ElevenLabs | No | **Yes** | None |
-| Extracta | No | **Yes** | None |
-| Face++ | May train | No | Deleted after processing |
-| Gladia | No | **Yes** | None |
-| Klippa | No | **Yes** | None |
-| Leonardo.Ai | No | No | No auto-deletion |
-| LOVO AI | May train | No | Not specified |
-| Mindee | No | **Yes** | None |
-| ModernMT | May train | No | Not specified |
-| PhotoRoom | No | **Yes** | None |
-| Picsart | No | No | Up to 24 hours |
-| PixVerse | May train | No | Not specified |
-| ProWritingAid | No | **Yes** | None |
-| Replicate | No | **Yes** | None |
-| Resemble AI | May train | No | No auto-deletion |
-| Sapling | No | **Yes** | None |
-| SenseLoaf | No | No | No auto-deletion |
-| SentiSight | May train | No | Not specified |
-| Sightengine | No | **Yes** | None |
-| Stability AI | No | No | Not specified |
-| Tabscanner | May train | No | 90 days |
-| Tenstorrent | May train | No | Not specified |
-| Veryfi | May train | No | None |
-| Winston AI | No | No | No auto-deletion |
+| Provider | Incorporated in | Trains? | ZDR | Retention |
+|---|---|---|---|---|
+| Affinda | Australia | No | No | No auto-deletion |
+| API4AI | United States | No | **Yes** | None |
+| AssemblyAI | United States | No | **Yes** | None |
+| Base64.ai | United States | No | **Yes** | None |
+| Clarifai | United States | No | No | No auto-deletion |
+| ClipDrop | France | No | No | Not documented |
+| Deepgram | United States | No | **Yes** | None |
+| DeepL | Germany | No | **Yes** | None |
+| Eagle Doc | Germany | No | **Yes** | None |
+| ElevenLabs | United States | No | **Yes** | None |
+| Extracta | Romania | No | **Yes** | None |
+| Face++ | China | May train | No | Deleted after processing |
+| Gladia | France | No | **Yes** | None |
+| Klippa | Netherlands | No | **Yes** | None |
+| Leonardo.Ai | Australia | No | No | No auto-deletion |
+| LOVO AI | Not verified | May train | No | Not specified |
+| Mindee | France | No | **Yes** | None |
+| ModernMT | Italy | May train | No | Not specified |
+| PhotoRoom | France | No | **Yes** | None |
+| Picsart | United States | No | No | Up to 24 hours |
+| PixVerse | Singapore | May train | No | Not specified |
+| ProWritingAid | United Kingdom | No | **Yes** | None |
+| Replicate | United States | No | **Yes** | None |
+| Resemble AI | United States | May train | No | No auto-deletion |
+| Sapling | United States | No | **Yes** | None |
+| SenseLoaf | India | No | No | No auto-deletion |
+| SentiSight | Lithuania | May train | No | Not specified |
+| Sightengine | France | No | **Yes** | None |
+| Stability AI | United Kingdom | No | No | Not specified |
+| Tabscanner | United Arab Emirates | May train | No | 90 days |
+| Tenstorrent | United States | May train | No | Not specified |
+| Veryfi | United States | May train | No | None |
+| Winston AI | Canada | No | No | No auto-deletion |
 
 ## EU data residency
 

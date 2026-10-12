@@ -28,3 +28,7 @@ any-llm-sdk[edenai]
 atomic-agents>=2
 edenai-haystack
 pydantic-ai
+
+# the Perplexity SDK sample on the search API page. The PyPI name `perplexity`
+# is an unrelated, unofficial package.
+perplexityai

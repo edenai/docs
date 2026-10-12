@@ -171,9 +171,14 @@ Each entry in the `models` list contains:
 | `documentation_url` | Direct URL to official provider documentation for the model or provider, or `null` |
 | `requires_reference_images` | Boolean flag indicating whether the model requires `reference_images` (e.g. image edit models) |
 | `requires_video` | Boolean flag indicating whether the model requires a source `video` input (e.g. video editing models) |
+| `zero_data_retention` | `true` when the provider keeps no inputs or outputs after the response (Zero Data Retention), `false` when it keeps them, `null` when not verified yet |
 
 <Tip>
 You can also browse all features and providers visually in the [Eden AI model catalog](https://app.edenai.run/models).
+</Tip>
+
+<Tip>
+Need providers that keep no data? Add `?zero_data_retention=true` to `/v3/info`, `/v3/info/{feature}` or `/v3/info/{feature}/{subfeature}` to list only Zero Data Retention providers.
 </Tip>
 
 <Tip icon="earth-europe">

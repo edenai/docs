@@ -53,7 +53,7 @@ data.forEach(model => console.log(model.id));
 
 ## Response
 
-Each entry includes the model's identity, context window, capabilities, pricing, and available regions (list truncated for readability):
+Each entry includes the model's identity, context window, capabilities, pricing, available regions, and whether the provider retains your data (list truncated for readability):
 
 ```json
 {
@@ -92,6 +92,7 @@ Each entry includes the model's identity, context window, capabilities, pricing,
       "regions": [
         { "code": "eu", "name": "Europe" }
       ],
+      "zero_data_retention": false,
       "alias_of": "google/gemini-3.6-flash"
     }
   ]
@@ -137,6 +138,26 @@ What to expect from the shape:
 - The default (`view=endpoints`, or no parameter) is unchanged, and both entry shapes stay compatible with the OpenAI SDK's `client.models.list()`.
 
 Every model listing takes the same parameter: `/v3/models`, `/v3/embeddings/models`, `/v3/moderations/models`, `/v3/audio/transcriptions/models`, `/v3/audio/speech/models`, `/v3/images/models` and `/v3/videos/models`.
+
+## Zero Data Retention
+
+Every entry carries `zero_data_retention`, which says whether that provider keeps your prompts and outputs after the response, for the calls Eden AI sends it:
+
+| Value | Meaning |
+|-------|---------|
+| `true` | The provider keeps no prompts or outputs after the response (Zero Data Retention) |
+| `false` | The provider keeps them, for example for abuse monitoring |
+| `null` | Not verified yet |
+
+The value is set per provider, and per model when one model's terms differ from its provider's. Models served from your own private deployment are always `true`. See [Provider Data Policies](/v3/data-governance/provider-data-policies) for how each provider handles your data.
+
+To list only Zero Data Retention endpoints, pass `zero_data_retention=true`:
+
+```bash cURL
+curl "https://api.edenai.run/v3/models?zero_data_retention=true"
+```
+
+`zero_data_retention=false` lists only the endpoints known to keep data, and entries still at `null` match neither. With `view=models`, each model keeps only its matching endpoints and is left out when none match. Every model listing above takes the parameter.
 
 ## Model aliases
 

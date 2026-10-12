@@ -112,7 +112,7 @@
                   "v3/llms/streaming",
                   "v3/llms/image-generation",
                   "v3/llms/video-generation",
-                  "v3/llms/perplexity-search"
+                  "v3/llms/search-api"
                 ]
               },
               {

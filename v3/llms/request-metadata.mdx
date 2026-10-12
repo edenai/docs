@@ -14,7 +14,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "LLM API", "observability", "debugging", "provider routing"]}
   datePublished="2026-08-19T00:00:00Z"
-  dateModified="2026-09-25T00:00:00Z"
+  dateModified="2026-10-12T00:00:00Z"
 />
 
 Eden AI makes decisions on your behalf on every request: which provider serves a model sold by several, which region it runs in, whether to retry elsewhere when one fails, and whether to use your own provider key. None of that is visible in a normal response, because the answer looks the same whoever produced it.
@@ -60,8 +60,8 @@ The response gains one extra top-level key, `edenai_metadata`:
     "endpoints": {
       "total": 2,
       "available": [
-        {"provider": "openai", "model": "openai/gpt-5.6-sol", "primary": true, "reachable": true},
-        {"provider": "azure", "model": "azure/gpt-5.6-sol", "primary": false, "reachable": true}
+        {"provider": "openai", "model": "openai/gpt-5.6-sol", "primary": true, "reachable": true, "excluded_reason": null},
+        {"provider": "azure", "model": "azure/gpt-5.6-sol", "primary": false, "reachable": true, "excluded_reason": null}
       ]
     },
     "attempts": [
@@ -84,7 +84,7 @@ The response gains one extra top-level key, `edenai_metadata`:
 | `attempt` | 1-based position of the attempt that served. `2` means the first one failed |
 | `is_byok` | Whether your own provider key was used instead of Eden AI's |
 | `endpoints.total` | How many providers offer the requested model |
-| `endpoints.available` | Each of them, with `primary` (chosen first) and `reachable` (usable for this request) |
+| `endpoints.available` | Each of them, with `primary` (chosen first), `reachable` (usable for this request), and `excluded_reason` (why it was dropped when not reachable). See below |
 | `attempts` | Every provider actually called, in order, each with its HTTP `status` and `region` |
 | `tags` | The [tags](/v3/general/tags) recorded for this call, or `{}` when it has none |
 
@@ -97,6 +97,22 @@ The response gains one extra top-level key, `edenai_metadata`:
 | `direct` | You named a `provider/model`, so no routing happened |
 | `alias` | You named an alias, which resolved to a specific model |
 | `routed` | You named a model without a provider, so Eden AI picked one. See [Provider Routing](/v3/llms/provider-routing) |
+
+### Exclusion reasons
+
+When a provider is not reachable (`reachable: false`), `excluded_reason` explains which narrowing dropped it from the dispatch chain at request time:
+
+| Value | Meaning |
+|---|---|
+| `fallback_limit` | Ranked below the maximum fallback chain limit |
+| `fallbacks_disabled` | Fallbacks were disabled for the request (`routing.allow_fallbacks: false`), so only the primary provider is eligible |
+| `continuation` | A previous turn pinned the conversation to a specific provider and region (`previous_response_id`) |
+
+When the provider is reachable (`reachable: true`), `excluded_reason` is `null`.
+
+<Note>
+Exclusion reasons reflect request constraints and configuration, not provider outages or health. A provider that is down retains its position in the dispatch chain.
+</Note>
 
 ## Tags
 

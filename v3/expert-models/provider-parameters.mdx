@@ -21,7 +21,7 @@ The `provider_params` field lets you pass provider-specific parameters that aren
 
 ## How It Works
 
-Add a `provider_params` object to any Universal AI request. The contents are forwarded directly to the provider alongside the standard `input` fields.
+Add a `provider_params` object to any Universal AI request. Its contents are forwarded to the provider alongside the standard `input` fields. On most subfeatures any parameter is forwarded as-is; video generation and the web subfeatures accept only the parameters on an allowlist (see [Parameter Validation and Allowlisting](#parameter-validation-and-allowlisting)).
 
 ```json
 {
@@ -30,7 +30,7 @@ Add a `provider_params` object to any Universal AI request. The contents are for
     // Standard unified parameters
   },
   "provider_params": {
-    // Provider-specific parameters passed through as-is
+    // Provider-specific parameters, in the provider's own request format
   }
 }
 ```
@@ -188,15 +188,15 @@ print(response.json())
 
 For most subfeatures, Eden AI forwards `provider_params` directly to the provider without validation. Invalid parameters may cause provider errors.
 
-However, certain subfeatures enforce an allowlist of accepted parameter paths:
-- **Video generation:** `video/generation_async` validates parameters against supported provider options.
-- **Web features:** Web search, scraping, crawling, and research tools enforce allowlists of accepted parameters.
+These subfeatures accept only the parameters on a per-provider allowlist, which each page lists under Provider Parameters:
+- **Video generation:** [`video/generation_async`](/v3/expert-models/features/video/generation-async#provider-parameters)
+- **Web:** [`web/search`](/v3/expert-models/features/web/search#provider-parameters), [`web/scraping`](/v3/expert-models/features/web/scraping#provider-parameters), [`web/map`](/v3/expert-models/features/web/map#provider-parameters), [`web/crawl_async`](/v3/expert-models/features/web/crawl-async#provider-parameters), [`web/batch_scrape_async`](/v3/expert-models/features/web/batch-scrape-async#provider-parameters), [`web/structured_extraction_async`](/v3/expert-models/features/web/structured-extraction-async#provider-parameters), and [`web/research_async`](/v3/expert-models/features/web/research-async#provider-parameters)
 
-When calling a gated subfeature, passing an unallowed parameter causes the request to be rejected with a `400 Bad Request` error.
+Any other parameter is rejected with a `400 Bad Request` error naming the parameters that were refused. The check covers every provider the request can reach: with [`fallbacks`](/v3/general/fallback), each parameter must be allowed for the provider in `model` and for every fallback provider, or the whole request is rejected.
 
 ### Discovering Allowed Parameters
 
-To inspect which provider parameters are allowed for a subfeature, query the subfeature detail endpoint:
+To read an allowlist from your code, query the subfeature detail endpoint:
 
 <CodeGroup>
 ```bash cURL
@@ -212,33 +212,63 @@ response = requests.get(
     headers={"Authorization": "Bearer YOUR_API_KEY"}
 )
 
-params = response.json().get("provider_params")
-print(params)
+for provider, paths in response.json()["provider_params"].items():
+    print(provider, paths)
 ```
 </CodeGroup>
 
-The response includes a `provider_params` object mapping each provider to its accepted parameter paths:
+The response includes a `provider_params` object mapping each provider to its accepted parameter paths. Abridged to three of the providers:
 
 ```json
 {
   "provider_params": {
-    "kling": ["duration", "mode", "sound", "aspect_ratio"],
-    "runway": ["duration", "ratio", "watermark"],
-    "luma": ["aspect_ratio", "loop"]
+    "amazon": [
+      "texttovideoparams.images.format",
+      "texttovideoparams.images.source.bytes",
+      "texttovideoparams.text",
+      "videogenerationconfig.dimension",
+      "videogenerationconfig.fps",
+      "videogenerationconfig.seed"
+    ],
+    "google": [
+      "aspectratio",
+      "compressionquality",
+      "enhanceprompt",
+      "generateaudio",
+      "negativeprompt",
+      "persongeneration",
+      "resizemode",
+      "seed",
+      "video.uri"
+    ],
+    "openai": ["input_reference", "prompt"]
   }
 }
 ```
 
-For subfeatures without restrictions, `provider_params` returns `null`.
+Each entry is a path in the provider's own request format, lowercased, with nested keys joined by dots. Send the parameter as a nested object, in the casing the provider documents. `videogenerationconfig.seed` for Amazon means:
+
+```json
+{
+  "provider_params": {
+    "videoGenerationConfig": {
+      "seed": 7
+    }
+  }
+}
+```
+
+Likewise, Google's `aspectratio` is sent as `aspectRatio`. The allowlist check ignores case, so a lowercased `aspectratio` passes it, but the provider then receives a key it does not recognize. An empty list means the provider accepts no `provider_params`, and `null` means the subfeature does not restrict them.
+
+To list every subfeature that restricts `provider_params`, call `GET /v3/info?include=schemas` (see [List Expert Models](/v3/expert-models/listing-models#bulk-schema-discovery)) and keep the subfeatures whose `provider_params` is not `null`.
 
 You can also check the `documentation_url` field returned for each model in `GET /v3/info` to view the provider's official documentation.
 
 ## Important Notes
 
 <Note>
-- Gated subfeatures (such as video generation and web tools) enforce an allowlist of permitted `provider_params`. Unallowed parameters are rejected with HTTP 400.
-- For unrestricted subfeatures, parameters pass through without validation.
-- `provider_params` apply only to the specific provider specified in the `model` string. When switching providers, verify the parameters supported by the new provider.
+- Available parameters vary by provider and feature. Refer to the provider's own documentation for what each one does.
+- `provider_params` are sent to every provider the request reaches, including [fallbacks](/v3/general/fallback). On subfeatures without an allowlist, a parameter one fallback provider does not support can make that attempt fail.
 </Note>
 
 ## Next Steps

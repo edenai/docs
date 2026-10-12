@@ -106,7 +106,7 @@
     {
         "id": "q15",
         "question": "How do I pass provider-specific parameters to an expert model request?",
-        "expected_output": "Add a 'provider_params' object to your Universal AI request alongside 'model' and 'input'. The contents are forwarded directly to the provider without validation by Eden AI. For example, for DALL-E 3 image generation, set provider_params to {\"quality\": \"hd\", \"style\": \"vivid\"}. Available parameters vary by provider and are not listed in Eden AI docs -- refer to the provider's own documentation.",
+        "expected_output": "Add a 'provider_params' object to your Universal AI request alongside 'model' and 'input'. On most subfeatures the contents are forwarded to the provider without validation; video generation and the web subfeatures accept only an allowlist of parameters per provider and reject any other with a 400. For example, for OpenAI image generation (image/generation/openai/gpt-image-2), set provider_params to {\"quality\": \"hd\", \"style\": \"vivid\"}. GET /v3/info/{feature}/{subfeature} returns the allowlist in its provider_params field; refer to the provider's own documentation for what each parameter does.",
         "source_doc": "v3/expert-models/provider-parameters.mdx",
         "category": "expert-models",
         "difficulty": "intermediate"

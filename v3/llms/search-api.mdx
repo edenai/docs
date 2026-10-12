@@ -2,24 +2,24 @@
 icon: "magnifying-glass"
 title: "Perplexity-Compatible Search API"
 sidebarTitle: "Search API"
-description: "Point the Perplexity SDK or Open WebUI at Eden AI's search API to get ranked web results from Tavily, Linkup or Firecrawl, without changing your client code."
+description: "Point the Perplexity SDK or Open WebUI at Eden AI's search API to get ranked web results from several search providers, without changing your client code."
 ---
 
 import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
 
 <TechArticleSchema
   title={"Perplexity-Compatible Search API"}
-  description={"Point the Perplexity SDK or Open WebUI at Eden AI's search API to get ranked web results from Tavily, Linkup or Firecrawl, without changing your client code."}
+  description={"Point the Perplexity SDK or Open WebUI at Eden AI's search API to get ranked web results from several search providers, without changing your client code."}
   path="v3/llms/search-api"
   articleSection="LLMs"
   about={"Search API"}
   proficiencyLevel="Intermediate"
-  keywords={["Eden AI", "AI API", "search API", "Perplexity compatible", "web search", "tavily", "linkup", "firecrawl"]}
+  keywords={["Eden AI", "AI API", "search API", "Perplexity compatible", "web search"]}
   datePublished="2026-10-09T00:00:00Z"
   dateModified="2026-10-12T00:00:00Z"
 />
 
-Search the web through Eden AI using any client built for the Perplexity Search API. Point your client at `https://api.edenai.run/v3` to run web searches across Eden AI providers such as `tavily`, `linkup`, and `firecrawl`.
+Search the web through Eden AI using any client built for the Perplexity Search API. Point your client at `https://api.edenai.run/v3` to run web searches on any of the search providers Eden AI offers. `GET /v3/search/models` lists them, and the samples below use `tavily`.
 
 ## Overview
 
@@ -87,17 +87,19 @@ curl -X POST https://api.edenai.run/v3/search/tavily \
 
 ### Open WebUI
 
-Open WebUI's built-in **Perplexity Search** engine works with this API. It posts a fixed `{query, max_results}` body with no `model`, so put the provider in the URL path: `https://api.edenai.run/v3/search/tavily` (or `/linkup`, `/firecrawl`). See [Web Search in the Open WebUI guide](/v3/integrations/open-webui#web-search) for the setup.
+Open WebUI's built-in **Perplexity Search** engine works with this API. It posts a fixed `{query, max_results}` body with no `model`, so put the provider in the URL path, such as `https://api.edenai.run/v3/search/tavily`. See [Web Search in the Open WebUI guide](/v3/integrations/open-webui#web-search) for the setup.
 
 ## Request Fields
 
 | Field | Type | Maps to | Notes |
 |---|---|---|---|
 | `query` | string | `input.query` | Required. The search query string. Multi-query lists are rejected (HTTP 422). |
-| `model` | string | provider | Provider name (`tavily`, `linkup`, or `firecrawl`). Optional when specified in the URL path. |
+| `model` | string | provider | A provider `id` from `GET /v3/search/models`, such as `tavily`. Optional when specified in the URL path. |
 | `max_results` | integer (1 to 20) | `input.max_results` | Number of results to return (default: 10). Values above 20 are rejected (HTTP 422). |
-| `search_domain_filter` | list[string] (1 to 20 entries) | Tavily `include_domains` / `exclude_domains`, Linkup `includeDomains` / `excludeDomains` | Domains to include or exclude. Plain entries include domains, while entries with a minus prefix (`-domain.com`) exclude them. Allow and deny entries cannot be mixed. More than 20 entries are rejected (HTTP 422). Supported by Tavily and Linkup. Not supported by Firecrawl (HTTP 400). |
-| `country` | string (ISO 3166-1 alpha-2) | Tavily `country` | Case-insensitive two-letter country code. Supported by Tavily for the countries it covers (HTTP 400 for any other). Not supported by Linkup or Firecrawl (HTTP 400). |
+| `search_domain_filter` | list[string] (1 to 20 entries) | the provider's own include and exclude domain parameters | Domains to include or exclude. Plain entries include domains, while entries with a minus prefix (`-domain.com`) exclude them. Allow and deny entries cannot be mixed. More than 20 entries are rejected (HTTP 422). |
+| `country` | string (ISO 3166-1 alpha-2) | the provider's own country parameter | Case-insensitive two-letter country code. |
+
+Filter support varies by provider. A provider that cannot apply `search_domain_filter` or `country`, or does not cover the country you sent, returns HTTP 400 with a message naming the field and the provider, so the search never runs without the filter you asked for.
 
 Unknown fields are rejected with HTTP 422 rather than silently dropped, so unsupported Perplexity parameters (such as `search_recency_filter`, `search_language_filter`, or `max_tokens_per_page`) fail immediately. Eden-specific universal-ai parameters (such as `fallbacks`, `provider_params`, or `@edenai` routing) are not accepted on this surface: use [`POST /v3/universal-ai` with `web/search/<provider>`](/v3/expert-models/features/web/search) for advanced configuration. Caller tags remain supported via the `X-EdenAI-Tags` request header.
 
@@ -131,7 +133,7 @@ Unknown fields are rejected with HTTP 422 rather than silently dropped, so unsup
 
 Errors follow the OpenAI envelope `{"error": {"message", "type", "code"}}`:
 
-* HTTP 400 for conflicting providers, missing providers, or unsupported filters (such as country filtering on Linkup).
+* HTTP 400 for conflicting providers, missing providers, or a filter the provider does not support.
 * HTTP 404 for unknown providers.
 * HTTP 422 for schema validation errors or unrecognized fields.
 * Provider errors: when a provider rejects the request with a 4xx status (such as 400, 404, 422 or 429), that status and the provider's message are forwarded. The exceptions are 401 and 403, which concern Eden AI's own provider credentials rather than your request: those, provider 5xx errors and outages all return HTTP 502.
@@ -139,8 +141,7 @@ Errors follow the OpenAI envelope `{"error": {"message", "type", "code"}}`:
 
 ## Limitations
 
-* **Recency filter:** Date filters such as Tavily `time_range`, Firecrawl `tbs`, or Linkup date bounds are not yet mapped.
-* **Firecrawl filters:** Firecrawl search does not currently support `search_domain_filter` or `country` via this endpoint.
+* **Recency filter:** Date filters are not mapped yet, so Perplexity's `search_recency_filter` and the providers' own date parameters cannot be used here.
 * **Search depth:** Searches run at the `standard` depth. For the `deep` tier, call `POST /v3/universal-ai` with `web/search/<provider>` and `"depth": "deep"` in `input`, which is billed at that tier's price.
 
 ## Pricing

@@ -111,7 +111,7 @@ curl -X POST https://api.edenai.run/v3/universal-ai \
 ## Common Use Cases
 
 
-### Image Generation — Style and Quality
+### Image Generation: Style and Quality
 
 Control output style and quality for image generation:
 
@@ -152,7 +152,7 @@ img.show()
 ```
 </CodeGroup>
 
-### Text to Speech — Voice Settings
+### Text to Speech: Voice Settings
 
 Pass provider-specific voice parameters:
 
@@ -184,12 +184,61 @@ print(response.json())
 ```
 </CodeGroup>
 
+## Parameter Validation and Allowlisting
+
+For most subfeatures, Eden AI forwards `provider_params` directly to the provider without validation. Invalid parameters may cause provider errors.
+
+However, certain subfeatures enforce an allowlist of accepted parameter paths:
+- **Video generation:** `video/generation_async` validates parameters against supported provider options.
+- **Web features:** Web search, scraping, crawling, and research tools enforce allowlists of accepted parameters.
+
+When calling a gated subfeature, passing an unallowed parameter causes the request to be rejected with a `400 Bad Request` error.
+
+### Discovering Allowed Parameters
+
+To inspect which provider parameters are allowed for a subfeature, query the subfeature detail endpoint:
+
+<CodeGroup>
+```bash cURL
+curl https://api.edenai.run/v3/info/video/generation_async \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+```python Python
+import requests
+
+response = requests.get(
+    "https://api.edenai.run/v3/info/video/generation_async",
+    headers={"Authorization": "Bearer YOUR_API_KEY"}
+)
+
+params = response.json().get("provider_params")
+print(params)
+```
+</CodeGroup>
+
+The response includes a `provider_params` object mapping each provider to its accepted parameter paths:
+
+```json
+{
+  "provider_params": {
+    "kling": ["duration", "mode", "sound", "aspect_ratio"],
+    "runway": ["duration", "ratio", "watermark"],
+    "luma": ["aspect_ratio", "loop"]
+  }
+}
+```
+
+For subfeatures without restrictions, `provider_params` returns `null`.
+
+You can also check the `documentation_url` field returned for each model in `GET /v3/info` to view the provider's official documentation.
+
 ## Important Notes
 
 <Note>
-- `provider_params` are **not validated** by Eden AI — they are passed directly to the provider. Invalid parameters may cause provider-side errors.
-- Available parameters vary by provider and feature. Refer to the provider's own documentation for supported options.
-- `provider_params` only apply to the specific provider in the `model` string. If you switch providers, you may need to update the parameters.
+- Gated subfeatures (such as video generation and web tools) enforce an allowlist of permitted `provider_params`. Unallowed parameters are rejected with HTTP 400.
+- For unrestricted subfeatures, parameters pass through without validation.
+- `provider_params` apply only to the specific provider specified in the `model` string. When switching providers, verify the parameters supported by the new provider.
 </Note>
 
 ## Next Steps

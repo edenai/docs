@@ -22,10 +22,10 @@ Use the `/v3/info` endpoints to discover all available expert model features, pr
 
 ## Endpoints
 
-| Endpoint | Description |
-|----------|-------------|
-| `GET /v3/info` | List all features and subfeatures |
-| `GET /v3/info/{feature}/{subfeature}` | Get providers, models, pricing, and schemas for a specific feature |
+| Endpoint | Description | Query Parameters |
+|----------|-------------|------------------|
+| `GET /v3/info` | List all features and subfeatures | `include=schemas`, `format=simplified` or `format=json_schema` |
+| `GET /v3/info/{feature}/{subfeature}` | Get providers, models, pricing, and schemas for a specific feature | `format=simplified` or `format=json_schema` |
 
 ## List All Features
 
@@ -57,9 +57,49 @@ features.forEach(f => console.log(f.name));
 ```
 </CodeGroup>
 
+### Bulk Schema Discovery
+
+To avoid querying each subfeature individually, pass `?include=schemas` to embed full schema bundles across all subfeatures in a single response:
+
+<CodeGroup>
+```bash cURL
+curl "https://api.edenai.run/v3/info?include=schemas" \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+```python Python
+import requests
+
+response = requests.get(
+    "https://api.edenai.run/v3/info?include=schemas",
+    headers={"Authorization": "Bearer YOUR_API_KEY"}
+)
+
+for feature in response.json()["features"]:
+    for subfeature in feature["subfeatures"]:
+        print(subfeature["fullname"], "has schema:", subfeature.get("request_schema") is not None)
+```
+</CodeGroup>
+
+When `include=schemas` is requested, each subfeature includes `endpoints`, `request_schema`, `input_schema`, `output_schema`, and `provider_params`. You can also supply `format=json_schema` to retrieve JSON Schema representations instead of the default simplified format.
+
+## HTTP Caching and Conditional Requests
+
+Both `/v3/info` endpoints return an `ETag` header alongside `Cache-Control: private, no-cache`.
+
+Clients can cache catalog responses and send an `If-None-Match` header in subsequent requests:
+
+```bash cURL
+curl "https://api.edenai.run/v3/info" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H 'If-None-Match: W/"abc123xyz"'
+```
+
+When the catalog has not changed, the API responds with `304 Not Modified` and an empty body, saving bandwidth.
+
 ## Get Feature Details
 
-Retrieve providers, pricing, and input/output schemas for a specific feature.
+Retrieve providers, pricing, endpoint paths, request/response schemas, and parameter allowlists for a specific feature.
 
 <CodeGroup>
 ```bash cURL
@@ -83,12 +123,29 @@ for model in details.get("models", []):
 
 ## Response Fields
 
+### Subfeature Details
+
 | Field | Description |
 |-------|-------------|
-| `models` | Available providers and model strings |
-| `pricing` | Cost per provider |
-| `input_schema` | Parameters accepted by this feature |
-| `output_schema` | Structure of the response |
+| `models` | List of available models with pricing, documentation links, and input constraints |
+| `endpoints` | HTTP methods and paths for subfeature operations (e.g. `create`, `async_create`, `async_poll`) |
+| `request_schema` | Top-level request body schema expected by the endpoint, showing where inputs nest |
+| `input_schema` | Schema of the parameters accepted inside the `input` object |
+| `output_schema` | Schema of the standardized response returned inside the `output` object |
+| `provider_params` | Dictionary mapping providers to accepted parameter paths for gated subfeatures, or `null` if unrestricted |
+
+### Model Metadata
+
+Each entry in the `models` list contains:
+
+| Field | Description |
+|-------|-------------|
+| `model` | Full model identifier string (e.g. `text/moderation/google`) |
+| `pricing` | Cost information including `price`, `price_unit_quantity`, `price_unit_type` (such as `request`, `second`, `execution_time`, `character`), and `currency` (`USD`) |
+| `regions` | List of supported provider regions |
+| `documentation_url` | Direct URL to official provider documentation for the model or provider, or `null` |
+| `requires_reference_images` | Boolean flag indicating whether the model requires `reference_images` (e.g. image edit models) |
+| `requires_video` | Boolean flag indicating whether the model requires a source `video` input (e.g. video editing models) |
 
 <Tip>
 You can also browse all features and providers visually in the [Eden AI model catalog](https://app.edenai.run/models).

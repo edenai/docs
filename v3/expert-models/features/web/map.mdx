@@ -50,6 +50,15 @@ Model string pattern: `web/map/{provider}[/{model}]`
 |----------|-------------|-------|
 | firecrawl | `web/map/firecrawl` | $0.0038 per token |
 
+## Provider Parameters
+
+This subfeature accepts only the [`provider_params`](/v3/expert-models/provider-parameters#parameter-validation-and-allowlisting) listed for each provider, and rejects any other with `400 Bad Request`. Each entry is a path in the provider's own request format, lowercased, with nested keys joined by dots: send it as nested objects, in the casing the provider documents.
+
+| Provider | Accepted parameters |
+|----------|---------------------|
+| firecrawl | `ignorequeryparameters`, `includesubdomains`, `limit`, `location.country`, `location.languages`, `search`, `sitemap`, `timeout` |
+| tavily | `allow_external`, `exclude_domains`, `exclude_paths`, `instructions`, `limit`, `max_breadth`, `max_depth`, `select_domains`, `select_paths` |
+
 
 ## Quick Start
 

@@ -438,6 +438,36 @@ def render_providers_table(models: list[dict]) -> str:
     return "\n".join(lines) + "\n"
 
 
+def render_provider_params_section(provider_params: dict[str, list[str]] | None) -> str:
+    """Render the provider_params allowlist of a subfeature that restricts them.
+
+    The detail response carries `null` for a subfeature that forwards any
+    provider_params, and that page gets no section. It is the list the API
+    enforces, so rendering it here keeps the page in step with every change to
+    it; a hand-written copy drifts.
+    """
+    if provider_params is None:
+        return ""
+
+    lines = [
+        "## Provider Parameters",
+        "",
+        "This subfeature accepts only the "
+        "[`provider_params`](/v3/expert-models/provider-parameters#parameter-validation-and-allowlisting) "
+        "listed for each provider, and rejects any other with `400 Bad Request`. "
+        "Each entry is a path in the provider's own request format, lowercased, with "
+        "nested keys joined by dots: send it as nested objects, in the casing the "
+        "provider documents.",
+        "",
+        "| Provider | Accepted parameters |",
+        "|----------|---------------------|",
+    ]
+    for provider, paths in sorted(provider_params.items()):
+        accepted = ", ".join(f"`{_cell(path)}`" for path in paths) or "None"
+        lines.append(f"| {_cell(provider)} | {accepted} |")
+    return "\n".join(lines) + "\n"
+
+
 def _format_input_block(fields: list[dict], indent: int = 8) -> str:
     """Format the input fields as a JSON-like block for embedding in code."""
     input_map = build_input_json(fields)
@@ -617,6 +647,9 @@ def generate_subfeature_page(
     output_fields = detail.get("output_schema", {}).get("fields", [])
 
     code_example = build_code_example(feature, sf_name, models, detail)
+    # Empty for a subfeature without an allowlist, whose page keeps its old layout.
+    provider_params = render_provider_params_section(detail.get("provider_params"))
+    provider_params_block = f"{provider_params}\n" if provider_params else ""
 
     truncated_desc = page_description(description)
     # The page title doubles as the search result title, so it carries "API"
@@ -651,7 +684,7 @@ Model string pattern: `{feature}/{sf_name}/{{provider}}[/{{model}}]`
 ## Available Providers
 
 {render_providers_table(models)}
-
+{provider_params_block}
 ## Quick Start
 
 {code_example}

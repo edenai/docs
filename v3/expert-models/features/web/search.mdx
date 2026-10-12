@@ -30,6 +30,7 @@ Model string pattern: `web/search/{provider}[/{model}]`
 |-------|------|----------|-------------|
 | query | string | Yes | The web search query |
 | max_results | int | No | Max number of search results to return |
+| depth | enum | No | Search depth tier (billed per tier; priced pre-call) |
 
 
 ## Output
@@ -71,6 +72,17 @@ Model string pattern: `web/search/{provider}[/{model}]`
 |----------|-------------|-------|
 | firecrawl | `web/search/firecrawl` | $0.0038 per token |
 | linkup | `web/search/linkup` | $0.001 per token |
+| tavily | `web/search/tavily` | $0.008 per token |
+
+## Provider Parameters
+
+This subfeature accepts only the [`provider_params`](/v3/expert-models/provider-parameters#parameter-validation-and-allowlisting) listed for each provider, and rejects any other with `400 Bad Request`. Each entry is a path in the provider's own request format, lowercased, with nested keys joined by dots: send it as nested objects, in the casing the provider documents.
+
+| Provider | Accepted parameters |
+|----------|---------------------|
+| firecrawl | `limit`, `location.country`, `location.languages`, `sources`, `tbs`, `timeout` |
+| linkup | `depth`, `excludedomains`, `fromdate`, `includedomains`, `includeimages`, `includeinlinecitations`, `includesources`, `maxresults`, `todate` |
+| tavily | `auto_parameters`, `chunks_per_source`, `country`, `end_date`, `exact_match`, `exclude_domains`, `filter_by_language`, `filter_by_published_date`, `include_domains`, `include_domains_mode`, `include_favicon`, `include_image_descriptions`, `include_images`, `include_published_date`, `include_raw_content`, `language`, `safe_search`, `search_depth`, `start_date`, `time_range`, `topic` |
 
 
 ## Quick Start

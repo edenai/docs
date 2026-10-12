@@ -62,6 +62,14 @@ Model string pattern: `web/batch_scrape_async/{provider}[/{model}]`
 |----------|-------------|-------|
 | firecrawl | `web/batch_scrape_async/firecrawl` | $0.0038 per token |
 
+## Provider Parameters
+
+This subfeature accepts only the [`provider_params`](/v3/expert-models/provider-parameters#parameter-validation-and-allowlisting) listed for each provider, and rejects any other with `400 Bad Request`. Each entry is a path in the provider's own request format, lowercased, with nested keys joined by dots: send it as nested objects, in the casing the provider documents.
+
+| Provider | Accepted parameters |
+|----------|---------------------|
+| firecrawl | `actions.direction`, `actions.fullpage`, `actions.key`, `actions.milliseconds`, `actions.selector`, `actions.text`, `actions.type`, `blockads`, `excludetags`, `formats`, `ignoreinvalidurls`, `includetags`, `location.country`, `location.languages`, `maxage`, `mobile`, `onlymaincontent`, `parsers`, `removebase64images`, `storeincache`, `timeout`, `waitfor` |
+
 
 ## Quick Start
 

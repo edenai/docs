@@ -22,10 +22,12 @@ Use the `/v3/info` endpoints to discover all available expert model features, pr
 
 ## Endpoints
 
-| Endpoint | Description |
-|----------|-------------|
-| `GET /v3/info` | List all features and subfeatures |
-| `GET /v3/info/{feature}/{subfeature}` | Get providers, models, pricing, and schemas for a specific feature |
+| Endpoint | Description | Query Parameters |
+|----------|-------------|------------------|
+| `GET /v3/info` | List all features and subfeatures | `include=schemas`, and with it `format=simplified` or `format=json_schema` |
+| `GET /v3/info/{feature}` | List the subfeatures of one feature | None |
+| `GET /v3/info/{feature}/{subfeature}` | Get providers, models, pricing, and schemas for a specific feature | `format=simplified` or `format=json_schema` |
+| `GET /v3/info/audio/tts/voices` | List the voices the text-to-speech models accept | `model`, `language`, `gender` |
 
 ## List All Features
 
@@ -57,9 +59,68 @@ features.forEach(f => console.log(f.name));
 ```
 </CodeGroup>
 
+### Bulk Schema Discovery
+
+To avoid querying each subfeature individually, pass `?include=schemas` to embed full schema bundles across all subfeatures in a single response:
+
+<CodeGroup>
+```bash cURL
+curl "https://api.edenai.run/v3/info?include=schemas" \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+```python Python
+import requests
+
+response = requests.get(
+    "https://api.edenai.run/v3/info?include=schemas",
+    headers={"Authorization": "Bearer YOUR_API_KEY"}
+)
+
+for feature in response.json()["features"]:
+    for subfeature in feature["subfeatures"]:
+        fields = [field["name"] for field in subfeature["input_schema"]["fields"]]
+        print(f'{feature["name"]}/{subfeature["name"]}:', ", ".join(fields))
+```
+</CodeGroup>
+
+With `include=schemas`, each subfeature also carries the fields `GET /v3/info/{feature}/{subfeature}` returns: `endpoints`, `request_schema`, `input_schema`, `output_schema`, and `provider_params`. Add `format=json_schema` to get full JSON Schemas instead of the default simplified ones. `format` only applies to these schemas, so without `include=schemas` it has no effect.
+
+## HTTP Caching and Conditional Requests
+
+Every `/v3/info` route returns a weak `ETag` header alongside `Cache-Control: private, no-cache`. Keep the `ETag` of a response and send it back in an `If-None-Match` header: while the response is unchanged, the API answers `304 Not Modified` with an empty body, so polling the catalog costs no download.
+
+<CodeGroup>
+```python Python
+import requests
+
+url = "https://api.edenai.run/v3/info"
+headers = {"Authorization": "Bearer YOUR_API_KEY"}
+
+first = requests.get(url, headers=headers)
+etag = first.headers["ETag"]
+
+# Later: ask again, sending back the ETag you kept
+second = requests.get(url, headers={**headers, "If-None-Match": etag})
+print(second.status_code)  # 304 while the catalog is unchanged
+```
+
+```javascript JavaScript
+const url = "https://api.edenai.run/v3/info";
+const headers = { "Authorization": "Bearer YOUR_API_KEY" };
+
+const first = await fetch(url, { headers });
+const etag = first.headers.get("ETag");
+
+// Later: ask again, sending back the ETag you kept
+const second = await fetch(url, { headers: { ...headers, "If-None-Match": etag } });
+console.log(second.status); // 304 while the catalog is unchanged
+```
+</CodeGroup>
+
 ## Get Feature Details
 
-Retrieve providers, pricing, and input/output schemas for a specific feature.
+Retrieve providers, pricing, endpoint paths, request/response schemas, and parameter allowlists for a specific feature.
 
 <CodeGroup>
 ```bash cURL
@@ -83,12 +144,33 @@ for model in details.get("models", []):
 
 ## Response Fields
 
+### Subfeature Details
+
 | Field | Description |
 |-------|-------------|
-| `models` | Available providers and model strings |
-| `pricing` | Cost per provider |
-| `input_schema` | Parameters accepted by this feature |
-| `output_schema` | Structure of the response |
+| `feature`, `subfeature` | Names used in the `model` string (e.g. `text` and `moderation`) |
+| `feature_fullname`, `subfeature_fullname` | Display names |
+| `description` | What the subfeature does |
+| `mode` | `sync` for subfeatures you call with `POST /v3/universal-ai`, `async` for those you call with `POST /v3/universal-ai/async` and then poll |
+| `endpoints` | The operations you can call, each as `METHOD /path`: `create` for a sync subfeature, `create`, `get`, `list`, and `delete` for an async one. Subfeatures backed by collections (`image/face_recognition`) add `create_collection`, `add_item`, and the other collection operations |
+| `models` | List of available models with pricing, documentation links, and input constraints |
+| `request_schema` | Top-level request body schema expected by the endpoint, showing where inputs nest |
+| `input_schema` | Schema of the parameters accepted inside the `input` object |
+| `output_schema` | Schema of the standardized response returned inside the `output` object |
+| `provider_params` | For each provider, the `provider_params` it accepts on subfeatures that restrict them, or `null` on the others. See [Provider Parameters](/v3/expert-models/provider-parameters#parameter-validation-and-allowlisting) |
+
+### Model Metadata
+
+Each entry in the `models` list contains:
+
+| Field | Description |
+|-------|-------------|
+| `model` | Full model identifier string (e.g. `text/moderation/google`) |
+| `pricing` | Cost information including `price`, `price_unit_quantity`, `price_unit_type` (such as `request`, `second`, `execution_time`, `character`), and `currency` (`USD`) |
+| `regions` | Regions the model is served from, as `code` and `name` objects (e.g. `eu` and `Europe`); empty when no region is recorded for the model |
+| `documentation_url` | Direct URL to official provider documentation for the model or provider, or `null` |
+| `requires_reference_images` | Boolean flag indicating whether the model requires `reference_images` (e.g. image edit models) |
+| `requires_video` | Boolean flag indicating whether the model requires a source `video` input (e.g. video editing models) |
 
 <Tip>
 You can also browse all features and providers visually in the [Eden AI model catalog](https://app.edenai.run/models).

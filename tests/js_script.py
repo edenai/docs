@@ -117,12 +117,14 @@ def js_source(block: dict, source_mdx: str) -> str:
 # fetch resolves on a 4xx or 5xx, so a sample that only prints the body would
 # pass against a retired endpoint. The sample is never rewritten; what it calls
 # is. The SDK blocks raise on their own, so they are left with the real fetch.
+# Like curl's --fail-with-body, only a 4xx or 5xx fails: a 304 answers a sample
+# that sent If-None-Match, and is not `ok`.
 _FETCH_SHIM = """\
 {
   const _fetch = globalThis.fetch;
   globalThis.fetch = async (input, init) => {
     const response = await _fetch(input, init);
-    if (!response.ok) {
+    if (response.status >= 400) {
       const body = await response.clone().text();
       throw new Error(
         "HTTP " + response.status + " " + response.statusText + ": " + body,

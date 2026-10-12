@@ -141,7 +141,7 @@ Every model listing takes the same parameter: `/v3/models`, `/v3/embeddings/mode
 
 ## Zero Data Retention
 
-Every entry carries `zero_data_retention`, which says whether that provider keeps your prompts and outputs after the response, for the calls Eden AI sends it:
+Every endpoint entry (each entry of the default view, and each item of `endpoints` with `view=models`) carries `zero_data_retention`, which says whether that provider keeps your prompts and outputs after the response, for the calls Eden AI sends it:
 
 | Value | Meaning |
 |-------|---------|

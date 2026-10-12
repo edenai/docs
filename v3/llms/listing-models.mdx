@@ -14,7 +14,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "LLM API", "chat completion", "OpenAI compatible"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-08-24T00:00:00Z"
+  dateModified="2026-10-12T00:00:00Z"
 />
 
 Use the `/v3/models` endpoint to retrieve all LLM models available through Eden AI, along with their capabilities: input modalities, reasoning, web search, and function calling.
@@ -137,6 +137,56 @@ What to expect from the shape:
 - The default (`view=endpoints`, or no parameter) is unchanged, and both entry shapes stay compatible with the OpenAI SDK's `client.models.list()`.
 
 Every model listing takes the same parameter: `/v3/models`, `/v3/embeddings/models`, `/v3/moderations/models`, `/v3/audio/transcriptions/models`, `/v3/audio/speech/models`, `/v3/images/models` and `/v3/videos/models`.
+
+## List Speech Voices
+
+To discover voices accepted by speech models on `/v3/audio/speech`, query `/v3/audio/voices`:
+
+```
+GET /v3/audio/voices
+```
+
+<CodeGroup>
+```bash cURL
+curl "https://api.edenai.run/v3/audio/voices?model=openai/tts-1&language=en" \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+```python Python
+import requests
+
+response = requests.get(
+    "https://api.edenai.run/v3/audio/voices",
+    headers={"Authorization": "Bearer YOUR_API_KEY"},
+    params={"model": "openai/tts-1", "language": "en"},
+)
+
+for voice in response.json()["data"]:
+    print(voice["id"], voice["name"], voice["gender"])
+```
+
+```javascript JavaScript
+const response = await fetch(
+  "https://api.edenai.run/v3/audio/voices?model=openai/tts-1&language=en",
+  {
+    headers: { Authorization: "Bearer YOUR_API_KEY" }
+  }
+);
+
+const { data } = await response.json();
+data.forEach(voice => console.log(voice.id, voice.name, voice.gender));
+```
+</CodeGroup>
+
+### Query Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `model` | string | Restrict to one model, such as `openai/tts-1`. Accepts a model id or any of its active aliases. |
+| `language` | string | Keep voices speaking this language. A bare code (`fr`) matches every region, while `fr-CA` matches that locale only. Multilingual voices are always kept. |
+| `gender` | string | Keep voices of this gender: `male`, `female`, or `unknown`. |
+
+Each voice object reports its `id`, `name`, `gender`, `languages`, `provider`, and the `models` accepting it. Send the voice `id` or `name` as `voice` in `POST /v3/audio/speech`.
 
 ## Model aliases
 

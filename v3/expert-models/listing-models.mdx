@@ -15,7 +15,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "expert models", "multi-provider"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-05-22T00:00:00Z"
+  dateModified="2026-10-12T00:00:00Z"
 />
 
 Use the `/v3/info` endpoints to discover all available expert model features, providers, and models.
@@ -26,6 +26,7 @@ Use the `/v3/info` endpoints to discover all available expert model features, pr
 |----------|-------------|
 | `GET /v3/info` | List all features and subfeatures |
 | `GET /v3/info/{feature}/{subfeature}` | Get providers, models, pricing, and schemas for a specific feature |
+| `GET /v3/info/audio/tts/voices` | Discover accepted text to speech voices with optional filtering |
 
 ## List All Features
 
@@ -80,6 +81,50 @@ for model in details.get("models", []):
     print(model["model"], model["pricing"])
 ```
 </CodeGroup>
+
+## List Text to Speech Voices
+
+Discover voices accepted by Universal AI `audio/tts` models:
+
+<CodeGroup>
+```bash cURL
+curl "https://api.edenai.run/v3/info/audio/tts/voices?model=audio/tts/google/wavenet&language=en-US" \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+```python Python
+import requests
+
+response = requests.get(
+    "https://api.edenai.run/v3/info/audio/tts/voices",
+    headers={"Authorization": "Bearer YOUR_API_KEY"},
+    params={"model": "audio/tts/google/wavenet", "language": "en-US"},
+)
+
+for voice in response.json()["data"]:
+    print(voice["id"], voice["name"], voice["gender"])
+```
+
+```javascript JavaScript
+const response = await fetch(
+  "https://api.edenai.run/v3/info/audio/tts/voices?model=audio/tts/google/wavenet&language=en-US",
+  {
+    headers: { "Authorization": "Bearer YOUR_API_KEY" }
+  }
+);
+
+const { data } = await response.json();
+data.forEach(voice => console.log(voice.id, voice.name, voice.gender));
+```
+</CodeGroup>
+
+### Query Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `model` | string | Restrict to one model, such as `audio/tts/google/wavenet` |
+| `language` | string | Filter by BCP-47 language tag, such as `en-US` |
+| `gender` | string | Filter by voice gender: `male`, `female`, or `unknown` |
 
 ## Response Fields
 

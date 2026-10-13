@@ -2,14 +2,14 @@
 icon: "microphone"
 title: "OpenAI-Compatible Speech to Text API"
 sidebarTitle: "Speech to Text"
-description: "Transcribe audio files with Whisper, Deepgram Nova and Mistral Voxtral through Eden AI's OpenAI-compatible /v3/audio/transcriptions endpoint."
+description: "Convert speech to text with Whisper, Deepgram Nova and Mistral Voxtral through Eden AI's OpenAI-compatible /v3/audio/transcriptions endpoint."
 ---
 
 import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
 
 <TechArticleSchema
   title={"OpenAI-Compatible Speech to Text API"}
-  description={"Transcribe audio files with Whisper, Deepgram Nova and Mistral Voxtral through Eden AI's OpenAI-compatible /v3/audio/transcriptions endpoint."}
+  description={"Convert speech to text with Whisper, Deepgram Nova and Mistral Voxtral through Eden AI's OpenAI-compatible /v3/audio/transcriptions endpoint."}
   path="v3/llms/speech-to-text"
   articleSection="LLMs"
   about={"LLM API"}
@@ -35,7 +35,7 @@ Transcription models are only available on `/v3/audio/transcriptions`. They are 
 </Warning>
 
 <Info>
-This is different from [Expert Model speech to text](/v3/expert-models/features/audio/speech-to-text-async), an asynchronous job API through `/v3/universal-ai/async` that covers more providers (Amazon, AssemblyAI, Gladia, Speechmatics and others) and options such as speaker diarization. Use `/v3/audio/transcriptions` when you want an OpenAI-compatible, drop-in transcription surface.
+This is different from [Expert Model speech to text](/v3/expert-models/features/audio/speech-to-text-async), an asynchronous job API through `/v3/universal-ai/async` that covers more providers (Amazon, AssemblyAI, Gladia, Google, Microsoft and others) and options such as speaker diarization. Use `/v3/audio/transcriptions` when you want an OpenAI-compatible, drop-in transcription surface.
 </Info>
 
 ## Models
@@ -125,7 +125,7 @@ curl -X POST https://api.edenai.run/v3/audio/transcriptions \
 
 | Field | Required | Description |
 |---|---|---|
-| `model` | yes | `provider/model`, e.g. `groq/whisper-large-v3-turbo` |
+| `model` | yes | `provider/model`, e.g. `groq/whisper-large-v3-turbo`. The model name alone (`whisper-large-v3-turbo`) also works, through [Provider Routing](/v3/llms/provider-routing) |
 | `file` | one of three | The audio file, as a multipart upload |
 | `file_url` | one of three | JSON only. An `https://` URL or a `data:audio/...;base64,...` URL |
 | `file_id` | one of three | JSON only. The id of a file uploaded to Eden AI |
@@ -151,7 +151,7 @@ Unknown fields are ignored. The audio can be at most 25 MB.
 With `"response_format": "verbose_json"`, the response also carries the detected `language`, the audio `duration` in seconds, and `segments` with start and end times. Models that support word timestamps add `words` when `timestamp_granularities` includes `"word"`.
 
 <Warning>
-The response is always a JSON object. Unlike OpenAI, `text`, `srt` and `vtt` do not return a plain-text or subtitle body: the transcript is in `text` either way. With the OpenAI SDK, keep the default `json` format: passing `response_format="text"` makes the SDK return the raw JSON string instead of a `Transcription` object.
+Use `json` or `verbose_json`. Unlike OpenAI, `text`, `srt` and `vtt` do not return a plain-text or subtitle body. The Groq and Deepgram models ignore them and return the JSON transcript; other models may return an error. With the OpenAI SDK, keep the default `json` format: passing `response_format="text"` makes the SDK return the raw JSON string instead of a `Transcription` object.
 </Warning>
 
 ## Listing transcription models
@@ -170,7 +170,8 @@ Transcription is billed per second of audio, at the rate `GET /v3/audio/transcri
 ## Limitations
 
 - **Files up to 25 MB.** A larger file returns `413`. A file whose duration cannot be read returns `400`.
-- **No `@edenai` routing and no `fallbacks`.** Both return `400`; name a single `provider/model`.
+- **No `@edenai` routing.** `"model": "@edenai"` returns `400`; name a model.
+- **No `fallbacks`.** The field is ignored, like any unknown field: only `model` is tried, and a failure is not retried on another model.
 - **No streaming.** The transcript is returned in one response once the whole file is transcribed.
 - **No translations endpoint.** `/v3/audio/translations` (speech to English text) is not implemented.
 

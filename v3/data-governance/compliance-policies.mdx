@@ -1,0 +1,111 @@
+---
+sidebarTitle: "Compliance Policies"
+title: "Compliance Policies"
+icon: "shield-check"
+description: "Require zero data retention and restrict the regions your organization's calls run in, for every member and every key."
+---
+
+import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
+
+<TechArticleSchema
+  title={"Compliance Policies"}
+  description={"Require zero data retention and restrict the regions your organization's calls run in, for every member and every key."}
+  path="v3/data-governance/compliance-policies"
+  articleSection="Data Governance"
+  about={"Data Compliance"}
+  proficiencyLevel="Intermediate"
+  keywords={["Eden AI", "AI API", "zero data retention", "ZDR", "data residency", "GDPR"]}
+  datePublished="2026-10-13T00:00:00Z"
+  dateModified="2026-10-13T00:00:00Z"
+/>
+
+An organization admin can set rules that every call from the organization follows, whoever makes it and whichever API key it uses. Set them in [Settings > Compliance](https://app.edenai.run/settings/compliance).
+
+| Policy | What it does |
+|---|---|
+| **Zero data retention** | Calls go only to providers that keep no prompts or outputs. Request saving and the response cache stay off for every member. |
+| **Regions** | Calls run only in the regions you allow: Europe, United States, Asia-Pacific. None allowed means any region. |
+
+A request can add a restriction, never remove one. With zero data retention on for the organization, `routing.zero_data_retention: false` on a request changes nothing.
+
+## Zero data retention
+
+A model passes when one of these holds:
+
+| Case | Example |
+|---|---|
+| Its provider keeps no prompts or outputs under Eden AI's account | `zero_data_retention: true` in [Listing Models](/v3/llms/listing-models) |
+| Your organization's own key for that provider is marked zero data retention | your own agreement with OpenAI covers it |
+| It runs on your organization's private deployment | |
+
+A model whose retention is not verified yet (`zero_data_retention: null`) does not pass.
+
+### For a single request
+
+Without an organization policy, ask for it on one call:
+
+```json
+{
+  "model": "deepseek-v4-flash",
+  "messages": [{"role": "user", "content": "Summarise this contract"}],
+  "routing": {"zero_data_retention": true}
+}
+```
+
+Eden AI routes the model to its zero data retention providers only, and saves neither the request nor its response. See [Provider Routing](/v3/llms/provider-routing).
+
+### Your own provider keys
+
+Under zero data retention your own keys are skipped by default, because Eden AI cannot see your agreements. The call runs on Eden AI's account for that provider instead, when that account is zero data retention.
+
+If your own agreement with a provider is zero data retention, mark that key in Settings > Compliance. It is then used for the call, even for a provider that keeps data under Eden AI's account. You are responsible for the keys you mark.
+
+### What it also changes
+
+| Feature | Under zero data retention |
+|---|---|
+| Request saving and response cache | Off for every member, who can't turn them back on |
+| `POST /v3/responses` | `store` is sent as `false`; `previous_response_id` and `background` are refused |
+| Tools the provider runs itself (web search, web fetch, code execution, file search, remote MCP) | Refused: the provider runs them outside the call |
+| `web_search` hooks | Only to a search provider that is zero data retention |
+| `@edenai` model routing | Chosen by Eden AI without sending your prompt to the external router |
+
+## Regions
+
+Each call must run in an allowed region. For a model available in several regions, Eden AI picks an allowed one: with Europe allowed, `claude-sonnet-5` runs in the EU. An explicit `@region` outside the allowed ones is refused, and so is the [regional endpoint](/v3/data-governance/eu-endpoint) of a region you didn't allow.
+
+## When nothing qualifies
+
+The request fails rather than quietly going elsewhere. The error names each model or provider it considered and why it was excluded.
+
+| Status | `code` | When |
+|---|---|---|
+| 400 | `no_compliant_provider` | A model or provider fails zero data retention |
+| 451 | `region_not_allowed` | The only reason is the region |
+| 400 | `server_tool_not_allowed` | A provider-run tool under zero data retention |
+| 400 | `stored_state_not_allowed` | `previous_response_id` or `background` under zero data retention |
+
+```json
+{
+  "error": {
+    "message": "No provider of 'deepseek-v4-flash' meets the compliance policy (zero data retention). Providers considered: deepseek (keeps data).",
+    "type": "invalid_request_error",
+    "code": "no_compliant_provider"
+  }
+}
+```
+
+## Data Processing Agreement
+
+Settings > Compliance also has Eden AI's Data Processing Agreement, pre-signed. Have an authorized representative complete the customer sections and email the signed PDF to [contact@edenai.co](mailto:contact@edenai.co).
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Provider Data Policies" icon="shield" href="/v3/data-governance/provider-data-policies">
+    How each provider handles your data
+  </Card>
+  <Card title="Data Retention" icon="clock-rotate-left" href="/v3/data-governance/data-retention">
+    What Eden AI stores, and for how long
+  </Card>
+</CardGroup>

@@ -112,6 +112,8 @@
                   "v3/llms/streaming",
                   "v3/llms/image-generation",
                   "v3/llms/video-generation",
+                  "v3/llms/text-to-speech",
+                  "v3/llms/speech-to-text",
                   "v3/llms/search-api"
                 ]
               },

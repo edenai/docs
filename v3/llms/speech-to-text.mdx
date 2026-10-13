@@ -1,0 +1,186 @@
+---
+icon: "microphone"
+title: "OpenAI-Compatible Speech to Text API"
+sidebarTitle: "Speech to Text"
+description: "Transcribe audio files with Whisper, Deepgram Nova and Mistral Voxtral through Eden AI's OpenAI-compatible /v3/audio/transcriptions endpoint."
+---
+
+import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
+
+<TechArticleSchema
+  title={"OpenAI-Compatible Speech to Text API"}
+  description={"Transcribe audio files with Whisper, Deepgram Nova and Mistral Voxtral through Eden AI's OpenAI-compatible /v3/audio/transcriptions endpoint."}
+  path="v3/llms/speech-to-text"
+  articleSection="LLMs"
+  about={"LLM API"}
+  proficiencyLevel="Intermediate"
+  keywords={["Eden AI", "AI API", "speech to text", "transcription", "OpenAI compatible", "whisper", "deepgram", "voxtral"]}
+  datePublished="2026-10-13T00:00:00Z"
+  dateModified="2026-10-13T00:00:00Z"
+/>
+
+Transcribe audio through Eden AI's OpenAI-compatible transcriptions endpoint. Point any OpenAI client at `https://api.edenai.run/v3` and `client.audio.transcriptions` works as a drop-in replacement for OpenAI's speech to text.
+
+## Overview
+
+| Method | Path | Purpose |
+|---|---|---|
+| `POST` | `/v3/audio/transcriptions`        | Transcribe an audio file. Returns the transcript as JSON |
+| `GET`  | `/v3/audio/transcriptions/models` | Transcription models available in your region, as `provider/model` ids |
+
+The call is synchronous: the transcript comes back in the response, with Eden's `cost` (USD) and `provider` fields added.
+
+<Warning>
+Transcription models are only available on `/v3/audio/transcriptions`. They are not in `GET /v3/models`, which lists chat models.
+</Warning>
+
+<Info>
+This is different from [Expert Model speech to text](/v3/expert-models/features/audio/speech-to-text-async), an asynchronous job API through `/v3/universal-ai/async` that covers more providers (Amazon, AssemblyAI, Gladia, Speechmatics and others) and options such as speaker diarization. Use `/v3/audio/transcriptions` when you want an OpenAI-compatible, drop-in transcription surface.
+</Info>
+
+## Models
+
+| Provider | Model string |
+|---|---|
+| Groq | `groq/whisper-large-v3`, `groq/whisper-large-v3-turbo` |
+| Deepgram | `deepgram/nova-3`, `deepgram/nova-2`, `deepgram/whisper-large` |
+| Mistral | `mistral/voxtral-mini-latest` |
+
+Call `GET /v3/audio/transcriptions/models` for the full list available in your region, with the per-second price of each model.
+
+## Transcribing a file
+
+The endpoint takes the audio in one of two ways, chosen by the request's `Content-Type`:
+
+- `multipart/form-data`: the audio is uploaded as a `file` part. This is what the OpenAI SDK sends.
+- `application/json`: the audio is referenced by `file_url` (an `https://` URL or a `data:audio/...;base64,...` URL) or by `file_id` (a file uploaded to Eden AI through [File Upload](/v3/llms/file-upload)). Set exactly one of the two.
+
+### Uploading the file
+
+The official OpenAI SDK works unchanged once `base_url` points at Eden AI:
+
+<CodeGroup>
+```python OpenAI SDK
+from openai import OpenAI
+
+client = OpenAI(base_url="https://api.edenai.run/v3", api_key="YOUR_API_KEY")
+
+with open("recording.wav", "rb") as audio_file:
+    transcript = client.audio.transcriptions.create(
+        model="groq/whisper-large-v3-turbo",
+        file=audio_file,
+    )
+
+print(transcript.text)
+# Eden AI's extra fields are on the same object
+print(transcript.model_extra.get("provider"), transcript.model_extra.get("cost"))
+```
+
+```bash cURL
+curl -X POST https://api.edenai.run/v3/audio/transcriptions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -F model="groq/whisper-large-v3-turbo" \
+  -F file="@recording.wav"
+```
+</CodeGroup>
+
+### Referencing a URL
+
+<CodeGroup>
+```python Python
+import requests
+
+url = "https://api.edenai.run/v3/audio/transcriptions"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json",
+}
+
+payload = {
+    "model": "groq/whisper-large-v3-turbo",
+    "file_url": "https://raw.githubusercontent.com/openai/whisper/main/tests/jfk.flac",
+    "language": "en",
+}
+
+response = requests.post(url, headers=headers, json=payload)
+result = response.json()
+
+print(result["text"])
+print("Provider:", result["provider"], "| Cost (USD):", result.get("cost"))
+```
+
+```bash cURL
+curl -X POST https://api.edenai.run/v3/audio/transcriptions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "groq/whisper-large-v3-turbo",
+    "file_url": "https://raw.githubusercontent.com/openai/whisper/main/tests/jfk.flac",
+    "language": "en"
+  }'
+```
+</CodeGroup>
+
+### Request parameters
+
+| Field | Required | Description |
+|---|---|---|
+| `model` | yes | `provider/model`, e.g. `groq/whisper-large-v3-turbo` |
+| `file` | one of three | The audio file, as a multipart upload |
+| `file_url` | one of three | JSON only. An `https://` URL or a `data:audio/...;base64,...` URL |
+| `file_id` | one of three | JSON only. The id of a file uploaded to Eden AI |
+| `language` | no | ISO-639-1 code of the spoken language, e.g. `en`. Omit it to let the model detect the language |
+| `prompt` | no | Text that guides the model's style or continues the context of a previous segment |
+| `response_format` | no | `json` (default) or `verbose_json`. See [Response format](#response-format) |
+| `timestamp_granularities` | no | `["segment"]` and/or `["word"]`, with `verbose_json`. Honored by the models that support it |
+| `temperature` | no | Sampling temperature between 0 and 1 |
+
+Unknown fields are ignored. The audio can be at most 25 MB.
+
+## Response format
+
+```json
+{
+  "text": "And so, my fellow Americans, ask not what your country can do for you, ask what you can do for your country.",
+  "usage": null,
+  "cost": 0.00012221,
+  "provider": "groq"
+}
+```
+
+With `"response_format": "verbose_json"`, the response also carries the detected `language`, the audio `duration` in seconds, and `segments` with start and end times. Models that support word timestamps add `words` when `timestamp_granularities` includes `"word"`.
+
+<Warning>
+The response is always a JSON object. Unlike OpenAI, `text`, `srt` and `vtt` do not return a plain-text or subtitle body: the transcript is in `text` either way. With the OpenAI SDK, keep the default `json` format: passing `response_format="text"` makes the SDK return the raw JSON string instead of a `Transcription` object.
+</Warning>
+
+## Listing transcription models
+
+```bash cURL
+curl https://api.edenai.run/v3/audio/transcriptions/models \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+Each entry carries its `pricing`, e.g. `{"input_cost_per_second": 0.00001111}` for `groq/whisper-large-v3-turbo`. The endpoint takes the same `view` parameter as the other [model listings](/v3/llms/listing-models).
+
+## Pricing
+
+Transcription is billed per second of audio, at the rate `GET /v3/audio/transcriptions/models` shows: an 11-second clip on `groq/whisper-large-v3-turbo` costs 11 × $0.00001111 ≈ $0.000122. The amount charged is in the response's `cost` field.
+
+## Limitations
+
+- **Files up to 25 MB.** A larger file returns `413`. A file whose duration cannot be read returns `400`.
+- **No `@edenai` routing and no `fallbacks`.** Both return `400`; name a single `provider/model`.
+- **No streaming.** The transcript is returned in one response once the whole file is transcribed.
+- **No translations endpoint.** `/v3/audio/translations` (speech to English text) is not implemented.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Text to Speech" icon="volume-high" href="/v3/llms/text-to-speech">
+    Generate speech through the OpenAI-compatible speech endpoint
+  </Card>
+  <Card title="Expert Speech to Text" icon="microphone" href="/v3/expert-models/features/audio/speech-to-text-async">
+    Asynchronous transcription with more providers and diarization
+  </Card>
+</CardGroup>

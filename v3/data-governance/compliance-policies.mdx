@@ -2,14 +2,14 @@
 sidebarTitle: "Compliance Policies"
 title: "Compliance Policies"
 icon: "shield-check"
-description: "Require zero data retention and restrict the regions your organization's calls run in, for every member and every key."
+description: "Require zero data retention and restrict the regions your organization's AI calls run in, for every member, every API key and every model."
 ---
 
 import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
 
 <TechArticleSchema
   title={"Compliance Policies"}
-  description={"Require zero data retention and restrict the regions your organization's calls run in, for every member and every key."}
+  description={"Require zero data retention and restrict the regions your organization's AI calls run in, for every member, every API key and every model."}
   path="v3/data-governance/compliance-policies"
   articleSection="Data Governance"
   about={"Data Compliance"}
@@ -38,7 +38,7 @@ A model passes when one of these holds:
 | Your organization's own key for that provider is marked zero data retention | your own agreement with OpenAI covers it |
 | It runs on your organization's private deployment | |
 
-A model whose retention is not verified yet (`zero_data_retention: null`) does not pass.
+Under Eden AI's account, a model whose retention is not verified yet (`zero_data_retention: null`) does not pass. Your own key marked zero data retention still can.
 
 ### For a single request
 
@@ -97,7 +97,7 @@ The request fails rather than quietly going elsewhere. The error names each mode
 
 ## Data Processing Agreement
 
-Settings > Compliance also has Eden AI's Data Processing Agreement, pre-signed. Have an authorized representative complete the customer sections and email the signed PDF to [contact@edenai.co](mailto:contact@edenai.co).
+Settings > Compliance also has Eden AI's Data Processing Agreement, pre-signed. Have an authorized representative complete the customer sections and email the signed PDF to contact@edenai.co.
 
 ## Next Steps
 

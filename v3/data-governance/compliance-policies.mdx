@@ -1,0 +1,106 @@
+---
+sidebarTitle: "Compliance Policies"
+title: "Zero Data Retention and Region Policies"
+icon: "shield-check"
+description: "Require zero data retention and restrict the regions your organization's AI calls run in, for every member, every API key and every model."
+---
+
+import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
+
+<TechArticleSchema
+  title={"Zero Data Retention and Region Policies"}
+  description={"Require zero data retention and restrict the regions your organization's AI calls run in, for every member, every API key and every model."}
+  path="v3/data-governance/compliance-policies"
+  articleSection="Data Governance"
+  about={"Data Compliance"}
+  proficiencyLevel="Intermediate"
+  keywords={["Eden AI", "AI API", "zero data retention", "ZDR", "data residency", "GDPR"]}
+  datePublished="2026-10-13T00:00:00Z"
+  dateModified="2026-10-14T00:00:00Z"
+/>
+
+The organization owner, or a member whose role has **Organization Management** (see [roles](/v3/organization/users-organisation)), can set rules that every call from the organization follows, whoever makes it and whichever API key it uses. Set them in [Settings > Compliance](https://app.edenai.run/settings/compliance).
+
+| Policy | What it does |
+|---|---|
+| **Zero data retention** | Calls go only to providers that keep no prompts or outputs. |
+| **Regions** | Calls run only in the regions you allow: Europe, United States, Asia-Pacific. None allowed means any region. |
+
+A request can add a restriction, never remove one. With zero data retention on for the organization, `routing.zero_data_retention: false` on a request changes nothing.
+
+## Zero data retention
+
+A model passes when one of these holds:
+
+| Case | Example |
+|---|---|
+| Its provider keeps no prompts or outputs under Eden AI's account | `zero_data_retention: true` in [Listing Models](/v3/llms/listing-models) |
+| Your organization's own key for that provider is marked zero data retention | your own agreement with OpenAI covers it |
+| It runs on your organization's private deployment | |
+
+Under Eden AI's account, a model whose retention is not verified yet (`zero_data_retention: null`) does not pass. Your own key marked zero data retention still can.
+
+### For a single request
+
+Without an organization policy, one call can ask for it with `routing.zero_data_retention: true`. See [Requiring zero data retention](/v3/llms/provider-routing#requiring-zero-data-retention).
+
+### Your own provider keys
+
+Under zero data retention your own keys are skipped by default, because Eden AI cannot see your agreements. The call runs on Eden AI's account for that provider instead, when that account is zero data retention.
+
+If your own agreement with a provider is zero data retention, mark that key in Settings > Compliance. It is then used for the call, even for a provider that keeps data under Eden AI's account. Mark only the keys your own zero data retention agreement covers. Replacing a key's values unmarks it.
+
+### What it also changes
+
+| Feature | Under zero data retention |
+|---|---|
+| Request saving and response cache | Off for every member, who can't turn them back on |
+| `store`, on any endpoint | Never reaches the provider as `true`, so it keeps no stored response |
+| `POST /v3/responses` | `previous_response_id` and `background` are refused: they need a response the provider kept |
+| `web_search` hooks | Only to a search provider that is zero data retention under Eden AI's account |
+| Eden AI's content moderation | Off under any compliance policy: it would send your content to a third party |
+
+<Warning>
+Tools the provider runs itself work outside zero data retention: web search, web fetch, code execution, file search, remote MCP servers, and Gemini's Google Search and Google Maps grounding. What they send to their own services follows the provider's terms, not its zero data retention. To search the web under zero data retention, use the `web_search` hook instead.
+</Warning>
+
+## Regions
+
+Each call must run in an allowed region. For a model Eden AI can place in one region, it picks an allowed one: with Europe allowed, `claude-sonnet-5` runs in the EU. A model or Expert Model provider that Eden AI can't pin to one region is allowed only if every region it serves from is allowed. An explicit `@region` outside the allowed ones is refused, and so is the [regional endpoint](/v3/data-governance/eu-endpoint) of a region you didn't allow. Your organization's private deployments are not held to the regions: they run where you host them.
+
+## When a model doesn't qualify
+
+A model name without a provider keeps only its providers that qualify. A concrete `provider/model` or a fallback that doesn't qualify is not skipped: the request fails, so you never get a silently different chain. The error gives each rule that failed its own sentence, says who set it (your organization or the request), and names each model or provider with the reason: "keeps data", "isn't verified as zero data retention", or where it runs.
+
+| Status | `code` | When |
+|---|---|---|
+| 403 | `no_compliant_provider` | A model or provider fails your organization's zero data retention |
+| 400 | `no_compliant_provider` | A model or provider fails the request's `routing.zero_data_retention` |
+| 451 | `region_not_allowed` | The only reason is the region |
+| 403 or 400 | `stored_state_not_allowed` | `previous_response_id` or `background` under zero data retention |
+
+```json
+{
+  "error": {
+    "message": "No provider of 'gpt-4.1' qualifies. This request requires zero data retention: azure keeps data; openai keeps data.",
+    "type": "invalid_request_error",
+    "param": null,
+    "code": "no_compliant_provider"
+  }
+}
+```
+
+## Data Processing Agreement
+
+Settings > Compliance also has Eden AI's Data Processing Agreement, pre-signed. Have an authorized representative complete the customer sections and email the signed PDF to contact@edenai.co.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Provider Data Policies" icon="shield" href="/v3/data-governance/provider-data-policies">
+    How each provider handles your data
+  </Card>
+  <Card title="Data Retention" icon="clock-rotate-left" href="/v3/data-governance/data-retention">
+    What Eden AI stores, and for how long
+  </Card>
+</CardGroup>

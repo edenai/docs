@@ -16,7 +16,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "zero data retention", "ZDR", "data residency", "GDPR"]}
   datePublished="2026-10-13T00:00:00Z"
-  dateModified="2026-10-13T00:00:00Z"
+  dateModified="2026-10-14T00:00:00Z"
 />
 
 An organization admin can set rules that every call from the organization follows, whoever makes it and whichever API key it uses. Set them in [Settings > Compliance](https://app.edenai.run/settings/compliance).
@@ -81,10 +81,13 @@ The request fails rather than quietly going elsewhere. The error gives each rule
 
 | Status | `code` | When |
 |---|---|---|
-| 400 | `no_compliant_provider` | A model or provider fails zero data retention |
+| 403 | `no_compliant_provider` | A model or provider fails your organization's zero data retention |
+| 400 | `no_compliant_provider` | A model or provider fails the request's `routing.zero_data_retention` |
 | 451 | `region_not_allowed` | The only reason is the region |
-| 400 | `server_tool_not_allowed` | A provider-run tool under zero data retention |
-| 400 | `stored_state_not_allowed` | `previous_response_id` or `background` under zero data retention |
+| 403 or 400 | `server_tool_not_allowed` | A provider-run tool under zero data retention |
+| 403 or 400 | `stored_state_not_allowed` | `previous_response_id` or `background` under zero data retention |
+
+A refusal under your organization's policy is a 403, like a model your organization blocks. A refusal under a request's own `routing.zero_data_retention` is a 400.
 
 ```json
 {

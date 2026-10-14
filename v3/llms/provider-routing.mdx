@@ -130,7 +130,7 @@ Set `routing.zero_data_retention` to `true` to serve the request only from provi
 }
 ```
 
-It applies to every model in the request, a concrete `provider/model` and your `fallbacks` included. If none qualifies, the request fails with `no_compliant_provider` and names each provider it considered. An organization can require it for every call, and then a request can't turn it off. See [Compliance Policies](/v3/data-governance/compliance-policies).
+It applies to every model in the request, a concrete `provider/model` and your `fallbacks` included. A model name keeps only its providers that qualify; a concrete `provider/model` or a fallback that doesn't qualify fails the request with `no_compliant_provider`, naming each one and why. Which models pass, how your own keys are handled, what else it turns off, and how an organization requires it for every call: see [Compliance Policies](/v3/data-governance/compliance-policies).
 
 ## Disabling provider failover
 

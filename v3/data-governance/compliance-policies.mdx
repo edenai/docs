@@ -66,9 +66,10 @@ If your own agreement with a provider is zero data retention, mark that key in S
 |---|---|
 | Request saving and response cache | Off for every member, who can't turn them back on |
 | `POST /v3/responses` | `store` is sent as `false`; `previous_response_id` and `background` are refused |
-| Tools the provider runs itself (web search, web fetch, code execution, file search, remote MCP) | Refused: the provider runs them outside the call |
+| Tools the provider runs itself (web search, web fetch, code execution, file search, remote MCP, Gemini's Google Search and URL context), including inside `extra_body` | Refused: the provider runs them outside the call |
 | `web_search` hooks | Only to a search provider that is zero data retention |
 | `@edenai` model routing | Chosen by Eden AI among the models your policy allows, without sending your prompt to the external router |
+| Eden AI's content moderation | Off under any compliance policy: it would send your content to a third party |
 
 ## Regions
 

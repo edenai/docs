@@ -72,7 +72,7 @@ If your own agreement with a provider is zero data retention, mark that key in S
 
 ## Regions
 
-Each call must run in an allowed region. For a model Eden AI can place in one region, it picks an allowed one: with Europe allowed, `claude-sonnet-5` runs in the EU. A model or Expert Model provider that can't be placed must serve only from allowed regions. An explicit `@region` outside the allowed ones is refused, and so is the [regional endpoint](/v3/data-governance/eu-endpoint) of a region you didn't allow.
+Each call must run in an allowed region. For a model Eden AI can place in one region, it picks an allowed one: with Europe allowed, `claude-sonnet-5` runs in the EU. A model or Expert Model provider that Eden AI can't pin to one region is allowed only if every region it serves from is allowed. An explicit `@region` outside the allowed ones is refused, and so is the [regional endpoint](/v3/data-governance/eu-endpoint) of a region you didn't allow.
 
 ## When nothing qualifies
 

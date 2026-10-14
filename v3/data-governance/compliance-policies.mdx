@@ -77,7 +77,7 @@ Each call must run in an allowed region. For a model Eden AI can place in one re
 
 ## When nothing qualifies
 
-The request fails rather than quietly going elsewhere. The error names each model or provider it considered and why it was excluded.
+The request fails rather than quietly going elsewhere. The error gives each rule that failed its own sentence, says who set it (your organization or the request), and names each model or provider with the reason: "keeps data", "isn't verified as zero data retention", or where it runs.
 
 | Status | `code` | When |
 |---|---|---|
@@ -89,7 +89,7 @@ The request fails rather than quietly going elsewhere. The error names each mode
 ```json
 {
   "error": {
-    "message": "No provider of 'deepseek-v4-flash' meets the compliance policy (zero data retention). Providers considered: deepseek (keeps data).",
+    "message": "No provider of 'deepseek-v4-flash' qualifies. This request requires zero data retention: deepseek keeps data.",
     "type": "invalid_request_error",
     "code": "no_compliant_provider"
   }

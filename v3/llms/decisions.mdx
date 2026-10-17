@@ -15,9 +15,9 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   articleSection="LLMs"
   about={"LLM API"}
   proficiencyLevel="Intermediate"
-  keywords={["Eden AI", "AI API", "LLM API", "decision model", "decisions", "classification", "routing", "System One", "TypeSafe", "Jev"]}
+  keywords={["Eden AI", "AI API", "LLM API", "decision model", "decisions", "classification", "routing", "System One", "TypeSafe", "Jev", "Azure", "Microsoft-Decision-1"]}
   datePublished="2026-09-22T00:00:00Z"
-  dateModified="2026-09-24T00:00:00Z"
+  dateModified="2026-10-12T00:00:00Z"
 />
 
 <Warning>
@@ -30,7 +30,7 @@ small adapter of your own so a shape change is one edit rather than many.
 
 A decision model answers **typed questions about text**. You send some state and the questions you want answered, and you get back a choice, a score, or a probability, in a single pass. A choice and a score each come with a confidence and the full probability distribution behind them. A probability needs neither, because the number is already the answer and its own confidence.
 
-TypeSafe calls this class of model **System One**, after the fast, intuitive thinking in Kahneman's *Thinking, Fast and Slow*. Their model Jev is the first of them, and the one Eden AI serves today. Eden AI names the endpoint for the capability rather than the vendor, so a second provider of decision models lands on the same path. The request and response bodies match TypeSafe's own, but the path does not, so point your client at `/v3/alpha/decisions` directly rather than swapping a base URL.
+TypeSafe calls this class of model **System One**, after the fast, intuitive thinking in Kahneman's *Thinking, Fast and Slow*. Eden AI serves decision models from TypeSafe (`jev-latest`, `jev-preview`) and Azure (`microsoft-decision-1`). Eden AI names the endpoint for the capability rather than the vendor, so multiple providers of decision models land on the same path. The request and response bodies match TypeSafe's System One format, but the path does not, so point your client at `/v3/alpha/decisions` directly rather than swapping a base URL.
 
 It never writes prose. That is the point: the answer is a value your code can branch on without parsing, and the schema is guaranteed.
 
@@ -88,12 +88,13 @@ curl https://api.edenai.run/v3/alpha/decisions/models
   "object": "list",
   "data": [
     { "id": "typesafe/jev-latest", "object": "model", "owned_by": "typesafe" },
-    { "id": "typesafe/jev-preview", "object": "model", "owned_by": "typesafe" }
+    { "id": "typesafe/jev-preview", "object": "model", "owned_by": "typesafe" },
+    { "id": "azure/microsoft-decision-1", "object": "model", "owned_by": "azure" }
   ]
 }
 ```
 
-`jev-latest` is the current stable model. `jev-preview` is the newest build, stable or not. Both resolve to a concrete version, which the response reports back in its `model` field.
+`jev-latest` is the current stable TypeSafe model, and `jev-preview` is the newest build. `azure/microsoft-decision-1` provides Microsoft-Decision-1 through Azure Foundry. Each resolves to a concrete version, which the response reports back in its `model` field.
 
 ## The three question types
 
@@ -309,7 +310,7 @@ curl -X POST https://api.edenai.run/v3/alpha/decisions \
 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
-| `model` | string | yes | `provider/model`, for example `typesafe/jev-latest`. |
+| `model` | string | yes | `provider/model`, for example `typesafe/jev-latest` or `azure/microsoft-decision-1`. |
 | `state` | string, object, or array | yes | The content every question in this request refers to. |
 | `questions` | object | yes | At least one question, keyed by a name you choose. The answers come back under the same names. |
 

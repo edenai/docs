@@ -16,6 +16,7 @@ import tempfile
 import urllib.error
 import urllib.request
 from datetime import datetime, timezone
+from decimal import Decimal
 from pathlib import Path
 
 # --------------------------
@@ -231,16 +232,25 @@ def strip_html(text: str) -> str:
 _UNIT_ALIASES = {"seconde": "second", "secondes": "second"}
 
 
+def _amount(price: float) -> str:
+    """The price in plain decimals, as the API sent it.
+
+    `:g` writes a price under 0.0001 in scientific notation ("$5.78e-05"), which
+    no pricing table should show. repr() is the shortest exact form of the float.
+    """
+    return format(Decimal(repr(price)).normalize(), "f")
+
+
 def format_price(price: float, quantity: int, unit_type: str) -> str:
     """Return a human-readable price string."""
     if price == 0:
         return "Free"
     unit_type = _UNIT_ALIASES.get(unit_type.strip().lower(), unit_type.strip())
     if quantity == 1:
-        return f"${price:g} per {unit_type}"
+        return f"${_amount(price)} per {unit_type}"
     # Don't double the plural if the API already sends one ("tokens" -> "tokenss").
     plural = unit_type if unit_type.endswith("s") else f"{unit_type}s"
-    return f"${price:g} per {quantity:,} {plural}"
+    return f"${_amount(price)} per {quantity:,} {plural}"
 
 
 def provider_from_model(model_str: str) -> str:

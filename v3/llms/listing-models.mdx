@@ -14,7 +14,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "LLM API", "chat completion", "OpenAI compatible"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-08-24T00:00:00Z"
+  dateModified="2026-10-12T00:00:00Z"
 />
 
 Use the `/v3/models` endpoint to retrieve all LLM models available through Eden AI, along with their capabilities: input modalities, reasoning, web search, and function calling.
@@ -192,6 +192,69 @@ The `capabilities` object describes what each model supports:
 | `supports_embedding_image_input` | Model accepts image input for embeddings |
 
 Some models expose extra provider-specific keys (e.g. `supports_pdf_input`, `supports_audio_input`), and a few return `"capabilities": null`. Treat a missing key or a `null` object as "not supported".
+
+## List Speech Voices
+
+`GET /v3/audio/voices` lists the voices the `/v3/audio/speech` models accept. Send a voice's `id`, or its `name`, as `voice` in `POST /v3/audio/speech`:
+
+<CodeGroup>
+```bash cURL
+curl "https://api.edenai.run/v3/audio/voices?model=openai/tts-1&language=en" \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+```python Python
+import requests
+
+response = requests.get(
+    "https://api.edenai.run/v3/audio/voices",
+    headers={"Authorization": "Bearer YOUR_API_KEY"},
+    params={"model": "openai/tts-1", "language": "en"},
+)
+
+for voice in response.json()["data"]:
+    print(voice["id"], voice["name"], voice["gender"])
+```
+
+```javascript JavaScript
+const response = await fetch(
+  "https://api.edenai.run/v3/audio/voices?model=openai/tts-1&language=en",
+  {
+    headers: { Authorization: "Bearer YOUR_API_KEY" }
+  }
+);
+
+const { data } = await response.json();
+data.forEach(voice => console.log(voice.id, voice.name, voice.gender));
+```
+</CodeGroup>
+
+### Query Parameters
+
+All three are optional. Without `model`, the list covers every speech model available to you.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `model` | string | Restrict to one model, such as `openai/tts-1`. Accepts a model id or any of its active aliases. A model that is not available to you answers `404` |
+| `language` | string | Keep voices speaking this language. A bare code (`fr`) matches every region, while `fr-CA` matches that locale only. Multilingual voices are always kept |
+| `gender` | string | Keep voices of this gender: `male`, `female`, or `unknown` |
+
+### Voice Fields
+
+Each entry in `data` contains:
+
+| Field | Description |
+|-------|-------------|
+| `id` | Voice identifier, to send as `voice` |
+| `name` | Display name, also accepted as `voice` (case does not matter) |
+| `provider` | Provider that serves the voice |
+| `models` | The speech models that accept the voice, as `provider/model` ids |
+| `languages` | BCP-47 locales the voice speaks, empty for a multilingual voice |
+| `gender` | `male`, `female`, or `unknown` |
+| `preview_url` | Audio sample hosted by the provider, or `null` |
+| `default` | `true` for the voice used when a request to one of its `models` omits `voice` |
+
+A voice the catalog lists but the model does not accept is rejected with `400`, and the error lists voices the model does accept. An id the catalog does not know, such as a cloned voice, is sent to the provider unchanged.
 
 <Tip>
 You can also browse all features and providers visually in the [Eden AI model catalog](https://app.edenai.run/models).

@@ -6,8 +6,9 @@ those pages has to live in the generator: an edit to a page is gone by the
 next run. Two of its outputs reach Google directly. The page description is
 the snippet under the search result, and a page the API drops leaves a URL
 behind that Google has indexed. These tests cover both, plus the quick start
-example on every page and the provider_params allowlist on the pages of the
-subfeatures that enforce one, and make no requests.
+example on every page, the prices in its providers table, and the
+provider_params allowlist on the pages of the subfeatures that enforce one, and
+make no requests.
 """
 
 import json
@@ -83,6 +84,20 @@ def test_a_subfeature_without_an_allowlist_keeps_its_page_unchanged(tmp_path, mo
     assert "## Provider Parameters" not in with_null
     assert with_null == without_field
     assert "_No providers currently available._\n\n\n## Quick Start" in with_null
+
+
+# --- the prices -----------------------------------------------------------
+
+
+def test_a_tiny_price_is_written_in_decimals_not_scientific_notation():
+    """Gradium sells text to speech at $0.0000578 a character, which `:g` printed as 5.78e-05."""
+    assert gen.format_price(5.78e-05, 1, "character") == "$0.0000578 per character"
+
+
+def test_a_round_price_keeps_no_trailing_zeros():
+    assert gen.format_price(4.0, 1_000_000, "character") == "$4 per 1,000,000 characters"
+    assert gen.format_price(160, 1_000_000, "character") == "$160 per 1,000,000 characters"
+    assert gen.format_price(0.016, 1_000, "character") == "$0.016 per 1,000 characters"
 
 
 # --- the description ------------------------------------------------------

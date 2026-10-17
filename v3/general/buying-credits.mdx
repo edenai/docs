@@ -54,6 +54,8 @@ When your balance drops below the threshold, credits are purchased automatically
 Auto-refill is strongly recommended for production applications. A depleted balance causes API requests to fail with a `402 Payment Required` error.
 </Tip>
 
+For prepaid organizations without auto-refill enabled, Eden AI sends a low balance email alert to the organization owner when the balance drops below the configured threshold, provided the organization has purchased credits before. Repeat alerts are suppressed until the next credit purchase.
+
 ## Postpaid Billing (Monthly Invoice)
 
 By default, accounts are **prepaid**: you top up credits and usage draws them down. Larger teams can instead switch to **postpaid** billing, where usage accrues over the month and is settled by invoice (default payment terms: 30 days) rather than paid up front.

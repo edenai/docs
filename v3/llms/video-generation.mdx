@@ -95,7 +95,7 @@ curl -X POST "https://api.edenai.run/v3/videos" \
 | ----------------- | -------------------- | ---------------------------------------------------------------------------------------- |
 | `model`           | model string         | Required. E.g., `provider/model`. Bare names (`sora-2`) are rejected with a 400.         |
 | `prompt`          | `text`               | Required. Text describing the content to generate.                                       |
-| `seconds`         | `duration`           | String or integer, any positive value; omitted uses the model's default.                 |
+| `seconds`         | `duration`           | String or integer from 1 to 120; omitted uses the model's default.                       |
 | `size`            | `dimension`          | `WIDTHxHEIGHT`. Omitted uses the provider's default resolution.                          |
 | `input_reference` | `file`               | Object or file part. See examples above.                                                 |
 

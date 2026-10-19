@@ -136,7 +136,7 @@ Errors follow the OpenAI envelope `{"error": {"message", "type", "code"}}`:
 * HTTP 400 for conflicting providers, missing providers, or a filter the provider does not support.
 * HTTP 404 for unknown providers.
 * HTTP 422 for schema validation errors or unrecognized fields.
-* Provider errors: when a provider rejects the request with a 4xx status (such as 400, 404, 422 or 429), that status and the provider's message are forwarded. The exceptions are 401 and 403, which concern Eden AI's own provider credentials rather than your request: those, provider 5xx errors and outages all return HTTP 502.
+* Provider errors: provider errors follow the V3 error policy. Request errors (such as 400 or 422) forward the provider status and message. On Eden AI provider accounts, account failures (401, 402, 403, 404, or 410) return HTTP 502 with a generic message, rate limits return HTTP 429 with a generic message, provider 5xx errors preserve their status with a generic message, and timeouts return HTTP 504.
 * Authentication errors (401 or 403) and rate limits (429) return the platform `{"detail": ...}` format because they trigger before the route handler executes.
 
 ## Limitations

@@ -167,7 +167,7 @@ Universal AI never ranks sellers: you name the provider and, optionally, [fallba
 | `mode` | `sync` for synchronous calls, or `async` on the 202 job creation response |
 | `summary` | Which provider served, or `served=none` when every attempt failed |
 
-The other fields, including `tags`, mean the same as above. A failed attempt reports the provider's own status, even though Universal AI always answers HTTP 200 with `"status": "fail"`.
+The other fields, including `tags`, mean the same as above. A failed attempt reports the status code returned to the caller, even though Universal AI always answers HTTP 200 with `"status": "fail"`.
 
 ## Next Steps
 

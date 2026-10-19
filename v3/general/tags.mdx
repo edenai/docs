@@ -14,7 +14,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Beginner"
   keywords={["Eden AI", "AI API", "tags", "cost attribution", "usage", "monitoring", "billing"]}
   datePublished="2026-09-24T00:00:00Z"
-  dateModified="2026-09-25T00:00:00Z"
+  dateModified="2026-10-19T00:00:00Z"
 />
 
 Tags are key/value labels you put on a call, such as `client=acme` or `project=invoices`. Eden AI stores them with the request, so you can split your usage and cost per customer, project or environment in the dashboard, without creating one API key for each.
@@ -253,6 +253,7 @@ In the [dashboard](https://app.edenai.run/), open **Monitoring**:
 - **Explore**, **Group by**, then **Tag**: choose a key to split cost and calls by its values. Calls without that key are grouped as **Untagged**.
 - **Requests**: each request shows its tags. In a request's details, click a tag to filter the list by it.
 - **Export CSV** on the Requests tab: every request in the selected period and filters, with one column per tag key. An export holds up to 100,000 requests and 50 tag columns; tags beyond those are grouped in an `other_tags` column. You can export 20 times per hour.
+- **Statements**: each month's billed usage as a PDF and a CSV, split by up to three tag keys, API key or member, for your finance team. See [Usage Statements](/v3/general/usage-statements).
 
 Tags apply from the call that carries them: calls made before you started tagging show as untagged.
 
@@ -272,6 +273,9 @@ Tags apply from the call that carries them: calls made before you started taggin
   </Card>
   <Card title="Monitoring" icon="chart-line" href="/v3/general/monitoring">
     Pull account-level usage into your own tools
+  </Card>
+  <Card title="Usage Statements" icon="file-invoice" href="/v3/general/usage-statements">
+    A monthly PDF and CSV of your usage, split by tag
   </Card>
   <Card title="Custom API Keys" icon="key" href="/v3/general/custom-api-keys">
     Separate keys with their own spending limits

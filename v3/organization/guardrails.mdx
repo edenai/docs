@@ -14,7 +14,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "guardrails", "usage policy", "access control", "rate limits", "model restrictions", "budget cap", "spending limit"]}
   datePublished="2026-06-11T00:00:00Z"
-  dateModified="2026-09-11T00:00:00Z"
+  dateModified="2026-10-19T00:00:00Z"
 />
 
 A **guardrail** is a reusable usage policy that controls:
@@ -23,7 +23,7 @@ A **guardrail** is a reusable usage policy that controls:
 - **Rate limits**: how many requests can be made over a given period.
 - **Member budget**: a spending cap for a member over a period (see [Budget cap](#budget-cap)).
 
-You create a guardrail once, then attach it to a **role**, a **member**, or an individual **API token**. For example, one team can be limited to a curated set of models, a shared token can be capped to a low request rate, or a member can be given a monthly spending cap.
+You create a guardrail once, then set it as the **organisation default**, or attach it to a **role**, a **member**, or an individual **API token**. For example, one team can be limited to a curated set of models, a shared token can be capped to a low request rate, or a member can be given a monthly spending cap.
 
 <Note>
 Guardrails are part of the advanced organisation features. See [plans and pricing](https://www.edenai.co/pricing) for availability.
@@ -106,13 +106,14 @@ How it behaves:
 - **Counts real usage only.** [Sandbox](/v3/general/sandbox) calls and calls made with your own provider keys ([BYOK](/v3/general/byok)) don't count toward the budget. Refunds credit it back.
 
 <Note>
-The budget only applies when a guardrail is attached to a **role** or a **member**. A budget set on a guardrail that is attached to an **API token** is ignored — use a [token budget](/v3/general/custom-api-keys) to cap a single key instead.
+The budget applies when a guardrail is attached to a **member**, a **role**, or set as the **organisation default**. A budget set on a guardrail attached to an **API token** is ignored: use a [token budget](/v3/general/custom-api-keys) to cap a single key instead.
 </Note>
 
 ## Assigning a guardrail
 
-A guardrail does nothing until it's attached to something. You can assign it to:
+A guardrail does nothing until it is attached to something. You can assign it to:
 
+- **The organisation default**: from **Settings → Guardrails**, to establish a baseline policy for everyone in the organisation.
 - **A role**: from **Settings → Roles & Permissions**, so everyone with that role inherits the policy.
 - **A member**: from **Settings → Members**, to apply it to one person.
 - **An API token**: to constrain a single key (for example a shared or CI token).
@@ -125,11 +126,22 @@ token  →  member  →  role  →  organisation default
 
 For **model rules** and **rate limit** independently, Eden AI uses the value from the most specific level that has it set, and inherits the rest. So a token can override the model rules while still inheriting its role's rate limit.
 
-The **member budget** resolves differently: only the **member** and **role** levels are considered (token budgets are handled separately, on the token itself), and the budget amount and period are always taken together from the most specific level that sets them — they are never mixed across levels.
+The **member budget** resolves differently: the **member**, **role**, and **organisation default** levels are considered (token budgets are handled separately, on the token itself), and the budget amount and period are always taken together from the most specific level that sets them (they are never mixed across levels).
 
 <Note>
 Guardrails are configured in the dashboard; there is no API for them yet. To automate the **per-key** side of provisioning (budgets, expiry, attribution to a member), use the [Management API](/v3/organization/management-api).
 </Note>
+
+## Pausing a guardrail
+
+In **Settings → Guardrails**, each guardrail has an active switch that lets you pause or resume enforcement at any time.
+
+When a guardrail is paused:
+
+- It remains assigned to its organisation, role, member, or token, but Eden AI treats it as unset during request resolution.
+- Request resolution skips the paused guardrail and falls through to the next level in the chain: `token → member → role → organisation default`.
+- If an organisation default guardrail is paused, it applies to nobody, allowing standard plan defaults to take effect.
+- Reactivating the guardrail restores enforcement immediately.
 
 ## Related
 

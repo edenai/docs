@@ -104,6 +104,22 @@ Naming an objective also turns off traffic spreading: `cost` means the cheapest 
 
 `sort` never changes **which model** answers, only who serves it.
 
+## Prioritizing providers
+
+Set `routing.order` to prioritize specific providers in the order you want them tried.
+
+```json
+{
+  "model": "gpt-5.6-sol",
+  "messages": [{"role": "user", "content": "hi"}],
+  "routing": {"order": ["azure", "openai"]}
+}
+```
+
+Providers in this list become the head of the fallback chain (up to 16 providers). Other providers offering the model follow, ranked by your `sort` objective or load-balanced on price.
+
+If a provider in your list is marked down by health checks, it moves to the end of the chain regardless of its original position. Naming an `order` also disables cache affinity (sticky routing), just like naming an explicit `sort`. An entry that does not sell the model is ignored. Blank entries return a `422` error.
+
 ## Restricting which providers may be used
 
 `routing.allowed_providers` narrows the pool to providers you trust or have agreements with. Everything else is excluded, including from failover.
@@ -116,7 +132,40 @@ Naming an objective also turns off traffic spreading: `cost` means the cheapest 
 }
 ```
 
-If no provider in the list serves the requested model, the request fails with a clear error rather than silently routing elsewhere.
+If no provider in the list serves the requested model, the request fails with a clear error rather than silently routing elsewhere. Blank entries in the list return a `422` error.
+
+## Excluding specific providers
+
+Set `routing.ignored_providers` to exclude providers you do not want to route to.
+
+```json
+{
+  "model": "gpt-5.6-sol",
+  "messages": [{"role": "user", "content": "hi"}],
+  "routing": {"ignored_providers": ["deepinfra"]}
+}
+```
+
+This is the mirror of `allowed_providers`. If an entry does not sell the requested model, it is ignored. If the list excludes every seller of the model, the request fails with a `400` error naming who sells it. Naming the same provider in both `allowed_providers` and `ignored_providers` returns a `422` error. Blank entries return a `422` error.
+
+## Setting a maximum price
+
+Set `routing.max_price` to restrict routing to providers whose listed per-token rates are at or below your price ceiling.
+
+```json
+{
+  "model": "gpt-5.6-sol",
+  "messages": [{"role": "user", "content": "hi"}],
+  "routing": {
+    "max_price": {
+      "input": 2.5,
+      "output": 10
+    }
+  }
+}
+```
+
+Prices are specified in USD per million tokens for `input`, `output`, or both. Either side may be omitted, but at least one must be provided. Providers priced by another unit (such as per image or per second) are unaffected. If no provider of the model falls within the ceiling, the request fails with a `400` error naming the cheapest provider.
 
 ## Requiring zero data retention
 
@@ -147,6 +196,8 @@ By default, if the chosen provider fails, Eden AI tries another provider of the 
 <Warning>
 `allow_fallbacks` governs **other providers of the model you requested**. Models you list yourself in `fallbacks` are your own choice and are always kept. See [Fallback](/v3/general/fallback).
 </Warning>
+
+Setting `allow_fallbacks` to `null` is equivalent to omitting it, leaving provider failover enabled.
 
 ## Keeping a conversation on one provider
 
@@ -216,7 +267,7 @@ Mint it once when the conversation starts, store it alongside the conversation, 
 }
 ```
 
-Naming an explicit `routing.sort` also takes priority, because "cheapest" has to keep meaning cheapest, cache or no cache. And a concrete `provider/model` was never routed in the first place.
+Naming an explicit `routing.sort` or `routing.order` also takes priority over cache affinity. And a concrete `provider/model` was never routed in the first place.
 
 <Info>
 Confirm it is working with [Request Metadata](/v3/llms/request-metadata): the provider in `summary` should be the same on every turn. Your usage block reports the cached tokens. Expect none on the first turn, since there was nothing to read yet.

@@ -317,7 +317,7 @@ Set `routing.sticky` to `false` to route independently:
 }
 ```
 
-An explicit `routing.sort` also takes priority over cache affinity. A concrete `provider/model` needs no sticky routing because its provider is already fixed. See [Provider Routing](/v3/llms/provider-routing) for the complete routing contract.
+An explicit `routing.sort` or `routing.order` also takes priority over cache affinity. A concrete `provider/model` needs no sticky routing because its provider is already fixed. See [Provider Routing](/v3/llms/provider-routing) for the complete routing contract.
 
 ## Reading cache usage and cost
 

@@ -1,0 +1,253 @@
+---
+icon: "volume-high"
+title: "OpenAI-Compatible Text to Speech API"
+sidebarTitle: "Text to Speech"
+description: "Convert text to speech with OpenAI, ElevenLabs, Amazon Polly and Google voices through Eden AI's OpenAI-compatible /v3/audio/speech endpoint."
+---
+
+import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
+
+<TechArticleSchema
+  title={"OpenAI-Compatible Text to Speech API"}
+  description={"Convert text to speech with OpenAI, ElevenLabs, Amazon Polly and Google voices through Eden AI's OpenAI-compatible /v3/audio/speech endpoint."}
+  path="v3/llms/text-to-speech"
+  articleSection="LLMs"
+  about={"LLM API"}
+  proficiencyLevel="Intermediate"
+  keywords={["Eden AI", "AI API", "text to speech", "TTS", "OpenAI compatible", "tts-1", "elevenlabs", "amazon polly"]}
+  datePublished="2026-10-13T00:00:00Z"
+  dateModified="2026-10-13T00:00:00Z"
+/>
+
+Generate speech from text through Eden AI's OpenAI-compatible speech endpoint. Point any OpenAI client at `https://api.edenai.run/v3` and `client.audio.speech` works as a drop-in replacement for OpenAI's text to speech.
+
+## Overview
+
+| Method | Path | Purpose |
+|---|---|---|
+| `POST` | `/v3/audio/speech`        | Synthesize text into audio. Returns the raw audio bytes |
+| `GET`  | `/v3/audio/speech/models` | Speech models available in your region, as `provider/model` ids |
+| `GET`  | `/v3/audio/voices`        | Voices the speech models accept, with language and gender |
+
+The response body is the audio file itself, as with OpenAI. Eden's `cost` (USD) and `provider` come back in the `x-edenai-cost` and `x-edenai-provider` response headers.
+
+<Warning>
+Speech models are only available on `/v3/audio/speech`. They are not in `GET /v3/models`, which lists chat models.
+</Warning>
+
+<Info>
+This is different from [Expert Model text to speech](/v3/expert-models/features/audio/tts), which runs through `/v3/universal-ai` with each provider's native options. Use `/v3/audio/speech` when you want an OpenAI-compatible, drop-in speech surface.
+</Info>
+
+## Models
+
+| Provider | Model string |
+|---|---|
+| OpenAI | `openai/tts-1`, `openai/tts-1-hd` |
+| ElevenLabs | `elevenlabs/eleven_multilingual_v2`, `elevenlabs/eleven_v3` |
+| Amazon Polly | `amazon/standard`, `amazon/neural` |
+| Google | `vertex/chirp` |
+
+Call `GET /v3/audio/speech/models` for the full list available in your region, with the per-character price of each model.
+
+<Note>
+`amazon/generative` and `amazon/long-form` are in the model list, but no voice in [`GET /v3/audio/voices`](#choosing-a-voice) is available for them yet, so a request to either returns `400` when it names no voice or a voice from that list.
+</Note>
+
+## Generating speech
+
+<CodeGroup>
+```python Python
+import requests
+
+url = "https://api.edenai.run/v3/audio/speech"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json",
+}
+
+payload = {
+    "model": "openai/tts-1",
+    "input": "Hello! This sentence was spoken through Eden AI.",
+    "voice": "alloy",
+}
+
+response = requests.post(url, headers=headers, json=payload)
+response.raise_for_status()
+
+with open("speech.mp3", "wb") as f:
+    f.write(response.content)
+
+print("Provider:", response.headers["x-edenai-provider"])
+print("Cost (USD):", response.headers.get("x-edenai-cost"))
+```
+
+```bash cURL
+curl -X POST https://api.edenai.run/v3/audio/speech \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/tts-1",
+    "input": "Hello! This sentence was spoken through Eden AI.",
+    "voice": "alloy"
+  }' \
+  --fail-with-body \
+  --output speech.mp3
+```
+</CodeGroup>
+
+With `--fail-with-body`, an error makes curl exit with a non-zero status. The JSON error is still written to `speech.mp3`, so read that file to see why the request failed.
+
+The official OpenAI SDK works unchanged once `base_url` points at Eden AI:
+
+<CodeGroup>
+```python OpenAI SDK
+from openai import OpenAI
+
+client = OpenAI(base_url="https://api.edenai.run/v3", api_key="YOUR_API_KEY")
+
+with client.audio.speech.with_streaming_response.create(
+    model="openai/tts-1",
+    voice="alloy",
+    input="Hello! This sentence was spoken through Eden AI.",
+) as response:
+    response.stream_to_file("speech.mp3")
+```
+</CodeGroup>
+
+To read the cost and provider headers from the SDK, use `with_raw_response`:
+
+<CodeGroup>
+```python OpenAI SDK
+from openai import OpenAI
+
+client = OpenAI(base_url="https://api.edenai.run/v3", api_key="YOUR_API_KEY")
+
+raw = client.audio.speech.with_raw_response.create(
+    model="elevenlabs/eleven_multilingual_v2",
+    voice="kwhMCf63M8O3rCfnQ3oQ",  # Caroline, a French voice
+    input="Bonjour ! Cette phrase a été prononcée via Eden AI.",
+)
+raw.parse().write_to_file("bonjour.mp3")
+
+print("Provider:", raw.headers["x-edenai-provider"])
+print("Cost (USD):", raw.headers.get("x-edenai-cost"))
+```
+</CodeGroup>
+
+### Request parameters
+
+| Field | Required | Description |
+|---|---|---|
+| `model` | yes | `provider/model`, e.g. `openai/tts-1`. The model name alone (`tts-1`) also works, through [Provider Routing](/v3/llms/provider-routing) |
+| `input` | yes | The text to synthesize |
+| `voice` | no | A voice `id` or `name` from [`GET /v3/audio/voices`](#choosing-a-voice). Omit it to let Eden AI [pick one](#choosing-a-voice). The OpenAI SDK requires it, so only a raw HTTP request can leave it out |
+| `response_format` | no | `mp3`, `opus`, `aac`, `flac`, `wav` or `pcm`. Not every provider returns every format: see [Output formats](#output-formats) |
+| `speed` | no | Playback speed. OpenAI models accept 0.25 to 4.0; other providers may use a different range or ignore it |
+| `instructions` | no | Guidance on voice and delivery style. None of the models listed above supports it: it does not work with OpenAI's `tts-1` and `tts-1-hd`, and the other providers drop it |
+
+Unknown fields are ignored.
+
+### Output formats
+
+The `Content-Type` of the response follows the `response_format` you request, not the audio the provider actually returns. Every provider returns `mp3`; the other formats depend on the provider:
+
+| `response_format` | `Content-Type` | OpenAI | ElevenLabs | Amazon Polly | Google |
+|---|---|---|---|---|---|
+| `mp3` | `audio/mpeg` | MP3 | MP3 | MP3 | MP3 |
+| `opus` | `audio/ogg` | Opus | Opus | Ogg Vorbis | Opus |
+| `aac` | `audio/aac` | AAC | Error | MP3 | MP3 |
+| `flac` | `audio/flac` | FLAC | Error | MP3 | FLAC |
+| `wav` | `audio/wav` | WAV | Error | PCM, no WAV header | WAV |
+| `pcm` | `audio/pcm` | PCM | PCM | PCM | WAV |
+| omitted | `audio/mpeg` | MP3 | MP3 | MP3 | WAV |
+
+With `vertex/chirp`, set `response_format` to `mp3` if you need MP3: when it is omitted, Google returns WAV under an `audio/mpeg` header.
+
+## Choosing a voice
+
+`GET /v3/audio/voices` lists the voices the speech models accept. Each voice names the models that take it:
+
+<CodeGroup>
+```python Python
+import requests
+
+url = "https://api.edenai.run/v3/audio/voices"
+headers = {"Authorization": "Bearer YOUR_API_KEY"}
+params = {"model": "elevenlabs/eleven_multilingual_v2", "gender": "female"}
+
+response = requests.get(url, headers=headers, params=params)
+voices = response.json()["data"]
+
+for voice in voices[:5]:
+    print(voice["id"], "|", voice["name"], "|", voice["gender"])
+```
+
+```bash cURL
+curl "https://api.edenai.run/v3/audio/voices?model=openai/tts-1" \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+</CodeGroup>
+
+```json
+{
+  "object": "list",
+  "data": [
+    {
+      "id": "alloy",
+      "object": "voice",
+      "name": "alloy",
+      "provider": "openai",
+      "models": ["openai/tts-1"],
+      "languages": [],
+      "gender": "unknown",
+      "preview_url": null,
+      "default": true
+    }
+  ]
+}
+```
+
+| Query parameter | Description |
+|---|---|
+| `model` | Only the voices this model accepts, e.g. `openai/tts-1`. Each voice's `models` then lists only that model. Without it, the voices of every speech model available to you |
+| `language` | Only the voices speaking this language. A bare code (`fr`) matches every region; `fr-CA` matches that locale only. Multilingual voices are always kept |
+| `gender` | `male`, `female` or `unknown` |
+
+How the `voice` field of a speech request is matched:
+
+- An `id` or a full `name` from the list is matched without regard to case: `"alloy"` and `"Alloy"` are the same OpenAI voice. Provider ids are shorter and stable, so prefer them for voices with long display names, such as most ElevenLabs voices.
+- When `voice` is omitted, the model's default voice (`"default": true`) is used. A model with no default voice, such as `vertex/chirp`, gets the first voice it accepts in alphabetical order, which may not speak the language of your text, so name a voice for it.
+- A voice of the model's provider that the model does not accept returns `400`, with the voices the model does accept in the error message.
+- Any other voice, including one that belongs to another provider, is sent to the provider unchanged. Cloned or account-specific voice ids still reach the provider this way. Amazon models read OpenAI's voice names as Polly voices, so `alloy` is spoken by `Joanna`.
+
+## Listing speech models
+
+```bash cURL
+curl https://api.edenai.run/v3/audio/speech/models \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+Each entry carries its `pricing`, e.g. `{"input_cost_per_character": 0.000015}` for `openai/tts-1`. The endpoint takes the same `view` parameter as the other [model listings](/v3/llms/listing-models).
+
+## Pricing
+
+Speech is billed on the input text, per character (or per token for models priced that way), at the rate `GET /v3/audio/speech/models` shows. The amount charged for a request is in its `x-edenai-cost` header.
+
+## Limitations
+
+- **No `@edenai` routing.** `"model": "@edenai"` returns `400`; name a model.
+- **No `fallbacks`.** The field is ignored, like any unknown field: only `model` is tried, and a failure is not retried on another model.
+- **No streaming playback.** The audio is returned once the provider has synthesized all of it. The SDK's `with_streaming_response` writes it to disk without holding it in memory, but does not start any sooner.
+- **No `edenai_metadata` block.** The body is raw audio, so the [request metadata](/v3/llms/request-metadata) block is not returned, even with `x-edenai-metadata: enabled`; read the `x-edenai-provider` and `x-edenai-cost` headers instead.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Speech to Text" icon="microphone" href="/v3/llms/speech-to-text">
+    Transcribe audio through the OpenAI-compatible transcriptions endpoint
+  </Card>
+  <Card title="Expert Text to Speech" icon="volume-high" href="/v3/expert-models/features/audio/tts">
+    Use each provider's native voices and options through Universal AI
+  </Card>
+</CardGroup>

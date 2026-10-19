@@ -15,7 +15,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "rate limits", "billing", "monitoring"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-09-11T00:00:00Z"
+  dateModified="2026-10-16T00:00:00Z"
 />
 
 Learn how to track your Eden AI API consumption and costs with the Management API usage endpoints.
@@ -45,10 +45,14 @@ Generate a management key from the dashboard (**Account → Management Keys**) o
 
 | Parameter | Description |
 |-----------|-------------|
-| `begin` | First day of the window, inclusive (`YYYY-MM-DD`). |
-| `end` | Day **after** the last day of the window, exclusive (`YYYY-MM-DD`). `begin=2026-08-01&end=2026-09-01` is the whole of August. |
+| `begin` | First day of the window, inclusive (`YYYY-MM-DD`). Usage before `2026-09-03` is not available through this endpoint (contact support for older data). |
+| `end` | Day **after** the last day of the window, exclusive (`YYYY-MM-DD`). For example, `begin=2026-10-01&end=2026-11-01` covers all of October 2026. |
 
 Provide both or neither. Without them you get the **last 7 days**. The window may not exceed **366 days**.
+
+### Response caching
+
+Responses are cached for 60 seconds per organization and query parameters, so repeated calls within that window return the cached summary.
 
 ### Step parameter
 
@@ -105,7 +109,7 @@ for entry in usage:
     print(f"{entry['token']}: ${total:.2f}")
 ```
 
-For a specific period, pass `begin` and `end`. Remember that `end` is exclusive: this returns one monthly bucket covering all of August 2026.
+For a specific period, pass `begin` and `end`. Remember that `end` is exclusive: this returns one monthly bucket covering all of October 2026.
 
 {/* skip-test: the organization-wide GET /v3/manage/usage/ can take longer to answer than the test timeout on an org with real traffic */}
 ```python Python
@@ -117,8 +121,8 @@ response = requests.get(
     "https://api.edenai.run/v3/manage/usage/",
     headers=headers,
     params={
-        "begin": "2026-08-01",
-        "end": "2026-09-01",
+        "begin": "2026-10-01",
+        "end": "2026-11-01",
         "step": 3,  # Monthly aggregation
         "provider": "openai"
     }
@@ -141,7 +145,7 @@ The organization and per-key endpoints return the same shape: a `usage` list wit
     {
       "token": "production-v1",
       "data": {
-        "2026-09-01": {
+        "2026-10-01": {
           "text__chat": {
             "total_cost": 11.30,
             "details": 381,
@@ -263,10 +267,11 @@ The account credit balance is not exposed by the Management API. Check it in the
 
 | Status | Cause |
 |--------|-------|
-| `400` | Invalid parameters: `step` missing or outside 1–4, only one of `begin`/`end` given, a window longer than 366 days, or an unknown filter value. |
+| `400` | Invalid parameters: `step` missing or outside 1 to 4, only one of `begin`/`end` given, `begin` date earlier than `2026-09-03` (contact support for older data), a window longer than 366 days, or an unknown filter value. |
 | `401` | No management key. An inference key (`sk-eden-…`) cannot call `/v3/manage` endpoints. |
 | `403` | The management key lacks the `manage:read` scope. |
 | `404` | The `key_id` or `user` is not in the management key's organization. |
+| `503` | The analytics store is temporarily unavailable. |
 
 ```json 401 with an inference key
 {

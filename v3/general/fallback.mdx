@@ -14,7 +14,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "rate limits", "billing", "monitoring"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-08-19T00:00:00Z"
+  dateModified="2026-10-20T00:00:00Z"
 />
 
 Eden AI automatically handles fallback on both LLM and Universal AI / expert model requests. If your primary model or provider fails (provider outage, rate limit, error), Eden AI retries with the next item in your `fallbacks` list -- no retry logic needed on your side.
@@ -33,7 +33,7 @@ The second layer only exists for models sold by more than one provider, and only
 Add a `fallbacks` array to your request with one or more backup models (LLM) or providers (expert models). If the primary `model` fails, Eden AI will try each fallback in order.
 
 <Info>
-`fallbacks` accepts at most **3** entries. Sending more returns a `422`.
+`fallbacks` accepts at most **7** entries for LLMs and **3** for expert models. Sending more returns a `422`.
 </Info>
 
 <Tabs>
@@ -142,7 +142,9 @@ Add a `fallbacks` array to your request with one or more backup models (LLM) or 
 
 ## Provider-level failover (LLM)
 
-When you name a model **without** a provider (`gpt-5.6-sol` rather than `openai/gpt-5.6-sol`) Eden AI chooses the provider, and will try a different provider of that same model if the chosen one fails. This happens whether or not you supplied a `fallbacks` list.
+When you name a model **without** a provider (`gpt-5.6-sol` rather than `openai/gpt-5.6-sol`) Eden AI chooses the provider, and will try a different provider of that same model if the chosen one fails. Those providers are tried before your `fallbacks`.
+
+A request makes at most **8** attempts. Your `fallbacks` entries are always kept, so other providers of the requested model only fill the slots left over. With 2 fallbacks, up to 6 providers of the requested model are tried first. With 7 fallbacks, the requested model gets one provider and no provider-level failover.
 
 To turn it off and have the request fail on the first provider instead:
 

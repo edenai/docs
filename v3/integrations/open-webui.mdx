@@ -222,15 +222,33 @@ Type `/imagine` followed by your prompt in the chat.
 
 ### Web Search
 
-Enable web search for up-to-date information:
+Open WebUI's **Perplexity Search** engine works with Eden AI's [Perplexity-compatible search API](/v3/llms/search-api). The engine sends a fixed body with no `model`, so the provider goes in the URL path:
+
+1. Open **Admin Panel**, then **Settings**, then **Web Search**.
+2. Turn on **Enable Web Search** and select `perplexity_search` as the **Web Search Engine**.
+3. Enter your Eden AI API key as the API key.
+4. Set **Perplexity Search API URL** to `https://api.edenai.run/v3/search/tavily` (or end it with another provider `id` from `GET /v3/search/models`).
+
+On a new install, you can set the same values through environment variables instead:
 
 <CodeGroup>
 ```bash .env
-ENABLE_RAG_WEB_SEARCH=true
-RAG_WEB_SEARCH_ENGINE=searxng
-SEARXNG_QUERY_URL=https://searx.be/search?q=<query>
+ENABLE_WEB_SEARCH=true
+WEB_SEARCH_ENGINE=perplexity_search
+PERPLEXITY_API_KEY=your_eden_ai_api_key
+PERPLEXITY_SEARCH_API_URL=https://api.edenai.run/v3/search/tavily
 ```
 </CodeGroup>
+
+<Note>
+Open WebUI reads these variables only on its first start and saves them in its database. From then on the saved values win, so on an existing install change them in the Admin Panel (or set `ENABLE_PERSISTENT_CONFIG=false` to make Open WebUI read the environment on every start).
+</Note>
+
+<Warning>
+Keep the search result count (`WEB_SEARCH_RESULT_COUNT`, default 3) at 20 or below. Eden AI rejects a larger `max_results`, and Open WebUI hides the error: searches return no results and no message says why.
+</Warning>
+
+Each query Open WebUI sends is a billed search on your Eden AI account, and Open WebUI can generate more than one query for a single chat message. `GET /v3/search/models` lists each provider's price.
 
 ### Voice Input
 

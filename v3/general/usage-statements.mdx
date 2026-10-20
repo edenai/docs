@@ -1,0 +1,94 @@
+---
+icon: "file-invoice"
+title: "Monthly Usage Report by Tag, Key and Member"
+sidebarTitle: "Usage Statements"
+description: "Get a monthly PDF and CSV of your billed usage, split by tag, API key, member, feature or provider, and email it to your finance team each month."
+---
+import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
+
+<TechArticleSchema
+  title={"Monthly Usage Report by Tag, Key and Member"}
+  description={"Get a monthly PDF and CSV of your billed usage, split by tag, API key, member, feature or provider, and email it to your finance team each month."}
+  path="v3/general/usage-statements"
+  articleSection="General"
+  about={"Billing"}
+  proficiencyLevel="Beginner"
+  keywords={["Eden AI", "usage statement", "monthly usage report", "cost breakdown", "tags", "billing"]}
+  datePublished="2026-10-19T00:00:00Z"
+  dateModified="2026-10-19T00:00:00Z"
+/>
+
+A usage statement is one month of your organization's billed usage, split the way your finance team needs it: by [tag](/v3/general/tags), API key, member, feature or provider. It comes as a PDF summary and a CSV with every line.
+
+A statement is not an invoice: it carries no VAT and there is nothing to pay. It shows what your usage was spent on.
+
+## Opening your statements
+
+In the [dashboard](https://app.edenai.run/), open **Monitoring → Statements**. The organization owner and members with the **Billing Management** [permission](/v3/organization/users-organisation#permissions) can open it.
+
+The list shows the current month and every month with billed usage in the last twelve, starting with October 2026. Each month is in one of three states:
+
+| State | Meaning |
+|-------|---------|
+| **In progress** | The month is still running, so its figures change. It is ready on the 1st of the next month at 12:00 UTC. |
+| **Ready** | The month is over and not issued yet. |
+| **Issued** | The statement has its number and never changes. |
+
+A statement covers one UTC calendar month, in USD, for the whole organization, members who have left included. Calls made with [your own provider keys](/v3/general/byok) and [sandbox](/v3/general/sandbox) calls are not billed, so they are not in it.
+
+## Choosing the split
+
+Under **Split by**, choose one to three levels. Each level splits the one above it:
+
+- a **tag key**, such as `client` or `project`: one row per value
+- **API key**
+- **Member**
+- **Feature**
+- **Provider**
+
+For example, `client` then **API key** gives each client's spend, then each key within that client. Changes save automatically and apply to every month not issued yet.
+
+Some rows are named for you:
+
+- **Untagged (no client tag)**: calls sent without that tag key. Send the tag on each call, or give the API key [default tags](/v3/general/tags#as-default-tags-on-an-api-key).
+- **Base key**: calls made with a member's account-level token, or from the Eden AI app.
+
+Only the owner and people who can manage members can add the **Member** level. Once it is saved, everyone who can open statements sees it.
+
+## PDF and CSV
+
+| File | What it holds |
+|------|---------------|
+| **PDF** | The summary: the 20 largest values of each level, the rest in one **Other** row. Its rows add up to the total. |
+| **CSV** | Every line, with the columns `Statement`, `Period start`, `Period end`, `Invoice`, one column per level, `Calls` and `Cost (USD)`. Its cents add up to the total. |
+
+Use **Preview PDF** to see the PDF before downloading. A split of more than 50,000 lines is refused: choose fewer levels.
+
+## Issuing a month
+
+A **Ready** month is issued by its first download (**Issue and download**) or by the monthly email, with the split saved at that moment. Issuing gives it a number such as `ST-2026-10-0001`, counted per organization, and freezes it: every later download returns the same document.
+
+To read an issued month split another way, choose **Current split**. Its downloads are re-split copies, marked as such and built from current data, so usage that arrived after the month was issued shows up in them. The issued statement stays as filed; choose **As issued** to get it again.
+
+Until a month is issued, **Download draft** gives a CSV marked as a draft, which issues nothing.
+
+## Monthly email
+
+Turn on **Email each month** to issue last month's statement on the 1st after 12:00 UTC and email its PDF and CSV to the owner, the billing managers and the billing contacts. Billing contacts are set in **Settings → Billing → Billing contacts**.
+
+## With postpaid billing
+
+On a postpaid plan, a month's statement adds up to the usage line of that month's invoice and names the invoice. When the two differ, the PDF and the page show the difference.
+
+The monthly email waits until that invoice is sent. Each whole-month invoice also links to its statement in the invoice memo.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Tags" icon="tags" href="/v3/general/tags">
+    Label calls by client or project to split statements by them
+  </Card>
+  <Card title="Monitoring" icon="chart-line" href="/v3/general/monitoring">
+    Pull account-level usage into your own tools
+  </Card>
+</CardGroup>

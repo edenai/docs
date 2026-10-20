@@ -5,7 +5,9 @@ v3/expert-models/features/ each day from the /v3/info API, so a rule about
 those pages has to live in the generator: an edit to a page is gone by the
 next run. Two of its outputs reach Google directly. The page description is
 the snippet under the search result, and a page the API drops leaves a URL
-behind that Google has indexed. These tests cover both and make no requests.
+behind that Google has indexed. These tests cover both, plus the quick start
+example on every page and the provider_params allowlist on the pages of the
+subfeatures that enforce one, and make no requests.
 """
 
 import json
@@ -38,6 +40,49 @@ def test_a_generated_page_gives_its_structured_data_the_same_title(
     assert meta["sidebarTitle"] == "Text Moderation"
     assert schema["title"] == meta["title"]
     assert schema["description"] == meta["description"]
+
+
+# --- the provider_params allowlist ----------------------------------------
+
+VIDEO_GENERATION = {"name": "generation_async", "fullname": "Video Generation"}
+
+
+def _video_generation_page(tmp_path, monkeypatch, detail: dict) -> str:
+    monkeypatch.setattr(gen, "FEATURES_DIR", tmp_path)
+    return gen.generate_subfeature_page("video", VIDEO_GENERATION, detail, "Video")
+
+
+def test_a_subfeature_with_an_allowlist_lists_it_for_each_provider(tmp_path, monkeypatch):
+    detail = {
+        "provider_params": {
+            "google": ["aspectratio", "seed"],
+            "amazon": ["videogenerationconfig.seed"],
+        }
+    }
+
+    page = _video_generation_page(tmp_path, monkeypatch, detail)
+
+    assert "## Provider Parameters" in page
+    assert "| amazon | `videogenerationconfig.seed` |" in page
+    assert "| google | `aspectratio`, `seed` |" in page
+    assert page.index("## Available Providers") < page.index("## Provider Parameters")
+    assert page.index("## Provider Parameters") < page.index("## Quick Start")
+
+
+def test_a_provider_that_accepts_no_provider_params_says_so(tmp_path, monkeypatch):
+    page = _video_generation_page(tmp_path, monkeypatch, {"provider_params": {"openai": []}})
+
+    assert "| openai | None |" in page
+
+
+def test_a_subfeature_without_an_allowlist_keeps_its_page_unchanged(tmp_path, monkeypatch):
+    """`null` means any provider_params are forwarded: no section, and no stray blank line."""
+    with_null = _video_generation_page(tmp_path, monkeypatch, {"provider_params": None})
+    without_field = _video_generation_page(tmp_path, monkeypatch, {})
+
+    assert "## Provider Parameters" not in with_null
+    assert with_null == without_field
+    assert "_No providers currently available._\n\n\n## Quick Start" in with_null
 
 
 # --- the description ------------------------------------------------------
@@ -183,3 +228,32 @@ def test_docs_json_gets_the_redirects_for_the_pages_cleanup_deleted(
             "destination": "/v3/expert-models/features",
         },
     ]
+
+
+# --- the quick start ------------------------------------------------------
+# Every quick start runs against the API in the snippet tests, so its example
+# input has to pass the field's own validation.
+
+AI_DETECTION_TEXT_FIELD = {"name": "text", "type": "string", "required": True, "minLength": 300}
+
+
+def test_a_text_field_with_a_minimum_length_gets_an_example_that_long():
+    example = json.loads(gen._placeholder_for_field(AI_DETECTION_TEXT_FIELD))
+
+    assert len(example) >= 300
+
+
+def test_a_long_example_fits_in_the_single_quoted_curl_body():
+    assert "'" not in gen._placeholder_for_field(AI_DETECTION_TEXT_FIELD)
+
+
+def test_a_field_without_a_meaningful_minimum_keeps_its_one_line_example():
+    field = {"name": "text", "type": "string", "required": True, "minLength": 1}
+
+    assert gen._placeholder_for_field(field) == gen._default_placeholder(field)
+
+
+def test_a_placeholder_that_is_not_text_is_left_alone_whatever_the_minimum():
+    field = {"name": "speakers", "type": "string", "required": True, "minLength": 5}
+
+    assert gen._placeholder_for_field(field) == gen._default_placeholder(field)

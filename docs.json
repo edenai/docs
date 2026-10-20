@@ -111,7 +111,10 @@
                   "v3/llms/request-metadata",
                   "v3/llms/streaming",
                   "v3/llms/image-generation",
-                  "v3/llms/video-generation"
+                  "v3/llms/video-generation",
+                  "v3/llms/text-to-speech",
+                  "v3/llms/speech-to-text",
+                  "v3/llms/search-api"
                 ]
               },
               {
@@ -224,6 +227,7 @@
                   "v3/general/custom-api-keys",
                   "v3/general/monitoring",
                   "v3/general/tags",
+                  "v3/general/usage-statements",
                   "v3/general/support",
                   "v3/general/byok"
                 ]
@@ -245,6 +249,7 @@
                 "expanded": false,
                 "pages": [
                   "v3/data-governance/provider-data-policies",
+                  "v3/data-governance/compliance-policies",
                   "v3/data-governance/servers-location",
                   "v3/data-governance/eu-endpoint",
                   "v3/data-governance/static-ip",

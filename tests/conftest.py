@@ -26,6 +26,7 @@ from tests.helpers.file_generators import (
     minimal_pdf,
     minimal_png,
     multipage_pdf,
+    silent_wav,
 )
 from tests.snippet_extractor import DEFAULT_BASE_URL
 
@@ -215,6 +216,8 @@ def _populate_fixtures_dir(d: Path) -> None:
     png_data = minimal_png()
     for name in ["image.png", "screenshot.png"]:
         (d / name).write_bytes(png_data)
+
+    (d / "recording.wav").write_bytes(silent_wav())
 
     (d / "app.py").write_text("def main():\n    print('hello')\n")
 

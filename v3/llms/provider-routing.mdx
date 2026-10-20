@@ -14,10 +14,10 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "LLM API", "provider routing", "load balancing", "failover"]}
   datePublished="2026-08-19T00:00:00Z"
-  dateModified="2026-09-01T00:00:00Z"
+  dateModified="2026-10-20T00:00:00Z"
 />
 
-Many models are sold by more than one provider. `gpt-5.6-sol` is served by OpenAI and Azure, `kimi-k2.6` by seven providers, `gpt-oss-120b` by ten. They run the same weights at different prices, speeds and reliability.
+Many models are sold by more than one provider. `gpt-5.6-sol` is served by four providers, `kimi-k2.6` by seven, `gpt-oss-120b` by fifteen. They run the same weights at different prices, speeds and reliability.
 
 Name a model **without** a provider prefix and Eden AI picks which provider serves it.
 
@@ -51,10 +51,11 @@ curl "https://api.edenai.run/v3/models?view=models"
   "object": "model",
   "owned_by": "openai",
   "mode": "chat",
-  "endpoint_count": 2,
+  "endpoint_count": 8,
   "endpoints": [
     { "id": "openai/gpt-5.6-sol", "owned_by": "openai", "...": "pricing, capabilities, context_length, regions" },
-    { "id": "azure/gpt-5.6-sol",  "owned_by": "azure",  "...": "pricing, capabilities, context_length, regions" }
+    { "id": "azure/gpt-5.6-sol",  "owned_by": "azure",  "...": "pricing, capabilities, context_length, regions" },
+    "...6 more: Amazon, Databricks and region-pinned endpoints such as azure/gpt-5.6-sol@eu"
   ]
 }
 ```
@@ -104,6 +105,25 @@ Naming an objective also turns off traffic spreading: `cost` means the cheapest 
 
 `sort` never changes **which model** answers, only who serves it.
 
+## Trying providers in a set order
+
+Set `routing.order` to name the providers to try first, in the order you want them tried.
+
+```json
+{
+  "model": "gpt-5.6-sol",
+  "messages": [{"role": "user", "content": "hi"}],
+  "routing": {"order": ["azure", "openai"]}
+}
+```
+
+The providers you list are tried first, in your order. The model's other providers follow as backups, cheapest first, or ranked by your `sort` objective if you set one. Traffic is not spread by price: once your list matches a provider, the chain is a fixed ranking, not a weighted draw.
+
+- **A provider marked down moves last.** If health checks mark a listed provider as down, it moves to the end of the chain, whatever its position in your list.
+- **`order` is a preference, not a restriction.** If none of the providers you list sells the model, or all of them are marked down, the request starts with another provider of the model. With `allow_fallbacks: false`, that provider is the only one tried. To make sure only certain providers are ever used, list them in [`allowed_providers`](#restricting-which-providers-may-be-used) too.
+- **Long lists may not be tried in full.** A request makes at most 8 attempts, and the entries in your `fallbacks` keep their slots first. See [Fallback](/v3/general/fallback#provider-level-failover-llm).
+- **An entry that does not sell the model is skipped.** Naming any `order` still turns off [sticky routing](#keeping-a-conversation-on-one-provider), as an explicit `sort` does, even when none of its entries sell the model.
+
 ## Restricting which providers may be used
 
 `routing.allowed_providers` narrows the pool to providers you trust or have agreements with. Everything else is excluded, including from failover.
@@ -117,6 +137,50 @@ Naming an objective also turns off traffic spreading: `cost` means the cheapest 
 ```
 
 If no provider in the list serves the requested model, the request fails with a clear error rather than silently routing elsewhere.
+
+## Excluding specific providers
+
+Set `routing.ignored_providers` to keep a request away from specific providers.
+
+```json
+{
+  "model": "kimi-k2.6",
+  "messages": [{"role": "user", "content": "hi"}],
+  "routing": {"ignored_providers": ["deepinfra"]}
+}
+```
+
+This is the mirror of `allowed_providers`: every provider of `kimi-k2.6` except DeepInfra can serve the request, including on failover. An entry that does not sell the model has no effect. If the list excludes every provider of the model, the request fails with a `400` naming the providers that sell it.
+
+## Setting a maximum price
+
+Set `routing.max_price` to route only to providers whose listed per-token rates are at or below your ceiling.
+
+```json
+{
+  "model": "gpt-5.6-sol",
+  "messages": [{"role": "user", "content": "hi"}],
+  "routing": {
+    "max_price": {
+      "input": 4,
+      "output": 20
+    }
+  }
+}
+```
+
+At today's list prices, this keeps OpenAI, Azure and Databricks ($4 input, $20 output) and skips Amazon ($4.40 input, $22 output). Each provider's rates are in the `pricing` of its entry in [`/v3/models?view=models`](#finding-the-routable-models).
+
+Prices are in USD per million tokens. Set `input`, `output`, or both. Providers that charge by another unit (such as per image or per second) are not filtered. If no provider of the model is within the ceiling, the request fails with a `400` naming the cheapest provider and its rates, so you know what ceiling would work.
+
+## How these settings apply
+
+`order`, `allowed_providers`, `ignored_providers` and `max_price` follow the same rules:
+
+- **Use the provider name from the catalog.** It is the part before the first `/` in an endpoint id from [`/v3/models?view=models`](#finding-the-routable-models), such as `amazon` (not `bedrock`), `vertex`, `fireworks_ai` or `together_ai`. Names are case-insensitive. A name that matches no provider is not an error, it just matches nothing, so a misspelled `ignored_providers` entry excludes nothing.
+- **They apply to every model name without a provider**, in `model` and in `fallbacks`. If any of them is left with no provider, the whole request fails with a `400`, even when the other models still have one.
+- **A concrete `provider/model` is never filtered or reordered.** It goes exactly where you sent it, in `model` or in `fallbacks`. To keep a request away from a provider, don't name that provider in either.
+- **Invalid values return a `422`**: an empty provider name or one longer than 64 characters, more than 16 entries in `order`, the same provider in both `allowed_providers` and `ignored_providers`, or a `max_price` with neither `input` nor `output`, a negative price, or any other key (a typo such as `ouput` is rejected rather than ignored).
 
 ## Requiring zero data retention
 
@@ -147,6 +211,8 @@ By default, if the chosen provider fails, Eden AI tries another provider of the 
 <Warning>
 `allow_fallbacks` governs **other providers of the model you requested**. Models you list yourself in `fallbacks` are your own choice and are always kept. See [Fallback](/v3/general/fallback).
 </Warning>
+
+Setting `allow_fallbacks` to `null` is equivalent to omitting it, leaving provider failover enabled.
 
 ## Keeping a conversation on one provider
 
@@ -216,7 +282,7 @@ Mint it once when the conversation starts, store it alongside the conversation, 
 }
 ```
 
-Naming an explicit `routing.sort` also takes priority, because "cheapest" has to keep meaning cheapest, cache or no cache. And a concrete `provider/model` was never routed in the first place.
+Naming an explicit `routing.sort` or `routing.order` also takes priority over cache affinity. And a concrete `provider/model` was never routed in the first place.
 
 <Info>
 Confirm it is working with [Request Metadata](/v3/llms/request-metadata): the provider in `summary` should be the same on every turn. Your usage block reports the cached tokens. Expect none on the first turn, since there was nothing to read yet.

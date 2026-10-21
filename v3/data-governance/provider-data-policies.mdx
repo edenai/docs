@@ -16,7 +16,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "ZDR", "Zero Data Retention", "data privacy", "GDPR", "incorporation country", "model training"]}
   datePublished="2026-06-29T00:00:00Z"
-  dateModified="2026-10-20T00:00:00Z"
+  dateModified="2026-10-21T00:00:00Z"
 />
 
 When you call a model through Eden AI, your request is forwarded to the underlying provider, whose own policy governs what happens to it.
@@ -32,7 +32,7 @@ The tables below show, for each provider on Eden AI, the country of the company 
 **Incorporated in** is the country where the provider company that Eden AI signs with is incorporated. For many providers this is a European subsidiary rather than the parent company's home country: Microsoft Azure, for example, is contracted through Microsoft Ireland Operations. It is not where your data is processed, and the laws of other countries, such as the GDPR, can apply as well. For processing location, see [EU data residency](#eu-data-residency).
 
 <Note>
-  This information was last updated on 20 October 2026.
+  This information was last updated on 21 October 2026.
 </Note>
 
 ### LLM providers
@@ -46,7 +46,7 @@ The tables below show, for each provider on Eden AI, the country of the company 
 | Cloudflare | United States | No | **Yes** | None |
 | Cohere | Canada | No | No | 30 days |
 | DashScope (legacy) | Netherlands | No | No | None |
-| Databricks | United States | No | **Yes** | None |
+| Databricks | United States | No | No | Not specified |
 | DeepInfra | United States | No | **Yes** | None |
 | DeepSeek | China | May train | No | No auto-deletion |
 | Fireworks | United States | No | **Yes** | None |
@@ -72,6 +72,17 @@ The tables below show, for each provider on Eden AI, the country of the company 
 | Together | United States | No | **Yes** | None |
 | xAI | United States | No | **Yes** | None |
 | Z.ai | Singapore | No | **Yes** | None |
+
+### Models that keep data on a ZDR provider
+
+A **Yes** above is the provider's default. These models keep data even on a provider marked **Yes**, so they never count as zero data retention:
+
+| Model | Provider | ZDR | Retention |
+|---|---|---|---|
+| Claude Fable 5, Claude Fable 5.1 | Every provider, including Amazon Bedrock and Google (Vertex) | No | 30 days, longer during a safety investigation or when the law requires it |
+| OpenAI models, except gpt-oss | Amazon Bedrock | No | Up to 30 days for traffic flagged by abuse detection |
+
+To check a specific model, read the `zero_data_retention` field of its provider entry in [Listing Models](/v3/llms/listing-models), for example `vertex/claude-opus-5`: `true` means no data is kept, `false` means it is, `null` means not verified yet. The same model can have different values on different providers. With `view=models`, read the field on each entry under `endpoints`. The field already includes these exceptions.
 
 ### Expert Model providers
 
@@ -122,6 +133,6 @@ This is a separate question from retention: it is about *where* your data is pro
 
 ## Reduce your data exposure
 
-- **Zero Data Retention** (nothing stored): for LLMs, pin your `model` and `fallbacks` to Amazon Bedrock, Cerebras, Cloudflare, Databricks, DeepInfra, Fireworks, Flex AI, Google (Vertex), Groq, Infomaniak, IONOS, Lilac, Microsoft Azure, Mistral, Nebius, OVHcloud, Perplexity, Qwen, Scaleway, Tencent, TensorX, Together, xAI, or Z.ai. For Expert Models, pick a provider marked **Yes** in the table above.
+- **Zero Data Retention** (nothing stored): for LLMs, pin your `model` and `fallbacks` to Amazon Bedrock, Cerebras, Cloudflare, DeepInfra, Fireworks, Flex AI, Google (Vertex), Groq, Infomaniak, IONOS, Lilac, Microsoft Azure, Mistral, Nebius, OVHcloud, Perplexity, Qwen, Scaleway, Tencent, TensorX, Together, xAI, or Z.ai, minus the models listed under [Models that keep data on a ZDR provider](#models-that-keep-data-on-a-zdr-provider). The simplest way is to set `routing.zero_data_retention: true` on the request (see [Requiring zero data retention](/v3/llms/provider-routing#requiring-zero-data-retention)), which only routes to models whose `zero_data_retention` is `true`. For Expert Models, pick a provider marked **Yes** in the table above.
 - **EU processing**: use the EU endpoint (see EU data residency above).
 - **Logs off by default**: Eden AI stores no content unless you enable log retention.

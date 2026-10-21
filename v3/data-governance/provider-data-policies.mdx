@@ -83,6 +83,8 @@ A **Yes** above is the provider's default. These models keep data even on a prov
 | Anthropic (Claude) models | DeepInfra | No | Anthropic's retention applies |
 | Gemini models | DeepInfra | No | Google's retention applies |
 
+Scaleway keeps no data in normal operation, but [may store full requests for up to two weeks](https://www.scaleway.com/en/docs/generative-apis/reference-content/data-privacy/) when it detects misuse or a server error.
+
 To check a specific model, read the `zero_data_retention` field of its provider entry in [Listing Models](/v3/llms/listing-models), for example `vertex/claude-opus-5`: `true` means no data is kept, `false` means it is, `null` means not verified yet. The same model can have different values on different providers. With `view=models`, read the field on each entry under `endpoints`. The field already includes these exceptions.
 
 ### Expert Model providers

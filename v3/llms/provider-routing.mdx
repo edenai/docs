@@ -70,6 +70,8 @@ Selection is weighted rather than absolute: cheaper providers receive proportion
 
 Providers that are failing are ranked below healthy ones and are never chosen first. They stay in the chain as a last resort, because a struggling provider is still better than no answer.
 
+Only providers whose context window holds your prompt plus the `max_tokens` you set are considered. If none does, the request fails with a `400` stating how many tokens it needed.
+
 ## Choosing an objective
 
 Set `routing.sort` to optimise for something other than price.
@@ -101,7 +103,7 @@ The same objective can be written as a suffix on the model name, which is useful
 `speed`, `latency` and `exact` rank on observed performance. When Eden AI has too little data for a model, routing falls back to ranking on price rather than guessing, and your request still succeeds.
 </Info>
 
-Naming an objective also turns off traffic spreading: `cost` means the cheapest provider every time, not a weighted draw.
+Naming an objective replaces the weighted draw: `cost` means the cheapest provider every time, not more traffic to cheaper ones. Only providers that tie on the objective, such as two listing the same price, share the requests, and a conversation stays with one of them.
 
 `sort` never changes **which model** answers, only who serves it.
 

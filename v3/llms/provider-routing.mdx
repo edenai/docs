@@ -65,7 +65,7 @@ curl "https://api.edenai.run/v3/models?view=models"
 }
 ```
 
-Top-level fields summarise the model across its providers: `context_length` is the largest window, `capabilities` combines what any provider supports, `pricing` shows the cheapest eligible provider (named by `pricing_endpoint`), and `regions` lists every region served. Each entry in `endpoints` carries that provider's exact values, so this one call answers both questions: which names route, and what each provider charges and supports. See [Listing Models](/v3/llms/listing-models) for the full field reference.
+Top-level fields summarise the model across its providers: `context_length` is the largest window, `capabilities` combines what any provider supports, `pricing` is the full price list of the cheapest provider on a typical call (named by `pricing_endpoint`), and `regions` lists every region served. `pricing` is a reference, not a quote: routing ranks providers on each actual request and can fall back to another one, and a call is billed at the prices of the provider that served it. Each entry in `endpoints` carries that provider's exact values, so this one call answers both questions: which names route, and what each provider charges and supports. See [Listing Models](/v3/llms/listing-models) for the full field reference.
 
 ## How a provider is chosen
 

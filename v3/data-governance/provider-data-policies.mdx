@@ -79,10 +79,10 @@ A **Yes** above is the provider's default. These models keep data even on a prov
 
 | Model | Provider | ZDR | Retention |
 |---|---|---|---|
-| Claude Fable 5, Claude Fable 5.1 | Every provider, including Amazon Bedrock and Google (Vertex) | No | 30 days |
+| Claude Fable 5, Claude Fable 5.1 | Every provider, including Amazon Bedrock and Google (Vertex) | No | 30 days, longer during a safety investigation or when the law requires it |
 | OpenAI models, except gpt-oss | Amazon Bedrock | No | Up to 30 days for traffic flagged by abuse detection |
 
-For the status of a single model, read its `zero_data_retention` field in [Listing Models](/v3/llms/listing-models): `true` means no data is kept, `false` means it is, `null` means not verified yet. That field takes these exceptions into account.
+To check a specific model, read the `zero_data_retention` field of its provider entry in [Listing Models](/v3/llms/listing-models), for example `vertex/claude-opus-5`: `true` means no data is kept, `false` means it is, `null` means not verified yet. The same model can have different values on different providers. With `view=models`, read the field on each entry under `endpoints`. The field already includes these exceptions.
 
 ### Expert Model providers
 

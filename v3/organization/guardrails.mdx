@@ -14,7 +14,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "guardrails", "usage policy", "access control", "rate limits", "model restrictions", "budget cap", "spending limit"]}
   datePublished="2026-06-11T00:00:00Z"
-  dateModified="2026-09-11T00:00:00Z"
+  dateModified="2026-10-21T00:00:00Z"
 />
 
 A **guardrail** is a reusable usage policy that controls:
@@ -59,15 +59,26 @@ When you enable model rules, a guardrail uses a **default action** plus a list o
 - **Default**: `allow` or `deny` every model unless a rule says otherwise.
 - **Rules**: each rule targets a model by pattern and sets its action to `allow` or `deny`. Rules are checked in order and the first match wins; if none match, the default applies.
 
-Patterns can target a single model or a whole provider:
+Patterns can target a single model, a whole provider, or a specific region:
 
 | Pattern | Matches |
 | --- | --- |
 | `openai/gpt-latest` | One specific model |
 | `anthropic/*` | Every model from that provider |
 | `*/*` | Every model |
+| `*/*@eu` | Every model in a specific region (such as the EU) |
+| `vertex/gemini-4-argon@eu` | A specific model in a specific region |
 
 Each rule can optionally be scoped to specific **features** (e.g. only `llm/chat`, or only `image/generation`). A request that hits a `deny` rule is rejected.
+
+### Region rules
+
+A pattern can target a specific region by appending `@<code>`, where `<code>` is a region code from the catalog (such as `@eu` or `@us`). Region rules evaluate against every region where a request can execute:
+
+- **Evaluation across regions**: A call is evaluated in every region it can run in. An allow rule (such as `*/*@eu`) passes a model only when it cannot run outside that region. Conversely, a deny rule (such as `*/*@us`) blocks a model whenever it could run in that region.
+- **Automatic region pinning**: On the global endpoint (`api.edenai.run`), an untagged request for a model with region variants is automatically pinned to a variant permitted by the guardrail. For example, an allow rule for `*/*@eu` serves an untagged call from the EU variant.
+- **Explicit tags and regional endpoints**: An explicit `@region` tag in a request is never moved. If a request explicitly asks for `model@us` while only `model@eu` is allowed, the request is rejected with a 403 error. Similarly, requests sent to a [regional endpoint](/v3/data-governance/eu-endpoint) (such as `api.eu.edenai.run`) are never redirected to another region.
+- **Models without declared regions**: When a model or feature has no declared region, a region deny rule applies, and a region allow rule cannot be verified.
 
 <Tip>
 Two common setups:

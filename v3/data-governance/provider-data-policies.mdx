@@ -27,7 +27,7 @@ Eden AI stores no request or response content by default, and never trains on yo
 
 ## How each provider handles your data
 
-The tables below show, for each provider on Eden AI, the country of the company Eden AI contracts with (**Incorporated in**), whether it may train on your data (**Trains?**), whether **Zero Data Retention** (nothing stored) is available (**ZDR**), and how long data is kept otherwise (**Retention**). When ZDR is in effect, retention is **None**.
+The tables below show, for each provider on Eden AI, the country of the company Eden AI contracts with (**Incorporated in**), whether it may train on your data (**Trains?**), whether **Zero Data Retention** (nothing stored) is available (**ZDR**), and how long data is kept otherwise (**Retention**). When ZDR is in effect, retention is **None**. **Not verified** means the provider offers zero data retention only as an option, and Eden AI has not yet confirmed it is enabled on its account. Until then those providers do not count as zero data retention, and **Retention** shows the provider's default.
 
 **Incorporated in** is the country where the provider company that Eden AI signs with is incorporated. For many providers this is a European subsidiary rather than the parent company's home country: Microsoft Azure, for example, is contracted through Microsoft Ireland Operations. It is not where your data is processed, and the laws of other countries, such as the GDPR, can apply as well. For processing location, see [EU data residency](#eu-data-residency).
 
@@ -53,23 +53,22 @@ The tables below show, for each provider on Eden AI, the country of the company 
 | Flex AI | United States | No | **Yes** | None |
 | Google (AI Studio) | France | No | No | Up to ~55 days |
 | Google (Vertex) | France | No | **Yes** | None |
-| Groq | United Kingdom | No | **Yes** | None |
+| Groq | United Kingdom | No | Not verified | Up to 30 days for troubleshooting and abuse logs |
 | Infomaniak | Switzerland | No | **Yes** | None |
 | IONOS | Germany | No | **Yes** | None |
-| Lilac | United States | No | **Yes** | None |
 | Microsoft Azure | Ireland | No | **Yes** | None |
 | MiniMax | Singapore | May train | No | Not stated |
-| Mistral | France | No | **Yes** | None |
+| Mistral | France | No | Not verified | 30 days |
 | Moonshot | Singapore | May train | No | Not stated |
-| Nebius | Netherlands | No | **Yes** | None |
+| Nebius | Netherlands | No | Not verified | Not specified |
 | OpenAI | Ireland | No | No | 30 days |
 | OVHcloud | France | No | **Yes** | None |
-| Perplexity | United States | No | **Yes** | None |
-| Qwen | Netherlands | No | **Yes** | None |
+| Perplexity | United States | No | Not verified | Not specified |
+| Qwen | Netherlands | No | Not verified | Up to 30 days |
 | Scaleway | France | No | **Yes** | None |
 | Tencent | Netherlands | No | **Yes** | None |
 | TensorX | Ireland | No | **Yes** | None |
-| Together | United States | No | **Yes** | None |
+| Together | United States | No | Not verified | Not specified |
 | xAI | United States | No | **Yes** | None |
 | Z.ai | Singapore | No | **Yes** | None |
 
@@ -81,6 +80,8 @@ A **Yes** above is the provider's default. These models keep data even on a prov
 |---|---|---|---|
 | Claude Fable 5, Claude Fable 5.1 | Every provider, including Amazon Bedrock and Google (Vertex) | No | 30 days, longer during a safety investigation or when the law requires it |
 | OpenAI models, except gpt-oss | Amazon Bedrock | No | Up to 30 days for traffic flagged by abuse detection |
+| Anthropic (Claude) models | DeepInfra | No | Anthropic's retention applies |
+| Gemini models | DeepInfra | No | Google's retention applies |
 
 To check a specific model, read the `zero_data_retention` field of its provider entry in [Listing Models](/v3/llms/listing-models), for example `vertex/claude-opus-5`: `true` means no data is kept, `false` means it is, `null` means not verified yet. The same model can have different values on different providers. With `view=models`, read the field on each entry under `endpoints`. The field already includes these exceptions.
 
@@ -92,37 +93,37 @@ Beyond LLMs, Eden AI offers Expert Models for OCR, document parsing, image, audi
 |---|---|---|---|---|
 | Affinda | Australia | No | No | No auto-deletion |
 | API4AI | United States | No | **Yes** | None |
-| AssemblyAI | United States | No | **Yes** | None |
-| Base64.ai | United States | No | **Yes** | None |
+| AssemblyAI | United States | No | Not verified | Transcripts 30 days |
+| Base64.ai | United States | No | No | Not specified |
 | Clarifai | United States | No | No | No auto-deletion |
 | ClipDrop | France | No | No | Not documented |
-| Deepgram | United States | No | **Yes** | None |
+| Deepgram | United States | No | No | Not specified |
 | DeepL | Germany | No | **Yes** | None |
 | Eagle Doc | Germany | No | **Yes** | None |
-| ElevenLabs | United States | No | **Yes** | None |
-| Extracta | Romania | No | **Yes** | None |
+| ElevenLabs | United States | No | Not verified | Not specified |
+| Extracta | Romania | No | No | Until deleted |
 | Face++ | China | May train | No | Deleted after processing |
 | Firecrawl | United States | No | No | No auto-deletion |
-| Gladia | France | No | **Yes** | None |
+| Gladia | France | No | Not verified | 3 weeks |
 | Klippa | Netherlands | No | **Yes** | None |
 | Leonardo.Ai | Australia | No | No | No auto-deletion |
 | Linkup | France | No | **Yes** | None |
 | LOVO AI | United States | May train | No | Not specified |
-| Mindee | France | No | **Yes** | None |
+| Mindee | France | No | Not verified | Results 12 hours |
 | ModernMT | Italy | May train | No | Not specified |
 | PhotoRoom | France | No | **Yes** | None |
 | Picsart | United States | No | No | Up to 24 hours |
 | PixVerse | Singapore | May train | No | Not specified |
 | ProWritingAid | United Kingdom | No | **Yes** | None |
-| Replicate | United States | No | **Yes** | None |
+| Replicate | United States | No | No | 1 hour |
 | Resemble AI | United States | May train | No | No auto-deletion |
-| Sapling | United States | No | **Yes** | None |
+| Sapling | United States | No | Not verified | Not specified |
 | SenseLoaf | India | No | No | No auto-deletion |
 | SentiSight | Lithuania | May train | No | Not specified |
 | Sightengine | France | No | **Yes** | None |
 | Stability AI | United Kingdom | No | No | Not specified |
 | Tabscanner | United Arab Emirates | May train | No | 90 days |
-| Tavily | United States | No | **Yes** | None |
+| Tavily | United States | No | Not verified | Not specified |
 | Tenstorrent | United States | May train | No | Not specified |
 | Veryfi | United States | May train | No | None |
 | Winston AI | Canada | No | No | No auto-deletion |
@@ -133,6 +134,6 @@ This is a separate question from retention: it is about *where* your data is pro
 
 ## Reduce your data exposure
 
-- **Zero Data Retention** (nothing stored): for LLMs, pin your `model` and `fallbacks` to Amazon Bedrock, Cerebras, Cloudflare, DeepInfra, Fireworks, Flex AI, Google (Vertex), Groq, Infomaniak, IONOS, Lilac, Microsoft Azure, Mistral, Nebius, OVHcloud, Perplexity, Qwen, Scaleway, Tencent, TensorX, Together, xAI, or Z.ai, minus the models listed under [Models that keep data on a ZDR provider](#models-that-keep-data-on-a-zdr-provider). The simplest way is to set `routing.zero_data_retention: true` on the request (see [Requiring zero data retention](/v3/llms/provider-routing#requiring-zero-data-retention)), which only routes to models whose `zero_data_retention` is `true`. For Expert Models, pick a provider marked **Yes** in the table above.
+- **Zero Data Retention** (nothing stored): for LLMs, pin your `model` and `fallbacks` to Amazon Bedrock, Cerebras, Cloudflare, DeepInfra, Fireworks, Flex AI, Google (Vertex), Infomaniak, IONOS, Microsoft Azure, OVHcloud, Scaleway, Tencent, TensorX, xAI, or Z.ai, minus the models listed under [Models that keep data on a ZDR provider](#models-that-keep-data-on-a-zdr-provider). The simplest way is to set `routing.zero_data_retention: true` on the request (see [Requiring zero data retention](/v3/llms/provider-routing#requiring-zero-data-retention)), which only routes to models whose `zero_data_retention` is `true`. For Expert Models, pick a provider marked **Yes** in the table above.
 - **EU processing**: use the EU endpoint (see EU data residency above).
 - **Logs off by default**: Eden AI stores no content unless you enable log retention.

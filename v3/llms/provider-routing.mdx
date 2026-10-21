@@ -52,6 +52,11 @@ curl "https://api.edenai.run/v3/models?view=models"
   "owned_by": "openai",
   "mode": "chat",
   "endpoint_count": 8,
+  "context_length": 131072,
+  "capabilities": { "...": "what at least one endpoint supports" },
+  "pricing": { "...": "the full price list of pricing_endpoint" },
+  "pricing_endpoint": "openai/gpt-5.6-sol",
+  "regions": [{ "code": "eu", "name": "Europe" }],
   "endpoints": [
     { "id": "openai/gpt-5.6-sol", "owned_by": "openai", "...": "pricing, capabilities, context_length, regions" },
     { "id": "azure/gpt-5.6-sol",  "owned_by": "azure",  "...": "pricing, capabilities, context_length, regions" },
@@ -60,7 +65,7 @@ curl "https://api.edenai.run/v3/models?view=models"
 }
 ```
 
-The name level makes no claim about price, context window or capability, because providers of one model genuinely differ on all three. Each entry in `endpoints` carries its own, so this one call answers both questions: which names route, and what each provider charges and supports. See [Listing Models](/v3/llms/listing-models) for the full field reference.
+Top-level fields summarise the model across its providers: `context_length` is the largest window, `capabilities` combines what any provider supports, `pricing` is the full price list of the cheapest provider on a typical call (named by `pricing_endpoint`), and `regions` lists every region served. `pricing` is a reference, not a quote: routing ranks providers on each actual request and can fall back to another one, and a call is billed at the prices of the provider that served it. Each entry in `endpoints` carries that provider's exact values, so this one call answers both questions: which names route, and what each provider charges and supports. See [Listing Models](/v3/llms/listing-models) for the full field reference.
 
 ## How a provider is chosen
 

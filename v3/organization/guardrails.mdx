@@ -59,15 +59,25 @@ When you enable model rules, a guardrail uses a **default action** plus a list o
 - **Default**: `allow` or `deny` every model unless a rule says otherwise.
 - **Rules**: each rule targets a model by pattern and sets its action to `allow` or `deny`. Rules are checked in order and the first match wins; if none match, the default applies.
 
-Patterns can target a single model or a whole provider:
+Patterns can target a single model, a provider, or a Universal AI feature:
 
 | Pattern | Matches |
 | --- | --- |
-| `openai/gpt-latest` | One specific model |
-| `anthropic/*` | Every model from that provider |
+| `openai/gpt-latest` | One specific LLM model (or alias) |
+| `anthropic/*` | Every model from that provider across LLMs and Universal AI |
+| `audio/tts/google/chirp3-hd` | One specific Universal AI model |
+| `audio/tts/google` | Every model for a provider within a subfeature (for example, every Google TTS voice) |
+| `audio/tts/*` | Every provider and model within a subfeature |
+| `web/search/linkup` | A web search hook provider |
 | `*/*` | Every model |
 
-Each rule can optionally be scoped to specific **features** (e.g. only `llm/chat`, or only `image/generation`). A request that hits a `deny` rule is rejected.
+How rules match:
+
+- **LLM calls**: match against `provider/model` or the alias used in the request. A rule on a specific LLM model (such as `openai/gpt-5.5`) only matches LLM calls.
+- **Universal AI calls**: match against their full identifier (`feature/subfeature/provider/model`), their subfeature and provider (`feature/subfeature/provider`), and their provider prefix (`provider/`). For example, `audio/tts/google` covers all Google voices in TTS, while `google/*` covers Google across both Universal AI and LLMs.
+- **Web search hook**: matches `web/search/provider` (for example `web/search/linkup`) and `provider/`.
+
+Each rule can optionally be scoped to specific **features** (e.g. only `llm/chat`, or only `image/generation`). A request blocked by a `deny` rule is rejected with HTTP 403 naming the blocked model or Universal AI identifier.
 
 <Tip>
 Two common setups:

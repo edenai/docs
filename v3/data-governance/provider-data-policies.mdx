@@ -61,7 +61,7 @@ The tables below show, for each provider on Eden AI, the country of the company 
 | MiniMax | Singapore | May train | No | Not stated |
 | Mistral | France | No | Not verified | 30 days |
 | Moonshot | Singapore | May train | No | Not stated |
-| Nebius | Netherlands | No | Not verified | Not specified |
+| Nebius | Netherlands | No | **Yes** | None |
 | OpenAI | Ireland | No | No | 30 days |
 | OVHcloud | France | No | **Yes** | None |
 | Perplexity | United States | No | Not verified | Not specified |
@@ -137,6 +137,6 @@ This is a separate question from retention: it is about *where* your data is pro
 
 ## Reduce your data exposure
 
-- **Zero Data Retention** (nothing stored): for LLMs, pin your `model` and `fallbacks` to Amazon Bedrock, Cerebras, Cloudflare, DeepInfra, Fireworks, Flex AI, Google (Vertex), Infomaniak, IONOS, Microsoft Azure, OVHcloud, Scaleway, Tencent, TensorX, xAI, or Z.ai, minus the models listed under [Models that keep data on a ZDR provider](#models-that-keep-data-on-a-zdr-provider). The simplest way is to set `routing.zero_data_retention: true` on the request (see [Requiring zero data retention](/v3/llms/provider-routing#requiring-zero-data-retention)), which only routes to models whose `zero_data_retention` is `true`. For Expert Models, pick a provider marked **Yes** in the table above.
+- **Zero Data Retention** (nothing stored): for LLMs, pin your `model` and `fallbacks` to Amazon Bedrock, Cerebras, Cloudflare, DeepInfra, Fireworks, Flex AI, Google (Vertex), Infomaniak, IONOS, Microsoft Azure, Nebius, OVHcloud, Scaleway, Tencent, TensorX, xAI, or Z.ai, minus the models listed under [Models that keep data on a ZDR provider](#models-that-keep-data-on-a-zdr-provider). The simplest way is to set `routing.zero_data_retention: true` on the request (see [Requiring zero data retention](/v3/llms/provider-routing#requiring-zero-data-retention)), which only routes to models whose `zero_data_retention` is `true`. For Expert Models, pick a provider marked **Yes** in the table above.
 - **EU processing**: use the EU endpoint (see EU data residency above).
 - **Logs off by default**: Eden AI stores no content unless you enable log retention.

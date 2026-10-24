@@ -63,6 +63,11 @@ Model string pattern: `audio/speech_to_text_async/{provider}[/{model}]`
 | deepgram (nova-3) | `audio/speech_to_text_async/deepgram/nova-3` | $0.0052 per 60 seconds |
 | gladia | `audio/speech_to_text_async/gladia` | $0.0102 per 60 seconds |
 | google | `audio/speech_to_text_async/google` | $0.024 per 60 seconds |
+| gradium | `audio/speech_to_text_async/gradium` | $0.0001734 per second |
+| gradium (stt-translate) | `audio/speech_to_text_async/gradium/stt-translate` | $0.0002312 per second |
+| greenpt | `audio/speech_to_text_async/greenpt` | $0.0052178 per 60 seconds |
+| greenpt (green-s) | `audio/speech_to_text_async/greenpt/green-s` | $0.00428605 per 60 seconds |
+| greenpt (green-s-pro) | `audio/speech_to_text_async/greenpt/green-s-pro` | $0.0052178 per 60 seconds |
 | microsoft | `audio/speech_to_text_async/microsoft` | $0.0168 per 60 seconds |
 | openai | `audio/speech_to_text_async/openai` | $0.006 per 60 seconds |
 
@@ -94,7 +99,6 @@ response = requests.post(url, headers=headers, json=payload)
 print(response.json())
 ```
 
-{/* skip-test: the run uploads a document and an image, and this one needs audio */}
 ```bash cURL
 curl -X POST https://api.edenai.run/v3/universal-ai/async \
   -H "Authorization: Bearer YOUR_API_KEY" \

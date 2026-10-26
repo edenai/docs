@@ -16,7 +16,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "zero data retention", "ZDR", "data residency", "GDPR"]}
   datePublished="2026-10-13T00:00:00Z"
-  dateModified="2026-10-14T00:00:00Z"
+  dateModified="2026-10-21T00:00:00Z"
 />
 
 The organization owner, or a member whose role has **Organization Management** (see [roles](/v3/organization/users-organisation)), can set rules that every call from the organization follows, whoever makes it and whichever API key it uses. Set them in [Settings > Compliance](https://app.edenai.run/settings/compliance).
@@ -82,7 +82,7 @@ A model name without a provider keeps only its providers that qualify. A concret
 ```json
 {
   "error": {
-    "message": "No provider of 'gpt-4.1' qualifies. This request requires zero data retention: azure keeps data; openai keeps data.",
+    "message": "No provider of 'claude-fable-5-1' qualifies. This request requires zero data retention: anthropic keeps data; vertex keeps data.",
     "type": "invalid_request_error",
     "param": null,
     "code": "no_compliant_provider"

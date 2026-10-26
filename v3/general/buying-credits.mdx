@@ -14,7 +14,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "rate limits", "billing", "monitoring"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-09-11T00:00:00Z"
+  dateModified="2026-10-26T00:00:00Z"
 />
 
 Eden AI uses a **pay-per-use credit system**. Every API response includes a `cost` field showing the charge in USD for that request, so you always know exactly what you are spending.
@@ -23,10 +23,10 @@ Eden AI uses a **pay-per-use credit system**. Every API response includes a `cos
 
 1. Log in to the [Eden AI dashboard](https://app.edenai.run/).
 2. Navigate to the billing section.
-3. Choose the amount of credits to purchase.
+3. Choose the amount of credits to purchase and select your payment currency (USD or EUR).
 4. Complete the payment.
 
-Credits are added to your account immediately and are shared across all your API tokens.
+Credits are added to your account immediately and are shared across all your API tokens. Account balances, usage, and credit values always remain denominated in USD. When paying in EUR, the charge is converted from USD credits at the European Central Bank (ECB) exchange rate at checkout, and invoices are issued in the charged currency. For EU businesses outside France with a valid VAT number, VAT reverse charge applies automatically.
 
 ## Payment Methods
 
@@ -34,9 +34,9 @@ You can add a card or PayPal to your account, or pay by bank transfer:
 
 | Method | Details |
 | --- | --- |
-| **Credit or debit card** | Visa, Mastercard, Amex · Apple Pay & Google Pay |
+| **Credit or debit card** | Visa, Mastercard, Amex · Apple Pay & Google Pay (USD or EUR) |
 | **PayPal** | Pay with your PayPal account (payer email must match your confirmed Eden AI account email) |
-| **Bank transfer** | Wire transfer, no card required (pay at checkout) |
+| **Bank transfer** | Wire transfer in EUR, no card required. Available on request: [contact us](#chat) to turn it on, then pay at checkout |
 | **AWS Marketplace** | Buy credits through your AWS account *(coming soon)* |
 
 ## Auto-Refill
@@ -45,10 +45,12 @@ To avoid service interruptions, you can enable **auto-refill**:
 
 1. Go to the billing section in the dashboard.
 2. Enable auto-refill.
-3. Set a **threshold** — the minimum balance that triggers a top-up.
-4. Set a **refill amount** — how many credits to add when the threshold is reached.
+3. Set a **threshold**: the minimum balance that triggers a top-up.
+4. Set a **refill amount**: how many credits to add when the threshold is reached.
 
-When your balance drops below the threshold, credits are purchased automatically using your payment method on file.
+When your balance drops below the threshold, credits are purchased automatically using your payment method on file. Organizations can select their default **billing currency** (USD or EUR) in auto-refill settings. Refill thresholds and credit amounts remain in USD, while charges are billed in the chosen currency. The default currency is also pre-selected at checkout; paying once in the other currency does not change it.
+
+If a refill fails (for example, the card is declined), auto-refill stops and the owner, billing managers and billing contacts get an email saying why. The billing page shows the reason: fix the card, then click **Turn back on**. A credit purchase by the owner also restarts it.
 
 <Tip>
 Auto-refill is strongly recommended for production applications. A depleted balance causes API requests to fail with a `402 Payment Required` error.

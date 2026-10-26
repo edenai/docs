@@ -120,6 +120,17 @@ curl "https://api.edenai.run/v3/models?view=models"
       "owned_by": "openai",
       "mode": "chat",
       "endpoint_count": 2,
+      "context_length": 131072,
+      "capabilities": {
+        "...": "what at least one endpoint supports"
+      },
+      "pricing": {
+        "...": "full price list of pricing_endpoint"
+      },
+      "pricing_endpoint": "openai/gpt-5.6-sol",
+      "regions": [
+        { "code": "eu", "name": "Europe" }
+      ],
       "endpoints": [
         { "id": "openai/gpt-5.6-sol", "owned_by": "openai", "...": "a full model entry, as above" },
         { "id": "azure/gpt-5.6-sol",  "owned_by": "azure",  "...": "a full model entry, as above" }
@@ -132,7 +143,8 @@ curl "https://api.edenai.run/v3/models?view=models"
 What to expect from the shape:
 
 - **`id` is the routable name.** Send it as `model` and Eden AI picks which provider serves it.
-- **Each entry in `endpoints` is the same object the default view returns**, with its own pricing, capabilities, context length and regions. Nothing is summarised at the name level, because providers of one model genuinely differ on all of it. To compare providers, read `endpoints`.
+- **Top-level fields summarise the model across its endpoints.** `context_length` is the largest window among the endpoints. `capabilities` is the union across endpoints, so a flag is true and a modality listed when any endpoint supports it. `pricing` carries the full price list of the cheapest endpoint for a typical call (untagged endpoints only, since an `@region` variant prices a tagged call), identified by `pricing_endpoint`; both are `null` when no endpoint has a price. A routed call is billed at the prices of the provider that served it. `regions` lists every region where at least one endpoint runs, sorted by code.
+- **Each entry in `endpoints` is the same object the default view returns**, with that provider's own pricing, capabilities, context length, and regions. To compare providers or see per-provider values, read `endpoints`.
 - **`owned_by` changes meaning between the views.** On a grouped entry it is who authored the model (`openai`); on an endpoint entry it is the provider selling it (`azure`).
 - **`created` is the newest endpoint's timestamp**, and `endpoint_count` equals `endpoints.length`.
 - The default (`view=endpoints`, or no parameter) is unchanged, and both entry shapes stay compatible with the OpenAI SDK's `client.models.list()`.
@@ -157,7 +169,7 @@ To list only Zero Data Retention endpoints, pass `zero_data_retention=true`:
 curl "https://api.edenai.run/v3/models?zero_data_retention=true"
 ```
 
-`zero_data_retention=false` lists only the endpoints known to keep data, and entries still at `null` match neither. With `view=models`, each model keeps only its matching endpoints and is left out when none match. Every model listing above takes the parameter.
+`zero_data_retention=false` lists only the endpoints known to keep data, and entries still at `null` match neither. With `view=models`, each model keeps only its matching endpoints and recomputes its model-level fields from them, and is left out when none match. Every model listing above takes the parameter.
 
 ## Model aliases
 

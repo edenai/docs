@@ -14,7 +14,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "rate limits", "billing", "monitoring"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-09-25T00:00:00Z"
+  dateModified="2026-10-23T00:00:00Z"
 />
 
 Custom API keys let you create additional keys beyond your main account key. Each key can have its own budget, expiration, and type, giving you fine-grained control over access and spending.
@@ -240,7 +240,7 @@ Behaviour to know:
 - Setting the period back to `none` (with a `PATCH`) clears `balance_reset_amount` and returns the key to a one-time budget.
 
 <Note>
-This per-key reset is distinct from the **per-member budget cap** you can set on a [guardrail](/v3/organization/guardrails#budget-cap). A key budget is a hard cap on one key (it stops at $0); a member budget is a soft periodic spend cap that follows a person across all their keys.
+This per-key reset is distinct from the **per-member budget cap** you can set on a [guardrail](/v3/organization/guardrails#member-budget). A key budget is a hard cap on one key (it stops at $0); a member budget is a soft periodic spend cap that follows a person across all their keys.
 </Note>
 
 ## Default Tags

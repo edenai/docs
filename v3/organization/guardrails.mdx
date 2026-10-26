@@ -1,139 +1,144 @@
 ---
 icon: "shield-check"
 title: "Guardrails"
-description: "Guardrails are reusable usage policies that control which models your team can call, how often, and how much a member can spend. Create them in the dashboard and attach them to roles, members, or API tokens."
+description: "Control which models your team can call, how much each member can spend and how fast they call: create a guardrail, then attach it to roles, members or keys."
 ---
 import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
 
 <TechArticleSchema
   title={"Guardrails"}
-  description={"Guardrails are reusable usage policies that control which models your team can call, how often, and how much a member can spend. Create them in the dashboard and attach them to roles, members, or API tokens."}
+  description={"Control which models your team can call, how much each member can spend and how fast they call: create a guardrail, then attach it to roles, members or keys."}
   path="v3/organization/guardrails"
   articleSection="Organization"
   about={"Access Control"}
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "guardrails", "usage policy", "access control", "rate limits", "model restrictions", "budget cap", "spending limit"]}
   datePublished="2026-06-11T00:00:00Z"
-  dateModified="2026-09-11T00:00:00Z"
+  dateModified="2026-10-23T00:00:00Z"
 />
 
-A **guardrail** is a reusable usage policy that controls:
+A **guardrail** is a reusable usage policy. It sets:
 
-- **Model access**: which providers and models can be called.
-- **Rate limits**: how many requests can be made over a given period.
-- **Member budget**: a spending cap for a member over a period (see [Budget cap](#budget-cap)).
+- **Model access**: which providers, LLMs and [Expert Models](/v3/expert-models/listing-models) can be called.
+- **Member budget**: how much each member can spend per day, week or month.
+- **Rate limit**: how many requests each member can make per second, minute, hour or day.
 
-You create a guardrail once, then attach it to a **role**, a **member**, or an individual **API token**. For example, one team can be limited to a curated set of models, a shared token can be capped to a low request rate, or a member can be given a monthly spending cap.
+Create a guardrail once, then attach it to a **role**, a **member** or an **API key**.
 
 <Note>
 Guardrails are part of the advanced organisation features. See [plans and pricing](https://www.edenai.co/pricing) for availability.
 </Note>
 
-## Creating a guardrail
+## Create a guardrail
 
 <Steps>
-<Step title="Open Guardrails in Settings">
-In the [Eden AI dashboard](https://app.edenai.run/), go to **Settings** and, under **Organization**, select **Guardrails**.
+<Step title="Open Guardrails">
+In the [Eden AI dashboard](https://app.edenai.run/), go to **Settings**, select **Guardrails**, then click **Create Guardrail**.
 </Step>
-<Step title="Create a new guardrail">
-Click **+ Create Guardrail** and give it a **Name** and an optional **Description**.
+<Step title="Basics">
+Give the guardrail a **Name** and, optionally, a **Description**. Under **Assignment**, pick the roles, members and API keys it applies to. You can also assign it later from **Members** or **Roles**.
 </Step>
-<Step title="Set a rate limit (optional)">
-In the **Rate Limit** field, enter a limit in the form `N/period`, for example `10/minute`. Leave it blank to inherit the rate from the next level up. See [Rate limits](#rate-limits) below.
+<Step title="Budget & rate limit">
+Set a [member budget](#member-budget) and a [rate limit](#rate-limit), or leave them empty for no limit.
 </Step>
-<Step title="Restrict models (optional)">
-Turn on **Enable model rules** to control which models can be used, then define your allow/deny rules. See [Model rules](#model-rules) below.
-</Step>
-<Step title="Set a member budget (optional)">
-Enter a **Budget** amount and a **period** (daily, weekly, or monthly) to cap how much a member can spend, along with an optional **Alert threshold** percentage. See [Budget cap](#budget-cap) below.
+<Step title="Model access">
+Choose which providers and models can be called. See [Model access](#model-access).
 </Step>
 <Step title="Save">
-Click **Create Guardrail**. It now appears in your guardrails list, ready to assign.
+Click **Create guardrail**. You can change any part of it later from the guardrail's page.
 </Step>
 </Steps>
 
-## Model rules
+## Model access
 
-When you enable model rules, a guardrail uses a **default action** plus a list of **exceptions**:
+<Frame>
+  <img className="block dark:hidden" src="/images/guardrails/model-access-light.png" alt="The Model access section: the Only allow mode, a Providers card, a Models card and the Current eligibility preview" />
+  <img className="hidden dark:block" src="/images/guardrails/model-access-dark.png" alt="The Model access section: the Only allow mode, a Providers card, a Models card and the Current eligibility preview" />
+</Frame>
 
-- **Default**: `allow` or `deny` every model unless a rule says otherwise.
-- **Rules**: each rule targets a model by pattern and sets its action to `allow` or `deny`. Rules are checked in order and the first match wins; if none match, the default applies.
+Pick a **restriction mode**, then list providers and models:
 
-Patterns can target a single model or a whole provider:
+| Mode | What it does |
+| --- | --- |
+| **Allow all except…** | Everything is allowed except what you list. New providers and models are allowed automatically. |
+| **Only allow…** | Only what you list is allowed. New providers and models are blocked automatically. |
+| **Custom rules** | Shown for a guardrail whose rules were set outside the editor (see [Custom rules](#custom-rules)). Picking another mode replaces them when you save. |
+
+- **Providers**: a provider covers everything it serves, its LLMs and its Expert Models. Block OpenAI here and no OpenAI model can be called.
+- **Models**: click **Add models**, then switch between **LLMs** and **Expert models**.
+  - **LLMs** lists the models behind every OpenAI-compatible endpoint: chat, embeddings, images, speech, transcriptions and moderations. Use the **Region** filter to allow a model in one region only, for example the EU.
+  - **Expert models** are grouped by task. Tick a provider to cover all its models for that task, or tick single models.
+
+<Frame>
+  <img className="block dark:hidden" src="/images/guardrails/model-picker-light.png" alt="The Add models picker on Expert models, grouped by task" />
+  <img className="hidden dark:block" src="/images/guardrails/model-picker-dark.png" alt="The Add models picker on Expert models, grouped by task" />
+</Frame>
+
+**Current eligibility**, under the lists, shows what the guardrail allows today, by provider and by model, before you save.
+
+### What a request is checked against
+
+- **LLM** choices apply to LLM calls: chat completions, Responses, Messages, and the OpenAI-compatible `/v3/embeddings`, `/v3/images`, `/v3/audio` and `/v3/moderations` endpoints.
+- **Expert model** choices apply to Expert Model calls on `/v3/universal-ai`, and to the `web_search` hook on LLM calls, which searches through a `web/search` provider such as Linkup. A call that names no model is checked as the provider's default model.
+- A request the guardrail doesn't allow gets HTTP 403. The error names the refused model's id, such as `openai/gpt-5.5` or `audio/tts/google/chirp3-hd`.
+
+### Custom rules
+
+A guardrail can also hold ordered rules that mix allow and block. The editor shows them under **Custom rules** and keeps them as they are. Each rule is a pattern on the model id: the first rule that matches decides, and the default applies when none does.
 
 | Pattern | Matches |
 | --- | --- |
-| `openai/gpt-latest` | One specific model |
-| `anthropic/*` | Every model from that provider |
-| `*/*` | Every model |
+| `anthropic/*` | Every model from that provider, LLMs and Expert Models |
+| `openai/gpt-5.5` | One LLM, or an alias of it |
+| `openai/gpt-5.5@eu` | That LLM, in the EU only |
+| `audio/tts/google` | Every Google model for one Expert Model task, here text to speech |
+| `audio/tts/google/chirp3-hd` | One Expert Model |
 
-Each rule can optionally be scoped to specific **features** (e.g. only `llm/chat`, or only `image/generation`). A request that hits a `deny` rule is rejected.
+A `*` also matches `/`: `*/gpt-4o` matches `openai/gpt-4o` and any Expert Model id ending in `/gpt-4o`.
 
-<Tip>
-Two common setups:
-- **Allow-list**: set the default to **deny**, then add **allow** rules for only the models you permit.
-- **Deny-list**: set the default to **allow**, then add **deny** rules for the models you want to block.
-</Tip>
+## Member budget
 
-## Rate limits
+<Frame>
+  <img className="block dark:hidden" src="/images/guardrails/budget-light.png" alt="The Budget and rate limit section: a monthly member budget with an alert at 80% and a rate limit of 60 requests per minute" />
+  <img className="hidden dark:block" src="/images/guardrails/budget-dark.png" alt="The Budget and rate limit section: a monthly member budget with an alert at 80% and a rate limit of 60 requests per minute" />
+</Frame>
 
-The rate limit uses the format `N/period`, where `period` is `second`, `minute`, `hour`, or `day`:
+Under **Budget & rate limit**, set an **Amount** in USD and a period: daily, weekly or monthly. Turn on **Budget alert** and set **Alert at (%)** (1 to 100) to email the member, with a copy to the organization owner, when their spend reaches that share of the budget. It is sent at most once per period.
 
-```
-10/second
-100/minute
-5000/hour
-```
-
-Leave the rate limit empty on a guardrail to inherit it from the next level up (role → organisation default).
-
-## Budget cap
-
-A guardrail can cap how much a **member** spends over a recurring period. In the **Create/Edit Guardrail** dialog, turn on **Member budget** ("Cap each member's spend across all their API keys"), then set a **Budget** amount (in USD) and a **Per** period:
-
-| Period | Window |
-| --- | --- |
-| `daily` | Resets each day |
-| `weekly` | Resets each week |
-| `monthly` | Resets each month |
-
-Both fields are set together — a budget needs a period, and a period needs an amount. Leave them empty to apply no spend cap. You can also set an **Alert threshold** percentage (1 to 100). When member spend reaches that share of the budget cap during the window, Eden AI emails an alert to the member and sends a copy to the organization owner. The alert is sent at most once per budget window.
-
-How it behaves:
-
-- **Per member, not shared.** The cap applies to each member the guardrail resolves to individually — it is not a shared pool across the team.
-- **Budget alerts.** Setting an alert threshold emails the member and the organization owner as soon as spending crosses the threshold within the reset period. Like the budget itself, alerts count real usage only.
-- **Soft cap.** The check happens before each request. A request already in flight can push spend past the cap; the *next* request is the one that gets blocked. The limit is a spending guardrail, not a hard cutoff mid-request.
-- **Counts real usage only.** [Sandbox](/v3/general/sandbox) calls and calls made with your own provider keys ([BYOK](/v3/general/byok)) don't count toward the budget. Refunds credit it back.
+- **Per member, not shared.** Each member the guardrail applies to gets their own budget, across all their API keys. It is not a shared pool for the team.
+- **Resets each period.** Spend resets at the start of each day, week or month (UTC).
+- **Soft cap.** The check happens before each request, so a request already running can take spend past the cap. The next request is the one that gets refused.
+- **Real usage only.** [Sandbox](/v3/general/sandbox) calls and calls made with your own provider keys ([BYOK](/v3/general/byok)) don't count. Refunds credit it back.
 
 <Note>
-The budget only applies when a guardrail is attached to a **role** or a **member**. A budget set on a guardrail that is attached to an **API token** is ignored — use a [token budget](/v3/general/custom-api-keys) to cap a single key instead.
+The budget applies only when the guardrail is attached to a **role** or a **member**. On a guardrail attached to an **API key** it is ignored: use a [token budget](/v3/general/custom-api-keys) to cap a single key.
 </Note>
+
+## Rate limit
+
+Set the number of **Requests** and a window: second, minute, hour or day. Requests over the limit are refused until the window passes. The limit applies to each member and replaces your plan's rate limit, which it can't exceed. Leave it empty to inherit the limit from the next level up.
 
 ## Assigning a guardrail
 
-A guardrail does nothing until it's attached to something. You can assign it to:
+A guardrail does nothing until it is attached. Attach it under **Assignment** on the guardrail's page, or:
 
 - **A role**: from **Settings → Roles & Permissions**, so everyone with that role inherits the policy.
 - **A member**: from **Settings → Members**, to apply it to one person.
-- **An API token**: to constrain a single key (for example a shared or CI token).
+- **An API key**: to constrain a single key, for example a shared or CI key.
 
-When a request comes in, Eden AI resolves the policy **per field, most specific wins**:
+Each role, member and API key holds one guardrail. When a request comes in, Eden AI resolves each limit on its own, the most specific level first:
 
 ```
-token  →  member  →  role  →  organisation default
+API key  →  member  →  role  →  organisation default
 ```
 
-For **model rules** and **rate limit** independently, Eden AI uses the value from the most specific level that has it set, and inherits the rest. So a token can override the model rules while still inheriting its role's rate limit.
-
-The **member budget** resolves differently: only the **member** and **role** levels are considered (token budgets are handled separately, on the token itself), and the budget amount and period are always taken together from the most specific level that sets them — they are never mixed across levels.
+Model access and the rate limit each come from the most specific level that sets them, so a key can override the model access and still inherit its role's rate limit. The member budget skips the API key level: it comes from the member or the role, amount and period together, never mixed across levels.
 
 <Note>
-Guardrails are configured in the dashboard; there is no API for them yet. To automate the **per-key** side of provisioning (budgets, expiry, attribution to a member), use the [Management API](/v3/organization/management-api).
+Guardrails are configured in the dashboard; there is no API for them yet. To automate the per-key side of provisioning (budgets, expiry, attribution to a member), use the [Management API](/v3/organization/management-api).
 </Note>
 
 ## Related
 
 - [Users & Organisation](/v3/organization/users-organisation): roles, permissions, and members.
-- [Custom API Keys](/v3/general/custom-api-keys): per-token budgets, which cap a single key rather than a member.
-- [Rate Limits](/v3/overview/rate-limits): how default rate limiting works.
+- [Custom API Keys](/v3/general/custom-api-keys): per-key budgets, which cap a single key rather than a member.

@@ -55,6 +55,106 @@
     {
       "source": "/v2/index",
       "destination": "/index"
+    },
+    {
+      "source": "/api-reference/auth-keys/get-manageauth-keys",
+      "destination": "/v3/organization/management-api"
+    },
+    {
+      "source": "/api-reference/auth-keys/post-manageauth-keys",
+      "destination": "/v3/organization/management-api"
+    },
+    {
+      "source": "/api-reference/auth-keys/delete-manageauth-keys-",
+      "destination": "/v3/organization/management-api"
+    },
+    {
+      "source": "/api-reference/keys/get-managekeys",
+      "destination": "/v3/organization/management-api"
+    },
+    {
+      "source": "/api-reference/keys/post-managekeys",
+      "destination": "/v3/organization/management-api"
+    },
+    {
+      "source": "/api-reference/keys/get-managekeys-",
+      "destination": "/v3/organization/management-api"
+    },
+    {
+      "source": "/api-reference/keys/patch-managekeys-",
+      "destination": "/v3/organization/management-api"
+    },
+    {
+      "source": "/api-reference/keys/delete-managekeys-",
+      "destination": "/v3/organization/management-api"
+    },
+    {
+      "source": "/api-reference/keys/post-managekeys-rotate",
+      "destination": "/v3/organization/management-api"
+    },
+    {
+      "source": "/api-reference/keys/get-managekeys-usage",
+      "destination": "/v3/general/usage-statements"
+    },
+    {
+      "source": "/api-reference/user-management/inspect-the-calling-api-key",
+      "destination": "/v3/organization/management-api"
+    },
+    {
+      "source": "/api-reference/user-management/rotate-a-tokens-secret",
+      "destination": "/v3/organization/management-api"
+    },
+    {
+      "source": "/api-reference/user-management/retrieve-token",
+      "destination": "/v3/general/custom-api-keys"
+    },
+    {
+      "source": "/api-reference/user-management/update-token",
+      "destination": "/v3/general/custom-api-keys"
+    },
+    {
+      "source": "/api-reference/user-management/delete-token",
+      "destination": "/v3/general/custom-api-keys"
+    },
+    {
+      "source": "/api-reference/user-management/regenerate-a-legacy-primarysandbox-key",
+      "destination": "/v3/general/custom-api-keys"
+    },
+    {
+      "source": "/api-reference/whoami/get-managewhoami",
+      "destination": "/v3/organization/management-api"
+    },
+    {
+      "source": "/api-reference/members/get-managemembers",
+      "destination": "/v3/organization/users-organisation"
+    },
+    {
+      "source": "/api-reference/members/patch-managemembers-role",
+      "destination": "/v3/organization/users-organisation"
+    },
+    {
+      "source": "/api-reference/groups/get-managegroups",
+      "destination": "/v3/organization/users-organisation"
+    },
+    {
+      "source": "/api-reference/groups/get-managegroups-",
+      "destination": "/v3/organization/users-organisation"
+    },
+    {
+      "source": "/api-reference/usage/get-manageusage",
+      "destination": "/v3/general/usage-statements"
+    },
+    {
+      "source": "/api-reference/cost-monitoring/my-credits",
+      "destination": "/v3/general/buying-credits"
+    },
+    {
+      "source": "/api-reference/cost-monitoring/monitor-consumptions",
+      "destination": "/v3/general/monitoring"
+    },
+    {
+      "source": "/v3/llms/fallback",
+      "destination": "/v3/general/fallback"
     }
   ],
   "navigation": {
@@ -102,7 +202,7 @@
                   "v3/llms/chat-completions",
                   "v3/llms/responses",
                   "v3/llms/embeddings",
-              "v3/llms/decisions",
+                  "v3/llms/decisions",
                   "v3/llms/file-upload",
                   "v3/llms/structured-output",
                   "v3/llms/web-search",
@@ -111,7 +211,10 @@
                   "v3/llms/request-metadata",
                   "v3/llms/streaming",
                   "v3/llms/image-generation",
-                  "v3/llms/video-generation"
+                  "v3/llms/video-generation",
+                  "v3/llms/text-to-speech",
+                  "v3/llms/speech-to-text",
+                  "v3/llms/search-api"
                 ]
               },
               {
@@ -124,6 +227,7 @@
                   "v3/expert-models/webhooks",
                   "v3/expert-models/listing-models",
                   "v3/expert-models/provider-parameters",
+                  "v3/expert-models/features/index",
                   {
                     "group": "Text Features",
                     "icon": "font",
@@ -224,6 +328,7 @@
                   "v3/general/custom-api-keys",
                   "v3/general/monitoring",
                   "v3/general/tags",
+                  "v3/general/usage-statements",
                   "v3/general/support",
                   "v3/general/byok"
                 ]
@@ -245,6 +350,7 @@
                 "expanded": false,
                 "pages": [
                   "v3/data-governance/provider-data-policies",
+                  "v3/data-governance/compliance-policies",
                   "v3/data-governance/servers-location",
                   "v3/data-governance/eu-endpoint",
                   "v3/data-governance/static-ip",

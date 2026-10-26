@@ -59,6 +59,16 @@ Model string pattern: `web/research_async/{provider}[/{model}]`
 | firecrawl | `web/research_async/firecrawl` | $0.0038 per token |
 | linkup | `web/research_async/linkup` | $0.001 per token |
 
+## Provider Parameters
+
+This subfeature accepts only the [`provider_params`](/v3/expert-models/provider-parameters#parameter-validation-and-allowlisting) listed for each provider, and rejects any other with `400 Bad Request`. Each entry is a path in the provider's own request format, lowercased, with nested keys joined by dots: send it as nested objects, in the casing the provider documents.
+
+| Provider | Accepted parameters |
+|----------|---------------------|
+| firecrawl | `maxcredits`, `model`, `strictconstraintourls`, `urls` |
+| linkup | `excludedomains`, `fromdate`, `includedomains`, `reasoningdepth`, `todate` |
+| tavily | `citation_format`, `exclude_domains`, `include_domains`, `model`, `output_length` |
+
 
 ## Quick Start
 

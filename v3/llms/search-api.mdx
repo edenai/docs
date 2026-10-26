@@ -1,0 +1,163 @@
+---
+icon: "magnifying-glass"
+title: "Perplexity-Compatible Search API"
+sidebarTitle: "Search API"
+description: "Point the Perplexity SDK or Open WebUI at Eden AI's search API to get ranked web results from several search providers, without changing your client code."
+---
+
+import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
+
+<TechArticleSchema
+  title={"Perplexity-Compatible Search API"}
+  description={"Point the Perplexity SDK or Open WebUI at Eden AI's search API to get ranked web results from several search providers, without changing your client code."}
+  path="v3/llms/search-api"
+  articleSection="LLMs"
+  about={"Search API"}
+  proficiencyLevel="Intermediate"
+  keywords={["Eden AI", "AI API", "search API", "Perplexity compatible", "web search"]}
+  datePublished="2026-10-09T00:00:00Z"
+  dateModified="2026-10-12T00:00:00Z"
+/>
+
+Search the web through Eden AI using any client built for the Perplexity Search API. Point your client at `https://api.edenai.run/v3` to run web searches on any of the search providers Eden AI offers. `GET /v3/search/models` lists them, and the samples below use `tavily`.
+
+## Overview
+
+The surface is a facade over `POST /v3/universal-ai` for [Web Search](/v3/expert-models/features/web/search) (`web/search`): it shares the same providers, pricing, provider parameters allowlist, and request history. Unlike universal-ai's `200 {"status": "fail"}`, search failures return standard HTTP error codes in the OpenAI error envelope.
+
+| Method | Path | Purpose |
+|---|---|---|
+| `POST` | `/v3/search` | Search with the provider specified in the request body `model` |
+| `POST` | `/v3/search/{provider}` | Search with the provider named in the URL path |
+| `GET` | `/v3/search/models` | List search providers available in your region, with their pricing |
+
+Both `POST` endpoints accept the same request body and return the same response structure. When a request specifies a provider in both the URL path and the body `model`, both values must match (returning HTTP 400 otherwise). When neither specifies a provider, the endpoint returns HTTP 400 asking for one; call `GET /v3/search/models` to see which you can use.
+
+<Warning>
+Search providers are **not** listed in `GET /v3/models` (which covers chat completions only). Use `GET /v3/search/models` to discover callable search providers.
+</Warning>
+
+## Install
+
+The Python sample uses Perplexity's official SDK, published on PyPI as `perplexityai`. The package named `perplexity` is an unrelated, unofficial one.
+
+```bash
+pip install perplexityai
+```
+
+## Usage
+
+<CodeGroup>
+```python Perplexity Python SDK
+from perplexity import Perplexity
+
+client = Perplexity(api_key="YOUR_API_KEY", base_url="https://api.edenai.run/v3")
+
+search = client.search.create(
+    query="latest Eden AI release notes",
+    max_results=5,
+    extra_body={"model": "tavily"},
+)
+for result in search.results:
+    print(result.title, result.url, result.snippet)
+```
+
+```bash cURL (Body Model)
+curl -X POST https://api.edenai.run/v3/search \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "latest Eden AI release notes",
+    "model": "tavily",
+    "max_results": 5
+  }'
+```
+
+```bash cURL (Path Provider)
+curl -X POST https://api.edenai.run/v3/search/tavily \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "Eden AI",
+    "search_domain_filter": ["edenai.co"],
+    "country": "FR"
+  }'
+```
+</CodeGroup>
+
+### Open WebUI
+
+Open WebUI's built-in **Perplexity Search** engine works with this API. It posts a fixed `{query, max_results}` body with no `model`, so put the provider in the URL path, such as `https://api.edenai.run/v3/search/tavily`. See [Web Search in the Open WebUI guide](/v3/integrations/open-webui#web-search) for the setup.
+
+## Request Fields
+
+| Field | Type | Maps to | Notes |
+|---|---|---|---|
+| `query` | string | `input.query` | Required. The search query string. Multi-query lists are rejected (HTTP 422). |
+| `model` | string | provider | A provider `id` from `GET /v3/search/models`, such as `tavily`. Optional when specified in the URL path. |
+| `max_results` | integer (1 to 20) | `input.max_results` | Number of results to return (default: 10). Values above 20 are rejected (HTTP 422). |
+| `search_domain_filter` | list[string] (1 to 20 entries) | the provider's own include and exclude domain parameters | Domains to include or exclude. Plain entries include domains, while entries with a minus prefix (`-domain.com`) exclude them. Allow and deny entries cannot be mixed. More than 20 entries are rejected (HTTP 422). |
+| `country` | string (ISO 3166-1 alpha-2) | the provider's own country parameter | Case-insensitive two-letter country code. |
+
+Filter support varies by provider. A provider that cannot apply `search_domain_filter` or `country`, or does not cover the country you sent, returns HTTP 400 with a message naming the field and the provider, so the search never runs without the filter you asked for.
+
+Unknown fields are rejected with HTTP 422 rather than silently dropped, so unsupported Perplexity parameters (such as `search_recency_filter`, `search_language_filter`, or `max_tokens_per_page`) fail immediately. Eden-specific universal-ai parameters (such as `fallbacks`, `provider_params`, or `@edenai` routing) are not accepted on this surface: use [`POST /v3/universal-ai` with `web/search/<provider>`](/v3/expert-models/features/web/search) for advanced configuration. Caller tags remain supported via the `X-EdenAI-Tags` request header.
+
+## Response Structure
+
+```json
+{
+  "id": "4d2f1a2c-3f43-4f26-9f2b-0b2f6a4e9f1e",
+  "results": [
+    {
+      "title": "Eden AI",
+      "url": "https://www.edenai.co/",
+      "snippet": "One API for all AI providers.",
+      "date": null,
+      "last_updated": null
+    }
+  ],
+  "provider": "tavily",
+  "cost": 0.008
+}
+```
+
+* `results[].snippet`: The text snippet returned by the search provider.
+* `results[].title`: The title of the page (empty string when not provided).
+* `results[].date` and `results[].last_updated`: Always `null` because search providers do not return standardized timestamp metadata.
+* `provider` and `cost`: Eden AI extensions indicating the executed provider and the cost in USD. These are also returned via `x-edenai-provider` and `x-edenai-cost` HTTP response headers.
+* `id`: The Eden AI request identifier.
+* With the `x-edenai-metadata: enabled` header, the response body also includes `edenai_metadata`.
+
+## Errors
+
+Errors follow the OpenAI envelope `{"error": {"message", "type", "code"}}`:
+
+* HTTP 400 for conflicting providers, missing providers, or a filter the provider does not support.
+* HTTP 404 for unknown providers.
+* HTTP 422 for schema validation errors or unrecognized fields.
+* Provider errors: when a provider rejects the request with a 4xx status (such as 400, 404, 422 or 429), that status and the provider's message are forwarded. The exceptions are 401 and 403, which concern Eden AI's own provider credentials rather than your request: those, provider 5xx errors and outages all return HTTP 502.
+* Authentication errors (401 or 403) and rate limits (429) return the platform `{"detail": ...}` format because they trigger before the route handler executes.
+
+## Limitations
+
+* **Recency filter:** Date filters are not mapped yet, so Perplexity's `search_recency_filter` and the providers' own date parameters cannot be used here.
+* **Search depth:** Searches run at the `standard` depth. For the `deep` tier, call `POST /v3/universal-ai` with `web/search/<provider>` and `"depth": "deep"` in `input`, which is billed at that tier's price.
+
+## Pricing
+
+A search costs the same as a universal-ai `web/search` call on the same provider, with nothing added for this endpoint. `GET /v3/search/models` returns each provider's `pricing`, and every response reports what the call cost in `cost` and the `x-edenai-cost` header.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Expert Web Search" icon="globe" href="/v3/expert-models/features/web/search">
+    The same providers through universal-ai, with fallbacks and provider parameters
+  </Card>
+  <Card title="LLM Web Search" icon="brain" href="/v3/llms/web-search">
+    Enable web search during LLM chat completions
+  </Card>
+  <Card title="Open WebUI" icon="plug" href="/v3/integrations/open-webui">
+    Connect Open WebUI to Eden AI for chat and search
+  </Card>
+</CardGroup>

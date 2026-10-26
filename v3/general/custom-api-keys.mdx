@@ -14,7 +14,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "rate limits", "billing", "monitoring"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-09-25T00:00:00Z"
+  dateModified="2026-10-23T00:00:00Z"
 />
 
 Custom API keys let you create additional keys beyond your main account key. Each key can have its own budget, expiration, and type, giving you fine-grained control over access and spending.
@@ -186,7 +186,7 @@ A budget can either **reinitialize automatically** each day, week, or month, or 
 
 ### In the dashboard
 
-On the [API Keys](https://app.edenai.run/settings/api-keys) page, create or edit a key and turn on **Spending Limit**. Set the **Reset allowance** (the amount restored each period) and choose a **Resets** frequency: **Daily**, **Weekly**, **Monthly**, or **Never**. A reset frequency is always selected when a spending limit is on; it defaults to **Monthly**. Choose **Never** for a one-time budget that does not renew. You can also set an optional **Budget alert threshold** (1 to 100%) to receive an email alert when consumption reaches that percentage of the reset allowance. A separate **Current balance** field shows what's available right now; editing the allowance only takes effect at the next reset.
+On the [API Keys](https://app.edenai.run/settings/api-keys) page, create or edit a key and turn on **Spending Limit**. Set the **Reset allowance** (the amount restored each period) and choose a **Resets** frequency: **Daily**, **Weekly**, **Monthly**, or **Never**. A reset frequency is always selected when a spending limit is on; it defaults to **Monthly**. Choose **Never** for a one-time budget that does not renew. To be warned before the limit is reached, turn on **Budget alert** and set **Alert me at (%)** (1 to 100): you and the organization owner get an email once per period when spend reaches that share of the reset allowance. It needs a reset period, so it is off with **Never**. A separate **Current balance** field shows what's available right now; editing the allowance only takes effect at the next reset.
 
 ### Through the API
 
@@ -239,11 +239,11 @@ Behaviour to know:
 - `balance_reset_amount` is the reset **target**, kept separate from the live `balance` (the amount remaining right now). They are not the same field.
 - A new periodic key **starts the period full**: if you don't pass a starting `balance`, it begins at `balance_reset_amount`. Passing an explicit `balance` lets a key start partway through a period.
 - Resets run at **midnight Europe/Paris time**: daily every night, weekly on Monday, monthly on the 1st.
-- Setting `budget_alert_percent` emails the key owner once per reset window when spend reaches that percentage of `balance_reset_amount`. The organization owner receives a copy as well. An alert threshold requires a periodic budget (`balance_reset_period` cannot be `none`), and switching the period back to `none` clears it.
+- Setting `budget_alert_percent` emails the key owner once per reset window when spend reaches that percentage of `balance_reset_amount`. The organization owner gets a copy, unless they own the key. An alert threshold requires a periodic budget (`balance_reset_period` cannot be `none`), and switching the period back to `none` clears it.
 - Setting the period back to `none` (with a `PATCH`) clears `balance_reset_amount` and returns the key to a one-time budget.
 
 <Note>
-This per-key reset is distinct from the **per-member budget cap** you can set on a [guardrail](/v3/organization/guardrails#budget-cap). A key budget is a hard cap on one key (it stops at $0); a member budget is a soft periodic spend cap that follows a person across all their keys.
+This per-key reset is distinct from the **per-member budget cap** you can set on a [guardrail](/v3/organization/guardrails#member-budget). A key budget is a hard cap on one key (it stops at $0); a member budget is a soft periodic spend cap that follows a person across all their keys.
 </Note>
 
 ## Default Tags

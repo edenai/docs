@@ -56,6 +56,8 @@ If a refill fails (for example, the card is declined), auto-refill stops and the
 Auto-refill is strongly recommended for production applications. A depleted balance causes API requests to fail with a `402 Payment Required` error.
 </Tip>
 
+Without auto-refill, a prepaid organization that has bought credits before gets a **low balance** email when its balance drops below the threshold set in the auto-refill settings. It goes to the owner, with a copy to billing managers and billing contacts, and is sent once until the next credit purchase.
+
 ## Postpaid Billing (Monthly Invoice)
 
 By default, accounts are **prepaid**: you top up credits and usage draws them down. Larger teams can instead switch to **postpaid** billing, where usage accrues over the month and is settled by invoice (default payment terms: 30 days) rather than paid up front.

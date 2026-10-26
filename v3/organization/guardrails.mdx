@@ -14,7 +14,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "guardrails", "usage policy", "access control", "rate limits", "model restrictions", "budget cap", "spending limit"]}
   datePublished="2026-06-11T00:00:00Z"
-  dateModified="2026-10-23T00:00:00Z"
+  dateModified="2026-10-26T00:00:00Z"
 />
 
 A **guardrail** is a reusable usage policy. It sets:
@@ -103,7 +103,7 @@ A `*` also matches `/`: `*/gpt-4o` matches `openai/gpt-4o` and any Expert Model 
   <img className="hidden dark:block" src="/images/guardrails/budget-dark.png" alt="The Budget and rate limit section: a monthly member budget with an alert at 80% and a rate limit of 60 requests per minute" />
 </Frame>
 
-Under **Budget & rate limit**, set an **Amount** in USD and a period: daily, weekly or monthly. Turn on **Budget alert** to email the member, with a copy to the organization owner, when their spend reaches a share of the budget.
+Under **Budget & rate limit**, set an **Amount** in USD and a period: daily, weekly or monthly. Turn on **Budget alert** and set **Alert at (%)** (1 to 100) to email the member, with a copy to the organization owner, when their spend reaches that share of the budget. It is sent at most once per period.
 
 - **Per member, not shared.** Each member the guardrail applies to gets their own budget, across all their API keys. It is not a shared pool for the team.
 - **Resets each period.** Spend resets at the start of each day, week or month (UTC).

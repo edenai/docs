@@ -23,6 +23,7 @@ checking that one against /v3/models alone would call it broken.
 import json
 import re
 import tomllib
+from concurrent.futures import ThreadPoolExecutor
 from functools import cache
 from pathlib import Path
 from typing import Any
@@ -35,15 +36,18 @@ from tests.snippet_extractor import DOCS_ROOT, extract_config_blocks
 
 __all__ = [
     "CONFIG_LANGUAGES",
+    "INTEGRATIONS_DIR",
     "MODEL_CATALOG_ROUTES",
     "TOOL_PREFIX",
     "catalog_ids",
     "catalog_providers",
+    "catalog_routes",
     "config_blocks",
     "config_pages",
     "eden_urls",
     "model_candidates",
     "model_references",
+    "models_in",
     "normalize_model_id",
     "parse_config",
     "url_exists",
@@ -78,6 +82,10 @@ TOOL_PREFIX = "edenai/"
 # parsed document, because a block that is a menu of alternatives does not
 # parse and its model ids still have to be checked.
 _CANDIDATE_RE = re.compile(r"[A-Za-z0-9_.@-]+(?:/[A-Za-z0-9_.@-]+)+")
+
+# A JavaScript module path has the shape of an id and can start with a
+# provider: import type { X } from 'openai/resources/chat/completions'.
+_MODULE_SPECIFIER_RE = re.compile(r"""(?:\bfrom|\bimport|\brequire\()\s*["']$""")
 
 # A provider is a lowercase word. This is what rejects an image tag
 # (ghcr.io/...), a path (./data/...) and a host (api.edenai.run/v3), all of
@@ -132,6 +140,21 @@ def normalize_model_id(value: str) -> str:
     return value
 
 
+def _candidates_in(text: str) -> list[str]:
+    """Strings shaped like a model id, in the order the text has them."""
+    candidates = []
+    for match in _CANDIDATE_RE.finditer(text):
+        if _MODULE_SPECIFIER_RE.search(text, 0, match.start()):
+            continue
+        # A docker-compose environment entry is KEY=value, and the value is
+        # the part worth looking at: RAG_EMBEDDING_MODEL=openai/....
+        token = match.group(0).rsplit("=", 1)[-1]
+        provider = normalize_model_id(token).split("/", 1)[0]
+        if _PROVIDER_SEGMENT_RE.match(provider):
+            candidates.append(token)
+    return candidates
+
+
 def model_candidates(block: dict) -> set[str]:
     """Strings in the block shaped like a model id.
 
@@ -139,25 +162,28 @@ def model_candidates(block: dict) -> set[str]:
     model exists. A docker mount and a MIME type can still get through here;
     model_references is what settles it.
     """
-    candidates = set()
-    for token in _CANDIDATE_RE.findall(block["code"]):
-        # A docker-compose environment entry is KEY=value, and the value is
-        # the part worth looking at: RAG_EMBEDDING_MODEL=openai/....
-        token = token.rsplit("=", 1)[-1]
-        provider = normalize_model_id(token).split("/", 1)[0]
-        if _PROVIDER_SEGMENT_RE.match(provider):
-            candidates.add(token)
-    return candidates
+    return set(_candidates_in(block["code"]))
+
+
+def models_in(text: str) -> list[str]:
+    """The model references in any text, in order and each once.
+
+    The same two rules as model_references, for text that is not a config
+    block: a shell block, a table cell, a sentence naming the model to pick.
+    Order is kept because the first model a page names is the one it leads
+    with, which is the one worth sending a request to.
+    """
+    providers = catalog_providers()
+    seen: dict[str, None] = {}
+    for candidate in _candidates_in(text):
+        if normalize_model_id(candidate).split("/", 1)[0] in providers:
+            seen.setdefault(candidate)
+    return list(seen)
 
 
 def model_references(block: dict) -> set[str]:
     """The candidates that begin with a provider Eden AI really has."""
-    providers = catalog_providers()
-    return {
-        candidate
-        for candidate in model_candidates(block)
-        if normalize_model_id(candidate).split("/", 1)[0] in providers
-    }
+    return set(models_in(block["code"]))
 
 
 def eden_urls(block: dict) -> set[str]:
@@ -173,16 +199,36 @@ def url_probe(url: str) -> str:
 
 
 @cache
+def catalog_routes() -> dict[str, dict[str, dict]]:
+    """Every model Eden AI serves, under the catalog route that lists it.
+
+    The route is what says which request a model answers: an id under
+    embeddings/models takes an embeddings call and nothing else. Each entry is
+    kept whole, because the chat entries carry the capabilities a tool relies
+    on, function calling first among them.
+    """
+    # Fetched together: every xdist worker does this while collecting, and
+    # seven requests one after another hold collection up for all of them.
+    with ThreadPoolExecutor(len(MODEL_CATALOG_ROUTES)) as pool:
+        return dict(
+            zip(MODEL_CATALOG_ROUTES, pool.map(_catalog_route, MODEL_CATALOG_ROUTES))
+        )
+
+
+def _catalog_route(route: str) -> dict[str, dict]:
+    response = requests.get(f"{CATALOG_BASE_URL}/{route}", timeout=TIMEOUT)
+    response.raise_for_status()
+    payload = response.json()
+    entries = payload["data"] if isinstance(payload, dict) else payload
+    return {entry["id"]: entry for entry in entries}
+
+
+@cache
 def catalog_ids() -> frozenset[str]:
     """Every model id Eden AI serves, across all seven catalog routes."""
-    ids: set[str] = set()
-    for route in MODEL_CATALOG_ROUTES:
-        response = requests.get(f"{CATALOG_BASE_URL}/{route}", timeout=TIMEOUT)
-        response.raise_for_status()
-        payload = response.json()
-        entries = payload["data"] if isinstance(payload, dict) else payload
-        ids.update(entry["id"] for entry in entries)
-    return frozenset(ids)
+    return frozenset(
+        model_id for entries in catalog_routes().values() for model_id in entries
+    )
 
 
 @cache

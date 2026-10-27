@@ -53,7 +53,9 @@ jobs:
         with:
           node-version: '24'
           cache: npm
-          cache-dependency-path: tests/package-lock.json
+          cache-dependency-path: |
+            tests/package-lock.json
+            tests/clis/package-lock.json
       - name: Install dependencies
         run: uv pip install -r tests/requirements-lock.txt --system
       # The packages the samples import. Pinned and locked, so a run tests the
@@ -96,10 +98,14 @@ jobs:
         if: always()
         run: pytest tests/test_page_metadata.py tests/test_generate_features.py --no-cov
 
-      # Needs no credential: the model catalog is public.
-      - name: Check integration configuration blocks
+      # The config blocks on the integration pages, every other model and
+      # model setting those pages name, and whether the agents among the tools
+      # are pointed at models that take tools. Needs no credential: the model
+      # catalog is public. One process, because each xdist worker would fetch
+      # the whole catalog again to collect assertions that take milliseconds.
+      - name: Check integration configuration and pages
         if: always()
-        run: pytest tests/test_config_blocks.py --no-cov
+        run: pytest tests/test_config_blocks.py tests/test_integrations.py -m "not execute" --no-cov -n 0
 
       - name: Run Python snippets
         run: pytest tests/test_snippets_execute.py
@@ -137,6 +143,30 @@ jobs:
           EDEN_AI_SANDBOX_API_TOKEN: ${{ secrets.EDEN_AI_SANDBOX_TOKEN }}
           EDEN_AI_PRODUCTION_API_TOKEN: ${{ secrets.EDEN_AI_PRODUCTION_TOKEN }}
           EDEN_AI_MANAGEMENT_KEY: ${{ secrets.EDEN_AI_MANAGEMENT_KEY }}
+          EDEN_AI_RUN_PAID_CALLS: ${{ github.event_name != 'pull_request' }}
+
+      # Close to a gigabyte of platform binaries, so it is installed here,
+      # for the one step that runs them, rather than ahead of every check.
+      - name: Install agent CLIs
+        if: always()
+        run: npm ci
+        working-directory: tests/clis
+
+      # A config that parses can still point a tool at Eden AI in a way it
+      # cannot use: Claude Code speaks the Anthropic Messages API, Codex the
+      # Responses API, and an agent sends tool definitions with every request.
+      # This sends each page's request the way its tool would, and runs the
+      # real Claude Code, Codex and OpenCode CLIs with the page's settings. On
+      # a pull request that is the sandbox, which costs nothing; the weekly run
+      # adds every model the pages name, on a real model, through the whole
+      # tool-calling loop.
+      - name: Run integration requests and CLIs
+        if: always()
+        run: pytest tests/test_integrations.py tests/test_integration_clis.py -m execute --no-cov
+        env:
+          EDEN_AI_BASE_URL: ${{ vars.EDEN_AI_BASE_URL || 'https://staging-api.edenai.run' }}
+          EDEN_AI_SANDBOX_API_TOKEN: ${{ secrets.EDEN_AI_SANDBOX_TOKEN }}
+          EDEN_AI_PRODUCTION_API_TOKEN: ${{ secrets.EDEN_AI_PRODUCTION_TOKEN }}
           EDEN_AI_RUN_PAID_CALLS: ${{ github.event_name != 'pull_request' }}
 
       - name: Coverage summary

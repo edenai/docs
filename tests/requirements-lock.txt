@@ -19,6 +19,7 @@ annotated-types==0.8.0
     # via pydantic
 anthropic==0.125.0
     # via
+    #   -r tests/requirements.txt
     #   any-llm-sdk
     #   pydantic-ai-slim
 any-llm-sdk==1.27.2

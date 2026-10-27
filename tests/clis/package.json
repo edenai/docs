@@ -1,0 +1,11 @@
+{
+  "name": "edenai-docs-integration-clis",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The coding agent CLIs the integration pages configure, run by tests/test_integration_clis.py with the settings each page gives them. Kept apart from tests/package.json because together they unpack to about a gigabyte of platform binaries that only that one test needs. Versions are pinned exactly and the lockfile is committed, so a run tests the docs rather than whatever npm resolved that morning.",
+  "devDependencies": {
+    "@anthropic-ai/claude-code": "2.1.296",
+    "@openai/codex": "0.162.1",
+    "opencode-ai": "1.19.0"
+  }
+}

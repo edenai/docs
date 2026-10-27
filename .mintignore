@@ -7,4 +7,3 @@ tests/.venv/
 htmlcov/
 coverage.xml
 CLAUDE.md
-v3/feedback/

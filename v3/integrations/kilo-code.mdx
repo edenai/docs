@@ -19,16 +19,14 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   dateModified="2026-08-31T00:00:00Z"
 />
 
-Configure [Kilo Code](https://kilocode.ai), the open-source AI coding agent for VS Code and the terminal, to use Eden AI for 500+ models behind one API key.
+Kilo Code reads Eden AI as its `edenai` provider. This page sets it up in the extension and the CLI, then covers models missing from the picker, EU routing, MCP tools and cost.
 
 ## Overview
 
-Eden AI is a **built-in provider** in Kilo Code, in both the VS Code extension and the CLI. Kilo uses the provider ID `edenai` and reads your key from `EDENAI_API_KEY`.
+Kilo Code is an open-source coding agent for VS Code and the terminal. Eden AI is a provider in both the extension and the CLI: Kilo takes the `edenai` provider from the [models.dev](https://models.dev) catalogue, an OpenAI-compatible provider at `https://api.edenai.run/v3`, and reads your key from `EDENAI_API_KEY`.
 
-- **500+ models**: reach OpenAI, Anthropic, Google, Mistral, Z.ai and more through one key
-- **One key, one invoice**: no per-vendor accounts to manage
-- **EU endpoint**: route through `api.eu.edenai.run` when you have data-residency requirements
 - **Shared credential store**: the extension and the CLI read the same `auth.json`
+- **EU endpoint**: route through the [EU endpoint](/v3/data-governance/eu-endpoint) when you have data-residency requirements
 
 ## Prerequisites
 
@@ -68,7 +66,7 @@ To keep the secret in the environment instead, declare the provider in `~/.confi
 
 <CodeGroup>
 ```bash Terminal
-export EDENAI_API_KEY="your_api_key_here"
+export EDENAI_API_KEY="YOUR_API_KEY"
 ```
 
 ```json ~/.config/kilo/kilo.json
@@ -96,7 +94,7 @@ Eden AI model IDs are already `vendor/model`, so a full reference in Kilo has **
 ```
 </CodeGroup>
 
-Copy the identifier exactly as the models endpoint returns it. It is public and needs no key:
+Kilo Code takes its model list from models.dev, not from Eden AI's [models endpoint](/v3/llms/listing-models). Copy the identifier exactly as the endpoint returns it, which is public and needs no key:
 
 <CodeGroup>
 ```bash cURL
@@ -104,9 +102,13 @@ curl https://api.edenai.run/v3/models
 ```
 </CodeGroup>
 
+## Switching models
+
+Pick another model in the picker, or change the `model` key in `kilo.json` to another `edenai/<vendor>/<model>` reference.
+
 ## Using a model that is not in the picker
 
-The picker lists the Eden AI models in the catalogue Kilo refreshes, which is smaller than the full Eden AI catalogue. Any other model can be declared yourself:
+The picker lists the Eden AI models in models.dev, which is smaller than the full Eden AI catalogue. Any other model can be declared yourself. `mistral/devstral-latest`, a coding model that supports function calling, is one that models.dev does not list today:
 
 <CodeGroup>
 ```json kilo.json
@@ -114,25 +116,25 @@ The picker lists the Eden AI models in the catalogue Kilo refreshes, which is sm
   "provider": {
     "edenai": {
       "models": {
-        "anthropic/claude-haiku-latest": {
-          "name": "Claude Haiku 4.5",
-          "cost": { "input": 1, "output": 5, "cache_read": 0.1 }
+        "mistral/devstral-latest": {
+          "name": "Devstral (latest)",
+          "cost": { "input": 0.4, "output": 2 }
         }
       }
     }
   },
-  "model": "edenai/anthropic/claude-haiku-latest"
+  "model": "edenai/mistral/devstral-latest"
 }
 ```
 </CodeGroup>
 
 <Note>
-  Set `cost` when you declare a model, and `limit` too if you want the context gauge to be right. Kilo defaults both to zero for a model it does not already know, which would leave spend reporting at zero. Costs are per million tokens, so multiply the endpoint's `input_cost_per_token` and `output_cost_per_token` by one million. A `limit` block needs both `context`, from `context_length`, and `output`.
+  Set `cost` when you declare a model, and `limit` too if you want the context gauge to be right. Kilo defaults both to zero for a model it does not already know, which would leave spend reporting at zero. Costs are per million tokens, so multiply `pricing.input_cost_per_token` and `pricing.output_cost_per_token` from the models endpoint by one million (the values above are the catalogue's rates for this alias today). A `limit` block needs both `context`, from `context_length`, and `output`, the model's maximum output tokens, which the endpoint does not list.
 </Note>
 
 ## EU data residency
 
-Point the provider at the EU gateway with a custom base URL:
+Point the provider at the [EU endpoint](/v3/data-governance/eu-endpoint) with a custom base URL, and choose a model the EU endpoint serves. The EU endpoint serves a subset of the catalogue (`vertex/gemini-flash-latest` and `mistral/mistral-small-latest` are in it), and Eden AI rejects a model it does not serve, such as `anthropic/claude-sonnet-latest` or `openai/gpt-mini-latest`:
 
 <CodeGroup>
 ```json kilo.json
@@ -144,32 +146,45 @@ Point the provider at the EU gateway with a custom base URL:
         "baseURL": "https://api.eu.edenai.run/v3"
       }
     }
+  },
+  "model": "edenai/vertex/gemini-flash-latest"
+}
+```
+</CodeGroup>
+
+Some models are also published with an `@eu` suffix that pins the vendor's region; see [Pinning a region](/v3/llms/provider-routing#pinning-a-region). Declare those as shown in the previous section.
+
+## Expert Models as Tools (MCP)
+
+Eden AI also hosts an [MCP server](/v3/expert-models/mcp-server) that exposes the expert model catalog (OCR, web search, speech, translation and more) as tools. Kilo reads MCP servers from the `mcp` key of its config. Add the server to the global `~/.config/kilo/kilo.json`, where credentials belong:
+
+<CodeGroup>
+```json ~/.config/kilo/kilo.json
+{
+  "mcp": {
+    "edenai": {
+      "type": "remote",
+      "url": "https://mcp.edenai.run/mcp",
+      "headers": {
+        "Authorization": "Bearer YOUR_API_KEY"
+      }
+    }
   }
 }
 ```
 </CodeGroup>
 
-That base URL governs where Eden AI processes the request. The EU endpoint serves the subset of the catalogue available in the EU, so a model that works on the global endpoint is not guaranteed to be reachable through it.
-
-Independently, some models are published as a region-pinned variant that also pins the underlying vendor's region, marked with an `@eu` suffix:
-
-<CodeGroup>
-```json kilo.json
-{ "model": "edenai/vertex/gemini-3.6-flash@eu" }
-```
-</CodeGroup>
-
-Only a few of these appear in the picker. Declare the others as shown in the previous section.
+Run `kilo mcp list` to check the connection. See the [MCP server page](/v3/expert-models/mcp-server) for the tool catalog and the conventions its tools share.
 
 ## Cost tracking
 
-The spend Kilo Code displays for Eden AI is derived from token counts and the per-model rates in its catalogue, so treat it as an estimate. Eden AI returns the actual billed cost of each request in its own response body, and that figure, with your [Eden AI dashboard](https://app.edenai.run), is the authoritative one.
+The spend Kilo Code displays for Eden AI is derived from token counts and the per-model rates in its catalogue, so treat it as an estimate. Eden AI returns the actual billed cost of each request in a top-level `cost` field of the response (see [Prompt caching](/v3/llms/prompt-caching)), and that figure is the authoritative one.
 
 ## Troubleshooting
 
 ### Invalid API key
 
-Create a new key in your Eden AI account, then reconnect with `/connect` or `kilo auth login --provider edenai`. If you use manual configuration, update `EDENAI_API_KEY` in the environment Kilo runs from.
+Create a new key in your Eden AI account (a 401 with `Invalid API key` means the key is wrong or revoked, `Invalid token` that the credential is not an Eden AI key), then reconnect with `/connect` or `kilo auth login --provider edenai`. If you use manual configuration, update `EDENAI_API_KEY` in the environment Kilo runs from.
 
 ### Model not found
 
@@ -181,7 +196,7 @@ Refresh Kilo Code's provider catalogue, then check **Show more providers**.
 
 ### A key or model you just added has no effect
 
-Kilo caches the resolved catalogue for a few minutes. Wait, then restart your client.
+A key or a model you declared in `kilo.json` needs a restart of Kilo. A model newly added to models.dev shows up in the picker within about an hour, since Kilo refreshes that catalogue hourly.
 
 ## Next Steps
 

@@ -2,30 +2,37 @@
 title: "Use Pi with Eden AI"
 sidebarTitle: "Pi"
 icon: "/integration-logo/pi-icondoc.svg"
-description: "Use Pi with Eden AI to power your coding agent (and Flue) with 500+ AI models through one API."
+description: "Add Eden AI to the Pi coding agent as a custom provider in models.json, then pick any of 500+ models from many providers with one API key."
 ---
 
 import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
 
 <TechArticleSchema
   title={"Use Pi with Eden AI"}
-  description={"Use Pi with Eden AI to power your coding agent (and Flue) with 500+ AI models through one API."}
+  description={"Add Eden AI to the Pi coding agent as a custom provider in models.json, then pick any of 500+ models from many providers with one API key."}
   path="v3/integrations/pi"
   articleSection="Coding Agents"
   about={"Coding Agent Integration"}
   proficiencyLevel="Intermediate"
-  keywords={["Eden AI", "AI API", "Pi", "Flue", "Coding Agent"]}
+  keywords={["Eden AI", "AI API", "Pi", "Coding Agent"]}
   datePublished="2026-07-16T00:00:00Z"
   dateModified="2026-07-16T00:00:00Z"
 />
 
-Use Pi with Eden AI to power your coding agent (and Flue) with 500+ AI models through one API.
+By the end of this page, an `edenai` provider shows up in Pi's `/model` picker, and you can run Pi on any Eden AI chat model that supports function calling.
 
 ## Overview
 
-Pi is an MIT-licensed coding agent whose model catalog also powers Flue. Pi lets extensions register custom model providers, so you can add Eden AI with a small extension — no fork, no core change — and reach models from OpenAI, Anthropic, Google, Cohere, Meta and more behind one key, with EU-based, GDPR-aligned inference. The same provider flows through to Flue.
+Pi is an MIT-licensed coding agent that runs in your terminal. It reads custom providers from a `models.json` file, so Eden AI's OpenAI-compatible endpoint needs a config entry and no code. Pi sends tool definitions with every request, so choose models that support function calling.
 
-## Installation
+## Prerequisites
+
+- Node.js 22.19 or newer (Pi's installers can install it for you)
+- An Eden AI API key from [app.edenai.run](https://app.edenai.run)
+
+## Setup
+
+### Step 1: Install Pi
 
 <CodeGroup>
 ```bash Install script
@@ -37,61 +44,92 @@ npm install -g --ignore-scripts @earendil-works/pi-coding-agent
 ```
 </CodeGroup>
 
-## Quick Start
+### Step 2: Export your key
 
-Register Eden AI as a custom provider from a Pi extension:
+Pi resolves `$EDEN_AI_API_KEY` from the environment of the shell that starts it. It does not read a `.env` file.
 
 <CodeGroup>
-```typescript extension.ts
-import { pi } from "@earendil-works/pi-coding-agent";
-
-pi.registerProvider("edenai", {
-  name: "Eden AI",
-  api: "openai-completions",
-  baseUrl: "https://api.edenai.run/v3",
-  apiKey: process.env.EDEN_AI_API_KEY,
-  models: [
-    "openai/gpt-5.5",
-    "openai/gpt-5-mini",
-    "anthropic/claude-sonnet-latest",
-    "mistral/mistral-small-latest",
-  ],
-});
+```bash Terminal
+export EDEN_AI_API_KEY="YOUR_API_KEY"
 ```
 </CodeGroup>
 
-Then select any `edenai/<model>` in Pi. The same catalog is available in Flue.
+### Step 3: Add the provider
 
-## Available Models
-
-Access models from multiple providers using the `provider/model` format:
-
-**OpenAI**
-- `openai/gpt-5.5`
-- `openai/gpt-5-mini`
-
-**Anthropic**
-- `anthropic/claude-sonnet-latest`
-- `anthropic/claude-haiku-latest`
-
-**Google**
-- `vertex/gemini-2.5-pro`
-- `vertex/gemini-flash-latest`
-
-**Mistral**
-- `mistral/mistral-large-latest`
-- `mistral/mistral-small-latest`
-
-## Environment Variables
+Create or edit `~/.pi/agent/models.json` (Pi looks for it in its agent directory, which you can move with `PI_CODING_AGENT_DIR`):
 
 <CodeGroup>
-```bash .env
-EDEN_AI_API_KEY=your_api_key_here
+```json ~/.pi/agent/models.json
+{
+  "$schema": "https://pi.dev/schemas/models.schema.json",
+  "providers": {
+    "edenai": {
+      "name": "Eden AI",
+      "baseUrl": "https://api.edenai.run/v3",
+      "api": "openai-completions",
+      "apiKey": "$EDEN_AI_API_KEY",
+      "models": [
+        { "id": "openai/gpt-latest" },
+        { "id": "anthropic/claude-sonnet-latest" },
+        { "id": "mistral/mistral-small-latest" }
+      ]
+    }
+  }
+}
 ```
 </CodeGroup>
+
+Only `id` is required for each model. Pi assumes text input, no reasoning, a 128,000-token context window and 16,384 output tokens unless you set `input`, `reasoning`, `contextWindow` or `maxTokens` on the model. Opening `/model` reloads the file.
+
+## Model naming
+
+The provider is `edenai`, and each model `id` is the Eden AI `provider/model` id, so Pi refers to a model as `edenai/<provider>/<model>`, for example `edenai/anthropic/claude-sonnet-latest` or `edenai/openai/gpt-latest`. Aliases ending in `-latest` follow the newest model of a family. Browse the available ids and their capabilities in [Listing models](/v3/llms/listing-models).
+
+## Switching models
+
+Run `/model` in Pi and choose an Eden AI model, press `Ctrl+P` to cycle through your models, or pass one when you start Pi:
+
+<CodeGroup>
+```bash Terminal
+pi --model edenai/anthropic/claude-sonnet-latest
+```
+</CodeGroup>
+
+## Expert Models as Tools (MCP)
+
+Pi connects to MCP servers, so Eden AI's [MCP server](/v3/expert-models/mcp-server) can give it OCR, web search, speech and translation tools. Add it to `~/.pi/agent/mcp.json`, where credentials belong:
+
+<CodeGroup>
+```json ~/.pi/agent/mcp.json
+{
+  "mcpServers": {
+    "edenai": {
+      "url": "https://mcp.edenai.run/mcp",
+      "headers": { "Authorization": "Bearer ${EDEN_AI_API_KEY}" }
+    }
+  }
+}
+```
+</CodeGroup>
+
+Pi selects streamable HTTP from the `url`. Run `pi mcp list` to check the connection, and see the [MCP server page](/v3/expert-models/mcp-server) for the tool catalog.
+
+## Troubleshooting
+
+### Eden AI is missing from `/model`
+
+The picker shows only models whose provider has usable authentication. Check that `EDEN_AI_API_KEY` is exported in the shell you start Pi from, then open `/model` again to reload `models.json`. `pi --list-models edenai` lists what Pi found.
+
+### Authentication errors (401)
+
+Confirm the key at [app.edenai.run](https://app.edenai.run) under **API Keys**, and that it has no leading or trailing spaces. A 401 with `Invalid API key` means the `sk-eden-...` key is wrong or revoked; `Invalid token` means the credential is not an Eden AI key at all.
+
+### The agent fails when it tries to use tools
+
+Use a model that supports function calling. The ids on this page do.
 
 ## Next Steps
 
 - [Chat Completions](/v3/llms/chat-completions) - Core LLM endpoint
 - [List LLM Models](/v3/llms/listing-models) - Browse available providers and models
-- [OpenAI SDK (Python)](/v3/integrations/openai-sdk-python) - Direct SDK usage
+- [MCP server](/v3/expert-models/mcp-server) - Expert models as tools

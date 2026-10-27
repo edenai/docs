@@ -2,14 +2,14 @@
 title: "Use Open Code Review with Eden AI"
 sidebarTitle: "Open Code Review"
 icon: "/integration-logo/open-code-review-icondoc.svg"
-description: "Use Open Code Review with Eden AI to review your code with 500+ AI models through one API."
+description: "Set up Open Code Review (ocr) with its built-in Eden AI provider to run AI code reviews on your git diffs with any model and one API key."
 ---
 
 import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
 
 <TechArticleSchema
   title={"Use Open Code Review with Eden AI"}
-  description={"Use Open Code Review with Eden AI to review your code with 500+ AI models through one API."}
+  description={"Set up Open Code Review (ocr) with its built-in Eden AI provider to run AI code reviews on your git diffs with any model and one API key."}
   path="v3/integrations/open-code-review"
   articleSection="Coding Agents"
   about={"AI Code Review Integration"}
@@ -19,13 +19,16 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   dateModified="2026-07-16T00:00:00Z"
 />
 
-Use Open Code Review with Eden AI to review your code with 500+ AI models through one API.
+`ocr` has an `edenai` provider preset, so setup is a key and a model id.
 
 ## Overview
 
-Open Code Review (`ocr`) is Alibaba's open-source AI code-review tool. It reviews commits and pull requests through a unified provider system, and **Eden AI ships as a built-in provider preset** — supply a key and review your code with OpenAI, Anthropic, Google, Mistral and 500+ models, behind one key, with EU-based, GDPR-aligned inference and unified billing.
+Open Code Review (`ocr`) is Alibaba's open-source command-line code reviewer. It reads your git diffs and runs an LLM agent that can read full files and search the codebase, then writes review comments. `ocr review` covers a diff and `ocr scan` covers whole files. The agent sends tool definitions with every request, so the model you choose must support function calling.
 
-## Installation
+## Prerequisites
+
+- An Eden AI API key from [app.edenai.run](https://app.edenai.run)
+- `ocr` installed:
 
 <CodeGroup>
 ```bash npm
@@ -33,60 +36,72 @@ npm install -g @alibaba-group/open-code-review
 ```
 
 ```bash Install script
-curl -fsSL https://raw.githubusercontent.com/alibaba/open-code-review/main/install.sh | sh
+curl -fsSL https://open-codereview.ai/install.sh | sh
 ```
 </CodeGroup>
 
-## Configuration
+## Setup
 
-Eden AI is a built-in preset, so you only need a key. Configure it interactively:
-
-<CodeGroup>
-```bash Interactive
-ocr config provider   # select "edenai"
-ocr config model      # pick an Eden AI model, e.g. anthropic/claude-sonnet-latest
-```
-</CodeGroup>
-
-Or write the config directly (scripts / CI):
+Select the provider and a model:
 
 <CodeGroup>
 ```bash CLI
 ocr config set provider edenai
-ocr config set providers.edenai.api_key YOUR_EDEN_AI_API_KEY
 ocr config set providers.edenai.model anthropic/claude-sonnet-latest
 ```
-</CodeGroup>
 
-The `edenai` preset supplies the base URL (`https://api.edenai.run/v3`) and the OpenAI-compatible protocol automatically. Run `ocr llm providers` to list all built-in providers. If `EDEN_AI_API_KEY` is set in your environment, `ocr` picks it up automatically.
-
-## Available Models
-
-Pick any Eden AI model using the `provider/model` format:
-
-**OpenAI**
-- `openai/gpt-5.5`
-- `openai/gpt-5-mini`
-
-**Anthropic**
-- `anthropic/claude-sonnet-latest`
-- `anthropic/claude-opus-latest`
-
-**Google**
-- `vertex/gemini-2.5-pro`
-- `vertex/gemini-flash-latest`
-
-**Mistral**
-- `mistral/mistral-large-latest`
-- `mistral/mistral-small-latest`
-
-## Environment Variables
-
-<CodeGroup>
-```bash .env
-EDEN_AI_API_KEY=your_api_key_here
+```bash Interactive
+ocr config provider   # select "edenai"
+ocr config model      # pick an Eden AI model
 ```
 </CodeGroup>
+
+Then give `ocr` your key. It reads `EDENAI_API_KEY` from the environment when no key is stored in its config:
+
+<CodeGroup>
+```bash Terminal
+export EDENAI_API_KEY="YOUR_API_KEY"
+```
+</CodeGroup>
+
+To store the key in the `ocr` config instead, run `ocr config set providers.edenai.api_key YOUR_API_KEY`. A stored key takes precedence over the environment variable, and `ocr` does not read `.env` files.
+
+Check the connection, then review your changes:
+
+<CodeGroup>
+```bash Terminal
+ocr llm test
+ocr review
+```
+</CodeGroup>
+
+The `edenai` preset supplies the base URL `https://api.edenai.run/v3` and the OpenAI-compatible protocol. `ocr llm providers` lists every built-in provider.
+
+## Model naming
+
+Use the full `provider/model` id as the model, for example `anthropic/claude-sonnet-latest`, `openai/gpt-latest` or `mistral/mistral-large-latest`. Aliases ending in `-latest` follow the newest model of a family. See [Listing models](/v3/llms/listing-models) for the ids and their capabilities.
+
+`ocr` lists suggested models for `ocr config model`, but they are suggestions, not restrictions: a `--model` override outside the list only prints a warning on stderr.
+
+## Switching models
+
+Run `ocr config model`, or set the model directly:
+
+<CodeGroup>
+```bash Terminal
+ocr config set providers.edenai.model openai/gpt-latest
+```
+</CodeGroup>
+
+## Troubleshooting
+
+### Authentication errors (401)
+
+Confirm the key at [app.edenai.run](https://app.edenai.run) under **API Keys**. If you stored a key with `ocr config set`, it overrides `EDENAI_API_KEY`, so overwrite it with `ocr config set providers.edenai.api_key YOUR_API_KEY`. A 401 with `Invalid API key` means the `sk-eden-...` key is wrong or revoked; `Invalid token` means the credential is not an Eden AI key at all.
+
+### The review fails on tool calls
+
+`ocr` sends tool definitions with every request. Use a model that supports function calling, such as the ones on this page.
 
 ## Next Steps
 

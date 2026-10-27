@@ -35,6 +35,13 @@ JS_BLOCK_RE = _fence_re("javascript|typescript|js|ts")
 # deliberately absent: no parser reads it and it names no Eden AI models.
 CONFIG_BLOCK_RE = _fence_re("json|yaml|yml|toml")
 
+# The fences whose lines are settings rather than program code: config files,
+# shell exports and .env files, PowerShell. tests/integrations.py reads them for
+# the model each setting names. Python, JavaScript and PHP are left out because
+# they assign `model = some_variable` all the time, and the Python and JS blocks
+# run against the API anyway, which settles their model names for real.
+SETTINGS_BLOCK_RE = _fence_re("json|yaml|yml|toml|bash|shell|sh|powershell|env")
+
 # Either marker may carry a reason: {/* skip-test: why this cannot run */}
 _SKIP_COMMENT_RE = re.compile(r"\{/\*\s*skip-test\b[:\s]*(?P<reason>.*?)\s*\*/\}")
 
@@ -315,6 +322,11 @@ def extract_js_blocks(mdx_path: Path) -> list[dict]:
 def extract_config_blocks(mdx_path: Path) -> list[dict]:
     """Extract all JSON, YAML and TOML config blocks from an .mdx file."""
     return _extract_blocks(mdx_path, CONFIG_BLOCK_RE)
+
+
+def extract_settings_blocks(mdx_path: Path) -> list[dict]:
+    """Extract every block whose lines are settings, config and shell alike."""
+    return _extract_blocks(mdx_path, SETTINGS_BLOCK_RE)
 
 
 def replace_api_keys(code: str, token_var: str = SANDBOX_TOKEN_VAR) -> str:

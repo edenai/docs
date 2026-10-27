@@ -13,6 +13,9 @@ langgraph~=1.0
 chromadb
 pydantic
 python-dotenv
+# the Anthropic Messages requests the Claude Code integration is tested with
+# (tests/helpers/protocols.py)
+anthropic
 # reads the YAML configuration blocks on the integration pages
 PyYAML
 aiohttp

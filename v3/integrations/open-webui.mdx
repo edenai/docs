@@ -16,7 +16,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "Open WebUI"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-08-31T00:00:00Z"
+  dateModified="2026-10-27T00:00:00Z"
 />
 
 Configure Open WebUI (formerly Ollama WebUI) to use Eden AI for accessing 500+ AI models through a sleek interface.
@@ -155,7 +155,8 @@ DEFAULT_USER_ROLE=user
 
 # Optional: RAG Settings
 ENABLE_RAG_WEB_SEARCH=true
-RAG_EMBEDDING_MODEL=text-embedding-3-small
+RAG_EMBEDDING_ENGINE=openai
+RAG_EMBEDDING_MODEL=openai/text-embedding-3-small
 RAG_TOP_K=5
 CHUNK_SIZE=1500
 CHUNK_OVERLAP=100
@@ -258,7 +259,7 @@ Enable voice-to-text:
 ```bash .env
 ENABLE_AUDIO=true
 AUDIO_STT_ENGINE=openai
-AUDIO_STT_MODEL=whisper-1
+AUDIO_STT_MODEL=groq/whisper-large-v3-turbo
 ```
 </CodeGroup>
 
@@ -594,15 +595,16 @@ If document upload fails:
 
 ### 1. Use Appropriate Models
 
-Configure cheaper models for embeddings:
+Configure cheaper models for embeddings and background tasks:
 
 <CodeGroup>
 ```bash .env
 # Use smaller embedding model
-RAG_EMBEDDING_MODEL=text-embedding-3-small
+RAG_EMBEDDING_ENGINE=openai
+RAG_EMBEDDING_MODEL=openai/text-embedding-3-small
 
-# Use GPT-3.5 for simple tasks
-DEFAULT_MODEL=openai/gpt-mini-latest
+# Use a mini model for titles, tags and other background tasks
+TASK_MODEL_EXTERNAL=openai/gpt-mini-latest
 ```
 </CodeGroup>
 

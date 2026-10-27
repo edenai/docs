@@ -20,6 +20,11 @@ uv pip install -r tests/requirements-evals.txt
 # without a flag. Skip this and those suites report as skipped.
 npm ci --prefix tests
 
+# The Claude Code, Codex and OpenCode CLIs the integration tests run. About a
+# gigabyte of platform binaries, so it has its own manifest; skip it and
+# tests/test_integration_clis.py reports as skipped.
+npm ci --prefix tests/clis
+
 # Set up environment variables
 cp tests/.env.example tests/.env
 # Edit tests/.env and fill in your token values
@@ -32,9 +37,10 @@ cp tests/.env.example tests/.env
 | `EDEN_AI_SANDBOX_API_TOKEN` | For execution tests | Sandbox token — AI features return mock responses, no credits consumed |
 | `EDEN_AI_PRODUCTION_API_TOKEN` | Optional | Production token, needed by the few pages whose samples require real provider responses (e.g. structured output); skipped if not set |
 | `EDEN_AI_MANAGEMENT_KEY` | Optional | Management key (`mgmt-eden-...`, `manage:read` + `manage:write`), needed by Management API samples (custom API keys, sandbox key creation, monitoring). Samples mint real inference keys in the key's organization; the run revokes them on the way out, and clears any left by a cancelled run before it starts. Cleanup only ever touches keys named after the samples (`production-v1`, `team-backend`, `team-daily`, `dev-testing`). Skipped if not set |
-| `EDEN_AI_BASE_URL` | Optional | Defaults to `https://staging-api.edenai.run`. CI runs against production. The integration guides that drive Eden AI through a framework holding a hardcoded production endpoint (Haystack) are reported as skipped anywhere else |
-| `EDEN_AI_RUN_PAID_CALLS` | Optional | Off by default, so neither a docs PR nor a local run bills the account. Set to `1` to also run the samples marked `{/* paid-test */}`, which need the model to answer for real. CI turns it on for the weekly run and for a manual dispatch, never for a pull request |
+| `EDEN_AI_BASE_URL` | Optional | Defaults to `https://staging-api.edenai.run`. CI runs against production. The integration guides that drive Eden AI through a framework holding a hardcoded production endpoint (Haystack) are reported as skipped anywhere else, and so is an integration request or CLI run for a model that API does not serve: the pages are checked against production's catalog |
+| `EDEN_AI_RUN_PAID_CALLS` | Optional | Off by default, so neither a docs PR nor a local run bills the account. Set to `1` to also run the samples marked `{/* paid-test */}`, which need the model to answer for real, and the real-model integration checks (every model on the integration pages through its tool's protocol, and the agent CLIs on a real task). CI turns it on for the weekly run and for a manual dispatch, never for a pull request |
 | `EDEN_AI_CHECK_EXTERNAL_LINKS` | Optional | Off by default. Set to `1` to also follow the links that leave the docs. They depend on somebody else's site being up, so CI checks them on the weekly run rather than on a pull request |
+| `EDEN_AI_SKIP_TEST_UPLOADS` | Optional | Off by default. Set to `1` for a run that executes no snippet, such as the integration checks, to skip the document and image the session uploads for the samples, and the cleanup around them |
 | `EDENAI_API_KEY` | Set for you | Not something you fill in: the suite publishes the token above under this name because the integration frameworks (any-llm, Haystack, Atomic Agents) read the key from the environment rather than taking it as an argument |
 
 ## Running Tests
@@ -337,6 +343,63 @@ inside it are still checked, because a menu of models goes stale like any
 other. `nginx` blocks are out of scope: no parser reads them and they name no
 models.
 
+## Integration pages
+
+A config that parses can still point its tool at Eden AI in a way the tool
+cannot use. Claude Code speaks the Anthropic Messages API and sends its key as
+`x-api-key`, Codex speaks the Responses API, and every coding agent attaches
+its tool definitions to every request, so a model that cannot take tools fails
+on the first message. None of that is on the page, and none of it was tested.
+Two modules cover it.
+
+`tests/integrations.py` reads what each page points its tool at, from the page
+itself: every model it names (config blocks, shell exports, table cells,
+prose) and every setting that holds a model. The one fact it
+cannot read is which protocol the tool speaks, so `TOOLS` there holds one line
+per page saying so, and whether the tool sends tool definitions. A new
+integration page fails until it has an entry.
+
+`tests/test_integrations.py` checks, cheapest first:
+
+- **Without credentials**, every model the page names outside a config block
+  is one Eden AI serves (`test_config_blocks.py` covers the ones inside), every
+  setting that holds a model names a whole `provider/model` id, and an agent
+  is only pointed at models whose catalog entry says they support function
+  calling. A setting is any key or variable ending in `model` or `models`, or
+  qualified after the word (`TASK_MODEL_EXTERNAL`), and a list holds a setting
+  per model: `RAG_EMBEDDING_MODEL=text-embedding-3-small` is invisible to a
+  scan for `provider/model` strings, and the tool sends the value as it stands.
+- **With the sandbox token**, the request each page's tool sends: its
+  protocol, its auth and the page's lead model, streamed, with tool
+  definitions for an agent. One per page and kind of call, which costs nothing.
+- **With the production token**, on the weekly run, every model the pages
+  name through the protocol of every tool naming it, deduplicated across
+  pages. For an agent this is the whole tool loop: a real model is given a
+  task that needs the tool, handed the result, and has to answer with a random
+  word only the result contains.
+
+`tests/test_integration_clis.py` runs the real Claude Code, Codex and OpenCode
+CLIs, installed from `tests/clis/package.json`, with the settings their pages give
+them: the export lines, the `config.toml` block, the script that generates
+`opencode.json`. Each runs in a home directory of its own with a bare
+environment, so a credential on the machine cannot make it pass by reaching
+the vendor. Codex runs with `--strict-config`, so a key the page sets that the
+pinned Codex no longer recognises fails. The sandbox run is on every pull
+request. The real-model run, on the weekly one, asks what a file says, so the
+agent has to use its own file-reading tool through Eden AI.
+
+Two things make a real-model task fail for reasons that are not Eden AI's, and
+both are handled in the tests rather than worked around per model:
+
+- Every request sets a cap on the answer. Without one the API reserves the
+  model's whole output ceiling against the key's spending limit first, and a
+  key with a limit is refused with `402` for a request costing a fraction of a
+  cent.
+- The tasks are dull on purpose, and the tool call is asked for rather than
+  forced. "Read this file and repeat it exactly" reads like exfiltration to a
+  provider's safety classifier, and Claude Opus refuses it; the newest Claude
+  models also refuse a forced `tool_choice`, which no agent sends anyway.
+
 ## CI (GitHub Actions)
 
 The workflow at `.github/workflows/test-snippets.yml` runs on PRs that touch `v3/**/*.mdx`, `docs.json`, `snippets/**`, `tests/**` or `scripts/**`:
@@ -344,8 +407,9 @@ The workflow at `.github/workflows/test-snippets.yml` runs on PRs that touch `v3
 1. **Check snippet syntax**: parses every extracted snippet, Python, shell and JavaScript, and type-checks the TypeScript ones. No credentials and no API calls, so it still reports a broken snippet on a run where the secrets are missing. It needs the npm packages, which is why `npm ci` runs before it
 2. **Check documentation links**: follows every link on every page, and fetches the two OpenAPI specs the API reference tabs render from. No credentials
 3. **Check page titles and descriptions**: every page's title and description, the copy its structured data keeps, and the feature page generator. No credentials and no requests
-4. **Check integration configuration blocks**: parses the JSON, YAML and TOML config on the integration pages and checks every model and URL it names against the live catalog. No credentials
+4. **Check integration configuration and pages**: parses the JSON, YAML and TOML config on the integration pages and checks every model and URL it names against the live catalog, then every other model and model setting on those pages, and the function-calling capability of the models the agents are pointed at. No credentials, and one process, because starting xdist workers takes longer than the assertions
 5. **Run Python snippets**, **Run shell snippets** and **Run JS and TS snippets**: execution tests with the `EDEN_AI_SANDBOX_TOKEN`, `EDEN_AI_PRODUCTION_TOKEN` and `EDEN_AI_MANAGEMENT_KEY` secrets
+6. **Run integration requests and CLIs**: each integration page's request sent the way its tool sends it, and the real Claude Code, Codex and OpenCode CLIs run with the page's settings. Sandbox on a pull request, real models weekly
 
 It also runs weekly, Mondays at 06:00 UTC against `main`, because the docs go
 stale against a moving API even when nobody edits them. The weekly run is the
@@ -354,7 +418,7 @@ only scheduled one that sets `EDEN_AI_RUN_PAID_CALLS` and
 links get their coverage there rather than on every pull request. A manual
 dispatch sets both too.
 
-Installs from `requirements-lock.txt` and `tests/package-lock.json` for reproducible builds.
+Installs from `requirements-lock.txt`, `tests/package-lock.json` and `tests/clis/package-lock.json` for reproducible builds.
 
 To set up: add `EDEN_AI_SANDBOX_TOKEN`, `EDEN_AI_PRODUCTION_TOKEN` and `EDEN_AI_MANAGEMENT_KEY` as repository secrets in GitHub. Without `EDEN_AI_MANAGEMENT_KEY` the Management API samples are reported as skipped, not failed.
 

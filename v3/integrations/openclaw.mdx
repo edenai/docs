@@ -2,14 +2,14 @@
 title: "Use OpenClaw with Eden AI"
 sidebarTitle: "OpenClaw"
 icon: "/integration-logo/openclaw-icondoc.svg"
-description: "Connect OpenClaw to Eden AI and route your agent through 500+ models with automatic fallbacks and a single API key."
+description: "Add Eden AI to OpenClaw as a custom OpenAI-compatible provider in openclaw.json and run your personal assistant on any function-calling model."
 ---
 
 import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
 
 <TechArticleSchema
   title={"Use OpenClaw with Eden AI"}
-  description={"Connect OpenClaw to Eden AI and route your agent through 500+ models with automatic fallbacks and a single API key."}
+  description={"Add Eden AI to OpenClaw as a custom OpenAI-compatible provider in openclaw.json and run your personal assistant on any function-calling model."}
   path="v3/integrations/openclaw"
   articleSection="Autonomous Agents"
   about={"Autonomous AI Agents"}
@@ -19,28 +19,22 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   dateModified="2026-08-31T00:00:00Z"
 />
 
-Connect [OpenClaw](https://openclaw.ai) to Eden AI and route your agent through 500+ models with automatic fallbacks and a single API key.
+OpenClaw has no built-in Eden AI provider, so you declare one in `openclaw.json`: a base URL, an API key and the models you want, under `models.providers`.
 
 ## Overview
 
-OpenClaw is a terminal-based AI coding agent. By pointing it at Eden AI, you get:
-
-- **500+ models**: Access OpenAI, Anthropic, Google, and more through a single API key
-- **One key, many providers**: Switch models by changing a single config value — no per-provider keys
-- **Automatic fallbacks**: Requests reroute to healthy providers if one goes down
-
-Prefer a video walkthrough? Follow along on [YouTube](https://youtu.be/HxIAYOQT90Q).
+[OpenClaw](https://openclaw.ai) is an open-source personal AI assistant that runs on your own machine. A local Gateway connects it to the chat apps you already use, and you can also reach it from a terminal UI and a web Control UI. By pointing it at Eden AI, its default model runs through Eden AI's OpenAI-compatible chat endpoint with a single Eden AI key.
 
 ## Prerequisites
 
-- OpenClaw already installed. If not, see the [OpenClaw install guide](https://github.com/openclaw/openclaw)
+- OpenClaw installed and onboarded. The installer scripts start onboarding for you; if you installed the npm package instead, run `openclaw onboard --install-daemon`. See the [OpenClaw installation guide](https://docs.openclaw.ai/install).
 - Eden AI API key from [app.edenai.run](https://app.edenai.run) → **API Keys**
 
 ## Setup
 
 ### 1. Add Eden AI as a custom provider
 
-OpenClaw stores its config at `~/.openclaw/openclaw.json` (on Windows: `%USERPROFILE%\.openclaw\openclaw.json`). Open it in your editor of choice and add the Eden AI provider with a function-calling model:
+OpenClaw reads its config from `~/.openclaw/openclaw.json` (on Windows: `%USERPROFILE%\.openclaw\openclaw.json`). Onboarding creates this file, so **merge** the `models` and `agents.defaults.model` keys below into it rather than replacing it:
 
 <CodeGroup>
 ```json ~/.openclaw/openclaw.json
@@ -50,13 +44,13 @@ OpenClaw stores its config at `~/.openclaw/openclaw.json` (on Windows: `%USERPRO
     "providers": {
       "edenai": {
         "baseUrl": "https://api.edenai.run/v3",
-        "apiKey": "YOUR_EDEN_AI_API_KEY",
+        "apiKey": "YOUR_API_KEY",
         "api": "openai-completions",
         "models": [
           {
             "id": "anthropic/claude-sonnet-latest",
-            "name": "Eden AI — Claude Sonnet",
-            "contextWindow": 128000,
+            "name": "Eden AI Claude Sonnet",
+            "contextWindow": 1000000,
             "maxTokens": 16384,
             "input": ["text", "image"],
             "cost": {
@@ -86,69 +80,73 @@ OpenClaw stores its config at `~/.openclaw/openclaw.json` (on Windows: `%USERPRO
 ```
 </CodeGroup>
 
-Use any `provider/model` from the Eden AI catalog. Pick one that supports function calling, since OpenClaw sends tools with every request.
+OpenClaw also offers `openclaw config set models.providers.edenai '<json>' --strict-json --merge` to set just the provider from the command line. Use any `provider/model` from the Eden AI catalog that supports function calling, since OpenClaw sends tools with every request.
 
 <Note>
 A few notes on the config above:
-- **`api`** must be `openai-completions`. Eden AI exposes an OpenAI-compatible endpoint, and this tells OpenClaw which wire protocol to use. If you omit it, the model fails to load with `no "api" specified`.
-- **`agents.defaults.model.primary`** makes the Eden AI model OpenClaw's default. It must be `edenai/<model-id>` — the provider key (`edenai`) plus the model's `id` (e.g. `edenai/anthropic/claude-sonnet-latest`).
-- **`name`** is just the display label shown in OpenClaw's model picker. If you switch `id` to another model, rename this field too so the picker doesn't show a stale label.
-- **`cost`** values are placeholders. Billing is handled on the Eden AI side through your API key, so OpenClaw's local cost tracking isn't used here. Check per-request cost in the [Eden AI dashboard](https://app.edenai.run).
-- **`supportsTools: true`** enables tool/function calling through Eden AI. Set it to `false` only if you want to restrict this provider to plain chat completions.
+- **`api`** is `openai-completions` because Eden AI's `/v3/chat/completions` is OpenAI-compatible. Without it the model can fail to load with `no "api" specified`.
+- **`agents.defaults.model.primary`** makes the Eden AI model OpenClaw's default. OpenClaw splits the ref at the first `/`, so `edenai/anthropic/claude-sonnet-latest` is the provider key (`edenai`) plus the model `id`.
+- **`contextWindow`** is the model's `context_length` from the [catalog](/v3/llms/listing-models). OpenClaw uses the value you set, so copy it from the catalog entry of each model you add. **`maxTokens`** is the reply cap you choose.
+- **`cost`** values are placeholders, so OpenClaw's local cost tracking shows zero. Eden AI bills the key you used: see [monitoring](/v3/general/monitoring) for consumption and cost.
+- **`supportsTools: true`** declares that this endpoint accepts tool definitions.
+- **`reasoning: false`** stops OpenClaw from sending `reasoning_effort` to this model.
 </Note>
 
-### 2. Configure OpenClaw interactively
+### 2. Select the model
 
-Run the built-in wizard:
+`agents.defaults.model.primary` already makes the Eden AI model the default. To change the default later from the command line, run:
 
 ```bash
-openclaw configure
+openclaw models set edenai/anthropic/claude-sonnet-latest
 ```
 
-In the **Model and auth** step, select `Eden AI — Claude Sonnet` — the model you defined in Step 1 (it's already your default from the `agents.defaults.model.primary` setting). Accept the defaults for the remaining steps (Workspace, Gateway, Channels, etc.) unless you have specific local-networking or channel needs.
-
-<Note>
-The wizard's **Gateway** step configures OpenClaw's *local* server (port, bind address, auth mode, tailscale exposure) — it does **not** ask for the Eden AI API URL. That's already set as `models.providers.edenai.baseUrl` in Step 1.
-</Note>
+OpenClaw's interactive `openclaw configure` has a model section too, but it keeps an existing `agents.defaults.model.primary` and it does not take the Eden AI base URL: that lives in `models.providers.edenai.baseUrl` from step 1. Its **Gateway** step only configures OpenClaw's local server (port, bind address, auth).
 
 ### 3. Start OpenClaw
 
 ```bash
-openclaw
+openclaw gateway status
+openclaw dashboard
 ```
 
-Every LLM call now flows through Eden AI, with built-in fallbacks, unified billing, and per-request cost visibility.
+The second command opens the Control UI. Send a message there to confirm the assistant answers. The default agent model now runs through Eden AI. OpenClaw's utility tasks, such as session titles, use the primary model unless `agents.defaults.utilityModel` is set; set it to an `edenai/...` ref to use a cheaper model for them.
 
-## Using specific models
+## Model naming
 
-Target any model by setting the `id` to a `provider/model` string:
+Eden AI model ids are `provider/model`. In an OpenClaw ref you add the provider key in front, so the Eden AI model `anthropic/claude-sonnet-latest` is `edenai/anthropic/claude-sonnet-latest`. Pick chat models that support function calling. These ids work today:
 
-{/* skip-test: one key of the config above, not a whole file */}
+- `anthropic/claude-sonnet-latest`: balanced reasoning and reliable tool calling, a good default
+- `anthropic/claude-opus-latest`: maximum capability
+- `anthropic/claude-haiku-latest`: fast and cheap
+
+Each `*-latest` alias follows the provider's current model. The full list, with each model's capabilities and context length, is in [List LLM Models](/v3/llms/listing-models).
+
+## Switching models
+
+Add another entry to the provider's `models` array to give OpenClaw its context window and cost metadata, then select it with `openclaw models set edenai/<provider>/<model>`. On a custom endpoint OpenClaw also accepts a model that is not listed in `models`.
+
+### Fallbacks
+
+A backup model can come from either side, and the two are separate mechanisms.
+
+**OpenClaw switches models.** `agents.defaults.model.fallbacks` is a list of refs that OpenClaw tries in order when the primary fails:
+
+{/* skip-test: a config fragment, not a whole file */}
 ```json
-"id": "anthropic/claude-opus-latest"
+"fallbacks": ["edenai/anthropic/claude-haiku-latest"]
 ```
 
-Common choices:
-
-| Model | Best for |
-|---|---|
-| `anthropic/claude-sonnet-latest` | **Recommended default** — balanced reasoning, reliable tool calling |
-| `anthropic/claude-opus-latest` | Maximum capability |
-| `anthropic/claude-haiku-latest` | Fast and cheap |
-| `openai/gpt-5` | OpenAI's frontier model |
-| `vertex/gemini-2.5-pro` | Long context, multimodal |
-
-Browse the full catalog at [app.edenai.run/models](https://app.edenai.run/models).
+**Eden AI switches models.** A [routing policy](/v3/llms/routing-policies) is a saved model chain that Eden AI runs for you. Create one whose targets all support function calling, then add `policy/<name>` as a model `id` under `models.providers.edenai.models` and select the ref `edenai/policy/<name>` (OpenClaw splits the provider at the first `/`). On a custom endpoint OpenClaw accepts model names it does not list (`openclaw@v2026.10.8:docs/concepts/models.md:237`), and Eden AI runs the policy's chain for `policy/<name>`. Binding a policy to an API key does not do this for a request that names an ordinary model: only `policy/<name>` or `@edenai` runs the chain.
 
 ## Expert Models as Tools (MCP)
 
 Eden AI also hosts an [MCP server](/v3/expert-models/mcp-server) that exposes the expert model catalog (OCR, web search, speech, translation and more) as tools. Add it with the CLI:
 
 ```bash
-openclaw mcp set edenai '{"url":"https://mcp.edenai.run/mcp","transport":"streamable-http","headers":{"Authorization":"Bearer YOUR_EDEN_AI_API_KEY"}}'
+openclaw mcp set edenai '{"url":"https://mcp.edenai.run/mcp","transport":"streamable-http","headers":{"Authorization":"Bearer YOUR_API_KEY"}}'
 ```
 
-Or edit `~/.openclaw/openclaw.json` directly and restart the gateway:
+Or edit `~/.openclaw/openclaw.json` directly. The Gateway watches the file and applies changes on its own:
 
 ```json
 {
@@ -158,7 +156,7 @@ Or edit `~/.openclaw/openclaw.json` directly and restart the gateway:
         "url": "https://mcp.edenai.run/mcp",
         "transport": "streamable-http",
         "headers": {
-          "Authorization": "Bearer YOUR_EDEN_AI_API_KEY"
+          "Authorization": "Bearer YOUR_API_KEY"
         }
       }
     }
@@ -166,21 +164,25 @@ Or edit `~/.openclaw/openclaw.json` directly and restart the gateway:
 }
 ```
 
-See the [MCP server page](/v3/expert-models/mcp-server) for the full tool catalog and the conventions its tools share.
+Run `openclaw mcp doctor edenai --probe` to check that the server answers. See the [MCP server page](/v3/expert-models/mcp-server) for the full tool catalog and the conventions its tools share.
 
 ## Troubleshooting
 
-### `401 Unauthorized`
+### `401` / `Invalid API key` or `Invalid token`
 
-Verify your Eden AI key — grab a fresh one at [app.edenai.run](https://app.edenai.run) → **API Keys**. Check for leading/trailing spaces.
+Eden AI does not recognize the key in `apiKey`: it answers `Invalid API key` for a wrong or revoked `sk-eden-...` key and `Invalid token` for a token of any other shape. Create a fresh one at [app.edenai.run](https://app.edenai.run) → **API Keys** and check for leading or trailing spaces.
 
-### `model not found`
+### `Unknown model: edenai/...`
 
-Ensure the `id` uses the `provider/model` format (e.g. `anthropic/claude-sonnet-latest`). No bare model names.
+This message comes from OpenClaw, not from Eden AI: it could not resolve the ref. Check that the part before the first `/` is the provider key under `models.providers` (`edenai`) and that the rest is the model `id` from your config.
+
+### `Model(s) not found or inactive`
+
+Eden AI returns this `400` when the model id is not in the catalog. Use an id the catalog lists: `provider/model`, for example `anthropic/claude-sonnet-latest`, or a routable name.
 
 ### `no "api" specified`
 
-The provider is missing its `api` field. Set `"api": "openai-completions"` at the provider level (see Step 1) — Eden AI uses the OpenAI-compatible protocol.
+The provider is missing its `api` field. Set `"api": "openai-completions"` at the provider level (see step 1).
 
 ### Connection issues
 
@@ -189,5 +191,5 @@ Confirm the base URL is exactly `https://api.edenai.run/v3` and check Eden AI st
 ## Next Steps
 
 - [Hermes Agent](./hermes) - Self-hosted, persistent AI agent from Nous Research
-- [Claude Code](./claude-code) - Official Claude CLI
-- [OpenCode](./opencode) - Terminal-based AI coding assistant
+- [nanobot](./nanobot) - Self-hosted personal AI agent framework
+- [Routing policies](/v3/llms/routing-policies) - Save a model chain and call it as `policy/<name>`

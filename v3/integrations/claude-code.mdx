@@ -19,7 +19,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   dateModified="2026-10-27T00:00:00Z"
 />
 
-Configure [Claude Code](https://github.com/anthropics/claude-code), Anthropic's official CLI coding agent, to use Eden AI for access to 500+ models behind a single API key.
+Claude Code speaks the Anthropic Messages API, and Eden AI serves that API at `/v3/v1/messages`, so a few environment variables (the base URL, your key and the model names) send [Claude Code](https://github.com/anthropics/claude-code) through Eden AI with no proxy in between.
 
 ## Overview
 
@@ -27,7 +27,6 @@ Claude Code runs in your terminal and edits code in your project. Pointing it at
 
 - **500+ models**: switch between Claude, GPT, Gemini, and more without reinstalling
 - **One API key**: unified billing and monitoring across providers
-- **Provider failover**: keep working when an upstream provider has an incident
 
 ## Prerequisites
 
@@ -40,7 +39,7 @@ Claude Code runs in your terminal and edits code in your project. Pointing it at
 
 <CodeGroup>
 ```bash bash / zsh
-export ANTHROPIC_API_KEY="YOUR_EDEN_AI_API_KEY"
+export ANTHROPIC_API_KEY="YOUR_API_KEY"
 export ANTHROPIC_BASE_URL="https://api.edenai.run/v3"
 export ANTHROPIC_MODEL="anthropic/claude-opus-latest"
 export ANTHROPIC_DEFAULT_HAIKU_MODEL="anthropic/claude-haiku-latest"
@@ -49,7 +48,7 @@ export ANTHROPIC_DEFAULT_OPUS_MODEL="anthropic/claude-opus-latest"
 ```
 
 ```powershell PowerShell
-$env:ANTHROPIC_API_KEY = "YOUR_EDEN_AI_API_KEY"
+$env:ANTHROPIC_API_KEY = "YOUR_API_KEY"
 $env:ANTHROPIC_BASE_URL = "https://api.edenai.run/v3"
 $env:ANTHROPIC_MODEL = "anthropic/claude-opus-latest"
 $env:ANTHROPIC_DEFAULT_HAIKU_MODEL="anthropic/claude-haiku-latest"
@@ -66,11 +65,17 @@ To make it permanent, add the `export` lines to `~/.bashrc` or `~/.zshrc` and re
 claude
 ```
 
-Claude Code now sends requests to Eden AI using the model you set in `ANTHROPIC_MODEL`.
+Claude Code now sends requests to Eden AI using the model you set in `ANTHROPIC_MODEL`, and background tasks use the model in `ANTHROPIC_DEFAULT_HAIKU_MODEL`.
+
+The first time you launch `claude` with `ANTHROPIC_API_KEY` set, it asks whether to use that key: choose **Yes**. To skip the prompt, export the key as `ANTHROPIC_AUTH_TOKEN` instead, which Claude Code sends as an `Authorization: Bearer` header. Eden AI accepts the key in either header. If you are logged in to a claude.ai account, the exported key takes precedence over it while the variable is set.
+
+## Model naming
+
+Eden AI model IDs have the form `provider/model`, such as `anthropic/claude-opus-latest` or `openai/gpt-latest`. A `-latest` alias points to the current release of that model. Claude Code sends tool definitions with every request, so pick a model that supports function calling. Browse the catalog in [List Models](/v3/llms/listing-models) or with `GET https://api.edenai.run/v3/models`.
 
 ## Switching models
 
-Eden AI uses the `provider/model` format. Update the `ANTHROPIC_MODEL` environment variable (or pass `--model` on the command line) to switch:
+Update the `ANTHROPIC_MODEL` environment variable (or pass `--model` on the command line) to switch:
 
 <CodeGroup>
 ```bash Claude variants
@@ -81,11 +86,9 @@ export ANTHROPIC_MODEL="anthropic/claude-haiku-latest"    # fastest
 
 ```bash Other providers
 export ANTHROPIC_MODEL="openai/gpt-latest"
-export ANTHROPIC_MODEL="vertex/gemini-2.5-pro"
+export ANTHROPIC_MODEL="vertex/gemini-pro-latest"
 ```
 </CodeGroup>
-
-Browse the full catalog via [List Models](/v3/llms/listing-models) or `GET https://api.edenai.run/v3/models`.
 
 ## Expert Models as Tools (MCP)
 
@@ -93,10 +96,10 @@ Eden AI also hosts an [MCP server](/v3/expert-models/mcp-server) that exposes th
 
 ```bash
 claude mcp add --transport http edenai https://mcp.edenai.run/mcp \
-  --header "Authorization: Bearer YOUR_EDEN_AI_API_KEY"
+  --header "Authorization: Bearer YOUR_API_KEY"
 ```
 
-To share it with your team instead, commit the equivalent block to the project's `.mcp.json`:
+To share it with your team instead, commit the equivalent block to the project's `.mcp.json`. Claude Code expands `${VAR}` in that file, so the block names the variable and each teammate exports `EDEN_AI_API_KEY` in their own shell. The key itself is never committed:
 
 ```json
 {
@@ -105,7 +108,7 @@ To share it with your team instead, commit the equivalent block to the project's
       "type": "http",
       "url": "https://mcp.edenai.run/mcp",
       "headers": {
-        "Authorization": "Bearer YOUR_EDEN_AI_API_KEY"
+        "Authorization": "Bearer ${EDEN_AI_API_KEY}"
       }
     }
   }
@@ -118,11 +121,11 @@ Keep the `type` field: without it Claude Code reads the entry as a stdio server.
 
 ### Authentication errors
 
-Verify the API key is loaded in your shell and that it has LLM access. The check below sends what Claude Code sends: it appends `/v1/messages` to `ANTHROPIC_BASE_URL` and passes the key in the `x-api-key` header.
+Verify the API key is loaded in your shell (the first command prints `set` when it is) and that it has LLM access. The check below sends what Claude Code sends with `ANTHROPIC_API_KEY`: it appends `/v1/messages` to `ANTHROPIC_BASE_URL` and passes the key in the `x-api-key` header. If you export `ANTHROPIC_AUTH_TOKEN` instead, send `-H "Authorization: Bearer $ANTHROPIC_AUTH_TOKEN"` in place of the `x-api-key` line; Eden AI accepts either.
 
 {/* skip-test: reads $ANTHROPIC_API_KEY, which the reader exports earlier on the page */}
 ```bash
-echo $ANTHROPIC_API_KEY
+echo "${ANTHROPIC_API_KEY:+set}"
 
 curl -X POST https://api.edenai.run/v3/v1/messages \
   -H "x-api-key: $ANTHROPIC_API_KEY" \
@@ -133,7 +136,7 @@ curl -X POST https://api.edenai.run/v3/v1/messages \
 
 ### Model not found
 
-Use the full `provider/model` string (e.g. `anthropic/claude-opus-latest`, not `claude-opus-4-7`). Confirm the ID is in the catalog returned by `GET /v3/models`.
+Use the full `provider/model` string (for example `anthropic/claude-opus-latest`, not a bare `claude-opus-latest`). The Messages route answers a bare name such as `claude-opus-latest` or `claude-opus-5-5` with a `400` that reads `Model(s) not found or inactive`. Confirm the ID is in the catalog returned by `GET /v3/models`.
 
 ### Connection issues
 
@@ -141,6 +144,6 @@ Confirm `ANTHROPIC_BASE_URL` is exactly `https://api.edenai.run/v3`. Check Eden 
 
 ## Next Steps
 
-- [Codex CLI](./codex-cli) — OpenAI's open-source coding agent on Eden AI
-- [OpenCode](./opencode) — terminal coding agent with auto-generated config
+- [Codex CLI](./codex-cli): OpenAI's open-source coding agent on Eden AI
+- [OpenCode](./opencode): terminal coding agent with auto-generated config
 - [Prompt Caching](/v3/llms/prompt-caching): how caching works on the Messages endpoint Claude Code uses

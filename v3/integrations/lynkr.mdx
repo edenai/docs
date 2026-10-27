@@ -2,14 +2,14 @@
 title: "Use Lynkr with Eden AI"
 sidebarTitle: "Lynkr"
 icon: "/integration-logo/lynkr-icondoc.svg"
-description: "Use Lynkr with Eden AI to route your gateway to 500+ AI models with tier-based cost optimisation."
+description: "Run the Lynkr LLM gateway with Eden AI as its provider: set EDENAI_API_KEY and tier routing to send Claude Code and Cursor traffic to 500+ models."
 ---
 
 import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
 
 <TechArticleSchema
   title={"Use Lynkr with Eden AI"}
-  description={"Use Lynkr with Eden AI to route your gateway to 500+ AI models with tier-based cost optimisation."}
+  description={"Run the Lynkr LLM gateway with Eden AI as its provider: set EDENAI_API_KEY and tier routing to send Claude Code and Cursor traffic to 500+ models."}
   path="v3/integrations/lynkr"
   articleSection="AI Gateway"
   about={"LLM Gateway Integration"}
@@ -19,11 +19,19 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   dateModified="2026-07-16T00:00:00Z"
 />
 
-Use Lynkr with Eden AI to route your gateway to 500+ AI models with tier-based cost optimisation.
+This page sets Eden AI as Lynkr's provider and configures complexity-based tier routing, then points Claude Code or Codex at Lynkr. Cursor is covered by a link to Lynkr's own guide.
 
 ## Overview
 
-Lynkr is an open-source LLM gateway that cuts costs with **tier-based routing** — it scores each request 0–100 and sends it to the cheapest model that can handle it. Eden AI is a built-in Lynkr provider, so you reach models from OpenAI, Anthropic, Google, Mistral and 500+ more behind one key, with EU-based, GDPR-aligned inference and unified billing.
+Lynkr is an open-source, self-hosted LLM gateway for coding tools. Its **tier-based routing** scores each request for complexity (0-100) and maps it to one of four tiers, each with its own model. Eden AI is a built-in Lynkr provider, so a tier can point at any of 500+ models from OpenAI, Anthropic, Google, Mistral and more, behind one key and one bill.
+
+Lynkr adds a hop that the [Claude Code](/v3/integrations/claude-code) page does not have. There, Claude Code talks to Eden AI directly. Here, your tool talks to Lynkr on your machine, and Lynkr talks to Eden AI's `/v3/chat/completions` with its own key. The key and the model are configured in Lynkr, not in the tool.
+
+## Prerequisites
+
+- Node.js 20 or later and npm, which every install method below requires
+- Eden AI API key from [app.edenai.run](https://app.edenai.run) → **API Keys**
+- A tool that can use a custom base URL: Claude Code, Cursor or Codex CLI
 
 ## Installation
 
@@ -44,42 +52,72 @@ curl -fsSL https://raw.githubusercontent.com/Fast-Editor/Lynkr/main/install.sh |
 
 ## Quick Start
 
-Initialise Lynkr, point it at Eden AI, and start the gateway:
+Run the setup wizard. Pick **Direct API usage** as the usage mode (the default, Claude Pro/Max passthrough, is not what this page sets up), then choose Eden AI as the provider for each of the four tiers and paste your key when it asks. It writes a `.env` that Lynkr reads, including the port:
+
+```bash
+lynkr init
+lynkr start
+```
+
+`lynkr start` serves an Anthropic-compatible `/v1/messages` endpoint for Claude Code, an OpenAI-compatible `/v1/chat/completions` endpoint for Cursor, and a `/v1/responses` endpoint for Codex, on port 8081 (the port `lynkr init` writes). To configure by hand instead of using the wizard, set the variables in [Configuration](#configuration), including `PORT`, before `lynkr start`: without it Lynkr listens on port 8080.
+
+### Connect your tool
+
+Point the tool at Lynkr, not at Eden AI. Your Eden AI key stays in Lynkr's configuration, so the tool's own key setting can hold any value.
 
 <CodeGroup>
-```bash Terminal
-lynkr init                       # scaffold a .env
-export EDENAI_API_KEY=your-edenai-key
-export MODEL_PROVIDER=edenai      # send all requests to Eden AI
-lynkr start                       # OpenAI-compatible endpoint on port 8081
+```bash Claude Code
+export ANTHROPIC_BASE_URL="http://localhost:8081"
+export ANTHROPIC_API_KEY="dummy"   # Claude Code requires a value, Lynkr ignores it
+claude
+```
+
+```toml ~/.codex/config.toml
+model_provider = "lynkr"
+
+[model_providers.lynkr]
+base_url = "http://localhost:8081/v1"
+wire_api = "responses"
 ```
 </CodeGroup>
+
+The first time you launch `claude` with `ANTHROPIC_API_KEY` set, it asks whether to use that key and preselects **No**: choose **Yes**. To skip the prompt, export `ANTHROPIC_AUTH_TOKEN="dummy"` instead, which takes effect at once (Claude Code's [gateway documentation](https://code.claude.com/docs/en/llm-gateway-connect) describes both variables).
+
+For Cursor, follow [Lynkr's Cursor guide](https://github.com/Fast-Editor/Lynkr/blob/main/documentation/cursor-integration.md), which covers Cursor's base URL setting.
+
+The Claude Code settings differ from the [Claude Code page](/v3/integrations/claude-code) on purpose: that page sets `ANTHROPIC_BASE_URL` to `https://api.edenai.run/v3` and `ANTHROPIC_API_KEY` to your Eden AI key, because there the hop is Claude Code to Eden AI. With Lynkr in between, the hop is Claude Code to Lynkr, and Lynkr holds the Eden AI key.
+
+Test the gateway with a direct request:
 
 ```bash curl
 curl -X POST http://localhost:8081/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "mistral/mistral-small-latest",
+    "model": "anthropic/claude-sonnet-latest",
     "messages": [{"role": "user", "content": "Hello from Lynkr + Eden AI"}]
   }'
 ```
 
+The `model` value in a request never becomes the Eden AI model. Lynkr chooses it: `EDENAI_MODEL` under static routing, or the model of the selected tier under tier routing. Under tier routing, a request `model` that contains `-mini` or `-nano`, or a `reasoning.effort` value, pins the tier instead of letting Lynkr score the request, and the pin governs only the first model call of a turn. The model that answers is still that tier's.
+
 ## Configuration
 
-Lynkr reads provider credentials from environment variables (or a `.env` file):
+Lynkr reads provider credentials from environment variables or a `.env` file. `EDENAI_API_KEY` and `EDENAI_MODEL` are the two to set:
 
 <CodeGroup>
 ```bash .env
-EDENAI_API_KEY=your-edenai-key
-EDENAI_MODEL=openai/gpt-5-mini                       # default model (provider/model naming)
+EDENAI_API_KEY=YOUR_API_KEY
+EDENAI_MODEL=openai/gpt-mini-latest                  # default model (provider/model naming)
 EDENAI_EMBEDDINGS_MODEL=openai/text-embedding-ada-002
-EDENAI_ENDPOINT=https://api.edenai.run/v3/chat/completions
+PORT=8081                                            # Lynkr's default is 8080
 ```
 </CodeGroup>
 
+`EDENAI_ENDPOINT` already defaults to `https://api.edenai.run/v3/chat/completions`, so set it only to change it.
+
 ### Routing modes
 
-**Static** — every request goes to Eden AI:
+**Static**: every request goes to Eden AI:
 
 <CodeGroup>
 ```bash Static
@@ -87,49 +125,34 @@ export MODEL_PROVIDER=edenai
 ```
 </CodeGroup>
 
-**Tier-based (recommended for cost)** — set all four tiers to Eden AI models; Lynkr routes by request complexity:
+**Tier-based (recommended for cost)**: set all four tiers to Eden AI models and Lynkr routes by request complexity. `MODEL_PROVIDER` stays set because Lynkr uses it for startup checks and as the default provider for a tier value without a `provider:` prefix:
 
 <CodeGroup>
 ```bash Tier-based
+export MODEL_PROVIDER=edenai
 export TIER_SIMPLE=edenai:mistral/mistral-small-latest
-export TIER_MEDIUM=edenai:openai/gpt-5-mini
-export TIER_HARD=edenai:anthropic/claude-sonnet-latest
-export TIER_EXPERT=edenai:openai/gpt-5.5
+export TIER_MEDIUM=edenai:openai/gpt-mini-latest
+export TIER_COMPLEX=edenai:anthropic/claude-sonnet-latest
+export TIER_REASONING=edenai:openai/gpt-latest
 ```
 </CodeGroup>
 
-## Available Models
+## Model naming
 
-Use the `provider/model` format for any Eden AI model:
+Use the `provider/model` format for any Eden AI model, after the `edenai:` prefix in a tier value: `edenai:anthropic/claude-sonnet-latest`. Other ids that suit a tier are `mistral/mistral-small-latest` and `openai/gpt-latest`. Lynkr forwards tool definitions, so choose models that support function calling. Browse the catalog in [List Models](/v3/llms/listing-models) or with `GET https://api.edenai.run/v3/models`.
 
-**OpenAI**
-- `openai/gpt-5.5`
-- `openai/gpt-5-mini`
+## Troubleshooting
 
-**Anthropic**
-- `anthropic/claude-sonnet-latest`
-- `anthropic/claude-haiku-latest`
+### Tier routing is not active
 
-**Google**
-- `vertex/gemini-2.5-pro`
-- `vertex/gemini-flash-latest`
+Lynkr turns tier routing off, with a warning at startup, unless all four of `TIER_SIMPLE`, `TIER_MEDIUM`, `TIER_COMPLEX` and `TIER_REASONING` are set. The warning names the missing ones. Until you set them, every request goes to the `MODEL_PROVIDER` model.
 
-**Mistral**
-- `mistral/mistral-large-latest`
-- `mistral/mistral-small-latest`
+### Authentication errors
 
-## Environment Variables
-
-<CodeGroup>
-```bash .env
-EDENAI_API_KEY=your_api_key_here
-EDENAI_MODEL=openai/gpt-5-mini
-EDENAI_ENDPOINT=https://api.edenai.run/v3/chat/completions
-```
-</CodeGroup>
+Eden AI answers `401` with `Invalid API key` for a wrong or revoked `sk-eden-` key, and with `Invalid token` for a value of any other shape. Check `EDENAI_API_KEY` in the environment or `.env` that `lynkr start` reads, then restart Lynkr. The key in your tool's own settings is not the one Eden AI sees.
 
 ## Next Steps
 
-- [Chat Completions](/v3/llms/chat-completions) - Core LLM endpoint
-- [List LLM Models](/v3/llms/listing-models) - Browse available providers and models
-- [OpenAI SDK (Python)](/v3/integrations/openai-sdk-python) - Direct SDK usage
+- [Claude Code](/v3/integrations/claude-code): connect Claude Code to Eden AI directly, without Lynkr
+- [List LLM Models](/v3/llms/listing-models): browse available providers and models
+- [Chat Completions](/v3/llms/chat-completions): the endpoint Lynkr calls on Eden AI

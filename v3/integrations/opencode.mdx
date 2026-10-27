@@ -2,14 +2,14 @@
 title: "Use OpenCode with Eden AI"
 sidebarTitle: "OpenCode"
 icon: "/integration-logo/opencode-icondoc.svg"
-description: "Configure OpenCode, the AI-powered terminal coding assistant, to use Eden AI for access to 500+ models."
+description: "Set up OpenCode to use Eden AI: generate opencode.json from the live model catalog, connect your API key with /connect, and pick any of 500+ models."
 ---
 
 import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
 
 <TechArticleSchema
   title={"Use OpenCode with Eden AI"}
-  description={"Configure OpenCode, the AI-powered terminal coding assistant, to use Eden AI for access to 500+ models."}
+  description={"Set up OpenCode to use Eden AI: generate opencode.json from the live model catalog, connect your API key with /connect, and pick any of 500+ models."}
   path="v3/integrations/opencode"
   articleSection="Coding Agents"
   about={"AI Coding Assistants"}
@@ -19,7 +19,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   dateModified="2026-10-27T00:00:00Z"
 />
 
-Configure [OpenCode](https://opencode.ai), the AI-powered terminal coding assistant, to use Eden AI for access to 500+ models.
+[OpenCode](https://opencode.ai) is maintained in two release lines, OpenCode 1 and OpenCode 2. This page generates an `opencode.json` that lists every Eden AI model with function calling, connects your key, and covers both lines.
 
 ## Overview
 
@@ -31,7 +31,7 @@ OpenCode is a terminal-based AI coding assistant. By connecting it to Eden AI, y
 
 ## Prerequisites
 
-- Node.js and npm installed
+- Node.js and npm, only if you install with npm
 - Python 3.9+ with `requests` (`pip install requests`) to run the config generator
 - Eden AI API key from [app.edenai.run](https://app.edenai.run) → **API Keys**
 
@@ -54,7 +54,7 @@ brew install anomalyco/tap/opencode
 </CodeGroup>
 
 <Note>
-All three commands install OpenCode 1, which is what the rest of this page covers. OpenCode 2 is published separately, as `@opencode/cli`, and uses a different config key. See [OpenCode 2](#opencode-2) below.
+All three commands install OpenCode 1, which is what the rest of this page covers. `brew install opencode`, without the `anomalyco/tap/` prefix, installs OpenCode 2. OpenCode 2 is also published as `@opencode/cli` and uses a different config key. See [OpenCode 2](#opencode-2) below.
 </Note>
 
 ### 2. Generate your config
@@ -66,7 +66,7 @@ pip install requests
 python gen_opencode_config.py
 ```
 
-It fetches Eden AI's catalog, keeps every model that supports function calling, and adds an `edenai` provider to `~/.config/opencode/opencode.json` (on Windows: `%USERPROFILE%\.config\opencode\opencode.json`). Existing settings in that file are preserved — only the `edenai` provider entry is replaced.
+It fetches Eden AI's catalog, keeps every model that supports function calling, and adds an `edenai` provider to `~/.config/opencode/opencode.json` (on Windows: `%USERPROFILE%\.config\opencode\opencode.json`). Existing settings in that file are preserved, and only the `edenai` provider entry is replaced.
 
 <CodeGroup>
 ```python gen_opencode_config.py
@@ -161,23 +161,33 @@ Run `/models` and pick any Eden AI model. To set a default instead, add a top-le
 "model": "edenai/vertex/gemini-flash-latest"
 ```
 
-<Note>
-Eden AI model IDs already contain a slash (`anthropic/claude-sonnet-latest`), and some contain several (`together_ai/meta-models/Muse-Glimmer-30B`). OpenCode splits only on the first slash, so `edenai/<full-eden-model-id>` is the correct form.
-</Note>
+## Model naming
+
+Eden AI model IDs have the form `provider/model`, such as `anthropic/claude-sonnet-latest` or `vertex/gemini-flash-latest`. Some contain several slashes (`together_ai/meta-models/Muse-Glimmer-30B`). OpenCode splits a model reference only on the first slash, so the reference is `edenai/` plus the full Eden AI ID: `edenai/anthropic/claude-sonnet-latest`. The generated config holds only models with function calling, which is what OpenCode needs. Browse the catalog in [List Models](/v3/llms/listing-models) or with `GET https://api.edenai.run/v3/models`.
 
 ## Switching models
 
-Re-run the script whenever you want to refresh the catalog — new models appear in `/models` the next time OpenCode starts. Browse the full list via [List Models](/v3/llms/listing-models) or `GET https://api.edenai.run/v3/models`.
+Run `/models` and pick another model, or change the top-level `model` key as shown in step 4. Re-run the script whenever you want to refresh the catalog: new models appear in `/models` the next time OpenCode starts.
 
 ## OpenCode 2
 
-OpenCode 2 is a separate release line, installed from its own package. The installer at `opencode.ai/install` and the `opencode-ai` npm package both serve OpenCode 1 only.
+OpenCode 2 is a separate release line, installed from its own package. The installer at `opencode.ai/install` and the `opencode-ai` npm package both serve OpenCode 1. Install OpenCode 2 with one of:
 
 ```bash
 npm install -g @opencode/cli
 ```
 
-You do not need the config generator from step 2. OpenCode 2 reads its provider and model catalog from [models.dev](https://models.dev), where Eden AI is already listed, so `/connect` finds Eden AI and `/models` lists its models with no config file at all. Export `EDENAI_API_KEY` or connect the key through `/connect` as usual.
+```bash
+curl -fsSL https://opencode.ai/v2/install | bash
+```
+
+```bash
+brew install anomalyco/tap/opencode-v2
+```
+
+OpenCode 2 installs the `opencode` command, like OpenCode 1, and the two are not installed side by side by default. Remove a package-managed OpenCode 1 installation before installing OpenCode 2: the OpenCode 2 curl installer replaces the OpenCode 1 binary.
+
+You do not need the config generator from step 2 to get started. OpenCode 2 reads its provider and model catalog from [models.dev](https://models.dev), where Eden AI is already listed, so `/connect` finds Eden AI and `/models` lists its models with no config file. Export `EDENAI_API_KEY` or connect the key through `/connect` as usual.
 
 Only the config key changes. Where OpenCode 1 uses `provider` with an `options` object, OpenCode 2 uses `providers` with a `settings` object:
 
@@ -200,7 +210,7 @@ That example pins requests to Eden AI's EU gateway. Drop the `settings` block en
 An OpenCode 1 config keeps working on OpenCode 2: it reads the older `provider` key and migrates it to `providers`, mapping `options` to `settings`. The older key is marked deprecated in the config schema, so prefer `providers` for new setups.
 </Note>
 
-Because the catalog comes from models.dev rather than from a live call to Eden AI, it can lag the current Eden AI catalog by a few releases. A model that `GET /v3/models` returns but `/models` does not list yet can still be used by declaring it under the provider's `models` key.
+The built-in catalog lags the live Eden AI catalog, so it lists fewer models than the generator in step 2 writes. The generator's output also works on OpenCode 2, through the migration described in the note above. OpenCode 2 ignores the `attachment` and `reasoning` fields of each model and prints a warning for them.
 
 ## Expert Models as Tools (MCP)
 
@@ -215,12 +225,14 @@ Eden AI also hosts an [MCP server](/v3/expert-models/mcp-server) that exposes th
       "url": "https://mcp.edenai.run/mcp",
       "enabled": true,
       "headers": {
-        "Authorization": "Bearer YOUR_EDEN_AI_API_KEY"
+        "Authorization": "Bearer YOUR_API_KEY"
       }
     }
   }
 }
 ```
+
+On OpenCode 2 the native form is `mcp.servers.edenai`, with `disabled` in place of `enabled`. The block above is migrated automatically.
 
 See the [MCP server page](/v3/expert-models/mcp-server) for the full tool catalog and the conventions its tools share.
 
@@ -228,28 +240,28 @@ See the [MCP server page](/v3/expert-models/mcp-server) for the full tool catalo
 
 ### `401 Unauthorized`
 
-The credential is missing or wrong. Re-run `/connect` and paste a fresh key from [app.edenai.run](https://app.edenai.run) → **API Keys**, watching for leading or trailing spaces.
+The credential is missing or wrong. Eden AI answers `Invalid API key` for a wrong or revoked `sk-eden-` key and `Invalid token` for a value of any other shape. Re-run `/connect` and paste a fresh key from [app.edenai.run](https://app.edenai.run) → **API Keys**, watching for leading or trailing spaces.
 
-### Eden AI does not appear in `/connect` or `/models`
+### An Eden AI model is missing from `/models`
 
-OpenCode did not load the provider. Confirm the config parses and contains the provider:
+On OpenCode 1, confirm the config parses and contains the provider:
 
 ```bash
 python -c "import json,pathlib;print(list(json.loads((pathlib.Path.home()/'.config/opencode/opencode.json').read_text())['provider']))"
 ```
 
-Restart OpenCode after regenerating the file — the config is read at startup.
+Restart OpenCode after regenerating the file, since the config is read at startup. If you wrote an OpenCode 2 config by hand with `providers`, read that key instead; the generator always writes `provider`.
 
 ### `UnknownError` right after sending a message
 
-Usually a mistyped model reference — OpenCode reports an unknown model as a generic server error rather than a "model not found" message. Use `edenai/` followed by the *complete* Eden AI model ID (`edenai/vertex/gemini-flash-latest`, not `edenai/gemini-flash-latest`); it must match a key under `provider.edenai.models` in your config. Run `opencode models` to see the exact strings OpenCode loaded.
+Usually a mistyped model reference: OpenCode reports an unknown model as a generic server error rather than a "model not found" message. Use `edenai/` followed by the *complete* Eden AI model ID (`edenai/vertex/gemini-flash-latest`, not `edenai/gemini-flash-latest`); it must match a key under `provider.edenai.models` in your config. Run `opencode models` to see the exact strings OpenCode loaded.
 
 ### Connection issues
 
-Confirm `baseURL` is exactly `https://api.edenai.run/v3` — the OpenAI-compatible client appends `/chat/completions` itself. Check Eden AI status at [app-edenai.instatus.com](https://app-edenai.instatus.com).
+Confirm `baseURL` is exactly `https://api.edenai.run/v3`, because the OpenAI-compatible client appends `/chat/completions` itself. Check Eden AI status at [app-edenai.instatus.com](https://app-edenai.instatus.com).
 
 ## Next Steps
 
-- [Codex CLI](./codex-cli) - OpenAI's open-source local coding agent
-- [Continue.dev](./continue-dev) - AI code assistant for VS Code and JetBrains
-- [Claude Code](./claude-code) - Official Claude CLI
+- [Codex CLI](./codex-cli): OpenAI's open-source local coding agent
+- [Continue.dev](./continue-dev): AI code assistant for VS Code and JetBrains
+- [Claude Code](./claude-code): Anthropic's official CLI on Eden AI

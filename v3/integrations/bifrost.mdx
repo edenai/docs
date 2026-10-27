@@ -2,14 +2,14 @@
 title: "Use Bifrost with Eden AI"
 sidebarTitle: "Bifrost"
 icon: "/integration-logo/bifrost-icondoc.svg"
-description: "Use Bifrost with Eden AI to route to 500+ AI models through one OpenAI-compatible gateway."
+description: "Add Eden AI to the Bifrost gateway as a custom OpenAI-compatible provider, so requests to edenai/provider/model reach 500+ models through one key."
 ---
 
 import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
 
 <TechArticleSchema
   title={"Use Bifrost with Eden AI"}
-  description={"Use Bifrost with Eden AI to route to 500+ AI models through one OpenAI-compatible gateway."}
+  description={"Add Eden AI to the Bifrost gateway as a custom OpenAI-compatible provider, so requests to edenai/provider/model reach 500+ models through one key."}
   path="v3/integrations/bifrost"
   articleSection="AI Gateway"
   about={"LLM Gateway Integration"}
@@ -19,27 +19,24 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   dateModified="2026-07-16T00:00:00Z"
 />
 
-Use Bifrost with Eden AI to route to 500+ AI models through one OpenAI-compatible gateway.
+Bifrost has no built-in Eden AI provider, and it adds `/v1` to the base URL of an OpenAI-type provider, which Eden AI does not serve. This page adds Eden AI as a custom provider with the request paths set explicitly.
 
 ## Overview
 
-Bifrost is a high-performance open-source LLM gateway (Go) that adds routing, fallbacks, load-balancing and governance across providers. Because Eden AI is fully OpenAI-compatible, you add it through Bifrost's **Custom Provider** configuration — no build and no fork — and route to models from OpenAI, Anthropic, Google, Cohere, Meta and more behind one key, with EU-based, GDPR-aligned inference.
+[Bifrost](https://github.com/maximhq/bifrost) is an open-source LLM gateway (Go) that adds routing, fallbacks, load balancing and governance across providers. Eden AI exposes an OpenAI-compatible `/v3/chat/completions` endpoint, so you add it as a **Custom Provider** with `base_provider_type: openai` and path overrides. There is no build and no fork: you route to models from OpenAI, Anthropic, Google, Mistral and more behind one key.
 
-## Installation
+## Prerequisites
 
-<CodeGroup>
-```bash Docker
-docker run -p 8080:8080 -v $(pwd)/data:/app/data maximhq/bifrost
-```
+- Docker, or Node.js to run `npx`
+- An Eden AI API key from [app.edenai.run](https://app.edenai.run)
 
-```bash npx
-npx -y @maximhq/bifrost
-```
-</CodeGroup>
+## Setup
 
-## Quick Start
+### 1. Write the config
 
-Add Eden AI as a Custom Provider in your `config.json`, then point any request at it:
+Bifrost reads `config.json` from its app directory at startup, so create it first. With Docker the app directory is the folder you mount, so save it as `data/config.json`. With `npx` it is `~/.config/bifrost` unless you pass `-app-dir`, as in the command below.
+
+The `request_path_overrides` matter: without them Bifrost calls `https://api.edenai.run/v3/v1/chat/completions`, which does not exist.
 
 <CodeGroup>
 ```json config.json
@@ -56,58 +53,90 @@ Add Eden AI as a Custom Provider in your `config.json`, then point any request a
           "chat_completion": true,
           "chat_completion_stream": true,
           "embedding": true
+        },
+        "request_path_overrides": {
+          "chat_completion": "/chat/completions",
+          "chat_completion_stream": "/chat/completions",
+          "embedding": "/embeddings"
         }
       }
     }
   }
 }
 ```
+</CodeGroup>
 
+### 2. Export your key and start Bifrost
+
+The config reads `env.EDEN_AI_API_KEY` from Bifrost's environment. Export it, then start Bifrost. Docker needs `-e EDEN_AI_API_KEY` to pass it into the container:
+
+```bash
+export EDEN_AI_API_KEY="YOUR_API_KEY"
+```
+
+<CodeGroup>
+```bash Docker
+docker run -e EDEN_AI_API_KEY -p 8080:8080 -v $(pwd)/data:/app/data maximhq/bifrost
+```
+
+```bash npx
+npx -y @maximhq/bifrost -app-dir ./data
+```
+</CodeGroup>
+
+You can also add the provider at runtime with `POST /api/providers` or from the Bifrost web UI under **Model Providers**, with no restart needed.
+
+### 3. Send a request
+
+<CodeGroup>
 ```bash curl
 curl -X POST http://localhost:8080/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "edenai/openai/gpt-5.5",
+    "model": "edenai/openai/gpt-latest",
     "messages": [{"role": "user", "content": "Hello! How are you?"}]
   }'
 ```
 </CodeGroup>
 
-You can also add the provider at runtime via `POST /api/providers` or from the Bifrost web UI under **Model Providers** — no restart needed.
+## Model naming
 
-## Available Models
+Call any Eden AI model through Bifrost as `edenai/<provider>/<model>`. The `edenai/` prefix selects the Bifrost provider you configured, and the rest is Eden AI's own `provider/model` id, sent unchanged. For example:
 
-Call any Eden AI model through Bifrost as `edenai/<provider>/<model>`:
-
-**OpenAI**
-- `edenai/openai/gpt-5.5`
-- `edenai/openai/gpt-5-mini`
-
-**Anthropic**
+- `edenai/openai/gpt-latest`
 - `edenai/anthropic/claude-sonnet-latest`
-- `edenai/anthropic/claude-haiku-latest`
-
-**Google**
-- `edenai/vertex/gemini-2.5-pro`
 - `edenai/vertex/gemini-flash-latest`
 
-**Mistral**
-- `edenai/mistral/mistral-large-latest`
-- `edenai/mistral/mistral-small-latest`
+See [List LLM Models](/v3/llms/listing-models) for the catalog.
 
-## Routing & Fallbacks
+## Routing and fallbacks
 
-Because Eden AI is a standard Bifrost provider, it participates in Bifrost's reliability features — weighted keys, load-balancing and provider fallbacks. Add Eden AI alongside other providers and let Bifrost route or fall back to it as needed, all through the same OpenAI-compatible endpoint.
+Fallbacks, retries and weighted key selection are Bifrost features, not Eden AI's. See Bifrost's [retries and fallbacks](https://github.com/maximhq/bifrost/blob/transports/v2.3.2/docs/features/retries-and-fallbacks.mdx) and [key management](https://github.com/maximhq/bifrost/blob/transports/v2.3.2/docs/features/keys-management.mdx) docs.
 
-## Environment Variables
+- **Fallbacks**: pass a `fallbacks` array of `provider/model` strings in the request body. The fallback provider must be configured in Bifrost too. Fallbacks are tried in order if the first model fails.
+- **Weighted keys**: give a provider several entries in `keys`, each with a `weight`, and Bifrost picks among them by weight.
 
-Bifrost reads the key referenced as `env.EDEN_AI_API_KEY` in `config.json` from the environment:
-
-<CodeGroup>
-```bash .env
-EDEN_AI_API_KEY=your_api_key_here
+```bash
+curl -X POST http://localhost:8080/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "edenai/openai/gpt-latest",
+    "messages": [{"role": "user", "content": "Hello! How are you?"}],
+    "fallbacks": ["edenai/anthropic/claude-sonnet-latest"]
+  }'
 ```
-</CodeGroup>
+
+Eden AI has its own server-side fallbacks and routing, described in [Provider routing](/v3/llms/provider-routing). The two are independent.
+
+## Troubleshooting
+
+### `404 Not Found` from the provider
+
+The `request_path_overrides` are missing. Bifrost then calls `/v3/v1/chat/completions`. Add the overrides shown above.
+
+### The model goes to another provider
+
+Keep the `edenai/` prefix. A model id such as `openai/gpt-latest` without it is routed to Bifrost's own `openai` provider, not to Eden AI.
 
 ## Next Steps
 

@@ -2,14 +2,14 @@
 title: "Use n8n with Eden AI"
 sidebarTitle: "n8n"
 icon: "/integration-logo/n8n-icondoc.svg"
-description: "Connect n8n to Eden AI using the official community node, and plug +300 LLM models from 50+ providers into any AI Agent or Chain workflow."
+description: "Connect n8n to Eden AI with the Eden AI community node, and use 500+ chat models, fallbacks, web search and an EU-only switch in any AI Agent or Chain."
 ---
 
 import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
 
 <TechArticleSchema
   title={"Use n8n with Eden AI"}
-  description={"Connect n8n to Eden AI using the official community node, and plug +300 LLM models from 50+ providers into any AI Agent or Chain workflow."}
+  description={"Connect n8n to Eden AI with the Eden AI community node, and use 500+ chat models, fallbacks, web search and an EU-only switch in any AI Agent or Chain."}
   path="v3/integrations/n8n"
   articleSection="Automation Platforms"
   about={"Workflow Automation"}
@@ -19,22 +19,29 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   dateModified="2026-08-31T00:00:00Z"
 />
 
-Connect [n8n](https://n8n.io) to Eden AI using the official community node, and plug +300 LLM models from 50+ providers into any AI Agent or Chain workflow.
+n8n is a workflow automation platform. The **Eden AI Chat Model** node plugs Eden AI into any AI Agent or Basic LLM Chain, so one credential covers every chat model in the catalog.
 
 ## Overview
 
-n8n is a workflow automation platform with native AI agent support. The **Eden AI Chat Model** community node lets you use Eden AI as the language model backend for any n8n AI node — no direct API wiring required.
+The node comes from Eden AI's own community package, [`n8n-nodes-edenai`](https://github.com/edenai/n8n-nodes-edenai). Use it as the language model for any n8n AI node, with no direct API wiring.
 
-- **+300 LLM models**: OpenAI, Anthropic, Google, Mistral, and more through a single credential
-- **Automatic fallback**: define backup models that activate if the primary fails
+- **500+ chat models**: OpenAI, Anthropic, Google, Mistral and more through a single credential
+- **Automatic fallback**: define backup models that are tried if the primary fails
 - **Web search**: give models real-time web access when the task needs it
-- **European hosting**: GDPR-compliant, transparent data routing
+- **EU Only switch**: route through the [EU endpoint](/v3/data-governance/eu-endpoint) and list only EU-eligible models
+
+The package also ships an **Eden AI Embeddings** node and an **Eden AI Expert Models** node (see [Other nodes in the package](#other-nodes-in-the-package)).
+
+## Prerequisites
+
+- **n8n 2.16 or newer.** The nodes are built on `@n8n/ai-node-sdk`, which older n8n releases lack.
+- An Eden AI API key from [app.edenai.run](https://app.edenai.run/settings/api-keys)
 
 ## Setup
 
 ### 1. Install the community node
 
-In your n8n instance, go to **Settings → Community Nodes** and install:
+In your n8n instance, go to **Settings** > **Community Nodes** and install:
 
 ```
 n8n-nodes-edenai
@@ -44,54 +51,75 @@ Restart n8n if prompted.
 
 ### 2. Add your Eden AI credential
 
-In n8n, click the **+** button → select **Credential** → search for **Eden AI**.
+Create a credential of type **Eden AI API**: search for it when you add a credential, or create it inline from the node's **Credential** dropdown. Paste your key into the **API Key** field. The base URL is preset to `https://api.edenai.run/v3`, so there is nothing else to fill in.
 
-Paste your API key from [app.edenai.run](https://app.edenai.run) → **API Keys**.
+When you save, n8n tests the credential with a request to `/models`, so an invalid key fails at that point.
 
 ### 3. Add the node to a workflow
 
-In any workflow that uses an **AI Agent** or **Chain** node, click the **Model** sub-node slot and select **Eden AI Chat Model**.
+In any workflow that uses an **AI Agent** or **Basic LLM Chain** node, click the **Model** sub-node slot and select **Eden AI Chat Model**.
 
-The node connects as a language model provider — n8n handles message formatting, memory, and tool calls automatically.
+The node connects as a language model provider, and n8n handles message formatting, memory and tool calls.
 
 ## Configuration
 
+These fields are on the node itself:
+
+| Field | Description |
+|-------|-------------|
+| **EU Only** | Routes requests through `api.eu.edenai.run` and lists only EU-eligible models. |
+| **Model** | Model in `provider/model` format, loaded from Eden AI's catalog. The first entry, **Smart Routing (@edenai)**, lets Eden AI choose the model. |
+| **Restrict Routing Pool** | Shown with Smart Routing. Limits the choice to the models you list in **Router Candidates**. |
+| **Router Candidates** | Shown when the pool is restricted. Bedrock and OVHcloud models are excluded automatically. |
+| **Reasoning Effort** | Toggle that shows **Level**: `minimal`, `low`, `medium` (default), `high`, `max`, `xhigh` (shown as Extra High) or `disable`. Only effective on reasoning models. |
+| **Web Search** | Lets the model retrieve information from the web. Not every model supports it. |
+| **Depth** | Shown when **Web Search** is on: `low`, `medium` (default) or `high`. Higher is more complete, slower and costlier. |
+
+These fields are under **Options** > **Add Option**:
+
 | Option | Description |
 |--------|-------------|
-| **Model** | Model in `provider/model` format. Loaded dynamically from Eden AI's catalog. |
-| **Fallback Models** | Comma-separated backup models (e.g. `openai/gpt-latest,anthropic/claude-haiku-latest`). Retried in order if the primary fails. |
-| **Web Search** | Allow the model to retrieve real-time information from the web. |
-| **Web Search Context Size** | `low`, `medium`, or `high` — controls retrieval depth and cost. |
-| **Sampling Temperature** | Controls randomness (0–2). Lower = more deterministic. |
-| **Maximum Number of Tokens** | Max tokens to generate. Use `-1` for the model's default maximum. |
-| **Response Format** | `text` (default) or `json_object` (forces valid JSON output). |
-| **Top P** | Nucleus sampling threshold (0–1). Alter this *or* temperature, not both. |
+| **Fallback Models** | Comma-separated backup models (for example `openai/gpt-latest,anthropic/claude-haiku-latest`). Tried in order if the primary fails. |
+| **Sampling Temperature** | Controls randomness (0 to 2, default 0.7). Lower is more deterministic. |
+| **Maximum Number of Tokens** | Max tokens to generate. `-1` (default) leaves the model's own default. The node caps it at 32768. |
+| **Response Format** | `Text` (default), `JSON` (`json_object`) or `JSON Schema` (strict). |
+| **JSON Schema** | Shown for the `JSON Schema` format. Must contain `name` and `schema`. |
+| **Top P** | Nucleus sampling threshold (0 to 1). Alter this or temperature, not both. |
 | **Frequency Penalty** | Reduces repetition of frequent tokens (-2 to 2). |
 | **Presence Penalty** | Encourages new topics by penalizing already-used tokens (-2 to 2). |
-| **Max Retries** | How many times to retry on failure (default: 2). |
-| **Timeout** | Request timeout in milliseconds (default: 360 000). |
+| **Seed** | Integer seed for deterministic sampling on providers that support it. `-1` (default) disables it. |
+| **Stop Sequences** | Comma-separated strings that stop generation, up to 4. |
+| **User Identifier** | A stable id for your end user, forwarded to providers for abuse monitoring and analytics. |
+| **Max Retries** | How many times to retry on failure (default 2). |
+| **Timeout** | Request timeout in milliseconds (default 360000). |
 
-### Available models
+Fallbacks and Smart Routing are Eden AI features: see [Provider routing](/v3/llms/provider-routing). Web search is covered in [Web search](/v3/llms/web-search) and the response formats in [Structured output](/v3/llms/structured-output).
 
-Pass any `provider/model` string as the model. The dropdown is populated live from Eden AI's catalog. Examples:
+With **Response Format** set to `JSON`, the node's own notice asks you to include the word `json` in the prompt.
 
-- `openai/gpt-latest` — GPT-4o
-- `anthropic/claude-sonnet-latest` — Claude Sonnet
-- `vertex/gemini-flash-latest` — Gemini Flash
-- `mistral/mistral-large-latest` — Mistral Large
+## Model naming
 
-Browse the full catalog with pricing and capabilities at [app.edenai.run/models](https://app.edenai.run/models).
+Models use the `provider/model` format, for example `openai/gpt-latest`, `anthropic/claude-sonnet-latest` or `vertex/gemini-flash-latest`. The **Model** dropdown lists the live chat catalog, so you can also pick **Smart Routing (@edenai)**. See [List LLM Models](/v3/llms/listing-models) for the catalog.
 
-### JSON response format
+## Other nodes in the package
 
-When **Response Format** is set to `json_object`, you must include the word `json` somewhere in the prompt. This is a requirement of the underlying model API.
+- **Eden AI Embeddings** is an AI sub-node for vector stores. Its **Model** dropdown lists the embeddings catalog (see [Embeddings](/v3/llms/embeddings)), and it has the same **EU Only** switch.
+- **Eden AI Expert Models** is an action node that runs the non-chat features, such as OCR, text analysis, image, audio and translation. See [Expert models](/v3/expert-models/listing-models).
 
-<Note>
-  JSON mode is only supported by models released after November 2023.
-</Note>
+## EU data residency
+
+Switch on **EU Only** in the Eden AI Chat Model or Eden AI Embeddings node. The model list then shows only models served on `api.eu.edenai.run`, which answers `451` for any other model. See [EU Data Residency Endpoint](/v3/data-governance/eu-endpoint).
+
+## Troubleshooting
+
+### The credential test fails
+
+n8n tests the credential with a request to `/models`. Check that the key is an Eden AI API key and that you pasted it into **API Key**.
 
 ## Next Steps
 
-- [LangChain](./langchain) - Build LLM applications in Python or TypeScript
-- [OpenAI SDK (Python)](./openai-sdk-python) - Direct API access with the OpenAI-compatible SDK
-- [OpenAI SDK (TypeScript)](./openai-sdk-typescript) - Direct API access in TypeScript
+- [Chat Completions](/v3/llms/chat-completions) - The endpoint behind the node
+- [Provider routing](/v3/llms/provider-routing) - Fallbacks and smart routing
+- [Web search](/v3/llms/web-search) - Give models web access
+- [EU Data Residency Endpoint](/v3/data-governance/eu-endpoint) - Keep requests in Europe
+- [LangChain](/v3/integrations/langchain) - Build LLM applications in Python or TypeScript

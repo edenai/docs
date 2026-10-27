@@ -2,14 +2,14 @@
 title: "Use Plano with Eden AI"
 sidebarTitle: "Plano"
 icon: "/integration-logo/plano-icondoc.svg"
-description: "Route Plano, the AI-native proxy for agentic apps, through Eden AI and reach 500+ models behind one key."
+description: "Configure Plano, the open-source AI proxy for agents, to call Eden AI as a built-in provider with one edenai/* entry and one API key."
 ---
 
 import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
 
 <TechArticleSchema
   title={"Use Plano with Eden AI"}
-  description={"Route Plano, the AI-native proxy for agentic apps, through Eden AI and reach 500+ models behind one key."}
+  description={"Configure Plano, the open-source AI proxy for agents, to call Eden AI as a built-in provider with one edenai/* entry and one API key."}
   path="v3/integrations/plano"
   articleSection="AI Gateway"
   about={"LLM Gateway Integration"}
@@ -19,29 +19,29 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   dateModified="2026-08-31T00:00:00Z"
 />
 
-Route [Plano](https://github.com/katanemo/plano), the AI-native proxy and data plane for agentic apps, through Eden AI and reach 500+ models behind one key.
+This page shows the `config.yaml` entries, the `edenai/<vendor>/<model>` naming, preference routing and the EU endpoint.
 
 ## Overview
 
-Plano is a Rust proxy that sits in front of your models and handles routing, observability and guardrails. Eden AI is a **built-in provider**, so there is no plugin to write:
+[Plano](https://github.com/katanemo/plano) is a Rust proxy and data plane for agentic apps that handles routing, observability and guardrails. Eden AI is a **built-in provider**, so there is no plugin to write:
 
 - **500+ models**: reach OpenAI, Anthropic, Google, Mistral and more through one key
-- **Wildcard routing**: one entry covers the whole Eden AI catalogue, with no per-model declaration
-- **Client shape translation**: Plano accepts requests in either the OpenAI or the Anthropic shape and translates both to Eden AI's OpenAI-compatible endpoint
+- **Wildcard routing**: one `edenai/*` entry matches any Eden AI model id at request time, with no per-model declaration
+- **Client shape translation**: Plano accepts OpenAI chat completions, Anthropic Messages and OpenAI Responses requests and translates them to Eden AI's OpenAI-compatible endpoint
 - **EU endpoint**: point the provider at `api.eu.edenai.run` when you have data-residency requirements
 
-Plano treats Eden AI the way it treats OpenRouter and Vercel, as a broad multi-vendor gateway. It therefore ships **no hardcoded model list** for it and reads the catalogue from Eden AI instead.
+Plano treats Eden AI the way it treats OpenRouter and Vercel, as a broad multi-vendor gateway. It keeps no model list for Eden AI, so the `edenai/*` entry does not appear in Plano's `/models/list`. A wildcard entry cannot be the `default` model and does not satisfy `routing_preferences`, which need each model declared by name.
 
 ## Prerequisites
 
-- Plano installed. See the [Plano repository](https://github.com/katanemo/plano)
-- An Eden AI API key from [app.edenai.run](https://app.edenai.run) → **API Keys**
+- The `planoai` CLI, installed with `uv tool install planoai` or `pip install planoai`. See the [Plano repository](https://github.com/katanemo/plano)
+- An Eden AI API key from [app.edenai.run](https://app.edenai.run)
 
 ## Setup
 
 ### 1. Declare Eden AI in your Plano config
 
-The wildcard form covers the whole catalogue in a single entry:
+The wildcard form covers the whole catalogue in a single entry. The key is read from the environment:
 
 <CodeGroup>
 ```yaml config.yaml
@@ -54,12 +54,12 @@ listeners:
 
 model_providers:
   - model: edenai/*
+    access_key: $EDENAI_API_KEY
     base_url: https://api.edenai.run/v3
-    passthrough_auth: true
 ```
 </CodeGroup>
 
-To pin specific models instead, name them and supply the key from the environment:
+`base_url` is required: without it Plano has no route to Eden AI. To pin specific models instead, name them. One of them can be the `default`:
 
 <CodeGroup>
 ```yaml config.yaml
@@ -69,17 +69,21 @@ model_providers:
     base_url: https://api.edenai.run/v3
     default: true
 
-  - model: edenai/openai/gpt-5-mini
+  - model: edenai/openai/gpt-mini-latest
     access_key: $EDENAI_API_KEY
     base_url: https://api.edenai.run/v3
 ```
 </CodeGroup>
 
+To let the client supply the key instead, replace `access_key` with `passthrough_auth: true`. Plano then forwards the client's `Authorization` header and ignores `access_key`, so the client must send your Eden AI key as its bearer token.
+
 ### 2. Export your key
+
+Skip this step if you use `passthrough_auth`.
 
 <CodeGroup>
 ```bash Terminal
-export EDENAI_API_KEY="your_api_key_here"
+export EDENAI_API_KEY="YOUR_API_KEY"
 ```
 </CodeGroup>
 
@@ -103,20 +107,43 @@ curl https://api.edenai.run/v3/models
 ```
 </CodeGroup>
 
-Read the catalogue rather than copying a list from a guide, since IDs are retired over time. `vertex/gemini-flash-latest` is an alias that always resolves to the current Gemini Flash, which makes it a safe default.
+Read the catalogue rather than copying a list from a guide, since IDs are retired over time. `vertex/gemini-flash-latest` is an alias that points to the current Gemini Flash model. See [List LLM Models](/v3/llms/listing-models) for the filters.
 
 ## Routing preferences
 
-Plano can pick between models per request. Eden AI models work in `routing_preferences` like any other:
+Plano's own router picks a model per request from the route descriptions you write, and Eden AI serves the model it picks. This is separate from Eden AI's own provider routing and fallbacks.
+
+Every model named in `routing_preferences` must also be declared by name in `model_providers`, and the config needs `version: v0.4.0` or above. A wildcard entry does not count. A complete config:
 
 <CodeGroup>
 ```yaml config.yaml
+version: v0.4.0
+
+listeners:
+  - name: llm
+    type: model
+    port: 12000
+
+model_providers:
+  - model: edenai/anthropic/claude-sonnet-latest
+    access_key: $EDENAI_API_KEY
+    base_url: https://api.edenai.run/v3
+    default: true
+
+  - model: edenai/openai/gpt-latest
+    access_key: $EDENAI_API_KEY
+    base_url: https://api.edenai.run/v3
+
+  - model: edenai/mistral/mistral-small-latest
+    access_key: $EDENAI_API_KEY
+    base_url: https://api.edenai.run/v3
+
 routing_preferences:
   - name: complex_reasoning
     description: multi-step analysis or detailed explanations
     models:
       - edenai/anthropic/claude-sonnet-latest
-      - edenai/openai/gpt-5-mini
+      - edenai/openai/gpt-latest
 
   - name: cheap_and_fast
     description: short answers, classification, extraction
@@ -124,6 +151,10 @@ routing_preferences:
       - edenai/mistral/mistral-small-latest
 ```
 </CodeGroup>
+
+<Warning>
+Preference routing uses a separate model, Plano-Orchestrator, which is not an Eden AI model. By default Plano sends the conversation and your route descriptions to a Plano-hosted endpoint (free, in the US-central region) to choose the route. Your Eden AI key is the only key you need to start. For production, Plano says to run Plano-Orchestrator yourself or to contact the Plano team for keys.
+</Warning>
 
 ## EU data residency
 
@@ -133,30 +164,37 @@ Point the provider at the EU gateway:
 ```yaml config.yaml
 model_providers:
   - model: edenai/*
+    access_key: $EDENAI_API_KEY
     base_url: https://api.eu.edenai.run/v3
-    passthrough_auth: true
 ```
 </CodeGroup>
 
-The EU endpoint serves the subset of the catalogue available in the EU, so a model that works on the global endpoint is not guaranteed to be reachable through it.
+The EU endpoint serves only EU-cleared models and answers `451` for any other, so `edenai/anthropic/claude-sonnet-latest` and the `openai/` ids used earlier fail there. Browse `curl https://api.eu.edenai.run/v3/models` and use, for example, `edenai/mistral/mistral-small-latest` or `edenai/vertex/gemini-flash-latest`. See [EU Data Residency Endpoint](/v3/data-governance/eu-endpoint).
+
+If you also use preference routing, remember that the default Plano-Orchestrator endpoint is hosted in the US-central region and sees the conversation.
 
 ## Troubleshooting
 
 ### `401 Unauthorized`
 
-Check that `EDENAI_API_KEY` is exported in the environment Plano runs from, and that the value is an Eden AI key rather than a vendor key. With `passthrough_auth: true` the key travels from the client instead, so verify what your client sends.
+Check that `EDENAI_API_KEY` is exported in the environment Plano runs from, and that the value is an Eden AI key rather than a vendor key. Eden AI answers `Invalid API key` for a wrong or revoked `sk-eden-` key and `Invalid token` for other token shapes. With `passthrough_auth: true` the key travels from the client instead, so verify what your client sends.
 
 ### Provider not recognised
 
 The provider key is `edenai`, not `eden_ai` and not `eden-ai`. Plano validates it strictly.
 
-### `model not found`
+### Plano refuses to start with `not declared in model_providers`
 
-Copy the identifier exactly as `GET /v3/models` returns it, and keep all three segments, `edenai/<vendor>/<model>`.
+A model in `routing_preferences` is missing from `model_providers`. Declare each routed model by name.
+
+### A model is not recognised
+
+Use the id exactly as the catalog lists it (`GET /v3/models`), and keep all three segments, `edenai/<vendor>/<model>`.
 
 ## Next Steps
 
 - [Chat Completions](/v3/llms/chat-completions) - Core LLM endpoint
 - [List LLM Models](/v3/llms/listing-models) - Browse available providers and models
+- [EU Data Residency Endpoint](/v3/data-governance/eu-endpoint) - Keep requests in Europe
 - [Bifrost](/v3/integrations/bifrost) - Another gateway in front of Eden AI
-- [open-connector](/v3/integrations/open-connector) - Self-hosted gateway on Eden AI
+- [OpenConnector](/v3/integrations/open-connector) - Self-hosted gateway on Eden AI

@@ -44,7 +44,7 @@ A sandbox token accepts a create request and returns a batch, but sends nothing 
 The input is a JSONL file: one JSON object per line, in UTF-8. Empty lines are ignored. Each line describes one chat request:
 
 ```json
-{"custom_id": "request-1", "method": "POST", "url": "/v1/chat/completions", "body": {"model": "openai/gpt-4o-mini", "messages": [{"role": "user", "content": "Say hello in French."}], "max_tokens": 50}}
+{"custom_id": "request-1", "method": "POST", "url": "/v1/chat/completions", "body": {"model": "openai/gpt-5-mini", "messages": [{"role": "user", "content": "Say hello in French."}], "max_tokens": 50}}
 ```
 
 | Field | Rules |
@@ -93,7 +93,7 @@ lines = [
         "method": "POST",
         "url": "/v1/chat/completions",
         "body": {
-            "model": "openai/gpt-4o-mini",
+            "model": "openai/gpt-5-mini",
             "messages": [{"role": "user", "content": f"Write a one-line tagline for product {i}."}],
             "max_tokens": 50,
         },
@@ -134,7 +134,7 @@ The response is the batch object:
   "id": "6f1c2d3e-8a4b-4c5d-9e6f-7a8b9c0d1e2f",
   "object": "batch",
   "endpoint": "/v1/chat/completions",
-  "model": "openai/gpt-4o-mini",
+  "model": "openai/gpt-5-mini",
   "status": "validating",
   "request_counts": {"total": 3, "completed": 0, "failed": 0},
   "metadata": {"project": "taglines"},
@@ -246,7 +246,7 @@ curl -X POST https://api.edenai.run/v3/llm/batches/BATCH_ID/cancel \
 A request that succeeded carries `response`, with the `status_code` and the chat completion `body`. The `model` in the body is the Eden AI id you sent, `openai/<model>`. A request that failed carries `error` instead.
 
 ```json
-{"custom_id":"request-1","response":{"status_code":200,"body":{"id":"chatcmpl-abc123","object":"chat.completion","model":"openai/gpt-4o-mini","choices":[{"index":0,"message":{"role":"assistant","content":"Bonjour !"},"finish_reason":"stop"}],"usage":{"prompt_tokens":14,"completion_tokens":3,"total_tokens":17}}},"error":null}
+{"custom_id":"request-1","response":{"status_code":200,"body":{"id":"chatcmpl-abc123","object":"chat.completion","model":"openai/gpt-5-mini","choices":[{"index":0,"message":{"role":"assistant","content":"Bonjour !"},"finish_reason":"stop"}],"usage":{"prompt_tokens":14,"completion_tokens":3,"total_tokens":17}}},"error":null}
 ```
 
 Match results to requests with `custom_id`. Do not rely on the order of the lines.

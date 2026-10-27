@@ -155,6 +155,7 @@ DEFAULT_USER_ROLE=user
 
 # Optional: RAG Settings
 ENABLE_RAG_WEB_SEARCH=true
+RAG_EMBEDDING_ENGINE=openai
 RAG_EMBEDDING_MODEL=openai/text-embedding-3-small
 RAG_TOP_K=5
 CHUNK_SIZE=1500
@@ -594,15 +595,16 @@ If document upload fails:
 
 ### 1. Use Appropriate Models
 
-Configure cheaper models for embeddings:
+Configure cheaper models for embeddings and background tasks:
 
 <CodeGroup>
 ```bash .env
 # Use smaller embedding model
+RAG_EMBEDDING_ENGINE=openai
 RAG_EMBEDDING_MODEL=openai/text-embedding-3-small
 
-# Use a mini model for simple tasks
-DEFAULT_MODEL=openai/gpt-mini-latest
+# Use a mini model for titles, tags and other background tasks
+TASK_MODEL_EXTERNAL=openai/gpt-mini-latest
 ```
 </CodeGroup>
 

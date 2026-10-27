@@ -2,6 +2,7 @@
 
 import json
 import os
+import re
 import time
 from collections.abc import Callable
 from pathlib import Path
@@ -12,6 +13,7 @@ from dotenv import load_dotenv
 from filelock import FileLock
 from xdist.plugin import is_xdist_worker
 
+from tests.config_blocks import CATALOG_CACHE_VAR
 from tests.helpers.api import (
     delete_file_ids,
     list_file_ids,
@@ -28,7 +30,13 @@ from tests.helpers.file_generators import (
     multipage_pdf,
     silent_wav,
 )
-from tests.snippet_extractor import DEFAULT_BASE_URL
+from tests.helpers.env import env_flag
+from tests.snippet_extractor import (
+    DEFAULT_BASE_URL,
+    MANAGEMENT_KEY_VAR,
+    PRODUCTION_TOKEN_VAR,
+    SANDBOX_TOKEN_VAR,
+)
 
 load_dotenv(Path(__file__).parent / ".env")
 
@@ -43,6 +51,20 @@ _SHARED_STATE_FILE = ".eden_test_shared_state.json"
 _DEFAULT_HTTP_TIMEOUT = 120
 # Upper bound on how long a 429 retry waits, whatever Retry-After says.
 _MAX_RETRY_AFTER = 30
+
+# For a run that executes no snippet, such as the integration checks: nothing
+# else reads the document and image the session uploads for the samples.
+_SKIP_UPLOADS_VAR = "EDEN_AI_SKIP_TEST_UPLOADS"
+
+# Credentials a failure report must not print. --showlocals renders every local
+# in every frame of the traceback, and a token sits in more of them than the
+# ones named after it: a subprocess environment, a client's headers.
+_SECRET_VARS = (SANDBOX_TOKEN_VAR, PRODUCTION_TOKEN_VAR, MANAGEMENT_KEY_VAR)
+
+# pytest cuts a long local's repr out of the middle, so what is left of a token
+# can be a piece of it. Twelve characters of one are still the token, and are
+# more than any other word in a report shares with it by chance.
+_SECRET_FRAGMENT_RE = re.compile(r"[A-Za-z0-9_-]{12,}")
 
 
 def _shared_basetemp(config: pytest.Config) -> Path:
@@ -98,6 +120,9 @@ def pytest_configure(config: pytest.Config) -> None:
 @pytest.hookimpl(tryfirst=True)
 def pytest_sessionstart(session: pytest.Session) -> None:
     """Clear leftovers, snapshot resources, upload a test file (controller)."""
+    # Every process reads the model catalog from one place, worker or not, so
+    # every xdist worker collects the same tests from it.
+    os.environ[CATALOG_CACHE_VAR] = str(_shared_basetemp(session.config))
     if is_xdist_worker(session):
         return
 
@@ -110,7 +135,7 @@ def pytest_sessionstart(session: pytest.Session) -> None:
             "leftover inference key(s)", lambda: revoke_keys(list_sample_key_ids())
         )
 
-    if os.environ.get("EDEN_AI_SANDBOX_API_TOKEN"):
+    if os.environ.get("EDEN_AI_SANDBOX_API_TOKEN") and not env_flag(_SKIP_UPLOADS_VAR):
         leftover_files, pre_existing_files = partition_upload_ids()
         _clean_up("leftover uploaded file(s)", lambda: delete_file_ids(leftover_files))
         session.config.stash[pre_existing_files_key] = pre_existing_files
@@ -294,9 +319,24 @@ def http_interceptor(monkeypatch, request):
     return recorder
 
 
+def _redact(text: str) -> str:
+    """The text with every credential of the run, or a piece of one, hidden."""
+    secrets = [os.environ[var] for var in _SECRET_VARS if os.environ.get(var)]
+    if not secrets:
+        return text
+    return _SECRET_FRAGMENT_RE.sub(
+        lambda match: (
+            "<redacted>"
+            if any(match.group(0) in secret for secret in secrets)
+            else match.group(0)
+        ),
+        text,
+    )
+
+
 @pytest.hookimpl(hookwrapper=True)
 def pytest_runtest_makereport(item, call):
-    """Append HTTP request/response details to snippet execution failures."""
+    """Append HTTP details to snippet failures, and hide credentials in all."""
     outcome = yield
     report = outcome.get_result()
 
@@ -306,3 +346,12 @@ def pytest_runtest_makereport(item, call):
             summary = recorder.summary()
             if summary != "(no HTTP calls recorded)":
                 report.sections.append(("Last HTTP Request/Response", summary))
+
+    if report.failed:
+        rendered = str(report.longrepr)
+        redacted = _redact(rendered)
+        if redacted != rendered:
+            report.longrepr = redacted
+        report.sections = [
+            (title, _redact(content)) for title, content in report.sections
+        ]

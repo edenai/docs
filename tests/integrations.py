@@ -23,6 +23,7 @@ answers whatever protocol the page's tool speaks.
 """
 
 import re
+from collections.abc import Iterable
 from dataclasses import dataclass
 from functools import cache
 from pathlib import Path
@@ -58,6 +59,7 @@ __all__ = [
     "request_for",
     "sandbox_replays",
     "source",
+    "unserved_here",
 ]
 
 
@@ -121,12 +123,11 @@ TOOLS: dict[str, Tool] = {
 }
 
 
-# Which request a model takes, by the catalog route that lists it. Every route
-# in MODEL_CATALOG_ROUTES is here, so one added to the catalog fails loudly in
-# request_for rather than having its models silently left out of every run.
+# Which request a model takes, by the catalog route that lists it. A chat model,
+# under "models", answers whatever the tool speaks, so it is not here. Every
+# other route in MODEL_CATALOG_ROUTES is, so one added to the catalog fails
+# loudly here rather than having its models silently left out of every run.
 _ROUTE_REQUESTS = {
-    # A chat model answers whatever the tool speaks.
-    "models": None,
     "embeddings/models": "embeddings",
     "moderations/models": "moderations",
     "images/models": "images",
@@ -136,20 +137,34 @@ _ROUTE_REQUESTS = {
     # run sends one. No integration page names a video model today.
     "videos/models": None,
 }
-assert set(_ROUTE_REQUESTS) == set(MODEL_CATALOG_ROUTES)
+assert {"models", *_ROUTE_REQUESTS} == set(MODEL_CATALOG_ROUTES)
 
 # KEY=value, "key": "value", key: value and key = "value", where the key ends
-# in "model": model, titleModel, ANTHROPIC_DEFAULT_HAIKU_MODEL,
-# RAG_EMBEDDING_MODEL. A key such as model_providers or modelDisplayLabel does
-# not end there, so it never matches.
+# in "model" or "models": model, titleModel, ANTHROPIC_DEFAULT_HAIKU_MODEL,
+# DEFAULT_MODELS. A variable can also qualify the setting after the word, as
+# TASK_MODEL_EXTERNAL does, though not before it: MODEL_PROVIDER names a
+# provider. A key such as model_providers or modelDisplayLabel holds something
+# else, so it never matches. A shell default, ${EDEN_MODEL:-openai/gpt-4o}, is
+# read for the model it falls back to, and a value can be a comma-separated
+# list.
 _SETTING_RE = re.compile(
-    r"(?<![\w.$-])(?P<key>(?:[A-Za-z_][\w.-]*?)?(?i:model))[\"']?\s*[=:]\s*[\"']?"
-    r"(?P<value>[^\s\"',{}\[\]#]*)"
+    r"(?<![\w.$-])(?<!\$\{)"
+    r"(?P<key>(?:[A-Za-z_][\w.-]*?)?(?:(?i:models?)|_MODELS?_[A-Z][A-Z0-9_]*))"
+    r"[\"']?\s*[=:]\s*[\"']?(?:\$\{\w+:?-)?(?P<value>[^\s\"'{}\[\]#]*)"
 )
+# Not -m as well: aider's -m is a message and python's is a module.
 _FLAG_RE = re.compile(r"(?P<key>--model)[\s=]+[\"']?(?P<value>[^\s\"']+)")
 
-# Values that name no model: a variable, a template, a wildcard, a switch.
-_NOT_A_VALUE_RE = re.compile(r"^(?:$|[$%<]|.*\*|true$|false$|\d+$)", re.IGNORECASE)
+# Values that name no model: a variable, a template, a wildcard, a switch, an
+# empty JSON or YAML value.
+_NOT_A_VALUE_RE = re.compile(
+    r"^(?:$|[$%<]|.*\*|true$|false$|\d+$|null$|none$|~$)", re.IGNORECASE
+)
+
+# The text of a link out of the docs names what it links to, and a repository
+# is named owner/name: [openai/codex](https://github.com/openai/codex). The URL
+# never reads as a model, because its host comes first.
+_EXTERNAL_LINK_RE = re.compile(r"\[[^\]]*\]\(https?://[^)]*\)")
 
 
 @dataclass(frozen=True)
@@ -208,7 +223,7 @@ def mentions(page: Path) -> tuple[Mention, ...]:
     found: dict[str, Mention] = {}
     text = page.read_text(encoding="utf-8")
     for number, line in enumerate(text.splitlines(), start=1):
-        for model in models_in(line):
+        for model in models_in(_EXTERNAL_LINK_RE.sub("", line)):
             found.setdefault(model, Mention(model, number, number in config_lines))
     return tuple(found.values())
 
@@ -220,11 +235,11 @@ def model_settings(page: Path) -> tuple[Setting, ...]:
     for block in extract_settings_blocks(page):
         for offset, line in enumerate(block["code"].splitlines()):
             for match in (*_SETTING_RE.finditer(line), *_FLAG_RE.finditer(line)):
-                value = match.group("value")
-                if not _NOT_A_VALUE_RE.match(value):
-                    settings.append(
-                        Setting(match.group("key"), value, block["line"] + offset)
-                    )
+                for value in match.group("value").split(","):
+                    if not _NOT_A_VALUE_RE.match(value):
+                        settings.append(
+                            Setting(match.group("key"), value, block["line"] + offset)
+                        )
     return tuple(settings)
 
 
@@ -247,6 +262,19 @@ def chat_models(page: Path) -> list[str]:
     return list(dict.fromkeys(model for model in bare if model in chat))
 
 
+def unserved_here(models: Iterable[str]) -> list[str]:
+    """The models, of these, that the API under test does not serve.
+
+    A page is checked against production's catalog, because that is what a
+    reader uses. A run pointed elsewhere, staging by default, can lack a model
+    production has, and a request for it fails for a reason that has nothing
+    to do with the page.
+    """
+    routes = catalog_routes(f"{api_base_url()}/v3")
+    served = {model_id for entries in routes.values() for model_id in entries}
+    return [model for model in models if normalize_model_id(model) not in served]
+
+
 def registered_pages() -> list[Path]:
     """The integration pages TOOLS has an entry for.
 
@@ -257,10 +285,14 @@ def registered_pages() -> list[Path]:
     return [page for page in config_pages() if page.stem in TOOLS]
 
 
-def _requests(page: Path, tool: Tool) -> list[tuple[str, str]]:
-    """(request, model) for every model on the page that a run can call."""
+def _requests(page: Path, tool: Tool) -> list[tuple[str, str, bool]]:
+    """(request, model, tools) for every model on the page that a run can call.
+
+    Tool definitions go with the tool's own protocol only: an agent attaches
+    them to its chat requests, not to the embeddings call it makes to search.
+    """
     served = catalog_ids()
-    pairs = []
+    calls = []
     for mention in mentions(page):
         model = normalize_model_id(mention.model)
         if model not in served:
@@ -268,8 +300,10 @@ def _requests(page: Path, tool: Tool) -> list[tuple[str, str]]:
             continue
         request = request_for(model, tool)
         if request:
-            pairs.append((request, model))
-    return pairs
+            calls.append(
+                (request, model, tool.sends_tools and request == tool.protocol)
+            )
+    return calls
 
 
 def sandbox_replays() -> list[Replay]:
@@ -282,13 +316,12 @@ def sandbox_replays() -> list[Replay]:
     """
     replays = []
     for page in registered_pages():
-        tool = TOOLS[page.stem]
-        firsts: dict[str, str] = {}
-        for request, model in _requests(page, tool):
-            firsts.setdefault(request, model)
+        firsts: dict[str, tuple[str, bool]] = {}
+        for request, model, tools in _requests(page, TOOLS[page.stem]):
+            firsts.setdefault(request, (model, tools))
         replays += [
-            Replay(request, model, tool.sends_tools, (source(page),))
-            for request, model in firsts.items()
+            Replay(request, model, tools, (source(page),))
+            for request, (model, tools) in firsts.items()
         ]
     return replays
 
@@ -303,9 +336,8 @@ def paid_replays() -> list[Replay]:
     """
     pages_for: dict[tuple[str, str, bool], list[str]] = {}
     for page in registered_pages():
-        tool = TOOLS[page.stem]
-        for request, model in _requests(page, tool):
-            pages = pages_for.setdefault((request, model, tool.sends_tools), [])
+        for call in _requests(page, TOOLS[page.stem]):
+            pages = pages_for.setdefault(call, [])
             if source(page) not in pages:
                 pages.append(source(page))
     return [

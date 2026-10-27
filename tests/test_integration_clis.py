@@ -33,15 +33,16 @@ import subprocess
 import sys
 import tomllib
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import pytest
 
 from tests.config_blocks import INTEGRATIONS_DIR
+from tests.helpers.api import api_base_url
 from tests.helpers.protocols import PING, secret
 from tests.helpers.script_snippets import TIMEOUT, require_token
-from tests.integrations import model_settings, pointed_here, source
+from tests.integrations import model_settings, pointed_here, source, unserved_here
 from tests.snippet_extractor import (
     API_KEY_RE,
     extract_config_blocks,
@@ -62,14 +63,24 @@ _EXPORT_RE = re.compile(
 )
 _ENV_API_KEY_RE = re.compile(r'"apiKey":\s*"(?P<ref>\{env:(?P<var>\w+)\})"')
 
+# The OpenCode page's script only reads the catalog and writes a file. Its
+# limit and the tool's both fit inside the test's, so whichever runs out first
+# reports what it was doing, rather than pytest-timeout's bare "Timeout".
+_GENERATOR_TIMEOUT = 60
+
 
 @dataclass
 class Run:
-    """What to pass the tool, and how to read its answer off what it prints."""
+    """What to pass the tool, and how to read its answer off what it prints.
+
+    `models` are the ones the page configures the tool with, so a run against
+    an API that lacks one can say so rather than fail on it.
+    """
 
     args: list[str]
     env: dict[str, str]
     answer: Callable[[str], str] = str.strip
+    models: list[str] = field(default_factory=list)
 
 
 def _environment(home: Path) -> dict[str, str]:
@@ -131,7 +142,8 @@ def _claude_code(page: Path, home: Path, token: str, prompt: str) -> Run:
         assert not result.get("is_error"), f"Claude Code reported an error: {result}"
         return result.get("result") or ""
 
-    return Run(["-p", prompt, "--output-format", "json"], env, answer)
+    models = [value for name, value in env.items() if name.endswith("_MODEL")]
+    return Run(["-p", prompt, "--output-format", "json"], env, answer, models)
 
 
 def _codex(page: Path, home: Path, token: str, prompt: str) -> Run:
@@ -168,7 +180,8 @@ def _codex(page: Path, home: Path, token: str, prompt: str) -> Run:
         "plugins",
         prompt,
     ]
-    return Run(args, env)
+    models = [settings["model"]] if "model" in settings else []
+    return Run(args, env, models=models)
 
 
 def _opencode(page: Path, home: Path, token: str, prompt: str) -> Run:
@@ -181,14 +194,20 @@ def _opencode(page: Path, home: Path, token: str, prompt: str) -> Run:
     # The page has the reader run this script, which reads the live catalog and
     # writes ~/.config/opencode/opencode.json. It is run the same way here,
     # with the home directory pointed at the test's own.
-    subprocess.run(
-        [sys.executable, "-c", pointed_here(generators[0]["code"])],
-        env=_environment(home),
-        cwd=home,
-        check=True,
-        capture_output=True,
-        timeout=TIMEOUT,
-    )
+    script = f"the script on {page.name} that writes opencode.json"
+    try:
+        generated = subprocess.run(
+            [sys.executable, "-c", pointed_here(generators[0]["code"])],
+            env=_environment(home),
+            cwd=home,
+            capture_output=True,
+            text=True,
+            timeout=_GENERATOR_TIMEOUT,
+        )
+    except subprocess.TimeoutExpired:
+        pytest.fail(f"{script} did not finish within {_GENERATOR_TIMEOUT}s")
+    if generated.returncode != 0:
+        pytest.fail(f"{script} exited {generated.returncode}.\n{generated.stderr}")
     config_path = home / ".config" / "opencode" / "opencode.json"
     config = json.loads(config_path.read_text())
 
@@ -208,7 +227,7 @@ def _opencode(page: Path, home: Path, token: str, prompt: str) -> Run:
     config["autoupdate"] = False
     config_path.write_text(json.dumps(config))
 
-    return Run(["run", prompt], {key.group("var"): token})
+    return Run(["run", prompt], {key.group("var"): token}, models=[config["model"]])
 
 
 # Keyed by the page each tool's settings come from, with the binary npm
@@ -224,6 +243,7 @@ _TOOLS = {
 
 
 @pytest.mark.execute
+@pytest.mark.timeout(_GENERATOR_TIMEOUT + TIMEOUT + 30)
 @pytest.mark.parametrize("real_model", [False, True], ids=["sandbox", "real-model"])
 @pytest.mark.parametrize("tool", sorted(_TOOLS))
 def test_the_tool_answers_through_eden_ai_with_its_pages_settings(
@@ -244,6 +264,9 @@ def test_the_tool_answers_through_eden_ai_with_its_pages_settings(
         (work / "lunch.txt").write_text(f"Today's soup: {word}\n")
 
     run = configure(page, home, token, _TASK if real_model else PING)
+    missing = unserved_here(run.models)
+    if missing:
+        pytest.skip(f"{api_base_url()} does not serve {missing}")
     try:
         result = subprocess.run(
             [str(binary), *run.args],
@@ -257,13 +280,17 @@ def test_the_tool_answers_through_eden_ai_with_its_pages_settings(
     except subprocess.TimeoutExpired:
         pytest.fail(f"{tool} did not finish within {TIMEOUT}s")
 
-    printed = (
-        f"--- stdout ---\n{result.stdout}\n--- stderr ---\n{result.stderr}"
-    ).replace(token, "<token>")
+    # The token in either is hidden by conftest, as everywhere in a report.
+    printed = f"--- stdout ---\n{result.stdout}\n--- stderr ---\n{result.stderr}"
     where = f"{tool}, configured as {source(page)} says,"
     if result.returncode != 0:
         pytest.fail(f"{where} exited {result.returncode}.\n{printed}")
-    answer = run.answer(result.stdout)
+    try:
+        answer = run.answer(result.stdout)
+    except ValueError as error:
+        pytest.fail(
+            f"{where} printed something other than its answer: {error}\n{printed}"
+        )
     if real_model:
         assert word in answer, (
             f"{where} was asked what a file holds ({word!r}), and its answer "

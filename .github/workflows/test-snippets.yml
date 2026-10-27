@@ -101,8 +101,8 @@ jobs:
       # The config blocks on the integration pages, every other model and
       # model setting those pages name, and whether the agents among the tools
       # are pointed at models that take tools. Needs no credential: the model
-      # catalog is public. One process, because each xdist worker would fetch
-      # the whole catalog again to collect assertions that take milliseconds.
+      # catalog is public. One process, because starting xdist workers takes
+      # longer than assertions that take milliseconds.
       - name: Check integration configuration and pages
         if: always()
         run: pytest tests/test_config_blocks.py tests/test_integrations.py -m "not execute" --no-cov -n 0
@@ -168,6 +168,9 @@ jobs:
           EDEN_AI_SANDBOX_API_TOKEN: ${{ secrets.EDEN_AI_SANDBOX_TOKEN }}
           EDEN_AI_PRODUCTION_API_TOKEN: ${{ secrets.EDEN_AI_PRODUCTION_TOKEN }}
           EDEN_AI_RUN_PAID_CALLS: ${{ github.event_name != 'pull_request' }}
+          # No snippet runs here, so nothing reads the files the session would
+          # otherwise upload for the samples.
+          EDEN_AI_SKIP_TEST_UPLOADS: true
 
       - name: Coverage summary
         if: always()

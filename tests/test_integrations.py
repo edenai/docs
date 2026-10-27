@@ -50,6 +50,7 @@ from tests.integrations import (
     request_for,
     sandbox_replays,
     source,
+    unserved_here,
 )
 
 _PAGES = registered_pages()
@@ -101,6 +102,8 @@ def _paid_replay_id(replay) -> str:
 
 def _replay(replay, token: str, round_trip: bool) -> None:
     """Send the request and turn a refusal into a failure a reader can act on."""
+    if unserved_here([replay.model]):
+        pytest.skip(f"{api_base_url()} does not serve '{replay.model}'")
     base_url = f"{api_base_url()}/v3"
     where = ", ".join(replay.pages)
     what = f"{replay.request} request{' with tools' if replay.tools else ''}"
@@ -175,10 +178,38 @@ def test_a_wildcard_or_a_variable_is_not_a_model_setting(tmp_path):
     page = _page(
         tmp_path,
         "```yaml\nmodel: edenai/*\ndefault_model: ${MODEL}\n```\n"
-        '```json\n{"tabAutocompleteModel": {}}\n```\n',
+        '```json\n{"tabAutocompleteModel": {}, "titleModel": null}\n```\n',
     )
 
     assert model_settings(page) == ()
+
+
+def test_a_shell_default_is_read_for_the_model_it_falls_back_to(tmp_path):
+    page = _page(
+        tmp_path, "```bash\ndocker run -e MODEL=${EDEN_MODEL:-openai/gpt-4o} x\n```\n"
+    )
+
+    assert [(s.key, s.value) for s in model_settings(page)] == [
+        ("MODEL", "openai/gpt-4o")
+    ]
+
+
+def test_every_model_in_a_list_setting_is_a_model_setting(tmp_path):
+    page = _page(tmp_path, "```bash .env\nDEFAULT_MODELS=openai/gpt-4o,gpt-4o\n```\n")
+
+    assert [s.value for s in model_settings(page)] == ["openai/gpt-4o", "gpt-4o"]
+
+
+def test_a_variable_qualified_after_model_is_a_model_setting(tmp_path):
+    """MODEL_PROVIDER names a provider; TASK_MODEL_EXTERNAL names a model."""
+    page = _page(
+        tmp_path,
+        "```bash .env\nTASK_MODEL_EXTERNAL=gpt-4o\nMODEL_PROVIDER=edenai\n```\n",
+    )
+
+    assert [(s.key, s.value) for s in model_settings(page)] == [
+        ("TASK_MODEL_EXTERNAL", "gpt-4o")
+    ]
 
 
 def test_python_code_is_not_read_for_settings(tmp_path):
@@ -208,10 +239,25 @@ def test_a_mention_knows_whether_it_is_in_a_config_block(tmp_path):
     ]
 
 
+def test_a_model_at_the_end_of_a_sentence_is_named_without_the_period(tmp_path):
+    page = _page(tmp_path, "For search, pick openai/text-embedding-3-small.\n")
+
+    assert [m.model for m in mentions(page)] == ["openai/text-embedding-3-small"]
+
+
 def test_an_sdk_import_path_is_not_a_mention(tmp_path):
     page = _page(
         tmp_path,
-        "```ts\nimport type { X } from 'openai/resources/chat/completions';\n```\n",
+        "```ts\nimport type { X } from 'openai/resources/chat/completions';\n"
+        "const chat = await import('openai/resources/chat');\n```\n",
+    )
+
+    assert mentions(page) == ()
+
+
+def test_the_repository_a_link_points_at_is_not_a_mention(tmp_path):
+    page = _page(
+        tmp_path, "Install [openai/codex](https://github.com/openai/codex) first.\n"
     )
 
     assert mentions(page) == ()
@@ -231,9 +277,12 @@ def test_an_embeddings_model_takes_an_embeddings_call_whatever_the_tool():
 
 
 def test_a_request_two_pages_send_is_sent_once_and_names_both():
-    seen = [(r.request, r.model, r.tools) for r in _PAID_REPLAYS]
+    """Only a chat request carries tools, so only it can be sent both ways."""
+    protocols = {tool.protocol for tool in TOOLS.values()}
+    others = [(r.request, r.model) for r in _PAID_REPLAYS if r.request not in protocols]
 
-    assert len(seen) == len(set(seen))
+    assert len(others) == len(set(others))
+    assert all(r.request in protocols for r in _PAID_REPLAYS if r.tools)
     assert any(len(r.pages) > 1 for r in _PAID_REPLAYS)
 
 

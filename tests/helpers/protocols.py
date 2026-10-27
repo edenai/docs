@@ -141,13 +141,15 @@ def chat(base_url, token, model, *, tools, round_trip):
         return
 
     _assert_called(message.tool_calls, message)
-    call = message.tool_calls[0]
-    json.loads(call.function.arguments)
     word = secret()
-    messages += [
-        message.model_dump(exclude_none=True),
-        {"role": "tool", "tool_call_id": call.id, "content": _report(word)},
-    ]
+    messages.append(message.model_dump(exclude_none=True))
+    # A model can call the tool twice in one turn, and the next request is
+    # refused unless every call has its result.
+    for call in message.tool_calls:
+        json.loads(call.function.arguments)
+        messages.append(
+            {"role": "tool", "tool_call_id": call.id, "content": _report(word)}
+        )
     _assert_quotes(word, _chat_turn(client, model, messages, tools).content)
 
 
@@ -195,9 +197,10 @@ def messages(base_url, token, model, *, tools, round_trip):
             "content": [
                 {
                     "type": "tool_result",
-                    "tool_use_id": calls[0].id,
+                    "tool_use_id": call.id,
                     "content": _report(word),
                 }
+                for call in calls
             ],
         },
     ]
@@ -215,7 +218,9 @@ def _responses_turn(client, model, items, tools):
     rather than handing the stream to the SDK's accumulator.
     """
     final = None
-    # Codex keeps the conversation itself and sends all of it every turn.
+    # Codex keeps the conversation itself and sends all of it every turn. As
+    # the server stores nothing, a reasoning model's reasoning only reaches
+    # the next turn encrypted, so Codex asks for it on every request.
     for event in client.responses.create(
         model=model,
         instructions=_SYSTEM,
@@ -223,9 +228,13 @@ def _responses_turn(client, model, items, tools):
         max_output_tokens=_MAX_TOKENS,
         stream=True,
         store=False,
+        include=["reasoning.encrypted_content"],
         **({"tools": _RESPONSES_TOOLS} if tools else {}),
     ):
         assert event.type not in ("error", "response.failed"), f"stream failed: {event}"
+        assert event.type != "response.incomplete", (
+            f"the answer was cut off: {event.response.incomplete_details}"
+        )
         if event.type == "response.completed":
             final = event.response
     assert final is not None, "the stream ended without response.completed"
@@ -243,22 +252,19 @@ def responses(base_url, token, model, *, tools, round_trip):
 
     calls = [item for item in final.output if item.type == "function_call"]
     _assert_called(calls, final.output)
-    call = calls[0]
-    json.loads(call.arguments)
     word = secret()
-    items += [
-        {
-            "type": "function_call",
-            "call_id": call.call_id,
-            "name": call.name,
-            "arguments": call.arguments,
-        },
-        {
-            "type": "function_call_output",
-            "call_id": call.call_id,
-            "output": _report(word),
-        },
-    ]
+    # Every item the model produced goes back, reasoning and all, as Codex
+    # sends it, followed by a result for every call.
+    items += [item.model_dump(exclude_none=True) for item in final.output]
+    for call in calls:
+        json.loads(call.arguments)
+        items.append(
+            {
+                "type": "function_call_output",
+                "call_id": call.call_id,
+                "output": _report(word),
+            }
+        )
     _assert_quotes(word, _responses_turn(client, model, items, tools).output_text)
 
 

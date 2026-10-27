@@ -57,7 +57,7 @@ All requests use `Authorization: Bearer <management_key>` and act on the organiz
 | `/v3/manage/keys/` | `POST` | `manage:write` | Create a key. The response contains the `secret` **once**. |
 | `/v3/manage/keys/` | `GET` | `manage:read` | List keys (paginated, revoked keys included). |
 | `/v3/manage/keys/{key_id}/` | `GET` | `manage:read` | Get one key. |
-| `/v3/manage/keys/{key_id}/` | `PATCH` | `manage:write` | Update the name, spending controls or default tags. |
+| `/v3/manage/keys/{key_id}/` | `PATCH` | `manage:write` | Update the name, spending controls, default tags or default routing policy. |
 | `/v3/manage/keys/{key_id}/` | `DELETE` | `manage:write` | Revoke a key permanently. |
 | `/v3/manage/keys/{key_id}/rotate/` | `POST` | `manage:write` | Replace the secret, keeping the key's id, name and settings. |
 | `/v3/manage/keys/{key_id}/usage/` | `GET` | `manage:read` | Consumption of one key. See [Monitoring](/v3/general/monitoring). |
@@ -132,6 +132,7 @@ Request fields:
 | `expire_time` | ISO 8601 datetime | Hard expiry, at least one day ahead. |
 | `balance_reset_period`, `balance_reset_amount` | see below | Periodic budget refill. |
 | `default_tags` | object of strings, e.g. `{"client": "acme"}` | Tags added to every call made with the key. See [Default Tags](#default-tags). |
+| `default_policy` | policy name, e.g. `"prod-chat"` | Routing policy applied to every chat call made with the key. See [Default Routing Policy](#default-routing-policy). |
 
 Creating a key returns `403` if your plan's key limit is reached.
 
@@ -260,6 +261,22 @@ curl -X PATCH https://api.edenai.run/v3/manage/keys/3f1c2b6e-8a4d-4f0e-9b7a-2c5d
 - They apply from the next call made with the key, and rotating the key keeps them.
 
 In the dashboard, turn on **Default Tags** when you create or edit a key.
+
+## Default Routing Policy
+
+`default_policy` names a [routing policy](/v3/llms/routing-policies) of the organization that applies to every chat call made with the key (`/v3/chat/completions`, `/v3/responses` and `/v3/v1/messages`; the other endpoints ignore it). A call that sends `"model": "@edenai"` runs the policy in full, its targets, strategy and fallbacks; a call that names its own model keeps it and gets the policy's provider preferences, so an application whose model string you cannot change still follows them.
+
+{/* skip-test: acts on the illustrative key id above, which no account holds */}
+```bash Bind a routing policy
+curl -X PATCH https://api.edenai.run/v3/manage/keys/3f1c2b6e-8a4d-4f0e-9b7a-2c5d6e7f8a90/ \
+  -H "Authorization: Bearer YOUR_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"default_policy": "prod-chat"}'
+```
+
+- The name must be one of the organization's policies; an unknown name is a `400`.
+- Send `null` to unbind. Deleting the policy unbinds the key too.
+- A call that names another policy as `policy/{name}` uses that one instead.
 
 ## List All Keys
 

@@ -208,6 +208,7 @@
                   "v3/llms/web-search",
                   "v3/llms/prompt-caching",
                   "v3/llms/provider-routing",
+                  "v3/llms/routing-policies",
                   "v3/llms/request-metadata",
                   "v3/llms/streaming",
                   "v3/llms/image-generation",

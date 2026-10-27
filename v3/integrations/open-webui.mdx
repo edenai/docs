@@ -2,14 +2,14 @@
 title: "Use Open WebUI with Eden AI"
 sidebarTitle: "Open WebUI"
 icon: "/integration-logo/openwebui-icondoc.svg"
-description: "Configure Open WebUI (formerly Ollama WebUI) to use Eden AI for accessing 500+ AI models through a sleek interface."
+description: "Connect Open WebUI to Eden AI with one base URL and API key to chat with 500+ models, and route RAG embeddings, speech-to-text, images and web search too."
 ---
 
 import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
 
 <TechArticleSchema
   title={"Use Open WebUI with Eden AI"}
-  description={"Configure Open WebUI (formerly Ollama WebUI) to use Eden AI for accessing 500+ AI models through a sleek interface."}
+  description={"Connect Open WebUI to Eden AI with one base URL and API key to chat with 500+ models, and route RAG embeddings, speech-to-text, images and web search too."}
   path="v3/integrations/open-webui"
   articleSection="Chat UI"
   about={"LLM Chat Interface"}
@@ -19,29 +19,26 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   dateModified="2026-10-27T00:00:00Z"
 />
 
-Configure Open WebUI (formerly Ollama WebUI) to use Eden AI for accessing 500+ AI models through a sleek interface.
+Pointing Open WebUI's OpenAI connection at Eden AI moves chat only: every other feature reads its own base URL and key, and this guide sets each one.
 
 ## Overview
 
-[Open WebUI](https://github.com/open-webui/open-webui) is a self-hosted, feature-rich web interface for AI models. By connecting it to Eden AI, you get:
+[Open WebUI](https://github.com/open-webui/open-webui) is a self-hosted web interface for AI models. Its OpenAI connection accepts any OpenAI-compatible base URL, so pointing it at `https://api.edenai.run/v3` lists Eden AI's chat models in the model picker and sends chats through Eden AI.
 
-- **500+ models**: Access OpenAI, Anthropic, Google, Cohere, and more
-- **Modern UI**: Beautiful, responsive interface similar to ChatGPT
-- **RAG support**: Document upload and retrieval-augmented generation
-- **Multi-user**: User management with authentication
-- **Self-hosted**: Complete data privacy and control
+Open WebUI sends embeddings, speech-to-text, image generation and web search through settings of their own. Each one reads its own base URL and key, so the chat connection alone does not move them to Eden AI. The sections below set each one.
 
 ## Prerequisites
 
-- Docker installed
-- Eden AI API key from [https://app.edenai.run](https://app.edenai.run)
-- 2GB+ RAM recommended
+- Docker
+- An Eden AI API key from [app.edenai.run](https://app.edenai.run) → **API Keys**
 
-## Quick Start
+## Setup
 
-### Option 1: Docker (Recommended)
+<Note>
+Open WebUI reads the environment variables on this page only on its first start and saves them in its database. From then on the saved values win, so on an existing install change them in the Admin Panel instead, or set `ENABLE_PERSISTENT_CONFIG=false` to make Open WebUI read the environment on every start. This applies to every block below.
+</Note>
 
-Run Open WebUI with a single command:
+### New install
 
 <CodeGroup>
 ```bash bash
@@ -50,184 +47,85 @@ docker run -d \
   -p 3000:8080 \
   -v open-webui:/app/backend/data \
   -e OPENAI_API_BASE_URL=https://api.edenai.run/v3 \
-  -e OPENAI_API_KEY=YOUR_EDEN_AI_API_KEY \
-  -e WEBUI_AUTH=False `# Disable authentication for single-user setup` \
+  -e OPENAI_API_KEY=YOUR_API_KEY \
   ghcr.io/open-webui/open-webui:main
 ```
 </CodeGroup>
 
-Access Open WebUI at `http://localhost:3000`
+Add the variables from the sections below to this command before the first start, as more `-e` flags or with `--env-file .env`.
 
-### Option 2: Docker Compose
+Open `http://localhost:3000` and register the first user, who becomes the admin. For Docker Compose, authentication, HTTPS and the other deployment options, see the [Open WebUI documentation](https://docs.openwebui.com).
 
-Create a `docker-compose.yml` file:
+### Existing install
+
+1. Open the **Admin Panel**, then **Settings**, then **Connections**.
+2. Under **OpenAI API**, select **Add Connection**.
+3. Set the URL to `https://api.edenai.run/v3` and enter your Eden AI API key.
+
+## Model naming
+
+Open WebUI lists the models from `GET https://api.edenai.run/v3/models`, so there is nothing to add by hand. Eden AI model ids are `provider/model`, for example `anthropic/claude-sonnet-latest`, `openai/gpt-latest` and `vertex/gemini-flash-latest`. The `-latest` aliases always resolve to the current model of that line. To hide or rename models, use **Admin Panel**, **Settings**, **Models**. Browse the full list in [List LLM Models](/v3/llms/listing-models).
+
+To run Open WebUI's background tasks (chat titles, tags) on a cheaper model, set a task model:
 
 <CodeGroup>
-```yaml docker-compose.yml
-version: '3.8'
-
-services:
-  open-webui:
-    image: ghcr.io/open-webui/open-webui:main
-    container_name: open-webui
-    ports:
-      - "3000:8080"
-    environment:
-      - OPENAI_API_BASE_URL=https://api.edenai.run/v3
-      - OPENAI_API_KEY=${EDEN_AI_API_KEY}
-      - WEBUI_SECRET_KEY=${WEBUI_SECRET_KEY}
-    volumes:
-      - open-webui:/app/backend/data
-    restart: unless-stopped
-
-volumes:
-  open-webui:
-```
-
 ```bash .env
-EDEN_AI_API_KEY=your_eden_ai_api_key_here
-WEBUI_SECRET_KEY=your_random_secret_key_here
-```
-
-```bash bash
-# Start Open WebUI
-docker compose up -d
-
-# View logs
-docker compose logs -f
-
-# Stop
-docker compose down
+TASK_MODEL_EXTERNAL=openai/gpt-mini-latest
 ```
 </CodeGroup>
 
-## Configuration
+## Embeddings for RAG
 
-### Initial Setup
-
-1. **Open browser**: Navigate to `http://localhost:3000`
-2. **Create admin account**: Register the first user (becomes admin)
-3. **Configure models**: Go to Settings → Models
-
-### Add Eden AI Models
-
-In the Open WebUI interface:
-
-1. Click **Settings** (gear icon)
-2. Go to **Models** tab
-3. Add models in the format `provider/model`:
-
-<CodeBlocks>
-  <CodeBlock title="Models to Add">
-```
-    anthropic/claude-sonnet-latest
-    anthropic/claude-opus-latest
-    anthropic/claude-haiku-latest
-    openai/gpt-latest
-    openai/gpt-latest
-    openai/gpt-latest
-    openai/gpt-mini-latest
-    vertex/gemini-flash-latest
-    vertex/gemini-2.5-pro
-    cohere/command-a-03-2025
-```
-  </CodeBlock>
-</CodeBlocks>
-
-### Environment Variables
-
-Configure Open WebUI with environment variables:
+By default Open WebUI embeds documents locally. To embed them through Eden AI, select the OpenAI engine and give it its own base URL and key:
 
 <CodeGroup>
 ```bash .env
-# Eden AI Configuration
-OPENAI_API_BASE_URL=https://api.edenai.run/v3
-OPENAI_API_KEY=your_eden_ai_api_key
-
-# Application Settings
-WEBUI_SECRET_KEY=your_secret_key_here
-WEBUI_NAME=Eden AI Chat
-DATA_DIR=/app/backend/data
-
-# Authentication
-ENABLE_SIGNUP=true
-DEFAULT_USER_ROLE=user
-
-# Optional: RAG Settings
-ENABLE_RAG_WEB_SEARCH=true
 RAG_EMBEDDING_ENGINE=openai
 RAG_EMBEDDING_MODEL=openai/text-embedding-3-small
-RAG_TOP_K=5
-CHUNK_SIZE=1500
-CHUNK_OVERLAP=100
-
-# Optional: Image Generation
-ENABLE_IMAGE_GENERATION=true
-IMAGE_GENERATION_MODEL=openai/gpt-image-2
+RAG_OPENAI_API_BASE_URL=https://api.edenai.run/v3
+RAG_OPENAI_API_KEY=YOUR_API_KEY
 ```
 </CodeGroup>
 
-## Features
+On an existing install, open **Admin Panel**, **Settings**, **Documents**, set **Embedding Model Engine** to `OpenAI`, and fill in **API Base URL**, **API Key** and **Embedding Model**. Reindex your knowledge bases after you change the embedding model. List the embedding models available to you with `GET https://api.edenai.run/v3/embeddings/models`.
 
-### Chat with Multiple Models
-
-1. **Select model**: Click the model dropdown at the top
-2. **Start chatting**: Type your message
-3. **Switch models**: Change models mid-conversation
-4. **Compare responses**: Use split-screen to compare model outputs
-
-### Document Upload (RAG)
-
-Upload documents for context-aware conversations:
-
-<CodeGroup>
-```yaml docker-compose.yml
-services:
-  open-webui:
-    image: ghcr.io/open-webui/open-webui:main
-    environment:
-      - OPENAI_API_BASE_URL=https://api.edenai.run/v3
-      - OPENAI_API_KEY=${EDEN_AI_API_KEY}
-      # Enable RAG
-      - ENABLE_RAG_WEB_SEARCH=true
-      - RAG_EMBEDDING_MODEL=openai/text-embedding-3-small
-      - RAG_EMBEDDING_ENGINE=openai
-      - RAG_EMBEDDING_OPENAI_BATCH_SIZE=1
-```
-</CodeGroup>
-
-**Usage:**
-1. Click the **+** icon in chat
-2. Upload PDF, DOCX, TXT, or other documents
-3. Ask questions about the uploaded content
-4. The AI retrieves relevant sections automatically
-
-### Image Generation
-
-Generate images through Eden AI's image models:
+## Speech-to-text
 
 <CodeGroup>
 ```bash .env
-# Enable image generation
-ENABLE_IMAGE_GENERATION=true
-IMAGE_GENERATION_MODEL=openai/gpt-image-2
-IMAGE_GENERATION_ENGINE=openai
-
-# Use Eden AI endpoint
-AUTOMATIC1111_BASE_URL=https://api.edenai.run/v3
+AUDIO_STT_ENGINE=openai
+AUDIO_STT_MODEL=groq/whisper-large-v3-turbo
+AUDIO_STT_OPENAI_API_BASE_URL=https://api.edenai.run/v3
+AUDIO_STT_OPENAI_API_KEY=YOUR_API_KEY
 ```
 </CodeGroup>
 
-**Usage:**
-Type `/imagine` followed by your prompt in the chat.
+On an existing install, use **Admin Panel**, **Settings**, **Audio**, **Speech-to-Text Engine**. Open WebUI posts the audio to `/audio/transcriptions` under that base URL, which Eden AI serves. See [Speech to Text](/v3/llms/speech-to-text).
 
-### Web Search
+## Image generation
+
+<CodeGroup>
+```bash .env
+ENABLE_IMAGE_GENERATION=true
+IMAGE_GENERATION_ENGINE=openai
+IMAGE_GENERATION_MODEL=openai/gpt-image-2
+IMAGES_OPENAI_API_BASE_URL=https://api.edenai.run/v3
+IMAGES_OPENAI_API_KEY=YOUR_API_KEY
+IMAGE_SIZE=1024x1024
+```
+</CodeGroup>
+
+Open WebUI's default size is `512x512`, and OpenAI's image models accept `1024x1024`, `1536x1024`, `1024x1536` or `auto`, so set `IMAGE_SIZE` as shown. On an existing install, use **Admin Panel**, **Settings**, **Images**.
+
+In a chat, turn on the **Image** toggle in the message box's integrations menu, then send a prompt. See [Image Generation](/v3/llms/image-generation).
+
+## Web Search
 
 Open WebUI's **Perplexity Search** engine works with Eden AI's [Perplexity-compatible search API](/v3/llms/search-api). The engine sends a fixed body with no `model`, so the provider goes in the URL path:
 
 1. Open **Admin Panel**, then **Settings**, then **Web Search**.
-2. Turn on **Enable Web Search** and select `perplexity_search` as the **Web Search Engine**.
-3. Enter your Eden AI API key as the API key.
+2. Turn on the **Web Search** toggle and select `perplexity_search` as the **Web Search Engine**.
+3. Enter your Eden AI API key in **Perplexity API Key**.
 4. Set **Perplexity Search API URL** to `https://api.edenai.run/v3/search/tavily` (or end it with another provider `id` from `GET /v3/search/models`).
 
 On a new install, you can set the same values through environment variables instead:
@@ -236,14 +134,10 @@ On a new install, you can set the same values through environment variables inst
 ```bash .env
 ENABLE_WEB_SEARCH=true
 WEB_SEARCH_ENGINE=perplexity_search
-PERPLEXITY_API_KEY=your_eden_ai_api_key
+PERPLEXITY_API_KEY=YOUR_API_KEY
 PERPLEXITY_SEARCH_API_URL=https://api.edenai.run/v3/search/tavily
 ```
 </CodeGroup>
-
-<Note>
-Open WebUI reads these variables only on its first start and saves them in its database. From then on the saved values win, so on an existing install change them in the Admin Panel (or set `ENABLE_PERSISTENT_CONFIG=false` to make Open WebUI read the environment on every start).
-</Note>
 
 <Warning>
 Keep the search result count (`WEB_SEARCH_RESULT_COUNT`, default 3) at 20 or below. Eden AI rejects a larger `max_results`, and Open WebUI hides the error: searches return no results and no message says why.
@@ -251,273 +145,12 @@ Keep the search result count (`WEB_SEARCH_RESULT_COUNT`, default 3) at 20 or bel
 
 Each query Open WebUI sends is a billed search on your Eden AI account, and Open WebUI can generate more than one query for a single chat message. `GET /v3/search/models` lists each provider's price.
 
-### Voice Input
-
-Enable voice-to-text:
-
-<CodeGroup>
-```bash .env
-ENABLE_AUDIO=true
-AUDIO_STT_ENGINE=openai
-AUDIO_STT_MODEL=groq/whisper-large-v3-turbo
-```
-</CodeGroup>
-
-## Advanced Configuration
-
-### Multiple API Endpoints
-
-Configure multiple providers:
-
-<CodeGroup>
-```yaml docker-compose.yml
-services:
-  open-webui:
-    image: ghcr.io/open-webui/open-webui:main
-    environment:
-      # Eden AI as primary
-      - OPENAI_API_BASE_URL=https://api.edenai.run/v3
-      - OPENAI_API_KEY=${EDEN_AI_API_KEY}
-
-      # Additional endpoints (optional)
-      - OPENAI_API_BASE_URLS=https://api.edenai.run/v3,https://api.openai.com/v1
-      - OPENAI_API_KEYS=${EDEN_AI_API_KEY},${OPENAI_API_KEY}
-```
-</CodeGroup>
-
-### Custom Model Metadata
-
-Define model capabilities and pricing:
-
-<CodeGroup>
-```json models.json
-{
-  "models": [
-    {
-      "id": "anthropic/claude-sonnet-latest",
-      "name": "Claude Sonnet",
-      "owned_by": "anthropic",
-      "created": 1729900800,
-      "object": "model",
-      "info": {
-        "description": "Most intelligent Claude model",
-        "capabilities": {
-          "vision": true,
-          "function_calling": true
-        }
-      }
-    },
-    {
-      "id": "openai/gpt-latest",
-      "name": "GPT",
-      "owned_by": "openai",
-      "created": 1715300000,
-      "object": "model",
-      "info": {
-        "description": "GPT-4 with vision",
-        "capabilities": {
-          "vision": true,
-          "function_calling": true
-        }
-      }
-    }
-  ]
-}
-```
-</CodeGroup>
-
-### User Permissions
-
-Configure role-based access:
-
-<CodeGroup>
-```bash .env
-# User registration
-ENABLE_SIGNUP=true
-DEFAULT_USER_ROLE=user
-
-# Admin settings
-ADMIN_EMAIL=admin@example.com
-
-# Model access control
-ENABLE_MODEL_FILTER=true
-MODEL_FILTER_LIST=anthropic/claude-sonnet-latest,openai/gpt-latest
-```
-</CodeGroup>
-
-### Persistent Storage
-
-Configure data persistence:
-
-<CodeGroup>
-```yaml docker-compose.yml
-services:
-  open-webui:
-    image: ghcr.io/open-webui/open-webui:main
-    volumes:
-      # Data persistence
-      - ./data:/app/backend/data
-      # Custom models
-      - ./models.json:/app/backend/models.json:ro
-      # User uploads
-      - ./uploads:/app/backend/uploads
-```
-</CodeGroup>
-
-## Security
-
-### Authentication
-
-Enable and configure authentication:
-
-<CodeGroup>
-```bash .env
-# Require login
-WEBUI_AUTH=true
-
-# Session settings
-WEBUI_SECRET_KEY=generate_strong_random_key_here
-SESSION_TIMEOUT=3600
-
-# OAuth (optional)
-ENABLE_OAUTH_SIGNUP=true
-OAUTH_CLIENT_ID=your_client_id
-OAUTH_CLIENT_SECRET=your_client_secret
-OAUTH_PROVIDER_NAME=Google
-```
-</CodeGroup>
-
-### HTTPS Setup
-
-Use a reverse proxy for HTTPS:
-
-<CodeGroup>
-```nginx nginx.conf
-server {
-  listen 443 ssl http2;
-  server_name chat.yourdomain.com;
-
-  ssl_certificate /etc/ssl/certs/cert.pem;
-  ssl_certificate_key /etc/ssl/private/key.pem;
-
-  location / {
-    proxy_pass http://localhost:3000;
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-
-    # WebSocket support
-    proxy_http_version 1.1;
-    proxy_set_header Upgrade $http_upgrade;
-    proxy_set_header Connection "upgrade";
-  }
-}
-```
-</CodeGroup>
-
-### Rate Limiting
-
-Protect your API key:
-
-<CodeGroup>
-```bash .env
-# Rate limiting
-ENABLE_RATE_LIMIT=true
-RATE_LIMIT_REQUESTS=60
-RATE_LIMIT_WINDOW=60
-
-# Per-user limits
-USER_PERMISSIONS_CHAT_DAILY_LIMIT=100
-```
-</CodeGroup>
-
-## Production Deployment
-
-### Full Production Stack
-
-<CodeGroup>
-```yaml docker-compose.prod.yml
-version: '3.8'
-
-services:
-  open-webui:
-    image: ghcr.io/open-webui/open-webui:main
-    container_name: open-webui
-    restart: always
-    ports:
-      - "127.0.0.1:3000:8080"
-    environment:
-      - OPENAI_API_BASE_URL=https://api.edenai.run/v3
-      - OPENAI_API_KEY=${EDEN_AI_API_KEY}
-      - WEBUI_SECRET_KEY=${WEBUI_SECRET_KEY}
-      - ENABLE_SIGNUP=false
-      - DEFAULT_USER_ROLE=user
-      - WEBUI_AUTH=true
-    volumes:
-      - ./data:/app/backend/data
-      - ./uploads:/app/backend/uploads
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
-  nginx:
-    image: nginx:alpine
-    container_name: nginx-proxy
-    restart: always
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./ssl:/etc/ssl:ro
-    depends_on:
-      - open-webui
-```
-</CodeGroup>
-
-### Backup Strategy
-
-Backup your data regularly:
-
-<CodeGroup>
-```bash backup.sh
-#!/bin/bash
-
-# Backup directory
-BACKUP_DIR="./backups/$(date +%Y%m%d_%H%M%S)"
-mkdir -p "$BACKUP_DIR"
-
-# Backup data
-docker compose exec open-webui tar czf /tmp/backup.tar.gz /app/backend/data
-docker cp open-webui:/tmp/backup.tar.gz "$BACKUP_DIR/"
-
-# Backup database (if using external DB)
-# docker compose exec postgres pg_dump -U user dbname > "$BACKUP_DIR/db.sql"
-
-echo "Backup completed: $BACKUP_DIR"
-```
-</CodeGroup>
-
 ## Troubleshooting
 
-### Models Not Appearing
+### Models do not appear
 
-If models don't show up:
-
-1. **Check API key**:
-   ```bash
-   docker compose logs open-webui | grep -i "api"
-   ```
-
-2. **Verify base URL**:
-   ```bash
-   docker compose exec open-webui env | grep OPENAI_API_BASE_URL
-   ```
-
-3. **Test endpoint manually**:
+1. Check the connection: **Admin Panel**, **Settings**, **Connections**, **OpenAI API** must list `https://api.edenai.run/v3` with your key. On an existing install the environment variables are ignored (see the note under Setup).
+2. Test the key outside Open WebUI:
    ```bash
    curl -X POST https://api.edenai.run/v3/chat/completions \
      -H "Authorization: Bearer YOUR_API_KEY" \
@@ -528,129 +161,19 @@ If models don't show up:
        "stream": true
      }'
    ```
+3. On an existing install, change the values in the Admin Panel. To make Open WebUI read the environment again, set `ENABLE_PERSISTENT_CONFIG=false` and recreate the container (`docker rm -f open-webui`, then the `docker run` command again). `docker restart` keeps the old environment.
 
-4. **Restart container**:
-   ```bash
-   docker compose restart open-webui
-   ```
+### Embeddings, audio or images fail while chat works
 
-### Authentication Issues
+Each feature has its own base URL and key. If `RAG_OPENAI_API_BASE_URL`, `AUDIO_STT_OPENAI_API_BASE_URL` or `IMAGES_OPENAI_API_BASE_URL` is not set to `https://api.edenai.run/v3`, Open WebUI sends that feature to `api.openai.com` with an empty key. Check the matching page in **Admin Panel**, **Settings**: **Documents**, **Audio** or **Images**.
 
-If you can't log in:
+### Web search returns nothing
 
-1. **Reset admin password**:
-   ```bash
-   docker compose exec open-webui python manage.py reset-admin-password
-   ```
-
-2. **Check secret key**:
-   ```bash
-   docker compose exec open-webui env | grep WEBUI_SECRET_KEY
-   ```
-
-### Performance Issues
-
-If the UI is slow:
-
-1. **Check resource usage**:
-   ```bash
-   docker stats open-webui
-   ```
-
-2. **Increase memory**:
-   ```yaml
-   services:
-     open-webui:
-       deploy:
-         resources:
-           limits:
-             memory: 4G
-   ```
-
-3. **Optimize database**:
-   ```bash
-   docker compose exec open-webui python manage.py optimize-db
-   ```
-
-### RAG Not Working
-
-If document upload fails:
-
-1. **Check volume mounts**:
-   ```bash
-   docker compose exec open-webui ls -la /app/backend/uploads
-   ```
-
-2. **Verify embedding model**:
-   ```bash
-   docker compose exec open-webui env | grep RAG_EMBEDDING
-   ```
-
-3. **Check logs**:
-   ```bash
-   docker compose logs open-webui | grep -i "rag"
-   ```
-
-## Cost Optimization
-
-### 1. Use Appropriate Models
-
-Configure cheaper models for embeddings and background tasks:
-
-<CodeGroup>
-```bash .env
-# Use smaller embedding model
-RAG_EMBEDDING_ENGINE=openai
-RAG_EMBEDDING_MODEL=openai/text-embedding-3-small
-
-# Use a mini model for titles, tags and other background tasks
-TASK_MODEL_EXTERNAL=openai/gpt-mini-latest
-```
-</CodeGroup>
-
-### 2. Limit Token Usage
-
-Set maximum tokens:
-
-<CodeGroup>
-```bash .env
-# Limit response length
-MAX_TOKENS=1000
-
-# Limit context
-MAX_CONTEXT_LENGTH=4000
-```
-</CodeGroup>
-
-### 3. Monitor Usage
-
-Track costs in Eden AI dashboard:
-- Visit [https://app.edenai.run](https://app.edenai.run)
-- View usage reports
-- Set billing alerts
-
-## Example Workflows
-
-### 1. Customer Support Bot
-
-- **Upload support docs** using RAG
-- **Create templates** for common queries
-- **Use Claude Haiku** for cost-effective responses
-
-### 2. Code Assistant
-
-- **Use GPT-4 or Claude** for complex code
-- **Enable file upload** for code review
-- **Configure presets** for different languages
-
-### 3. Research Assistant
-
-- **Enable web search** for current information
-- **Use Gemini Pro** for long context
-- **RAG for internal** documents
+Check that **Perplexity Search API URL** ends with a provider from `GET /v3/search/models` and that the result count is 20 or below.
 
 ## Next Steps
 
+- [List LLM Models](/v3/llms/listing-models) - Browse available models
+- [Search API](/v3/llms/search-api) - The search endpoint behind Web Search
 - [LibreChat](./librechat) - Alternative chat platform
-- [Continue.dev](./continue-dev) - IDE integration
 - [Monitoring](/v3/general/monitoring) - Track usage and spending

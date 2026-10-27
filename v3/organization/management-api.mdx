@@ -75,7 +75,8 @@ durable issuer key is always available to do this without a human in the loop.
 ## Endpoints
 
 All endpoints authenticate with `Authorization: Bearer <mgmt-eden key>` and are scoped to the calling
-key's organization.
+key's organization. The one exception is `/v3/manage/routing-policies`, which also accepts a member's own
+inference key (`sk-eden-…`) and then manages that member's personal policies.
 
 | Method & path | Scope | Purpose |
 |---------------|-------|---------|

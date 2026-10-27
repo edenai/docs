@@ -86,6 +86,12 @@ key's organization.
 | `GET · PATCH · DELETE /v3/manage/keys/{key_id}` | `manage:read` · `manage:write` | Read / update / revoke an inference key |
 | `POST /v3/manage/keys/{key_id}/rotate` | `manage:write` | Rotate an inference key's secret |
 | `GET /v3/manage/members` · `/usage` · `/keys/{key_id}/usage` · `/whoami` | `manage:read` | Members, usage, key introspection |
+| `GET /v3/manage/routing-policies` | `manage:read` | List the organization's routing policies |
+| `GET · PUT · DELETE /v3/manage/routing-policies/{name}` | `manage:read` · `manage:write` | Read / create or replace / delete a routing policy |
+
+## Routing policies
+
+A [routing policy](/v3/llms/routing-policies) is a saved model chain and its provider preferences, called from an inference request as `model: "policy/{name}"` or applied to every chat call of an inference key through the key's `default_policy` field (on `POST` and `PATCH /v3/manage/keys`). With a management key these endpoints manage the organization's policies; called with a member's own inference key, they manage that member's personal ones.
 
 ## Migrating from a dashboard-only key
 

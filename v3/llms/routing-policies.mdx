@@ -1,0 +1,321 @@
+---
+icon: "sitemap"
+title: "Routing Policies"
+description: "Save a model chain and its provider preferences once as a routing policy, then call it by name from any chat request or bind it to an API key."
+---
+import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
+
+<TechArticleSchema
+  title={"Routing Policies"}
+  description={"Save a model chain and its provider preferences once as a routing policy, then call it by name from any chat request or bind it to an API key."}
+  path="v3/llms/routing-policies"
+  articleSection="LLMs"
+  about={"LLM API"}
+  proficiencyLevel="Intermediate"
+  keywords={["Eden AI", "AI API", "LLM API", "routing policy", "model fallback", "load balancing", "provider routing"]}
+  datePublished="2026-10-27T00:00:00Z"
+  dateModified="2026-10-27T00:00:00Z"
+/>
+
+A routing policy is a saved model chain: which models to try, how to pick among them, and the [provider routing](/v3/llms/provider-routing) preferences every attempt follows. Save it once under a name and every request can use it as `model: "policy/{name}"`, so an app that only lets you configure a model string, such as a coding agent or a chat UI, gets your fallbacks and provider preferences without any change to the request. Bind the policy to an API key and even the model string stays as it is.
+
+Policies are managed through the [Management API](/v3/organization/management-api). A management key manages the organization's policies, shared by every member and key of the organization; your own API key manages your personal ones.
+
+## Creating a policy
+
+`PUT /v3/manage/routing-policies/{name}/` creates the policy, or replaces it whole when it exists. This one tries GPT on Azure, retries it once, then moves to OpenAI, then to Kimi on whichever provider is cheapest, and finally to DeepSeek:
+
+```bash cURL
+curl -X PUT https://api.edenai.run/v3/manage/routing-policies/prod-chat/ \
+  -H "Authorization: Bearer YOUR_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "description": "Chat: GPT on Azure first, then OpenAI, then Kimi",
+    "strategy": "fallback",
+    "targets": [
+      {"model": "azure/gpt-5.6-sol", "retries": 1},
+      "openai/gpt-5.6-sol",
+      "kimi-k2.6"
+    ],
+    "defaults": {"routing": {"sort": "cost"}},
+    "lock": ["allowed_providers"],
+    "fallbacks": ["deepseek-v4-flash"]
+  }'
+```
+
+```json Response (201 Created)
+{
+  "name": "prod-chat",
+  "scope": "organization",
+  "description": "Chat: GPT on Azure first, then OpenAI, then Kimi",
+  "enabled": true,
+  "strategy": "fallback",
+  "targets": [
+    {"model": "azure/gpt-5.6-sol", "retries": 1},
+    {"model": "openai/gpt-5.6-sol"},
+    {"model": "kimi-k2.6"}
+  ],
+  "defaults": {"routing": {"sort": "cost"}, "credentials": "auto", "retries": 0},
+  "lock": ["allowed_providers"],
+  "fallbacks": ["deepseek-v4-flash"],
+  "version": 1,
+  "etag": "1",
+  "created_at": "2026-10-27T16:19:43.604129Z",
+  "updated_at": "2026-10-27T16:19:43.604138Z",
+  "created_by": null,
+  "updated_by": null
+}
+```
+
+Every target is checked against the catalog when you save: a model that does not exist, a `weight` on a strategy other than `load_balance`, or any other broken rule is a `422` whose `error.fields` names each offending field by path (`targets.0.weight`), so nothing half-valid is ever stored.
+
+A name is 2 to 63 lowercase letters, digits or dashes, starting with a letter or digit. An organization or a user holds at most 100 policies.
+
+## Calling a policy
+
+Send the name as the model, on any of the three chat dialects (`/v3/chat/completions`, `/v3/responses` and `/v3/v1/messages`), streaming or not:
+
+{/* skip-test: calls the policy the sample above creates, and the samples run in any order */}
+```bash cURL
+curl -X POST https://api.edenai.run/v3/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "x-edenai-metadata: enabled" \
+  -d '{
+    "model": "policy/prod-chat",
+    "messages": [{"role": "user", "content": "Summarise this contract"}]
+  }'
+```
+
+The policy's chain replaces the model: the request runs down it until a target answers, exactly as if you had written that chain in `model` and `fallbacks` yourself. The response is the ordinary one for the endpoint; with the `x-edenai-metadata` header it also says [what the policy did](#seeing-what-the-policy-did).
+
+- **Your own `fallbacks` are kept.** Models you list in the request are tried after the policy's targets and fallbacks.
+- **A suffix on the name sets the sort for this call.** `policy/prod-chat:latency` is the same as sending `routing.sort: "latency"`, and counts as `sort` for the policy's [lock](#routing-preferences-and-precedence). See [Choosing an objective](/v3/llms/provider-routing#choosing-an-objective).
+- **A region tag pins every target.** `policy/prod-chat@eu` runs each target in Europe; a target not served there is dropped for the call with the reason `region`. Write both as `policy/prod-chat@eu:latency`. See [Pinning a region](/v3/llms/provider-routing#pinning-a-region).
+- **Names are matched regardless of case**, like a provider prefix. The name must be yours or your organization's: a personal policy with the same name as an organization one wins for your requests.
+
+The name is only accepted where a model chain is: the chat dialects above. To embeddings, images, audio and the other endpoints it is an unknown model.
+
+## The policy object
+
+| Field | What it holds |
+|---|---|
+| `description` | Free text, up to 500 characters |
+| `enabled` | `false` parks the policy: calling it by name is a `400`, a key bound to it behaves as unbound, and it leaves the [model listing](#finding-your-policies). Default `true` |
+| `strategy` | How the targets are ordered: `fallback`, `load_balance`, `cheapest` or `fastest`. Required with `targets` |
+| `targets` | 1 to 32 models to choose among, each a string or an object with the overrides below. Omitted on a routing-only policy, which holds `defaults.routing` for a [key](#binding-a-policy-to-an-api-key) to apply |
+| `defaults` | What every target inherits unless it sets its own: `routing`, `credentials` (default `auto`) and `retries` (default `0`) |
+| `lock` | Fields a request may not set: any of the `routing` fields a policy stores (listed below), or `region`. A request that sets one is refused with a `400` |
+| `fallbacks` | Up to 7 models tried after every target, in order, with the policy's default routing |
+
+A target:
+
+| Field | What it holds |
+|---|---|
+| `model` | A `provider/model` id, a routable name such as `kimi-k2.6` (Eden AI picks the provider on each call), or an alias, with an optional `@region` tag |
+| `weight` | 1 to 100, `load_balance` only. Default `1` |
+| `retries` | 0 to 3, `fallback` only: how many more times this target is tried before moving on. A retry is the same target called again |
+| `credentials` | `auto`, `own` or `eden`. See [Credentials](#credentials) |
+| `routing` | This target's provider preferences, applied over the policy's defaults |
+| `region` | Pin the target to a region, the same as an `@region` tag on `model`. Set one or the other |
+
+`routing`, in `defaults` and on a target, is the request's [`routing` object](/v3/llms/provider-routing): `sort`, `order`, `allowed_providers`, `ignored_providers`, `max_price`, `allow_fallbacks`, `sticky` and `zero_data_retention`. `quality_cost` is not accepted. A field set to `null` is unset: it then comes from the request or the platform default.
+
+## Strategies
+
+Each strategy turns the targets into an ordered chain for the request, which then runs like a [fallback](/v3/general/fallback) list: the first target that answers serves. A target named without a provider is still routed across its providers by the merged `routing`.
+
+| Strategy | Order of the targets |
+|---|---|
+| `fallback` | As written. A target with `retries` is tried again that many times before the next one |
+| `load_balance` | One target is drawn per request, in proportion to the weights; the others follow as backups, heaviest first. A conversation that sends a `session_id` draws the same target on every turn, so its [prompt cache](/v3/llms/prompt-caching) is reused, unless `routing.sticky` is `false` |
+| `cheapest` | By the estimated cost of this request on each target, prompt and completion both counted, each target priced on the provider and in the region it would actually run. A target that cannot be estimated goes last |
+| `fastest` | By the observed time to first token of each target's providers. A target without data goes last |
+
+Whatever the strategy, a request makes at most 8 attempts, retries included: entries beyond the limit are dropped for the call with the reason `chain_limit`.
+
+## Routing preferences and precedence
+
+Each `routing` field is settled independently: the request wins, then the target, then the policy's `defaults`, then the platform default. A policy therefore sets preferences a request can still refine, unless the policy locks them.
+
+```json
+{
+  "defaults": {"routing": {"sort": "cost", "ignored_providers": ["deepinfra"]}},
+  "lock": ["ignored_providers"]
+}
+```
+
+With this policy a request may send `routing.sort: "latency"` and get it, but a request that sends `ignored_providers` is refused:
+
+```json
+{
+  "error": {
+    "message": "routing.ignored_providers is locked by policy \"prod-chat\"",
+    "type": "invalid_request_error",
+    "code": "invalid_parameter"
+  }
+}
+```
+
+A `:sort` suffix on the model counts as `sort`, and an `@region` tag as `region`. A merge that names a provider in both `allowed_providers` and `ignored_providers`, one from the policy and one from the request, is also a `400`.
+
+## Credentials
+
+By default a target runs on your own provider key when you have [stored one](/v3/general/byok) for its provider, and on Eden AI's otherwise. `credentials` fixes that per target, or for all of them in `defaults`:
+
+| Value | Effect |
+|---|---|
+| `auto` | Your own key when you have one for the provider, else Eden AI's. Default |
+| `own` | Your own key only. Without a stored key for the provider, the target is dropped for the call (`no_own_key`) and the chain moves on |
+| `eden` | Eden AI's key, even when you stored your own. Your key for that provider is set aside for the whole request, a Responses turn that continues it included |
+
+`own` and `eden` need a concrete `provider/model` target, since a routable name fans out across providers, and a policy uses one mode per provider.
+
+## Binding a policy to an API key
+
+A key's `default_policy` applies a policy to every chat call made with the key, on the three dialects above; the other endpoints ignore it. Set it when you [create the key](/v3/general/custom-api-keys#create-a-key) or later:
+
+{/* skip-test: acts on the illustrative key id, which no account holds */}
+```bash cURL
+curl -X PATCH https://api.edenai.run/v3/manage/keys/3f1c2b6e-8a4d-4f0e-9b7a-2c5d6e7f8a90/ \
+  -H "Authorization: Bearer YOUR_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"default_policy": "prod-chat"}'
+```
+
+What the bound policy does depends on the model the request names:
+
+| The request sends | What happens |
+|---|---|
+| `"model": "@edenai"` | The policy runs in full: its targets, strategy and fallbacks, as if the request had named `policy/prod-chat` |
+| Any model, such as `"gpt-5.6-sol"` | The model stays. The policy lends its `defaults.routing`, and its `lock` still applies. This is how a client whose model string you cannot change gets your provider preferences. Targets are not used |
+| `"model": "policy/other"` | The named policy wins over the key's |
+
+A routing-only policy, one without `targets`, exists for the second row: it cannot be called by name. Send `null` to unbind. Deleting a policy unbinds every key that used it, and a key bound to a disabled policy behaves as unbound. Through the Management API only the organization's policies can be bound.
+
+## Organization and personal policies
+
+| Credential on `/v3/manage/routing-policies/` | Manages | Reads |
+|---|---|---|
+| A management key (`mgmt-eden-…`, `manage:read` / `manage:write`) | The organization's policies (`scope: organization`), usable by every member and key of the organization | The organization's |
+| Your own API key (`sk-eden-…`) | Your personal policies (`scope: user`), usable by your requests only | Yours and the organization's |
+
+A personal policy may share a name with an organization one, and then wins on your requests. `?scope=user` or `?scope=organization` limits a list or a read to one scope; a write always goes to the credential's own scope, and naming the other one is a `403`.
+
+Each `PUT` increments `version`, returned as `version` and `etag` and in the `ETag` header. To replace only the version you read, send it back as `If-Match: "2"`: when the policy changed meanwhile the reply is a `412` carrying the current version. `If-Match: "0"` creates the policy only when nothing is stored yet.
+
+```bash cURL
+curl "https://api.edenai.run/v3/manage/routing-policies/" \
+  -H "Authorization: Bearer YOUR_MANAGEMENT_KEY"
+```
+
+The list is paginated like the other management endpoints (`results`, `limit`, `offset`, `total_count`, `next`, `previous`) and ordered by name, a personal policy before the organization's one of the same name. `GET` or `DELETE` on a name you do not hold is a `404`.
+
+## Seeing what the policy did
+
+Send `x-edenai-metadata: enabled` and the [request metadata](/v3/llms/request-metadata) block carries `"strategy": "policy"` and a `policy` object:
+
+```json
+"edenai_metadata": {
+  "requested": "policy/prod-chat@eu",
+  "strategy": "policy",
+  "region": "eu",
+  "summary": "available=0, served=azure/gpt-5.6-sol",
+  "attempt": 1,
+  "attempts": [
+    {"provider": "azure", "model": "azure/gpt-5.6-sol", "status": 200, "region": "eu"}
+  ],
+  "policy": {
+    "name": "prod-chat",
+    "version": 1,
+    "strategy": "fallback",
+    "scope": "organization",
+    "path": ["fallback", "targets[0]"],
+    "dropped": [
+      {"model": "openai/gpt-5.6-sol@eu", "reason": "region"}
+    ]
+  }
+}
+```
+
+| Field | Meaning |
+|---|---|
+| `name`, `version` | The policy that applied, at the version it had |
+| `strategy` | The policy's strategy, or `null` when a key lent its routing only |
+| `scope` | `organization` or `user` |
+| `path` | The part of the policy that served the request: `[strategy, "targets[i]"]`, `[strategy, "fallbacks[j]"]`, `[strategy, "caller"]` for one of the request's own fallbacks, or `["defaults"]` for routing lent by a key |
+| `dropped` | The targets this call could not use, each with its reason |
+
+| Reason | The target was dropped because |
+|---|---|
+| `no_own_key` | Its provider needs your own key and none is usable: `credentials: own` with no stored key for the provider, or a stored key that holds no credentials |
+| `guardrail` | An [organization guardrail](/v3/organization/guardrails) forbids the model |
+| `region` | The model is not served in the region the call or the target pins |
+| `zero_data_retention` | The call requires zero data retention and no provider of the model qualifies |
+| `not_in_catalog` | The model has left the catalog since the policy was saved |
+| `endpoint` | The model does not serve this endpoint, such as an embeddings model on chat |
+| `no_eligible_seller` | After the routing preferences, no provider of a routable name was left |
+| `chain_limit` | The chain was longer than 8 attempts |
+
+A dropped target is skipped, and the chain goes on with the next target, then the policy's `fallbacks`, then your own. Only when nothing at all is left does the request fail rather than run elsewhere: `403` when every drop is the guardrail's, `451` when every drop is the region's, `400` otherwise, naming the policy and the reasons.
+
+Eden AI also records the policy's name and version on every request it serves, so support can trace a call back to the policy version that routed it.
+
+## Zero data retention
+
+A policy that sets `routing.zero_data_retention: true`, in `defaults` or on any target, holds the whole request to it: every target and fallback, the request's own fallbacks included, is served only by providers that keep no prompts or outputs, and Eden AI saves neither the request nor the response. A key that lends a policy's routing only holds the request when `defaults` ask for it. See [Compliance Policies](/v3/data-governance/compliance-policies).
+
+## Finding your policies
+
+Send your API key with the [grouped model listing](/v3/llms/listing-models#grouped-view-one-entry-per-routable-name) and it adds one entry per policy you can call:
+
+```bash cURL
+curl "https://api.edenai.run/v3/models?view=models" \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+```json
+{
+  "id": "policy/prod-chat",
+  "object": "model",
+  "created": 1793117983,
+  "owned_by": "edenai",
+  "mode": "chat",
+  "context_length": null,
+  "pricing": null,
+  "pricing_endpoint": null,
+  "regions": [],
+  "endpoints": [],
+  "endpoint_count": 0
+}
+```
+
+The entry carries the name only: which target serves a call is decided per request, so there is no price, context window or region to summarise. Only enabled policies with targets are listed. The default listing (`view=endpoints`) and any `zero_data_retention` filter leave policies out, as does every other model listing.
+
+## Errors
+
+| Status | When |
+|---|---|
+| `400` | The policy is not found, disabled or has no targets; the request sets a locked field; every target and fallback was dropped, for reasons other than the guardrail alone or the region alone |
+| `403` | Every target and fallback was dropped by a guardrail |
+| `451` | Every target and fallback was dropped for the region |
+| `404` | On the Management API, no policy of that name in a scope you can read |
+| `412` | `If-Match` names a version that is no longer current |
+| `422` | The policy body breaks a rule; `error.fields` lists each field by path |
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Provider Routing" icon="shuffle" href="/v3/llms/provider-routing">
+    The `routing` object a policy stores
+  </Card>
+  <Card title="Fallback" icon="rotate-left" href="/v3/general/fallback">
+    How a chain of models is tried
+  </Card>
+  <Card title="Custom API Keys" icon="key" href="/v3/general/custom-api-keys">
+    Bind a policy when you create a key
+  </Card>
+  <Card title="Management API" icon="gear" href="/v3/organization/management-api">
+    The keys that manage policies
+  </Card>
+</CardGroup>

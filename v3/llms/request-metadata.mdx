@@ -14,7 +14,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "LLM API", "observability", "debugging", "provider routing"]}
   datePublished="2026-08-19T00:00:00Z"
-  dateModified="2026-09-25T00:00:00Z"
+  dateModified="2026-10-27T00:00:00Z"
 />
 
 Eden AI makes decisions on your behalf on every request: which provider serves a model sold by several, which region it runs in, whether to retry elsewhere when one fails, and whether to use your own provider key. None of that is visible in a normal response, because the answer looks the same whoever produced it.
@@ -67,6 +67,7 @@ The response gains one extra top-level key, `edenai_metadata`:
     "attempts": [
       {"provider": "openai", "model": "openai/gpt-5.6-sol", "status": 200, "region": "global"}
     ],
+    "policy": null,
     "tags": {
       "client": "acme",
       "project": "invoices"
@@ -86,6 +87,7 @@ The response gains one extra top-level key, `edenai_metadata`:
 | `endpoints.total` | How many providers offer the requested model |
 | `endpoints.available` | Each of them, with `primary` (chosen first) and `reachable` (usable for this request) |
 | `attempts` | Every provider actually called, in order, each with its HTTP `status` and `region` |
+| `policy` | What a [routing policy](/v3/llms/routing-policies#seeing-what-the-policy-did) did for the call: its `name`, `version`, `strategy` and `scope`, the `path` to the part of it that served, and the targets it `dropped` with their reasons. `null` when no policy applied |
 | `tags` | The [tags](/v3/general/tags) recorded for this call, or `{}` when it has none |
 
 ### Strategy values
@@ -97,6 +99,7 @@ The response gains one extra top-level key, `edenai_metadata`:
 | `direct` | You named a `provider/model`, so no routing happened |
 | `alias` | You named an alias, which resolved to a specific model |
 | `routed` | You named a model without a provider, so Eden AI picked one. See [Provider Routing](/v3/llms/provider-routing) |
+| `policy` | A [routing policy](/v3/llms/routing-policies) chose the chain: you named `policy/{name}`, or the API key's bound policy applied. The `policy` field says which, and how |
 
 ## Tags
 
@@ -183,5 +186,8 @@ The other fields, including `tags`, mean the same as above. A failed attempt rep
   </Card>
   <Card title="Monitoring" icon="chart-line" href="/v3/general/monitoring">
     Account-level consumption and credits
+  </Card>
+  <Card title="Routing Policies" icon="sitemap" href="/v3/llms/routing-policies">
+    What the `policy` block reports
   </Card>
 </CardGroup>

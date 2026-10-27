@@ -14,7 +14,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "LLM API", "provider routing", "load balancing", "failover"]}
   datePublished="2026-08-19T00:00:00Z"
-  dateModified="2026-10-20T00:00:00Z"
+  dateModified="2026-10-27T00:00:00Z"
 />
 
 Many models are sold by more than one provider. `gpt-5.6-sol` is served by four providers, `kimi-k2.6` by seven, `gpt-oss-120b` by fifteen. They run the same weights at different prices, speeds and reliability.
@@ -308,6 +308,10 @@ Append `@region` to route to a provider endpoint in a specific region. This comp
 
 Which regions a model offers varies by model. Requesting one it is not served from returns an error rather than quietly serving it elsewhere. See [Servers Location](/v3/data-governance/servers-location).
 
+## Saving your routing as a policy
+
+Every setting on this page can be saved once under a name, together with the models to try and the order to try them in, and then called as `model: "policy/{name}"` from any chat request, or applied by an API key to every call made with it. A client that only lets you configure a model string gets your fallbacks and preferences that way. See [Routing Policies](/v3/llms/routing-policies).
+
 ## Seeing which provider served your request
 
 Routing is invisible by default: the response looks the same whichever provider answered. Send `x-edenai-metadata: enabled` and Eden AI attaches what it decided, including every provider it tried and the status each returned.
@@ -343,5 +347,8 @@ Name a `provider/model` and routing never runs. The request goes exactly where y
   </Card>
   <Card title="Request Metadata" icon="receipt" href="/v3/llms/request-metadata">
     See which provider actually served the request
+  </Card>
+  <Card title="Routing Policies" icon="sitemap" href="/v3/llms/routing-policies">
+    Save a model chain and its routing under a name
   </Card>
 </CardGroup>

@@ -14,7 +14,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "rate limits", "billing", "monitoring"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-10-20T00:00:00Z"
+  dateModified="2026-10-27T00:00:00Z"
 />
 
 Eden AI automatically handles fallback on both LLM and Universal AI / expert model requests. If your primary model or provider fails (provider outage, rate limit, error), Eden AI retries with the next item in your `fallbacks` list -- no retry logic needed on your side.
@@ -191,6 +191,9 @@ Send `x-edenai-metadata: enabled` and the response reports every attempt in orde
   </Card>
   <Card title="Request Metadata" icon="receipt" href="/v3/llms/request-metadata">
     See every provider tried, and why
+  </Card>
+  <Card title="Routing Policies" icon="sitemap" href="/v3/llms/routing-policies">
+    Save a chain under a name and call it as `policy/{name}`
   </Card>
   <Card title="LLM Models" icon="brain" href="/v3/llms/listing-models">
     Browse available LLM models

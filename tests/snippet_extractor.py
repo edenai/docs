@@ -1,7 +1,9 @@
 """Extract code snippets from .mdx documentation files."""
 
+import os
 import re
 import textwrap
+from fnmatch import fnmatch
 from pathlib import Path
 
 from filelock import FileLock
@@ -466,6 +468,68 @@ def mdx_files() -> list[Path]:
     page is.
     """
     return sorted([*DOCS_ROOT.glob("v3/**/*.mdx"), *DOCS_ROOT.glob("*.mdx")])
+
+
+def _mintignored(relative: Path, is_dir: bool, patterns: list[str]) -> bool:
+    """Whether .mintignore excludes this path, for the pattern shapes it uses.
+
+    Gitignore semantics, trimmed to what the file holds: a trailing slash
+    matches directories only, a pattern with a slash inside it is anchored at
+    the root, and one without matches a name at any depth. There are no
+    negations or "**", and a parent directory being excluded is handled by the
+    walk, which does not descend into it.
+    """
+    for pattern in patterns:
+        dirs_only = pattern.endswith("/")
+        pattern = pattern.rstrip("/")
+        if dirs_only and not is_dir:
+            continue
+        if "/" in pattern:
+            if fnmatch(relative.as_posix(), pattern.lstrip("/")):
+                return True
+        elif fnmatch(relative.name, pattern):
+            return True
+    return False
+
+
+def stray_markdown_files(root: Path = DOCS_ROOT) -> list[Path]:
+    """Every .md file Mintlify would publish as a page, in a stable order.
+
+    Mintlify serves .md files as well as .mdx, but every check here looks only
+    at .mdx, so a stray .md ships with no title, no description and no link
+    check. It is published unless it sits under a dot-directory (.mintlify/,
+    .github/), is the root README.md (Mintlify answers that one with a 404;
+    a nested README.md is not known to be hidden, so it counts), or is
+    excluded by .mintignore.
+    """
+    mintignore = root / ".mintignore"
+    patterns = (
+        [
+            line.strip()
+            for line in mintignore.read_text(encoding="utf-8").splitlines()
+            if line.strip() and not line.lstrip().startswith("#")
+        ]
+        if mintignore.exists()
+        else []
+    )
+    found = []
+    for directory, subdirs, names in os.walk(root):
+        here = Path(directory)
+        subdirs[:] = sorted(
+            name
+            for name in subdirs
+            if not name.startswith(".")
+            and not _mintignored((here / name).relative_to(root), True, patterns)
+        )
+        for name in sorted(names):
+            path = here / name
+            if (
+                path.suffix == ".md"
+                and path != root / "README.md"
+                and not _mintignored(path.relative_to(root), False, patterns)
+            ):
+                found.append(path)
+    return sorted(found)
 
 
 def extract_all() -> list[dict]:

@@ -155,7 +155,7 @@ DEFAULT_USER_ROLE=user
 
 # Optional: RAG Settings
 ENABLE_RAG_WEB_SEARCH=true
-RAG_EMBEDDING_MODEL=text-embedding-3-small
+RAG_EMBEDDING_MODEL=openai/text-embedding-3-small
 RAG_TOP_K=5
 CHUNK_SIZE=1500
 CHUNK_OVERLAP=100
@@ -258,7 +258,7 @@ Enable voice-to-text:
 ```bash .env
 ENABLE_AUDIO=true
 AUDIO_STT_ENGINE=openai
-AUDIO_STT_MODEL=whisper-1
+AUDIO_STT_MODEL=groq/whisper-large-v3-turbo
 ```
 </CodeGroup>
 
@@ -599,9 +599,9 @@ Configure cheaper models for embeddings:
 <CodeGroup>
 ```bash .env
 # Use smaller embedding model
-RAG_EMBEDDING_MODEL=text-embedding-3-small
+RAG_EMBEDDING_MODEL=openai/text-embedding-3-small
 
-# Use GPT-3.5 for simple tasks
+# Use a mini model for simple tasks
 DEFAULT_MODEL=openai/gpt-mini-latest
 ```
 </CodeGroup>

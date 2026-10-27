@@ -118,16 +118,17 @@ Keep the `type` field: without it Claude Code reads the entry as a stdio server.
 
 ### Authentication errors
 
-Verify the API key is loaded in your shell and that it has LLM access:
+Verify the API key is loaded in your shell and that it has LLM access. The check below sends what Claude Code sends: it appends `/v1/messages` to `ANTHROPIC_BASE_URL` and passes the key in the `x-api-key` header.
 
 {/* skip-test: reads $ANTHROPIC_API_KEY, which the reader exports earlier on the page */}
 ```bash
 echo $ANTHROPIC_API_KEY
 
-curl -X POST https://api.edenai.run/v3/chat/completions \
-  -H "Authorization: Bearer $ANTHROPIC_API_KEY" \
+curl -X POST https://api.edenai.run/v3/v1/messages \
+  -H "x-api-key: $ANTHROPIC_API_KEY" \
+  -H "anthropic-version: 2023-06-01" \
   -H "Content-Type: application/json" \
-  -d '{"model": "anthropic/claude-opus-latest", "messages": [{"role": "user", "content": "ping"}]}'
+  -d '{"model": "anthropic/claude-opus-latest", "max_tokens": 64, "messages": [{"role": "user", "content": "ping"}]}'
 ```
 
 ### Model not found
@@ -142,4 +143,4 @@ Confirm `ANTHROPIC_BASE_URL` is exactly `https://api.edenai.run/v3`. Check Eden 
 
 - [Codex CLI](./codex-cli) — OpenAI's open-source coding agent on Eden AI
 - [OpenCode](./opencode) — terminal coding agent with auto-generated config
-- [Chat Completions](/v3/llms/chat-completions) — full reference for the underlying endpoint
+- [Prompt Caching](/v3/llms/prompt-caching): how caching works on the Messages endpoint Claude Code uses

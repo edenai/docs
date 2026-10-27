@@ -16,7 +16,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "OpenCode"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-08-27T00:00:00Z"
+  dateModified="2026-10-27T00:00:00Z"
 />
 
 Configure [OpenCode](https://opencode.ai), the AI-powered terminal coding assistant, to use Eden AI for access to 500+ models.
@@ -52,6 +52,10 @@ curl -fsSL https://opencode.ai/install | bash
 brew install anomalyco/tap/opencode
 ```
 </CodeGroup>
+
+<Note>
+All three commands install OpenCode 1, which is what the rest of this page covers. OpenCode 2 is published separately, as `@opencode/cli`, and uses a different config key. See [OpenCode 2](#opencode-2) below.
+</Note>
 
 ### 2. Generate your config
 
@@ -164,6 +168,39 @@ Eden AI model IDs already contain a slash (`anthropic/claude-sonnet-latest`), an
 ## Switching models
 
 Re-run the script whenever you want to refresh the catalog — new models appear in `/models` the next time OpenCode starts. Browse the full list via [List Models](/v3/llms/listing-models) or `GET https://api.edenai.run/v3/models`.
+
+## OpenCode 2
+
+OpenCode 2 is a separate release line, installed from its own package. The installer at `opencode.ai/install` and the `opencode-ai` npm package both serve OpenCode 1 only.
+
+```bash
+npm install -g @opencode/cli
+```
+
+You do not need the config generator from step 2. OpenCode 2 reads its provider and model catalog from [models.dev](https://models.dev), where Eden AI is already listed, so `/connect` finds Eden AI and `/models` lists its models with no config file at all. Export `EDENAI_API_KEY` or connect the key through `/connect` as usual.
+
+Only the config key changes. Where OpenCode 1 uses `provider` with an `options` object, OpenCode 2 uses `providers` with a `settings` object:
+
+```json opencode.json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "providers": {
+    "edenai": {
+      "settings": {
+        "baseURL": "https://api.eu.edenai.run/v3"
+      }
+    }
+  }
+}
+```
+
+That example pins requests to Eden AI's EU gateway. Drop the `settings` block entirely to stay on the default `https://api.edenai.run/v3`.
+
+<Note>
+An OpenCode 1 config keeps working on OpenCode 2: it reads the older `provider` key and migrates it to `providers`, mapping `options` to `settings`. The older key is marked deprecated in the config schema, so prefer `providers` for new setups.
+</Note>
+
+Because the catalog comes from models.dev rather than from a live call to Eden AI, it can lag the current Eden AI catalog by a few releases. A model that `GET /v3/models` returns but `/models` does not list yet can still be used by declaring it under the provider's `models` key.
 
 ## Expert Models as Tools (MCP)
 

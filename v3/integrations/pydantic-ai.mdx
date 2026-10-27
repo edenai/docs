@@ -2,14 +2,14 @@
 title: "Use Pydantic AI with Eden AI"
 sidebarTitle: "Pydantic AI"
 icon: "/integration-logo/pydantic-ai-icondoc.svg"
-description: "Use Pydantic AI with Eden AI to build type-safe agents on 500+ AI models through one API."
+description: "Build Pydantic AI agents on Eden AI with OpenAIChatModel and OpenAIProvider: one API key, structured output, and 500+ models from many providers."
 ---
 
 import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
 
 <TechArticleSchema
   title={"Use Pydantic AI with Eden AI"}
-  description={"Use Pydantic AI with Eden AI to build type-safe agents on 500+ AI models through one API."}
+  description={"Build Pydantic AI agents on Eden AI with OpenAIChatModel and OpenAIProvider: one API key, structured output, and 500+ models from many providers."}
   path="v3/integrations/pydantic-ai"
   articleSection="AI Frameworks"
   about={"LLM Framework Integration"}
@@ -19,13 +19,15 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   dateModified="2026-07-16T00:00:00Z"
 />
 
-Use Pydantic AI with Eden AI to build type-safe agents on 500+ AI models through one API.
+Pydantic AI has no Eden AI provider, so you connect it through its OpenAI-compatible classes. This page shows the setup, structured output, message history and error handling.
 
 ## Overview
 
-Pydantic AI is a type-safe, structured-output agent framework for Python. It works with any OpenAI-compatible endpoint through `OpenAIChatModel` + `OpenAIProvider`, so you can point it at Eden AI's V3 API and access models from OpenAI, Anthropic, Google, Cohere, Meta, and more — behind one key, with EU-based, GDPR-aligned inference.
+Pydantic AI is a type-safe, structured-output agent framework for Python. It works with any OpenAI-compatible endpoint through `OpenAIChatModel` and `OpenAIProvider`, so you can point it at Eden AI's V3 API and use models from OpenAI, Anthropic, Google, Cohere, Meta and more behind one key.
 
 ## Installation
+
+Pydantic AI requires Python 3.11 or later.
 
 <CodeGroup>
 ```bash pip
@@ -49,9 +51,9 @@ from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
 
 model = OpenAIChatModel(
-    "openai/gpt-5.5",
+    "openai/gpt-latest",
     provider=OpenAIProvider(
-        api_key="YOUR_EDEN_AI_API_KEY",  # Get from https://app.edenai.run
+        api_key="YOUR_API_KEY",  # Get from https://app.edenai.run
         base_url="https://api.edenai.run/v3",
     ),
 )
@@ -62,30 +64,13 @@ print(result.output)
 ```
 </CodeGroup>
 
-## Available Models
+## Model naming
 
-Access models from multiple providers using the `provider/model` format:
-
-**OpenAI**
-- `openai/gpt-5.5`
-- `openai/gpt-5-mini`
-
-**Anthropic**
-- `anthropic/claude-sonnet-latest`
-- `anthropic/claude-opus-latest`
-- `anthropic/claude-haiku-latest`
-
-**Google**
-- `vertex/gemini-2.5-pro`
-- `vertex/gemini-flash-latest`
-
-**Mistral**
-- `mistral/mistral-large-latest`
-- `mistral/mistral-small-latest`
+Models use the `provider/model` format, for example `openai/gpt-latest`, `anthropic/claude-sonnet-latest` and `vertex/gemini-flash-latest`. Pass the id as the first argument of `OpenAIChatModel`. See [List LLM Models](/v3/llms/listing-models) for the full catalog.
 
 ## Structured Output
 
-Pydantic AI's signature feature works unchanged — define a Pydantic `output_type` and the agent returns a validated object, whichever Eden AI model you choose:
+Define a Pydantic `output_type` and the agent returns a validated object. By default Pydantic AI asks for the object through a tool call, so choose a model whose catalog entry has `supports_function_calling` (see [List LLM Models](/v3/llms/listing-models)):
 
 <CodeGroup>
 {/* paid-test: needs a real model answer, the sandbox returns canned prose */}
@@ -103,7 +88,7 @@ class City(BaseModel):
 model = OpenAIChatModel(
     "anthropic/claude-sonnet-latest",
     provider=OpenAIProvider(
-        api_key="YOUR_EDEN_AI_API_KEY",
+        api_key="YOUR_API_KEY",
         base_url="https://api.edenai.run/v3",
     ),
 )
@@ -127,7 +112,7 @@ from pydantic_ai.providers.openai import OpenAIProvider
 model = OpenAIChatModel(
     "anthropic/claude-sonnet-latest",
     provider=OpenAIProvider(
-        api_key="YOUR_EDEN_AI_API_KEY",
+        api_key="YOUR_API_KEY",
         base_url="https://api.edenai.run/v3",
     ),
 )
@@ -147,17 +132,29 @@ print(result.output)
 
 ## Error Handling
 
+Every 4xx or 5xx answer from Eden AI raises `ModelHTTPError`, with the status in `e.status_code`:
+
+| Status | Meaning |
+|--------|---------|
+| 401 | The key is not accepted. The detail is `Invalid API key` for a wrong or revoked `sk-eden-...` key, `Custom token has expired.` for an expired one, and `Invalid token` for other token shapes. |
+| 402 | Insufficient credit. |
+| 403 | A compliance or guardrail rule refused the request. |
+| 429 | Rate limit exceeded. |
+| 451 | No provider of the model runs in a region that the endpoint you called, or your organization's [compliance policy](/v3/data-governance/compliance-policies), allows, or, for a [routing policy](/v3/llms/routing-policies), every target was dropped for its region. |
+
+`ModelAPIError` is the parent class and also catches network failures, so keep it after `ModelHTTPError`.
+
 <CodeGroup>
 ```python Python
 from pydantic_ai import Agent
 from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
-from pydantic_ai.exceptions import ModelHTTPError, UnexpectedModelBehavior
+from pydantic_ai.exceptions import ModelAPIError, ModelHTTPError, UnexpectedModelBehavior
 
 model = OpenAIChatModel(
-    "openai/gpt-5.5",
+    "openai/gpt-latest",
     provider=OpenAIProvider(
-        api_key="YOUR_EDEN_AI_API_KEY",
+        api_key="YOUR_API_KEY",
         base_url="https://api.edenai.run/v3",
     ),
 )
@@ -167,7 +164,9 @@ try:
     result = agent.run_sync("Hello!")
     print(result.output)
 except ModelHTTPError as e:
-    print(f"Model HTTP error (auth, rate limit, bad request): {e}")
+    print(f"HTTP {e.status_code}: {e}")
+except ModelAPIError as e:
+    print(f"Could not reach the API: {e}")
 except UnexpectedModelBehavior as e:
     print(f"Unexpected model behavior: {e}")
 ```
@@ -186,7 +185,7 @@ from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
 
 model = OpenAIChatModel(
-    "openai/gpt-5.5",
+    "openai/gpt-latest",
     provider=OpenAIProvider(
         api_key=os.getenv("EDEN_AI_API_KEY"),
         base_url="https://api.edenai.run/v3",

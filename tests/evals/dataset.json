@@ -122,7 +122,7 @@
     {
         "id": "q17",
         "question": "How do I migrate my existing OpenAI code to use Eden AI?",
-        "expected_output": "Change two things in your OpenAI client: set api_key to your Eden AI API key and base_url to https://api.edenai.run/v3. Change model strings from 'gpt-4' to 'openai/gpt-4' (provider/model format). All OpenAI SDK methods (chat.completions.create, streaming, multi-turn, vision) work the same way. You can also use non-OpenAI models like 'anthropic/claude-sonnet-4-5'.",
+        "expected_output": "Set api_key to your Eden AI API key and base_url to https://api.edenai.run/v3 on your OpenAI client, and use Eden AI model ids in the provider/model format, for example 'openai/gpt-latest'. client.chat.completions.create then works as before, including multi-turn message history and image inputs, and non-OpenAI models such as 'anthropic/claude-sonnet-latest' or 'vertex/gemini-flash-latest' use the same call.",
         "source_doc": "v3/integrations/openai-sdk-python.mdx",
         "category": "integrations",
         "difficulty": "intermediate"

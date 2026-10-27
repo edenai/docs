@@ -87,8 +87,8 @@ inference key (`sk-eden-…`) and then manages that member's personal policies.
 | `GET · PATCH · DELETE /v3/manage/keys/{key_id}` | `manage:read` · `manage:write` | Read / update / revoke an inference key |
 | `POST /v3/manage/keys/{key_id}/rotate` | `manage:write` | Rotate an inference key's secret |
 | `GET /v3/manage/members` · `/usage` · `/keys/{key_id}/usage` · `/whoami` | `manage:read` | Members, usage, key introspection |
-| `GET /v3/manage/routing-policies` | `manage:read` | List the organization's routing policies |
-| `GET · PUT · DELETE /v3/manage/routing-policies/{name}` | `manage:read` · `manage:write` | Read / create or replace / delete a routing policy |
+| `GET /v3/manage/routing-policies` | `manage:read`, or an inference key | List the routing policies the credential can use: the organization's with a management key, the member's own and the organization's with an inference key |
+| `GET · PUT · DELETE /v3/manage/routing-policies/{name}` | `manage:read` · `manage:write`, or an inference key | Read / create or replace / delete a routing policy: the organization's with a management key, the member's personal one with an inference key |
 
 ## Routing policies
 

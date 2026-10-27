@@ -295,6 +295,11 @@ counted:
   falls back to the file name.
 - A title is at most 60 characters, where Google cuts it even without the
   suffix, and no two pages share one. CLAUDE.md asks for about 40.
+- No `.md` file is published. Mintlify serves one as a page, but every check
+  reads `.mdx` only, so a stray `.md` would ship with no title, no description
+  and no link check. The test fails on any `.md` outside a dot-directory that
+  is not the root `README.md` and that `.mintignore` does not exclude. Add internal
+  notes to `.mintignore`, or write the page as `.mdx`.
 - `<TechArticleSchema>` repeats the title, the description and the page's
   path exactly. It adds a second structured-data block beside the one
   Mintlify builds from the frontmatter, so a retitle has to change both

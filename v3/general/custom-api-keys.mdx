@@ -45,7 +45,7 @@ Sandbox keys return simulated responses and do not incur any cost. They are idea
 **Through the Management API.** Organizations that provision keys from automation (CI, an internal portal, onboarding scripts) use the `/v3/manage/keys` endpoints documented below. These endpoints are **not** called with an inference key: they need a **management key** (`mgmt-eden-…`) with the `manage:read` scope to read and `manage:write` to create, update, rotate or revoke. Generate one from the dashboard (**Account → Management Keys**) or mint it with an issuer key, as explained in the [Management API guide](/v3/organization/management-api).
 
 <Note>
-Calling a `/v3/manage` endpoint with an inference key (`sk-eden-…`) returns `401` with a message asking for a management key.
+Calling a `/v3/manage` endpoint with an inference key (`sk-eden-…`) returns `401` with a message asking for a management key. The one exception is `/v3/manage/routing-policies`, where an inference key manages its owner's personal [routing policies](/v3/llms/routing-policies#organization-and-personal-policies).
 </Note>
 
 ## API Endpoints

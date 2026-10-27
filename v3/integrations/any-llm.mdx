@@ -2,14 +2,14 @@
 title: "Use any-llm with Eden AI"
 sidebarTitle: "any-llm"
 icon: "/integration-logo/any-llm-icondoc.svg"
-description: "Use any-llm (Mozilla AI) with Eden AI to call 500+ AI models through one unified Python interface."
+description: "Call 500+ models with any-llm, Mozilla AI's unified Python library, through its built-in Eden AI provider. Install the extra, set one key, then use completion."
 ---
 
 import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
 
 <TechArticleSchema
   title={"Use any-llm with Eden AI"}
-  description={"Use any-llm (Mozilla AI) with Eden AI to call 500+ AI models through one unified Python interface."}
+  description={"Call 500+ models with any-llm, Mozilla AI's unified Python library, through its built-in Eden AI provider. Install the extra, set one key, then use completion."}
   path="v3/integrations/any-llm"
   articleSection="AI Frameworks"
   about={"LLM Framework Integration"}
@@ -19,13 +19,13 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   dateModified="2026-08-31T00:00:00Z"
 />
 
-Use any-llm (Mozilla AI) with Eden AI to call 500+ AI models through one unified Python interface.
+any-llm is Mozilla AI's Python library with one `completion()` call for every provider. Eden AI is a built-in provider (`edenai`), so a single `EDENAI_API_KEY` reaches the whole catalog.
 
 ## Overview
 
-[any-llm](https://github.com/mozilla-ai/any-llm) is a lightweight Python library from **Mozilla AI** that lets you talk to any LLM provider through a single `completion()` interface — swap providers by changing one string. **Eden AI is a built-in any-llm provider**, so you reach models from OpenAI, Anthropic, Google, Mistral and 500+ more behind one key, with EU-based, GDPR-aligned inference.
+[any-llm](https://github.com/mozilla-ai/any-llm) lets you talk to any LLM provider through a single `completion()` interface, so you swap providers by changing one string. You reach models from OpenAI, Anthropic, Google, Mistral and 500+ more behind one key.
 
-You select a model with the `provider:model_id` syntax. For Eden AI, the provider is `edenai` and the model id follows Eden AI's `provider/model` scheme — for example `edenai:anthropic/claude-sonnet-latest`.
+You select a model with the `provider:model_id` syntax. For Eden AI, the provider is `edenai` and the model id follows Eden AI's `provider/model` scheme, for example `edenai:anthropic/claude-sonnet-latest`. Use the colon form: any-llm deprecates the older slash form, where the provider is separated from the model by `/`.
 
 ## Installation
 
@@ -47,7 +47,7 @@ Set your key, then point any-llm at Eden AI by prefixing any model with `edenai:
 
 <CodeGroup>
 ```bash .env
-EDENAI_API_KEY=your_api_key_here
+EDENAI_API_KEY=YOUR_API_KEY
 ```
 
 ```python Python
@@ -64,6 +64,10 @@ print(response.choices[0].message.content)
 
 The `edenai` provider automatically uses the Eden AI base URL (`https://api.edenai.run/v3`) and reads your key from the `EDENAI_API_KEY` environment variable.
 
+## Model naming
+
+Use `edenai:<provider>/<model>`. any-llm splits on the first colon, so the rest is passed to Eden AI unchanged: for example `edenai:anthropic/claude-sonnet-latest` or `edenai:mistral/mistral-small-latest`. To browse every id, see [List LLM Models](/v3/llms/listing-models).
+
 ## Switching models
 
 any-llm's core benefit: change providers by changing one string. Every Eden AI model is reachable the same way:
@@ -75,7 +79,7 @@ from any_llm import completion
 messages = [{"role": "user", "content": "Write a haiku about the sea."}]
 
 for model in [
-    "edenai:openai/gpt-5.5",
+    "edenai:openai/gpt-latest",
     "edenai:anthropic/claude-sonnet-latest",
     "edenai:mistral/mistral-large-latest",
 ]:
@@ -86,7 +90,7 @@ for model in [
 
 ## Streaming
 
-Eden AI supports streaming through any-llm — pass `stream=True`:
+Eden AI supports streaming through any-llm. Pass `stream=True`:
 
 <CodeGroup>
 ```python Python
@@ -105,30 +109,9 @@ for chunk in stream:
 ```
 </CodeGroup>
 
-## Available Models
-
-Use the `edenai:<provider>/<model>` format for any Eden AI model:
-
-**OpenAI**
-- `edenai:openai/gpt-5.5`
-- `edenai:openai/gpt-5-mini`
-
-**Anthropic**
-- `edenai:anthropic/claude-sonnet-latest`
-- `edenai:anthropic/claude-opus-latest`
-- `edenai:anthropic/claude-haiku-latest`
-
-**Google**
-- `edenai:vertex/gemini-2.5-pro`
-- `edenai:vertex/gemini-flash-latest`
-
-**Mistral**
-- `edenai:mistral/mistral-large-latest`
-- `edenai:mistral/mistral-small-latest`
-
 ## Embeddings
 
-The Eden AI provider also supports embeddings:
+The Eden AI provider also supports embeddings. `inputs` takes a string or a list of strings:
 
 <CodeGroup>
 ```python Python
@@ -147,8 +130,8 @@ print(response.data[0].embedding[:5])
 
 <CodeGroup>
 ```bash .env
-EDENAI_API_KEY=your_api_key_here
-# Optional — override the endpoint:
+EDENAI_API_KEY=YOUR_API_KEY
+# Optional: override the endpoint
 EDENAI_API_BASE=https://api.edenai.run/v3
 ```
 </CodeGroup>

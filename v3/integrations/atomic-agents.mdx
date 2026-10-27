@@ -2,14 +2,14 @@
 title: "Use Atomic Agents with Eden AI"
 sidebarTitle: "Atomic Agents"
 icon: "/integration-logo/atomic-agents-icondoc.svg"
-description: "Use Atomic Agents with Eden AI to build agents on 500+ AI models through an OpenAI-compatible, Instructor-powered interface."
+description: "Build Atomic Agents on 500+ models by pointing its Instructor-wrapped OpenAI client at Eden AI, then switch models by changing one string."
 ---
 
 import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
 
 <TechArticleSchema
   title={"Use Atomic Agents with Eden AI"}
-  description={"Use Atomic Agents with Eden AI to build agents on 500+ AI models through an OpenAI-compatible, Instructor-powered interface."}
+  description={"Build Atomic Agents on 500+ models by pointing its Instructor-wrapped OpenAI client at Eden AI, then switch models by changing one string."}
   path="v3/integrations/atomic-agents"
   articleSection="AI Frameworks"
   about={"Agent Framework Integration"}
@@ -19,35 +19,37 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   dateModified="2026-07-27T00:00:00Z"
 />
 
-Use Atomic Agents with Eden AI to build agents on 500+ AI models through an OpenAI-compatible, Instructor-powered interface.
+Atomic Agents sends its structured-output requests through an Instructor-wrapped OpenAI client, so pointing that client at `https://api.edenai.run/v3` is the whole integration.
 
 ## Overview
 
-[Atomic Agents](https://github.com/Eigenwise/atomic-agents) is a lightweight, modular Python framework for building AI agents on composable, schema-driven building blocks (via [Instructor](https://github.com/instructor-ai/instructor) and Pydantic). Atomic Agents works with Eden AI out of the box through its existing OpenAI-compatible client, so your agents reach models from OpenAI, Anthropic, Google, Mistral and more behind one key, with EU-based, GDPR-aligned inference.
+[Atomic Agents](https://github.com/Eigenwise/atomic-agents) is a lightweight, modular Python framework for building AI agents on composable, schema-driven building blocks (via [Instructor](https://github.com/instructor-ai/instructor) and Pydantic). It works with Eden AI through its existing OpenAI-compatible client, so your agents reach models from OpenAI, Anthropic, Google, Mistral and more behind one key.
 
 ## Installation
 
-Eden AI reuses the OpenAI client and Instructor that Atomic Agents already relies on:
+Eden AI reuses the OpenAI client and Instructor that Atomic Agents already relies on. Atomic Agents 2 needs Python 3.12 or later; on an older Python, pip installs the 1.x line, which has no `AtomicAgent` or `AgentConfig`.
 
 <CodeGroup>
 ```bash pip
-pip install atomic-agents openai instructor
+pip install "atomic-agents>=2" openai instructor
 ```
 
 ```bash poetry
-poetry add atomic-agents openai instructor
+poetry add "atomic-agents>=2" openai instructor
 ```
 </CodeGroup>
 
 ## Quick Start
 
-Wrap an OpenAI client pointed at Eden AI with Instructor — the same pattern used for any other OpenAI-compatible provider — and pass it to your agent:
+Atomic Agents does not read an API key from the environment itself, so the snippets below read `EDEN_AI_API_KEY`. Export it first:
 
-<CodeGroup>
-```bash .env
-EDENAI_API_KEY=your_api_key_here
+```bash
+export EDEN_AI_API_KEY="YOUR_API_KEY"
 ```
 
+Wrap an OpenAI client pointed at Eden AI with Instructor, the same pattern used for any other OpenAI-compatible provider, and pass it to your agent:
+
+<CodeGroup>
 {/* paid-test: needs a real model answer, the sandbox returns canned prose */}
 ```python Python
 import os
@@ -63,7 +65,7 @@ from atomic_agents import (
 client = instructor.from_openai(
     OpenAI(
         base_url="https://api.edenai.run/v3",
-        api_key=os.getenv("EDENAI_API_KEY"),
+        api_key=os.getenv("EDEN_AI_API_KEY"),
     )
 )
 
@@ -79,11 +81,15 @@ print(response.chat_message)
 ```
 </CodeGroup>
 
-Both Instructor `TOOLS` and `JSON` modes work unchanged with Eden AI.
+Atomic Agents asks Instructor for structured output. Its default `TOOLS` mode sends a tool call, so pick models that support function calling. Every model named on this page does.
+
+## Model naming
+
+Use the `provider/model` format, for example `vertex/gemini-flash-latest`, `anthropic/claude-sonnet-latest` or `mistral/mistral-large-latest`. To browse every id, see [List LLM Models](/v3/llms/listing-models).
 
 ## Switching models
 
-Change the `model` string on `AgentConfig` to reach any Eden AI model — no per-provider SDKs, no code changes:
+Change the `model` string on `AgentConfig` to reach any Eden AI model, with no per-provider SDKs and no code changes:
 
 <CodeGroup>
 {/* paid-test: needs a real model answer, the sandbox returns canned prose */}
@@ -101,12 +107,12 @@ from atomic_agents import (
 client = instructor.from_openai(
     OpenAI(
         base_url="https://api.edenai.run/v3",
-        api_key=os.getenv("EDENAI_API_KEY"),
+        api_key=os.getenv("EDEN_AI_API_KEY"),
     )
 )
 
 for model in [
-    "openai/gpt-5.5",
+    "openai/gpt-latest",
     "anthropic/claude-sonnet-latest",
     "mistral/mistral-large-latest",
 ]:
@@ -118,33 +124,9 @@ for model in [
 ```
 </CodeGroup>
 
-## Available Models
-
-Use the `provider/model` format for any Eden AI model:
-
-**OpenAI**
-- `openai/gpt-5.5`
-- `openai/gpt-5-mini`
-
-**Anthropic**
-- `anthropic/claude-sonnet-latest`
-- `anthropic/claude-haiku-latest`
-
-**Google**
-- `vertex/gemini-2.5-pro`
-- `vertex/gemini-flash-latest`
-
-**Mistral**
-- `mistral/mistral-large-latest`
-- `mistral/mistral-small-latest`
-
 ## Environment Variables
 
-<CodeGroup>
-```bash .env
-EDENAI_API_KEY=your_api_key_here
-```
-</CodeGroup>
+Atomic Agents reads no Eden AI variable of its own. `EDEN_AI_API_KEY` is the name the snippets on this page use, so you can rename it as long as you change the `os.getenv` call to match.
 
 ## Next Steps
 

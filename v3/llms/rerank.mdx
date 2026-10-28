@@ -110,11 +110,12 @@ curl -X POST https://api.edenai.run/v3/rerank \
 | `documents` | array of strings | yes | The texts to rank, from 1 to 1,000. |
 | `top_n` | integer | no | Return only the `top_n` most relevant results. Greater than 0. Defaults to all documents. |
 | `return_documents` | boolean | no | Echo each ranked document's text in its result under `document.text`. Defaults to `false`. |
-| `metadata` | object | no | Arbitrary metadata attached to the request. |
+| `metadata` | object | no | Accepted. It is not a tag: to label calls for usage tracking, use `tags`. |
+| `routing` | object | no | [Provider routing](/v3/llms/provider-routing) preferences. With a `provider/model` only `zero_data_retention` applies: the call is refused unless the model qualifies. |
 | `extra_headers` | object | no | Additional HTTP headers forwarded to the provider. Credential headers are refused. |
 | `tags` | object | no | Key/value labels recorded with the call, for [usage tracking](/v3/general/tags). |
 
-Any other top-level field is forwarded to the provider. Fields that decide the provider connection, the region, or how the call is made, priced or answered, such as `api_key`, `api_base` or `base_url`, are refused with `422`.
+`fallbacks` is refused with `400`. Any other top-level field is forwarded to the provider. Fields that decide the provider connection, the region, or how the call is made, priced or answered, such as `api_key`, `api_base` or `base_url`, are refused with `422`.
 
 ### Response
 
@@ -177,11 +178,20 @@ Eden AI estimates the cost before the call, holds that amount, and charges the a
 
 When a provider reports no billable count, or reports zero, the call is charged at the estimate made before the call, never at zero. The response `cost` then holds that amount.
 
+## Regions, guardrails and tags
+
+- **Regions.** `provider/model@region` is accepted when the model lists that region in `GET /v3/rerank/models`. A region the model does not offer answers `400`, and a region that contradicts the regional endpoint you called answers `451`.
+- **Guardrails.** Your organization's [guardrail](/v3/organization/guardrails) model rules apply, and a model they do not allow answers `403`.
+- **Tags.** The `tags` field and the `X-EdenAI-Tags` header both apply.
+
 ## What rerank does not support
 
 - **Model routing.** `@edenai` is refused with `400`. Name a rerank model directly, for example `cohere/rerank-v4.0-fast`.
+- **Model names without a provider.** `rerank-v3.5` answers `400`. Name it as `provider/model`, for example `cohere/rerank-v3.5`.
 - **Models that are not rerank models.** A chat model such as `openai/gpt-4` answers `400` before any provider is called.
-- **Fallbacks and routing preferences.** The route declares no `fallbacks` or `routing` field. Send one model per request.
+- **Fallbacks.** `fallbacks` answers `400`. Send one model per request.
+- **Routing preferences other than zero data retention.** With a named `provider/model` there is no provider to choose, so `sort`, `order`, `allowed_providers`, `ignored_providers` and `max_price` have no effect.
+- **Routing policies.** A key's default routing policy does not apply, and `policy/{name}` is not a rerank model.
 - **Non-text documents.** `documents` is a list of strings. Send the text of each passage; images and structured objects are refused with `422`.
 - **More than 1,000 documents** or an empty list. Both answer `422`.
 
@@ -189,8 +199,8 @@ When a provider reports no billable count, or reports zero, the call is charged 
 
 | Status | Meaning |
 |---|---|
-| `400` | `@edenai` routing, or a model that is not a rerank model. |
-| `403` | A [guardrail](/v3/organization/guardrails) model rule does not allow the model. |
+| `400` | `@edenai` routing, a model name without its provider, `fallbacks`, a region the model does not offer, a model that is not a rerank model, or a model that does not meet `routing.zero_data_retention`. |
+| `403` | A [guardrail](/v3/organization/guardrails) model rule does not allow the model, or your organization requires zero data retention and the model does not meet it. |
 | `422` | The body is invalid: an empty `query` or `documents`, more than 1,000 documents, a `top_n` of 0 or less, or a refused field. |
 | `451` | The EU or another regional endpoint does not serve the model. |
 

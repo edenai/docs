@@ -115,6 +115,7 @@ with open("batch.jsonl", "rb") as f:
         headers=headers,
         files={"file": ("batch.jsonl", f, "application/jsonl")},
         data={"metadata": json.dumps({"project": "taglines"})},
+        timeout=(10, 120),
     )
 
 batch = response.json()
@@ -169,7 +170,7 @@ batch_id = "BATCH_ID"
 url = f"https://api.edenai.run/v3/batches/{batch_id}"
 headers = {"Authorization": "Bearer YOUR_API_KEY"}
 
-batch = requests.get(url, headers=headers).json()
+batch = requests.get(url, headers=headers, timeout=30).json()
 print(batch["status"], batch["request_counts"])
 ```
 
@@ -200,13 +201,16 @@ import requests
 url = "https://api.edenai.run/v3/batches"
 headers = {"Authorization": "Bearer YOUR_API_KEY"}
 
-page = requests.get(url, headers=headers, params={"limit": 10}).json()
+page = requests.get(url, headers=headers, params={"limit": 10}, timeout=30).json()
 for batch in page["data"]:
     print(batch["id"], batch["status"])
 
 if page["has_more"]:
     next_page = requests.get(
-        url, headers=headers, params={"limit": 10, "after": page["last_id"]}
+        url,
+        headers=headers,
+        params={"limit": 10, "after": page["last_id"]},
+        timeout=30,
     ).json()
 ```
 
@@ -231,7 +235,7 @@ batch_id = "BATCH_ID"
 url = f"https://api.edenai.run/v3/batches/{batch_id}/cancel"
 headers = {"Authorization": "Bearer YOUR_API_KEY"}
 
-batch = requests.post(url, headers=headers).json()
+batch = requests.post(url, headers=headers, timeout=30).json()
 print(batch["status"])
 ```
 

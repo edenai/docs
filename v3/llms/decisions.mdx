@@ -312,6 +312,10 @@ curl -X POST https://api.edenai.run/v3/alpha/decisions \
 | `model` | string | yes | `provider/model`, for example `typesafe/jev-latest`. |
 | `state` | string, object, or array | yes | The content every question in this request refers to. |
 | `questions` | object | yes | At least one question, keyed by a name you choose. The answers come back under the same names. |
+| `fallbacks` | string[] | no | Decision models to try, in order, if the primary model fails. Each is a `provider/model` id or a model name with no provider prefix. At most 7. |
+| `routing` | object | no | How to pick between the providers that serve a model named without a provider prefix. Takes the fields described in [provider routing](/v3/llms/provider-routing), including `zero_data_retention`. |
+
+`routing` and `fallbacks` are not forwarded to the provider. A malformed value returns a `422`.
 
 `state` does not have to be a string. Pass an object or an array when the shape itself carries meaning, and the model will read the structure:
 

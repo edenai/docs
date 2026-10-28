@@ -170,8 +170,10 @@ The first hit should be the document about the `cost` field. Swap in your own co
 | `dimensions` | integer | no | Truncate the output vector. Only supported by models that advertise it (e.g. `openai/text-embedding-3-small` and `openai/text-embedding-3-large`). |
 | `user` | string | no | Accepted for OpenAI compatibility. Your value is not forwarded to the provider. |
 | `metadata` | object | no | Accepted, but not sent to the provider and not a tag. To split your usage per client or project, use [tags](/v3/general/tags). |
+| `fallbacks` | string[] | no | Embedding models to try, in order, if the primary model fails. Each is a `provider/model` id or a model name with no provider prefix. At most 7. |
+| `routing` | object | no | How to pick between the providers that serve a model named without a provider prefix. Takes the fields described in [provider routing](/v3/llms/provider-routing), including `zero_data_retention`. Policies, `router_candidates` and `session_id` are not accepted here. |
 
-Unknown top-level fields are forwarded to the underlying provider, so provider-specific options can be passed through unchanged.
+Unknown top-level fields are forwarded to the underlying provider, so provider-specific options can be passed through unchanged. `routing` and `fallbacks` are not forwarded. A malformed `routing` or `fallbacks`, such as a string where a list is expected, returns a `422`.
 
 ## Response
 

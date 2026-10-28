@@ -364,7 +364,7 @@ The URL must be public. Addresses that resolve to private networks are refused.
 |---|---|
 | `400` | The file or a line is invalid. The message names the line, for example `Line 3: ...`. Also returned for a model that is not in the catalog or cannot be batched, a flagged line, a zero data retention request, an organization with its own OpenAI key, and for cancelling or reading results of a batch in the wrong state. |
 | `401` | Missing or invalid `Authorization: Bearer` token. |
-| `402` | The balance or a member budget cannot cover the reservation. |
+| `402` | The balance or a member budget cannot cover the reservation, or the reservation is $100,000 or more, which is refused whatever the balance. Split the file into smaller batches. |
 | `403` | Your organization requires zero data retention, or a [guardrail](/v3/organization/guardrails) model rule does not allow the model: `Model(s) 'openai/...' not allowed by your guardrail policy.` |
 | `404` | The batch does not exist or is not yours. |
 | `409` | The batch was never created at OpenAI, so it cannot be cancelled or read. Also returned by results while OpenAI has not ended the batch. |

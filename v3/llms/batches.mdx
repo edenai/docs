@@ -263,7 +263,7 @@ batch_id = "BATCH_ID"
 url = f"https://api.edenai.run/v3/batches/{batch_id}/results"
 headers = {"Authorization": "Bearer YOUR_API_KEY"}
 
-with requests.get(url, headers=headers, stream=True) as response:
+with requests.get(url, headers=headers, stream=True, timeout=(10, 300)) as response:
     response.raise_for_status()
     for raw in response.iter_lines():
         if not raw:
@@ -389,12 +389,16 @@ import requests
 
 def on_batch_notification(payload: dict) -> None:
     batch_id = payload["job_id"]
-    if payload["status"] != "success":
+    succeeded = payload["status"] == "success"
+    if not succeeded:
+        # A cancelled or expired batch keeps the results of the requests that completed.
         print(batch_id, "failed:", payload["error"]["message"])
-        return
     url = f"https://api.edenai.run/v3/batches/{batch_id}/results"
     headers = {"Authorization": "Bearer YOUR_API_KEY"}
-    with requests.get(url, headers=headers, stream=True) as response:
+    with requests.get(url, headers=headers, stream=True, timeout=(10, 300)) as response:
+        if not succeeded and not response.ok:
+            print(batch_id, "has no results:", response.status_code)
+            return
         response.raise_for_status()
         with open(f"{batch_id}.jsonl", "wb") as f:
             for chunk in response.iter_content(chunk_size=65536):

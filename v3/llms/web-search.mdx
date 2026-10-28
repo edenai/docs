@@ -132,6 +132,48 @@ You can also browse models visually in the [Eden AI model catalog](https://app.e
 | `web_search_options` | object | Options for web search integration. Omit to disable web search. |
 | `web_search_options.search_context_size` | string | Amount of context retrieved from the web. Options: `"low"`, `"medium"`, `"high"`. Default: `"medium"` |
 
+## Qwen Web Search
+
+`qwen/qwen3.8-omni-flash` searches the web through Alibaba's own search. Other Qwen models do not search.
+
+- **Turn it on** with `web_search_options` on [Chat Completions](/v3/llms/chat-completions), or a `web_search` tool on [Responses](/v3/llms/responses). An `enable_search` field in your request is ignored: Eden AI sets it.
+- **Streaming only.** Set `stream` to `true`. A search request without it is refused with `400`.
+- **Global only.** Search runs on a Global-scope workspace, so it has no EU route. A call tagged `@eu` runs on the EU workspace and does not search. See [EU data residency](/v3/data-governance/provider-data-policies#eu-data-residency).
+- **No search rate, no search.** A model whose pricing carries no per-search rate answers `501`.
+
+{/* skip-test: Qwen web search is not on the API these tests run against yet; remove this marker once it is */}
+```python Python
+import requests
+
+url = "https://api.edenai.run/v3/chat/completions"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json",
+}
+
+payload = {
+    "model": "qwen/qwen3.8-omni-flash",
+    "messages": [{"role": "user", "content": "What changed in EU AI rules this month?"}],
+    "web_search_options": {"search_context_size": "medium"},
+    "stream": True,
+}
+
+with requests.post(url, headers=headers, json=payload, stream=True) as response:
+    for line in response.iter_lines():
+        if line:
+            print(line.decode())
+```
+
+### Billing
+
+A call is billed for its tokens plus the searches Alibaba reports, at the model's per-search rate (`web_search_cost_per_call`).
+
+| Case | Billed |
+|---|---|
+| The model searched | The count Alibaba reports, times the per-search rate. |
+| The model chose not to search, so Alibaba reports no search | No search fee. |
+| The stream is cut before Alibaba reports its usage | A reservation of 10 searches. |
+
 ## With System Messages
 
 Combine web search with system messages to control how the model uses search results:

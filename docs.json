@@ -202,6 +202,7 @@
                   "v3/llms/chat-completions",
                   "v3/llms/responses",
                   "v3/llms/embeddings",
+                  "v3/llms/rerank",
                   "v3/llms/decisions",
                   "v3/llms/file-upload",
                   "v3/llms/structured-output",

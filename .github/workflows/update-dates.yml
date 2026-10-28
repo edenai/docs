@@ -22,6 +22,9 @@ jobs:
         with:
           app-id: ${{ vars.DOCS_BOT_APP_ID }}
           private-key: ${{ secrets.DOCS_BOT_PRIVATE_KEY }}
+          # This job runs a script from the PR branch with the token persisted,
+          # so it gets only what the push needs.
+          permission-contents: write
 
       - uses: actions/checkout@v4
         with:

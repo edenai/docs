@@ -2,14 +2,14 @@
 title: "OpenAI Batch API for Chat Completions"
 sidebarTitle: "Batches"
 icon: "layer-group"
-description: "Run many OpenAI chat requests as one asynchronous batch at batch rates. Upload a JSONL file, track the batch and download the results within 30 days."
+description: "Run many OpenAI chat requests through the Batch API at batch rates. Upload a JSONL file, track the batch and download the results within 30 days."
 ---
 
 import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
 
 <TechArticleSchema
   title={"OpenAI Batch API for Chat Completions"}
-  description={"Run many OpenAI chat requests as one asynchronous batch at batch rates. Upload a JSONL file, track the batch and download the results within 30 days."}
+  description={"Run many OpenAI chat requests through the Batch API at batch rates. Upload a JSONL file, track the batch and download the results within 30 days."}
   path="v3/llms/batches"
   articleSection="LLMs"
   about={"LLM API"}
@@ -315,9 +315,9 @@ The rates are in the `pricing` object of each OpenAI model in [`GET /v3/models`]
 The batch shows in [usage monitoring](/v3/general/monitoring) as cost. The launch records the reservation and the settlement adds the difference between the final cost and the reservation, so the total is what the batch was charged. The settlement is not counted as a request or as tokens.
 
 - **At create.** Eden AI reserves the largest amount the batch could cost and deducts it from your balance. For each line, the reservation covers the prompt tokens plus the line's `max_tokens` (or `max_completion_tokens`, or the model's maximum output when neither is set), multiplied by `n`. If your balance or a member budget cannot cover it, the request answers `402` and nothing is sent.
-- **At the end.** The batch is settled once, from the results. Each request that succeeded bills the tokens it used. A request that failed bills nothing. A request that succeeded but reports no usage bills its own reservation. The difference between the reservation and the final cost is returned to your balance.
+- **At the end.** The batch is settled once, from the results. Each request that succeeded bills the tokens it used. A request that failed bills nothing. A request that succeeded but reports no usage, or that OpenAI counts as completed but that has no line in the results, bills an estimate: its prompt tokens, plus the output its response shows and 8,192 tokens per completion, never more output than was reserved for it. The difference between the reservation and the final cost is returned to your balance.
 - **When nothing completed.** The batch bills nothing and the whole reservation is returned.
-- **When results cannot be read.** Eden AI keeps the batch charged at the larger of the upfront reservation and the sum of the per-line reservations, and does not settle it at zero.
+- **When results cannot be read.** Each request that may have run bills the same estimate, with no output shown. For a batch that has ended, that is as many requests as OpenAI counts as completed, the largest estimates first. Otherwise it is every request. A batch with a request that may have run is never settled at zero.
 
 Set `max_tokens` on every line to keep the reservation close to the real cost.
 
@@ -344,6 +344,62 @@ Batches run on Eden AI's OpenAI account only. If your organization has added its
 Pass `webhook_receiver` at create to be notified instead of polling. Eden AI sends a signed `POST` to the URL once the batch has finished and settled. The signature, headers and verification steps are the ones described in [Webhooks](/v3/expert-models/webhooks).
 
 The notification reports `success` for a `completed` batch and `fail` for any other final status. It does not carry the results: read them from the results route.
+
+The payload has the shape of every Eden AI job notification. `job_id` is the batch `id`, and `feature` and `subfeature` are `llm` and `batch`:
+
+```json
+{
+  "event": "async_job_completed",
+  "job_id": "6f1c2d3e-8a4b-4c5d-9e6f-7a8b9c0d1e2f",
+  "status": "success",
+  "feature": "llm",
+  "subfeature": "batch",
+  "provider": "openai",
+  "model": "gpt-5-mini",
+  "created_at": "2026-09-21T14:13:20+00:00",
+  "finished_at": "2026-09-21T15:02:41+00:00",
+  "output": {
+    "batch_status": "completed",
+    "input_file_id": "file-abc123",
+    "output_file_id": "file-def456",
+    "error_file_id": null,
+    "request_counts": {"total": 3, "completed": 3, "failed": 0},
+    "line_count": 3,
+    "metadata": {"project": "taglines"},
+    "model": "openai/gpt-5-mini"
+  }
+}
+```
+
+| Field | Description |
+|---|---|
+| `job_id` | The batch `id`. Use it with `GET /v3/batches/{batch_id}` and the results route. |
+| `status` | `success` or `fail`. |
+| `model` | The OpenAI model name, without the `openai/` prefix. `output.model` holds the id you sent. |
+| `created_at`, `finished_at` | ISO 8601 timestamps. The batch object gives the same times in Unix seconds. |
+| `output` | On `success`: OpenAI's last reported status of the batch (`batch_status`), its request counts and your metadata. Absent on `fail`. |
+| `error` | On `fail`: `{"message": "..."}`, the same text as the batch's `error`. Absent on `success`. |
+
+To fetch the results when the notification arrives, read `job_id` and call the results route:
+
+{/* skip-test: the payload comes from a webhook delivery, and the batch routes are not on the API these tests run against yet */}
+```python Python
+import requests
+
+
+def on_batch_notification(payload: dict) -> None:
+    batch_id = payload["job_id"]
+    if payload["status"] != "success":
+        print(batch_id, "failed:", payload["error"]["message"])
+        return
+    url = f"https://api.edenai.run/v3/batches/{batch_id}/results"
+    headers = {"Authorization": "Bearer YOUR_API_KEY"}
+    with requests.get(url, headers=headers, stream=True) as response:
+        response.raise_for_status()
+        with open(f"{batch_id}.jsonl", "wb") as f:
+            for chunk in response.iter_content(chunk_size=65536):
+                f.write(chunk)
+```
 
 The URL must be public. Addresses that resolve to private networks are refused.
 

@@ -14,18 +14,20 @@ jobs:
     # Skip PRs from forks — they don't have write access to push back
     if: github.event.pull_request.head.repo.full_name == github.repository
     steps:
+      # The org-level `agent-block` ruleset rejects pushes from
+      # github-actions[bot] outside refs/heads/edenai-assistant/**.
+      # edenai-docs-bot is on its bypass list.
+      - uses: actions/create-github-app-token@v2
+        id: app-token
+        with:
+          app-id: ${{ vars.DOCS_BOT_APP_ID }}
+          private-key: ${{ secrets.DOCS_BOT_PRIVATE_KEY }}
+
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.head_ref }}
           fetch-depth: 0
-          # Use a PAT so the push runs as a bypass-eligible actor.
-          # GITHUB_TOKEN authenticates as github-actions[bot] (Write role),
-          # which the org-level `agent-block` ruleset rejects when pushing
-          # to branches outside refs/heads/edenai-assistant/**. The PAT
-          # must belong to a user/app with Triage, Maintain, or Admin role
-          # (the ruleset's bypass list). Falls back to GITHUB_TOKEN so the
-          # rest of the workflow still runs when the secret isn't set.
-          token: ${{ secrets.DOCS_BOT_PAT || secrets.GITHUB_TOKEN }}
+          token: ${{ steps.app-token.outputs.token }}
 
       - uses: actions/setup-python@v5
         with:

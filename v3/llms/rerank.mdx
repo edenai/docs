@@ -188,7 +188,7 @@ When a provider reports no billable count, or reports zero, the call is charged 
 
 - **Model routing.** `@edenai` is refused with `400`. Name a rerank model directly, for example `cohere/rerank-v4.0-fast`.
 - **Model names without a provider.** `rerank-v3.5` answers `400`. Name it as `provider/model`, for example `cohere/rerank-v3.5`.
-- **Models that are not rerank models.** A chat model such as `openai/gpt-4` answers `400` before any provider is called.
+- **Models that are not rerank models.** A chat model such as `openai/gpt-5` answers `400` before any provider is called.
 - **Fallbacks.** `fallbacks` answers `400`. Send one model per request.
 - **Routing preferences other than zero data retention.** With a named `provider/model` there is no provider to choose, so `sort`, `order`, `allowed_providers`, `ignored_providers` and `max_price` have no effect.
 - **Routing policies.** A key's default routing policy does not apply, and `policy/{name}` is not a rerank model.

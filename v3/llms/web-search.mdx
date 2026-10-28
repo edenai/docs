@@ -134,7 +134,7 @@ You can also browse models visually in the [Eden AI model catalog](https://app.e
 
 ## Qwen Web Search
 
-`qwen/qwen3.8-omni-flash` searches the web through Alibaba's own search. Other Qwen models do not search.
+`qwen/qwen3.8-omni-flash` searches the web through Alibaba's own search. Other Qwen models do not search: the request runs without search, whatever `supports_web_search` says for them in the model list. For Qwen and DeepSeek, the model named in each section below is the one that searches.
 
 - **Turn it on** with `web_search_options` on [Chat Completions](/v3/llms/chat-completions), or a `web_search` tool on [Responses](/v3/llms/responses). An `enable_search` field in your request is ignored: Eden AI sets it.
 - **Streaming only.** Set `stream` to `true`. A search request without it is refused with `400`.
@@ -217,13 +217,13 @@ Each search appears as a `server_tool_use` block, and `usage.server_tool_use.web
 
 ### Billing
 
-A call is billed for its tokens plus its searches, at the model's per-search rate (`web_search_cost_per_call`): $0.75 per 1,000 queries, $0.00075 per query. The pages the model reads are counted in its input tokens.
+A call is billed for its tokens plus its searches, at the model's per-search rate (`web_search_cost_per_call`): $0.75 per 1,000 queries, $0.00075 per query. On Responses, each page the model opens counts as one query. The text it reads is counted in its input tokens.
 
 DeepSeek charges nothing for search until 00:00 Beijing time on 1 November 2026 (16:00 UTC on 31 October 2026). The rate above applies from then.
 
 | Case | Billed |
 |---|---|
-| Responses, the model searched | The queries listed in each `web_search_call` item, times the per-search rate. |
+| Responses, the model searched | The queries listed in each `web_search_call` item, plus one for each page it opened, times the per-search rate. |
 | Messages, the model searched | `web_search_requests` (plus `web_fetch_requests`), times the per-search rate. Without that count, one per `server_tool_use` block. |
 | The model chose not to search | No search fee. |
 | A search count that cannot be read | At least 10 searches. |

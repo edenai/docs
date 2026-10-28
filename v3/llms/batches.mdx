@@ -25,17 +25,19 @@ Batches suit work that does not need an immediate answer, such as classifying a 
 
 ## Overview
 
-All routes are under `https://api.edenai.run/v3/llm/batches` and use the same `Authorization: Bearer YOUR_API_KEY` header as the rest of the API.
+All routes are under `https://api.edenai.run/v3/batches` and use the same `Authorization: Bearer YOUR_API_KEY` header as the rest of the API.
 
 | Route | Purpose |
 |---|---|
-| `POST /v3/llm/batches` | Create a batch from a JSONL file. |
-| `GET /v3/llm/batches` | List your batches, newest first. |
-| `GET /v3/llm/batches/{batch_id}` | Get the status, request counts and cost of one batch. |
-| `POST /v3/llm/batches/{batch_id}/cancel` | Cancel a batch. |
-| `GET /v3/llm/batches/{batch_id}/results` | Download the results as JSONL. |
+| `POST /v3/batches` | Create a batch from a JSONL file. |
+| `GET /v3/batches` | List your batches, newest first. |
+| `GET /v3/batches/{batch_id}` | Get the status, request counts and cost of one batch. |
+| `POST /v3/batches/{batch_id}/cancel` | Cancel a batch. |
+| `GET /v3/batches/{batch_id}/results` | Download the results as JSONL. |
 
 A batch that belongs to another account, or that does not exist, answers `404`.
+
+`/v3/batches` is the only batch API. The V2 API has none: its `/v2/{feature}/{subfeature}/batch/{name}/` route runs each line as its own separate feature call and does not use OpenAI's batch endpoint.
 
 A sandbox token accepts a create request and returns a batch, but sends nothing to OpenAI, and the batch stays in `validating`.
 
@@ -104,7 +106,7 @@ with open("batch.jsonl", "w", encoding="utf-8") as f:
     for line in lines:
         f.write(json.dumps(line) + "\n")
 
-url = "https://api.edenai.run/v3/llm/batches"
+url = "https://api.edenai.run/v3/batches"
 headers = {"Authorization": "Bearer YOUR_API_KEY"}
 
 with open("batch.jsonl", "rb") as f:
@@ -120,7 +122,7 @@ print(batch["id"], batch["status"])
 ```
 
 ```bash cURL
-curl -X POST https://api.edenai.run/v3/llm/batches \
+curl -X POST https://api.edenai.run/v3/batches \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -F "file=@batch.jsonl" \
   -F 'metadata={"project": "taglines"}'
@@ -164,7 +166,7 @@ The response is the batch object:
 import requests
 
 batch_id = "BATCH_ID"
-url = f"https://api.edenai.run/v3/llm/batches/{batch_id}"
+url = f"https://api.edenai.run/v3/batches/{batch_id}"
 headers = {"Authorization": "Bearer YOUR_API_KEY"}
 
 batch = requests.get(url, headers=headers).json()
@@ -172,7 +174,7 @@ print(batch["status"], batch["request_counts"])
 ```
 
 ```bash cURL
-curl https://api.edenai.run/v3/llm/batches/BATCH_ID \
+curl https://api.edenai.run/v3/batches/BATCH_ID \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 </CodeGroup>
@@ -181,7 +183,7 @@ Poll this route every few minutes until `status` is `completed`, `failed`, `expi
 
 ## List batches
 
-`GET /v3/llm/batches` returns your batches, newest first.
+`GET /v3/batches` returns your batches, newest first.
 
 | Query parameter | Description |
 |---|---|
@@ -195,7 +197,7 @@ The response holds `data` (the batch objects), `first_id`, `last_id` and `has_mo
 ```python Python
 import requests
 
-url = "https://api.edenai.run/v3/llm/batches"
+url = "https://api.edenai.run/v3/batches"
 headers = {"Authorization": "Bearer YOUR_API_KEY"}
 
 page = requests.get(url, headers=headers, params={"limit": 10}).json()
@@ -209,14 +211,14 @@ if page["has_more"]:
 ```
 
 ```bash cURL
-curl "https://api.edenai.run/v3/llm/batches?limit=10" \
+curl "https://api.edenai.run/v3/batches?limit=10" \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 </CodeGroup>
 
 ## Cancel a batch
 
-`POST /v3/llm/batches/{batch_id}/cancel` asks OpenAI to stop the batch. The response is the batch object, and its status reads `cancelling` until OpenAI has stopped it, then `cancelled`.
+`POST /v3/batches/{batch_id}/cancel` asks OpenAI to stop the batch. The response is the batch object, and its status reads `cancelling` until OpenAI has stopped it, then `cancelled`.
 
 Requests that completed before the cancel are billed, and their results stay available. A batch that has already finished answers `400`.
 
@@ -226,7 +228,7 @@ Requests that completed before the cancel are billed, and their results stay ava
 import requests
 
 batch_id = "BATCH_ID"
-url = f"https://api.edenai.run/v3/llm/batches/{batch_id}/cancel"
+url = f"https://api.edenai.run/v3/batches/{batch_id}/cancel"
 headers = {"Authorization": "Bearer YOUR_API_KEY"}
 
 batch = requests.post(url, headers=headers).json()
@@ -234,14 +236,14 @@ print(batch["status"])
 ```
 
 ```bash cURL
-curl -X POST https://api.edenai.run/v3/llm/batches/BATCH_ID/cancel \
+curl -X POST https://api.edenai.run/v3/batches/BATCH_ID/cancel \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 </CodeGroup>
 
 ## Results
 
-`GET /v3/llm/batches/{batch_id}/results` streams the results as JSONL (`application/jsonl`), one line per request. Results stay available for 30 days after the batch was created.
+`GET /v3/batches/{batch_id}/results` streams the results as JSONL (`application/jsonl`), one line per request. Results stay available for 30 days after the batch was created.
 
 A request that succeeded carries `response`, with the `status_code` and the chat completion `body`. The `model` in the body is the Eden AI id you sent, `openai/<model>`. A request that failed carries `error` instead.
 
@@ -258,7 +260,7 @@ import json
 import requests
 
 batch_id = "BATCH_ID"
-url = f"https://api.edenai.run/v3/llm/batches/{batch_id}/results"
+url = f"https://api.edenai.run/v3/batches/{batch_id}/results"
 headers = {"Authorization": "Bearer YOUR_API_KEY"}
 
 with requests.get(url, headers=headers, stream=True) as response:
@@ -275,7 +277,7 @@ with requests.get(url, headers=headers, stream=True) as response:
 ```
 
 ```bash cURL
-curl https://api.edenai.run/v3/llm/batches/BATCH_ID/results \
+curl https://api.edenai.run/v3/batches/BATCH_ID/results \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -o results.jsonl
 ```
@@ -305,6 +307,12 @@ OpenAI runs a batch within 24 hours. If the batch has not finished 25 hours afte
 ## Billing
 
 Batches are billed at the model's batch rates for input tokens, output tokens and, when the model has one, cached input tokens. These rates are lower than the standard rates of the same model.
+
+The rates are in the `pricing` object of each OpenAI model in [`GET /v3/models`](/v3/llms/listing-models), as `input_cost_per_token_batches`, `output_cost_per_token_batches` and `cache_read_input_token_cost_batches`, in US dollars per token. A model whose entry has no input and output batch rate cannot be batched.
+
+### In your usage
+
+The batch shows in [usage monitoring](/v3/general/monitoring) as cost. The launch records the reservation and the settlement adds the difference between the final cost and the reservation, so the total is what the batch was charged. The settlement is not counted as a request or as tokens.
 
 - **At create.** Eden AI reserves the largest amount the batch could cost and deducts it from your balance. For each line, the reservation covers the prompt tokens plus the line's `max_tokens` (or `max_completion_tokens`, or the model's maximum output when neither is set), multiplied by `n`. If your balance or a member budget cannot cover it, the request answers `402` and nothing is sent.
 - **At the end.** The batch is settled once, from the results. Each request that succeeded bills the tokens it used. A request that failed bills nothing. A request that succeeded but reports no usage bills its own reservation. The difference between the reservation and the final cost is returned to your balance.
@@ -354,16 +362,18 @@ The URL must be public. Addresses that resolve to private networks are refused.
 
 | Status | Meaning |
 |---|---|
-| `400` | The file or a line is invalid. The message names the line, for example `Line 3: ...`. Also returned for a model that cannot be batched, a flagged line, a zero data retention request, an organization with its own OpenAI key, and for cancelling or reading results of a batch in the wrong state. |
+| `400` | The file or a line is invalid. The message names the line, for example `Line 3: ...`. Also returned for a model that is not in the catalog or cannot be batched, a flagged line, a zero data retention request, an organization with its own OpenAI key, and for cancelling or reading results of a batch in the wrong state. |
 | `401` | Missing or invalid `Authorization: Bearer` token. |
 | `402` | The balance or a member budget cannot cover the reservation. |
-| `403` | Your organization requires zero data retention. |
+| `403` | Your organization requires zero data retention, or a [guardrail](/v3/organization/guardrails) model rule does not allow the model: `Model(s) 'openai/...' not allowed by your guardrail policy.` |
 | `404` | The batch does not exist or is not yours. |
 | `409` | The batch was never created at OpenAI, so it cannot be cancelled or read. Also returned by results while OpenAI has not ended the batch. |
 | `413` | The file is larger than 100 MB. |
 | `422` | `metadata` is not a JSON object of strings, holds too many pairs, or uses a reserved key. |
 | `451` | A region restriction excludes OpenAI's default region. |
 | `503` | Batches are temporarily unavailable, moderation could not run, or billing is unavailable. Nothing was charged. Retry later. |
+
+When OpenAI fails a create, cancel or results call, the error status OpenAI returned is passed on with its message.
 
 ## Related
 

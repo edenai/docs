@@ -50,6 +50,10 @@ Generate a management key from the dashboard (**Account → Management Keys**) o
 
 Provide both or neither. Without them you get the **last 7 days**. The window may not exceed **366 days**.
 
+### Batch cost
+
+A [chat batch](/v3/llms/batches) shows as cost on the day it was created. The launch records the reservation and the settlement adds the difference between the final cost and the reservation. The settlement counts as no request and carries no tokens.
+
 ### Response caching
 
 Responses are cached for 60 seconds per organization and query parameters, so repeated calls within that window return the cached summary.

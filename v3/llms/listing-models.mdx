@@ -101,6 +101,8 @@ Each entry includes the model's identity, context window, capabilities, pricing,
 
 Each model `id` is used directly as the `model` parameter in your requests.
 
+`pricing` and `list_pricing` hold the rates that apply to a model, in US dollars per token. OpenAI models that can run as a [batch](/v3/llms/batches) also carry `input_cost_per_token_batches`, `output_cost_per_token_batches` and `cache_read_input_token_cost_batches`, the rates a batch bills at when the model has them.
+
 ## Grouped view: one entry per routable name
 
 Many models are sold by more than one provider. Pass `view=models` to get one entry per **routable model name**, with the provider endpoints nested underneath. This is how you discover the names that [Provider Routing](/v3/llms/provider-routing) accepts.

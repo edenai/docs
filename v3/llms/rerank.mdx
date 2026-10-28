@@ -36,7 +36,7 @@ The V2 API has no rerank route. This is the only rerank API Eden AI offers.
 
 ## List rerank models
 
-`GET /v3/rerank/models` lists the models that can serve a rerank call. It takes the same `view` and `zero_data_retention` parameters as the other [model listings](/v3/llms/listing-models), and each entry carries `zero_data_retention`, which says whether the provider keeps your inputs after the response. Only models that are in this list can be called.
+`GET /v3/rerank/models` lists the models that can serve a rerank call. It takes the same `view` and `zero_data_retention` parameters as the other [model listings](/v3/llms/listing-models), and each entry carries `zero_data_retention`, which says whether the provider keeps your inputs after the response. Only models that are in this list can be called, by their `provider/model` id. With `view=models` the entries are grouped under a model name that rerank does not accept: call one of the nested `endpoints[].id` values instead. Rerank lists no routing policy.
 
 {/* skip-test: the rerank routes are not on the API these tests run against yet; remove this marker once they are */}
 <CodeGroup>

@@ -217,7 +217,7 @@ Each search appears as a `server_tool_use` block, and `usage.server_tool_use.web
 
 ### Billing
 
-A call is billed for its tokens plus its searches, at the model's per-search rate (`web_search_cost_per_call`): $0.75 per 1,000 queries, $0.00075 per query. On Responses, each page the model opens counts as one query. The text it reads is counted in its input tokens.
+A call is billed for its tokens plus its searches, at the model's per-search rate (`web_search_cost_per_call` in its `pricing`, listed by `GET /v3/models`), one query at a time. On Responses, each page the model opens counts as one query. The text it reads is counted in its input tokens.
 
 | Case | Billed |
 |---|---|

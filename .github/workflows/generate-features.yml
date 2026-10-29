@@ -30,17 +30,25 @@ jobs:
         run: |
           git diff --quiet && git diff --cached --quiet && echo "changed=false" >> "$GITHUB_OUTPUT" || echo "changed=true" >> "$GITHUB_OUTPUT"
 
+      # The org-level `agent-block` ruleset rejects pushes from
+      # github-actions[bot] outside refs/heads/edenai-assistant/**.
+      # edenai-docs-bot is on its bypass list, and a PR it opens runs
+      # test-snippets.yml, which a GITHUB_TOKEN PR would not.
+      - name: Get app token
+        if: steps.changes.outputs.changed == 'true'
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.DOCS_BOT_APP_ID }}
+          private-key: ${{ secrets.DOCS_BOT_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+
       - name: Create pull request
         if: steps.changes.outputs.changed == 'true'
         uses: peter-evans/create-pull-request@v6
         with:
-          # Use a PAT so the branch push runs as a bypass-eligible actor.
-          # GITHUB_TOKEN authenticates as github-actions[bot] (Write role),
-          # which the `agent-block` ruleset rejects when creating or
-          # force-pushing branches outside refs/heads/edenai-assistant/**.
-          # The PAT must belong to a user/app with Triage, Maintain, or Admin
-          # role (the ruleset's bypass list). Same fix as update-dates.yml.
-          token: ${{ secrets.DOCS_BOT_PAT || secrets.GITHUB_TOKEN }}
+          token: ${{ steps.app-token.outputs.token }}
           commit-message: "docs: update auto-generated AI feature pages"
           branch: auto/update-feature-docs
           title: "docs: update AI feature documentation"

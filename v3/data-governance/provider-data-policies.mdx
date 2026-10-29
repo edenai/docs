@@ -68,6 +68,7 @@ The tables below show, for each provider on Eden AI, the country of the company 
 | Perplexity | United States | No | Not verified | Not specified |
 | Qwen | Netherlands | No | Not verified | Up to 30 days |
 | Scaleway | France | No | **Yes** | None |
+| sference | United Kingdom | No | **Yes** | None |
 | Tencent | Netherlands | No | **Yes** | None |
 | TensorX | Ireland | No | **Yes** | None |
 | Together | United States | No | Not verified | Not specified |
@@ -134,10 +135,10 @@ Beyond LLMs, Eden AI offers Expert Models for OCR, document parsing, image, audi
 
 ## EU data residency
 
-This is a separate question from retention: it is about *where* your data is processed, not whether it is stored. To keep processing inside the EU, use the [EU endpoint](/v3/data-governance/eu-endpoint) (`api.eu.edenai.run`), which routes only through EU-eligible providers: Amazon Bedrock (`eu-west-1`, Ireland), Google Vertex (EU multi-region), Microsoft Azure (EU Data Zone), Arkane Cloud, Mistral, OVHcloud and Scaleway (EU-hosted), and Databricks, Nebius and Qwen (EU-region routing). For Qwen this covers chat with the `@eu` tag, which runs on an EU workspace. [Web search](/v3/llms/web-search#qwen-web-search) on Qwen runs on a Global-scope workspace and has no EU route. Confirm the live list any time with `api.eu.edenai.run/v3/models`.
+This is a separate question from retention: it is about *where* your data is processed, not whether it is stored. To keep processing inside the EU, use the [EU endpoint](/v3/data-governance/eu-endpoint) (`api.eu.edenai.run`), which routes only through EU-eligible providers: Amazon Bedrock (`eu-west-1`, Ireland), Google Vertex (EU multi-region), Microsoft Azure (EU Data Zone), Arkane Cloud, Mistral, OVHcloud, Scaleway and sference (EU-hosted), and Databricks, Nebius and Qwen (EU-region routing). For Qwen this covers chat with the `@eu` tag, which runs on an EU workspace. [Web search](/v3/llms/web-search#qwen-web-search) on Qwen runs on a Global-scope workspace and has no EU route. Confirm the live list any time with `api.eu.edenai.run/v3/models`.
 
 ## Reduce your data exposure
 
-- **Zero Data Retention** (nothing stored): for LLMs, pin your `model` and `fallbacks` to Amazon Bedrock, Cerebras, Cloudflare, DeepInfra, Fireworks, Flex AI, Google (Vertex), Infomaniak, IONOS, Microsoft Azure, Nebius, OVHcloud, Scaleway, Tencent, TensorX, xAI, or Z.ai, minus the models listed under [Models that keep data on a ZDR provider](#models-that-keep-data-on-a-zdr-provider). The simplest way is to set `routing.zero_data_retention: true` on the request (see [Requiring zero data retention](/v3/llms/provider-routing#requiring-zero-data-retention)), which only routes to models whose `zero_data_retention` is `true`. For Expert Models, pick a provider marked **Yes** in the table above.
+- **Zero Data Retention** (nothing stored): for LLMs, pin your `model` and `fallbacks` to Amazon Bedrock, Cerebras, Cloudflare, DeepInfra, Fireworks, Flex AI, Google (Vertex), Infomaniak, IONOS, Microsoft Azure, Nebius, OVHcloud, Scaleway, sference, Tencent, TensorX, xAI, or Z.ai, minus the models listed under [Models that keep data on a ZDR provider](#models-that-keep-data-on-a-zdr-provider). The simplest way is to set `routing.zero_data_retention: true` on the request (see [Requiring zero data retention](/v3/llms/provider-routing#requiring-zero-data-retention)), which only routes to models whose `zero_data_retention` is `true`. For Expert Models, pick a provider marked **Yes** in the table above.
 - **EU processing**: use the EU endpoint (see EU data residency above).
 - **Logs off by default**: Eden AI stores no content unless you enable log retention.

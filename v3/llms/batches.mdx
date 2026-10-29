@@ -39,7 +39,7 @@ A batch that belongs to another account, or that does not exist, answers `404`.
 
 `/v3/batches` is the only batch API. The V2 API has none: its `/v2/{feature}/{subfeature}/batch/{name}/` route runs each line as its own separate feature call and does not use OpenAI's batch endpoint.
 
-A sandbox token accepts a create request and returns a batch, but sends nothing to OpenAI, and the batch stays in `validating`.
+A sandbox token sends nothing to OpenAI: the batch is answered at once with sample results and is not billed.
 
 ## Input file
 

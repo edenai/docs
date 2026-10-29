@@ -15,7 +15,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "rate limits", "billing", "monitoring"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-10-16T00:00:00Z"
+  dateModified="2026-10-29T00:00:00Z"
 />
 
 Learn how to track your Eden AI API consumption and costs with the Management API usage endpoints.
@@ -49,6 +49,10 @@ Generate a management key from the dashboard (**Account → Management Keys**) o
 | `end` | Day **after** the last day of the window, exclusive (`YYYY-MM-DD`). For example, `begin=2026-10-01&end=2026-11-01` covers all of October 2026. |
 
 Provide both or neither. Without them you get the **last 7 days**. The window may not exceed **366 days**.
+
+### Batch cost
+
+A [chat batch](/v3/llms/batches) shows as cost on the day it was created. The launch records the reservation and the settlement adds the difference between the final cost and the reservation. The settlement counts as no request and carries no tokens.
 
 ### Response caching
 

@@ -42,7 +42,6 @@ On Chat Completions and Responses, a `priority` or `ultrafast` request is sent o
 | `auto`, `default` or any other value | Held and billed at the standard rate. |
 | Any value on a model from another provider | Held and billed at the standard rate. `priority` is removed from the request. |
 
-{/* skip-test: the tier is billed on OpenAI's reply, which the sandbox does not produce */}
 ```bash cURL
 curl -X POST https://api.edenai.run/v3/v1/messages \
   -H "Authorization: Bearer YOUR_API_KEY" \

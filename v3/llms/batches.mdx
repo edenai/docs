@@ -31,6 +31,10 @@ Batches suit work that does not need an immediate answer, such as classifying a 
 | Anthropic | `anthropic/<model>` | `/v1/chat/completions` |
 | Mistral | `mistral/<model>` | `/v1/chat/completions` |
 
+<Note>
+Anthropic and Mistral batches, and OpenAI embeddings batches, are not live on the API yet. Until their release is deployed, `POST /v3/batches` accepts OpenAI chat models only. Remove this note when the release ships.
+</Note>
+
 A batch has one model and one `url`: every line names the same model and calls the same endpoint. Embeddings batches run on OpenAI models only. Responses, image, audio and other endpoints are not available in a batch.
 
 Anthropic and Mistral batches are created, listed, cancelled and read through the same routes as an OpenAI batch. The request lines use the chat completions format on every provider, and so do the results: an Anthropic result is translated to a chat completion.
@@ -75,7 +79,7 @@ No other key is allowed on a line.
 - `body.model` is `openai/<model>`, `anthropic/<model>` or `mistral/<model>`, with no `@` or `:` suffix. Every line of a batch names the same model.
 - The model must have published batch rates. Models without them, models that price long-context bands, and models that price cached input without a cached batch rate are refused. Models that price cache writes are refused on OpenAI and Mistral; an Anthropic batch writes no cache, so its cache-write rates do not refuse the model.
 - Messages carry text only. A content list may contain `text` parts only.
-- `max_tokens` on each line sets how much output Eden AI reserves for that line. Without it, the reservation uses the model's maximum output, and that bound is sent to Anthropic and Mistral as the line's `max_tokens`. See [Billing](#billing).
+- `max_tokens` on each line (`max_completion_tokens` on OpenAI and Anthropic, see the table below) sets how much output Eden AI reserves for that line. Without either, the reservation uses the model's maximum output, and that bound is sent to Anthropic and Mistral as the line's `max_tokens`. See [Billing](#billing).
 - `routing` may only contain `zero_data_retention`. See [Zero data retention](#zero-data-retention).
 - Every line is moderated. See [Content moderation](#content-moderation).
 

@@ -98,7 +98,9 @@ inference key (`sk-eden-…`) and then manages that member's personal policies.
 ### Members and roles
 
 `PATCH /v3/manage/members/{email}/role` assigns a role to a member by email and returns the updated
-member. The request body is `{"role_id": <id>}`. The outcomes:
+member. The request body is `{"role_id": <id>}`. A role's id is the `role.id` of a member who holds
+it in the `GET /v3/manage/members` response, which lists each member's `role` as `{"id", "name"}`
+(`null` for a member with no role). The outcomes:
 
 | Status | Cause |
 |--------|-------|

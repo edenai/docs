@@ -15,7 +15,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "expert models", "multi-provider"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-10-28T00:00:00Z"
+  dateModified="2026-05-22T00:00:00Z"
 />
 
 Use the `/v3/info` endpoints to discover all available expert model features, providers, and models.
@@ -172,8 +172,6 @@ Each entry in the `models` list contains:
 | `requires_reference_images` | Boolean flag indicating whether the model requires `reference_images` (e.g. image edit models) |
 | `requires_video` | Boolean flag indicating whether the model requires a source `video` input (e.g. video editing models) |
 | `zero_data_retention` | `true` when the provider keeps no inputs or outputs after the response (Zero Data Retention), `false` when it keeps them, `null` when not verified yet |
-
-Firecrawl bills the credits it reports for a call, so its web features (scraping, map, search, crawl, batch scrape, structured extraction and research) list a `pricing` unit of tokens that stands for credits. A call for which Firecrawl reports zero credits is billed zero. A call for which Firecrawl reports no usable count is billed the reservation Eden AI holds before the call.
 
 <Tip>
 You can also browse all features and providers visually in the [Eden AI model catalog](https://app.edenai.run/models).

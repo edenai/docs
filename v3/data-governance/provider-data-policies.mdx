@@ -16,7 +16,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "ZDR", "Zero Data Retention", "data privacy", "GDPR", "incorporation country", "model training"]}
   datePublished="2026-06-29T00:00:00Z"
-  dateModified="2026-10-28T00:00:00Z"
+  dateModified="2026-10-29T00:00:00Z"
 />
 
 When you call a model through Eden AI, your request is forwarded to the underlying provider, whose own policy governs what happens to it.
@@ -54,6 +54,7 @@ The tables below show, for each provider on Eden AI, the country of the company 
 | Flex AI | United States | No | **Yes** | None |
 | Google (AI Studio) | France | No | No | Up to ~55 days |
 | Google (Vertex) | France | No | **Yes** | None |
+| GreenPT | Netherlands | No | Not verified | Not specified |
 | Groq | United Kingdom | No | Not verified | Up to 30 days for troubleshooting and abuse logs |
 | Infomaniak | Switzerland | No | **Yes** | None |
 | IONOS | Germany | No | **Yes** | None |
@@ -134,7 +135,7 @@ Beyond LLMs, Eden AI offers Expert Models for OCR, document parsing, image, audi
 
 ## EU data residency
 
-This is a separate question from retention: it is about *where* your data is processed, not whether it is stored. To keep processing inside the EU, use the [EU endpoint](/v3/data-governance/eu-endpoint) (`api.eu.edenai.run`), which routes only through EU-eligible providers: Amazon Bedrock (`eu-west-1`, Ireland), Google Vertex (EU multi-region), Microsoft Azure (EU Data Zone), Arkane Cloud, Mistral, OVHcloud, Scaleway and sference (EU-hosted), and Databricks, Nebius and Qwen (EU-region routing). Confirm the live list any time with `api.eu.edenai.run/v3/models`.
+This is a separate question from retention: it is about *where* your data is processed, not whether it is stored. To keep processing inside the EU, use the [EU endpoint](/v3/data-governance/eu-endpoint) (`api.eu.edenai.run`), which routes only through EU-eligible providers: Amazon Bedrock (`eu-west-1`, Ireland), Google Vertex (EU multi-region), Microsoft Azure (EU Data Zone), Arkane Cloud, Mistral, OVHcloud, Scaleway and sference (EU-hosted), and Databricks, Nebius and Qwen (EU-region routing). For Qwen this covers chat with the `@eu` tag, which runs on an EU workspace. [Web search](/v3/llms/web-search#qwen-web-search) on Qwen runs on a Global-scope workspace and has no EU route. Confirm the live list any time with `api.eu.edenai.run/v3/models`.
 
 ## Reduce your data exposure
 

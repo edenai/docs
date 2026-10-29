@@ -16,7 +16,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "LLM API", "chat completion", "OpenAI compatible"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-09-25T00:00:00Z"
+  dateModified="2026-10-29T00:00:00Z"
 />
 
 Embeddings turn text into numerical vectors that capture meaning. They are the foundation for [RAG pipelines](#use-cases), semantic search, recommendations, and clustering.
@@ -164,14 +164,16 @@ The first hit should be the document about the `cost` field. Swap in your own co
 
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
-| `model` | string | yes | `provider/model` from `/v3/embeddings/models`. |
+| `model` | string | yes | `provider/model` from `/v3/embeddings/models`, or a model name with no provider prefix, for which `routing` picks the provider. |
 | `input` | string \| string[] \| int[] \| int[][] | yes | Text to embed, or a batch. Pre-tokenized integer inputs are also accepted. |
 | `encoding_format` | `"float"` \| `"base64"` | no | Defaults to `"float"`. `"base64"` reduces wire payload size. |
 | `dimensions` | integer | no | Truncate the output vector. Only supported by models that advertise it (e.g. `openai/text-embedding-3-small` and `openai/text-embedding-3-large`). |
 | `user` | string | no | Accepted for OpenAI compatibility. Your value is not forwarded to the provider. |
 | `metadata` | object | no | Accepted, but not sent to the provider and not a tag. To split your usage per client or project, use [tags](/v3/general/tags). |
+| `fallbacks` | string[] | no | Embedding models to try, in order, if the primary model fails. Each is a `provider/model` id or a model name with no provider prefix. At most 7. |
+| `routing` | object | no | How to pick between the providers that serve a model named without a provider prefix, in `model` and in `fallbacks`. Takes the fields described in [provider routing](/v3/llms/provider-routing), including `zero_data_retention`. Routing policies, `router_candidates` and `session_id` apply to chat only and have no effect here. |
 
-Unknown top-level fields are forwarded to the underlying provider, so provider-specific options can be passed through unchanged.
+Unknown top-level fields are forwarded to the underlying provider, so provider-specific options can be passed through unchanged. `routing` and `fallbacks` are not forwarded. A malformed `routing` or `fallbacks`, such as a string where a list is expected, returns a `422`.
 
 ## Response
 
@@ -232,7 +234,7 @@ Common HTTP status codes returned by `/v3/embeddings`:
 
 ## Best practices
 
-- **Always pass a concrete `provider/model`.** There is no automatic model selection on embeddings.
+- **Always name the model.** There is no automatic model selection on embeddings. A name with no provider prefix, in `model` or in `fallbacks`, lets [provider routing](/v3/llms/provider-routing) pick the provider that serves that model; it never picks a different model.
 - **Compare vectors with cosine similarity.** It is the standard distance for embedding spaces. Normalize once at write time so retrieval is a single dot product.
 - **Re-index when you change models.** Vectors from different models are not compatible — store `(text, embedding, model_id)` together and re-embed if you switch.
 - **Cache embeddings.** They are deterministic for the same `(model, input)` pair, so caching by hash avoids re-billing for unchanged content.

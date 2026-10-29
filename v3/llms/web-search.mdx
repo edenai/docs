@@ -15,7 +15,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "LLM API", "chat completion", "OpenAI compatible"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-08-31T00:00:00Z"
+  dateModified="2026-10-29T00:00:00Z"
 />
 
 Web search lets LLMs access real-time information from the internet when generating responses. Instead of relying solely on training data, the model can search the web to ground its answers with up-to-date facts, links, and sources.
@@ -117,6 +117,8 @@ print(web_search_models)
 ```
 </CodeGroup>
 
+On Qwen and DeepSeek, the models that search are `qwen/qwen3.8-omni-flash` and `deepseek/deepseek-v4-pro`. See [Qwen Web Search](#qwen-web-search) and [DeepSeek Web Search](#deepseek-web-search).
+
 <Tip>
 You can also browse models visually in the [Eden AI model catalog](https://app.edenai.run/models) and filter by capability, including web search.
 </Tip>
@@ -131,6 +133,104 @@ You can also browse models visually in the [Eden AI model catalog](https://app.e
 |-----------|------|-------------|
 | `web_search_options` | object | Options for web search integration. Omit to disable web search. |
 | `web_search_options.search_context_size` | string | Amount of context retrieved from the web. Options: `"low"`, `"medium"`, `"high"`. Default: `"medium"` |
+
+## Qwen Web Search
+
+`qwen/qwen3.8-omni-flash` searches the web through Alibaba's own search. On other Qwen models the request runs without search.
+
+- **Turn it on** with `web_search_options` on [Chat Completions](/v3/llms/chat-completions), or a `web_search` tool on [Responses](/v3/llms/responses). An `enable_search` field in your request is ignored: Eden AI sets it.
+- **Streaming only.** Set `stream` to `true`. A search request without it is refused with `400`.
+- **Global only.** Search runs on a Global-scope workspace, so it has no EU route. A call tagged `@eu` runs on the EU workspace and does not search. See [EU data residency](/v3/data-governance/provider-data-policies#eu-data-residency).
+- **No search rate, no search.** A model whose pricing carries no per-search rate answers `501`.
+
+{/* skip-test: Qwen web search is not on the API these tests run against yet; remove this marker once it is */}
+```python Python
+import requests
+
+url = "https://api.edenai.run/v3/chat/completions"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json",
+}
+
+payload = {
+    "model": "qwen/qwen3.8-omni-flash",
+    "messages": [{"role": "user", "content": "What changed in EU AI rules this month?"}],
+    "web_search_options": {"search_context_size": "medium"},
+    "stream": True,
+}
+
+with requests.post(url, headers=headers, json=payload, stream=True) as response:
+    for line in response.iter_lines():
+        if line:
+            print(line.decode())
+```
+
+### Billing
+
+A call is billed for its tokens plus the searches Alibaba reports, at the model's per-search rate (`web_search_cost_per_call`).
+
+| Case | Billed |
+|---|---|
+| The model searched | The count Alibaba reports, times the per-search rate. |
+| The model chose not to search, so Alibaba reports no search | No search fee. |
+| The stream is cut before Alibaba reports its usage | A reservation of 10 searches. |
+
+## DeepSeek Web Search
+
+`deepseek/deepseek-v4-pro` searches the web through DeepSeek's own search, on two endpoints.
+
+- **[Responses](/v3/llms/responses):** add a `web_search` tool.
+- **Messages (`/v3/v1/messages`):** add Anthropic's `web_search` server tool.
+
+The model decides when to search. Web search on DeepSeek is not available on [Chat Completions](/v3/llms/chat-completions): a `web_search_options` field there does not make the model search.
+
+Request body for `POST /v3/responses`:
+
+```json
+{
+  "model": "deepseek/deepseek-v4-pro",
+  "input": "What is the latest stable release of Rust?",
+  "tools": [{"type": "web_search"}]
+}
+```
+
+Each search appears in `output` as a `web_search_call` item, and `action.queries` lists the queries it ran.
+
+Request body for `POST /v3/v1/messages`:
+
+```json
+{
+  "model": "deepseek/deepseek-v4-pro",
+  "max_tokens": 1024,
+  "messages": [{"role": "user", "content": "What is the latest stable release of Rust?"}],
+  "tools": [{"type": "web_search_20250305", "name": "web_search", "max_uses": 5}]
+}
+```
+
+Each search appears as a `server_tool_use` block, and `usage.server_tool_use.web_search_requests` counts them.
+
+### Limits
+
+- **Responses searches on `deepseek/deepseek-v4-pro` only.** On `deepseek/deepseek-flash` DeepSeek ignores the tool and the request runs without search.
+- **Chat Completions does not search.** DeepSeek's chat endpoint has no search parameter.
+- **Data is processed in China.** DeepSeek processes and stores requests in the People's Republic of China, and DeepSeek search carries no `eu` tag, so it has no EU route. See [EU data residency](/v3/data-governance/provider-data-policies#eu-data-residency).
+- **No search rate, no search.** A model whose pricing carries no per-search rate answers `501` on Responses, and on Messages when the request carries a server search or fetch tool.
+
+### Billing
+
+A call is billed for its tokens plus its searches, at the model's per-search rate (`web_search_cost_per_call` in its `pricing`, listed by `GET /v3/models`), one query at a time. On Responses, each page the model opens counts as one query. The text it reads is counted in its input tokens.
+
+| Case | Billed |
+|---|---|
+| Responses, the model searched | The queries listed in each `web_search_call` item, plus one for each page it opened, times the per-search rate. |
+| Messages, the model searched | `web_search_requests` (plus `web_fetch_requests`), times the per-search rate. Without that count, one per `server_tool_use` block. |
+| The model chose not to search | No search fee. |
+| A search count that cannot be read | At least 10 searches. |
+| A Responses stream is cut before its final event | The larger of the queries it showed and 10. |
+| A Messages stream is cut before its final usage | The larger of the search blocks it showed and the reservation below. |
+
+Every query the call ran is billed, including one that returns no results. Before the call, your balance is held for the searches as well as the tokens. Responses holds 10 searches. Messages holds the sum of the `max_uses` you set when every search tool states one, and 10 otherwise.
 
 ## With System Messages
 

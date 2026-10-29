@@ -1,0 +1,213 @@
+---
+title: "Rerank API: Rank Documents by Relevance"
+sidebarTitle: "Rerank"
+icon: "ranking-star"
+description: "Rank documents by relevance to a query with POST /v3/rerank, a Cohere v2 compatible rerank API. Send a query and documents, get scored results back."
+---
+
+import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
+
+<TechArticleSchema
+  title={"Rerank API: Rank Documents by Relevance"}
+  description={"Rank documents by relevance to a query with POST /v3/rerank, a Cohere v2 compatible rerank API. Send a query and documents, get scored results back."}
+  path="v3/llms/rerank"
+  articleSection="LLMs"
+  about={"LLM API"}
+  proficiencyLevel="Intermediate"
+  keywords={["Eden AI", "LLM API", "rerank API", "reranking", "RAG", "semantic search"]}
+  datePublished="2026-10-29T00:00:00Z"
+  dateModified="2026-10-29T00:00:00Z"
+/>
+
+A reranker reads a query and a list of texts and scores how relevant each text is to the query. Use it after a first retrieval step, such as [embeddings](/v3/llms/embeddings) or keyword search, to put the best passages first before you hand them to an LLM.
+
+The request and the response follow the Cohere v2 rerank API, so a client written for `POST /v2/rerank` works against Eden AI by changing the base URL and the model id.
+
+## Endpoints
+
+```
+GET  /v3/rerank/models     List the rerank models you can call
+POST /v3/rerank            Rank documents against a query
+```
+
+Both use the same `Authorization: Bearer YOUR_API_KEY` header as the rest of the API. Models are identified as `provider/model`, for example `vertex/semantic-ranker-default-004`.
+
+The V2 API has no rerank route. This is the only rerank API Eden AI offers.
+
+## List rerank models
+
+`GET /v3/rerank/models` lists the models that can serve a rerank call. It takes the same `view` and `zero_data_retention` parameters as the other [model listings](/v3/llms/listing-models), and each entry carries `zero_data_retention`, which says whether the provider keeps your inputs after the response. Only models that are in this list can be called, by their `provider/model` id. With `view=models` the entries are grouped under a model name that rerank does not accept: call one of the nested `endpoints[].id` values instead. Rerank lists no routing policy.
+
+{/* skip-test: the rerank routes are not on the API these tests run against yet; remove this marker once they are */}
+<CodeGroup>
+```python Python
+import requests
+
+response = requests.get("https://api.edenai.run/v3/rerank/models")
+for model in response.json()["data"]:
+    print(model["id"], model["pricing"])
+```
+
+```bash cURL
+curl https://api.edenai.run/v3/rerank/models
+```
+</CodeGroup>
+
+## Rank documents
+
+{/* skip-test: the rerank routes are not on the API these tests run against yet; remove this marker once they are */}
+<CodeGroup>
+```python Python
+import requests
+
+url = "https://api.edenai.run/v3/rerank"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json",
+}
+
+payload = {
+    "model": "vertex/semantic-ranker-default-004",
+    "query": "What is the capital of France?",
+    "documents": [
+        "Berlin is the capital of Germany.",
+        "Paris is the capital and largest city of France.",
+        "The Eiffel Tower was completed in 1889.",
+    ],
+    "top_n": 2,
+    "return_documents": True,
+}
+
+response = requests.post(url, headers=headers, json=payload)
+for result in response.json()["results"]:
+    print(result["index"], result["relevance_score"], result["document"]["text"])
+```
+
+```bash cURL
+curl -X POST https://api.edenai.run/v3/rerank \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "vertex/semantic-ranker-default-004",
+    "query": "What is the capital of France?",
+    "documents": [
+      "Berlin is the capital of Germany.",
+      "Paris is the capital and largest city of France.",
+      "The Eiffel Tower was completed in 1889."
+    ],
+    "top_n": 2,
+    "return_documents": true
+  }'
+```
+</CodeGroup>
+
+### Request fields
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `model` | string | yes | The model, as `provider/model`. |
+| `query` | string | yes | The search query to rank the documents against. It cannot be empty. |
+| `documents` | array of strings | yes | The texts to rank, from 1 to 1,000. |
+| `top_n` | integer | no | Return only the `top_n` most relevant results. Greater than 0. Defaults to all documents. |
+| `return_documents` | boolean | no | Echo each ranked document's text in its result under `document.text`. Defaults to `false`. |
+| `metadata` | object | no | Accepted. It is not a tag: to label calls for usage tracking, use `tags`. |
+| `routing` | object | no | [Provider routing](/v3/llms/provider-routing) preferences. With a `provider/model` only `zero_data_retention` applies: the call is refused unless the model qualifies. |
+| `extra_headers` | object | no | Additional HTTP headers forwarded to the provider. Credential headers are refused. |
+| `tags` | object | no | Key/value labels recorded with the call, for [usage tracking](/v3/general/tags). |
+
+`fallbacks` is refused with `400`. Any other top-level field is forwarded to the provider. Fields that decide the provider connection, the region, or how the call is made, priced or answered, such as `api_key`, `api_base` or `base_url`, are refused with `422`.
+
+### Response
+
+```json
+{
+  "status": "success",
+  "cost": 0.001,
+  "id": "vertex_ai_rerank_cdca4d41-66f0-46a3-a3de-5c90d1f16b73",
+  "results": [
+    {
+      "index": 1,
+      "relevance_score": 0.8028,
+      "document": {"text": "Paris is the capital and largest city of France."}
+    },
+    {
+      "index": 0,
+      "relevance_score": 0.0489,
+      "document": {"text": "Berlin is the capital of Germany."}
+    }
+  ],
+  "meta": {"billed_units": {"search_units": 1}},
+  "usage": {"search_units": 1, "total_tokens": null},
+  "provider": "vertex"
+}
+```
+
+| Field | Description |
+|---|---|
+| `status` | `success` for a ranked answer. |
+| `id` | The provider's id for the call, when it returns one. |
+| `results` | The ranked documents, most relevant first. |
+| `results[].index` | Position of the document in the request's `documents`. |
+| `results[].relevance_score` | How relevant the document is to the query. Higher is closer. |
+| `results[].document.text` | The document text. Present only when `return_documents` is `true`. |
+| `meta` | The provider's own billing metadata, as the provider returned it. |
+| `usage` | The units the call is billed on: `search_units` for a model priced per search, `total_tokens` for a model priced per token. The other is `null`. |
+| `cost` | What the call cost, in US dollars. |
+| `provider` | The provider that served the call. |
+
+## Providers
+
+Rerank is served by Google Vertex, Amazon Bedrock, DeepInfra, Fireworks, Qwen, GreenPT, IONOS and Infomaniak. The models you can call are the ones `GET /v3/rerank/models` returns; a provider appearing in this list does not mean every one of its models is offered.
+
+Amazon Bedrock serves rerankers in fewer regions than chat models. When the region chosen for a call has no reranker, the call runs in the nearest region that has one: `us-east-1` moves to `us-west-2` and `eu-west-1` moves to `eu-central-1` for `amazon.rerank-v1:0`.
+
+For how each provider handles your data, see [Provider data policies](/v3/data-governance/provider-data-policies).
+
+## Billing
+
+A model is priced either per search unit or per token, never both. A model whose pricing row sets both rates, or neither, cannot be called. The unit and its rate are in the `pricing` of the model's entry in `GET /v3/rerank/models`.
+
+| Billing unit | Providers | What is counted |
+|---|---|---|
+| Search unit, one per 100 document chunks | Google Vertex, Amazon Bedrock | A document longer than 500 tokens, query included, is split into chunks, and each chunk counts as a document toward the 100. A call over 100 chunks bills more than one unit. |
+| Token | DeepInfra, Fireworks, Qwen | The tokens the provider reports for the call. |
+
+GreenPT, IONOS and Infomaniak bill in the unit their pricing row names.
+
+Amazon Bedrock reports no usage, so Eden AI counts the search units from your request with the same chunk rule.
+
+Eden AI estimates the cost before the call, holds that amount, and charges the actual cost when the call returns. For a per-token model the estimate reads the query once per document, plus the document tokens and a fixed allowance per query and document pair for the reranker's prompt template. For a per-search model it is the number of search units the chunk rule gives.
+
+When a provider reports no billable count, or reports zero, the call is charged at the estimate made before the call, never at zero. The response `cost` then holds that amount.
+
+## Regions, guardrails and tags
+
+- **Regions.** `provider/model@region` is accepted when the model lists that region in `GET /v3/rerank/models`. A region the model does not offer answers `400`, and a region that contradicts the regional endpoint you called answers `451`.
+- **Guardrails.** Your organization's [guardrail](/v3/organization/guardrails) model rules apply, and a model they do not allow answers `403`.
+- **Tags.** The `tags` field and the `X-EdenAI-Tags` header both apply.
+
+## What rerank does not support
+
+- **Model routing.** `@edenai` is refused with `400`. Name a rerank model directly, for example `vertex/semantic-ranker-default-004`.
+- **Model names without a provider.** `semantic-ranker-default-004` answers `400`. Name it as `provider/model`, for example `vertex/semantic-ranker-default-004`.
+- **Models that are not rerank models.** A chat model such as `openai/gpt-5` answers `400` before any provider is called.
+- **Fallbacks.** `fallbacks` answers `400`. Send one model per request.
+- **Routing preferences other than zero data retention.** With a named `provider/model` there is no provider to choose, so `sort`, `order`, `allowed_providers`, `ignored_providers` and `max_price` have no effect.
+- **Routing policies.** A key's default routing policy does not apply, and `policy/{name}` is not a rerank model.
+- **Non-text documents.** `documents` is a list of strings. Send the text of each passage; images and structured objects are refused with `422`.
+- **More than 1,000 documents** or an empty list. Both answer `422`.
+
+## Errors
+
+| Status | Meaning |
+|---|---|
+| `400` | `@edenai` routing, a model name without its provider, `fallbacks`, a region the model does not offer, a model that is not a rerank model, or a model that does not meet `routing.zero_data_retention`. |
+| `403` | A [guardrail](/v3/organization/guardrails) model rule does not allow the model, or your organization requires zero data retention and the model does not meet it. |
+| `422` | The body is invalid: an empty `query` or `documents`, more than 1,000 documents, a `top_n` of 0 or less, or a refused field. |
+| `451` | The EU or another regional endpoint does not serve the model. |
+
+## Related
+
+- [Embeddings](/v3/llms/embeddings) for the first retrieval step.
+- [Listing models](/v3/llms/listing-models) for the shared model listing parameters.
+- [Provider data policies](/v3/data-governance/provider-data-policies) for retention per provider.

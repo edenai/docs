@@ -14,7 +14,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "LLM API", "chat completion", "OpenAI compatible"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-10-27T00:00:00Z"
+  dateModified="2026-10-29T00:00:00Z"
 />
 
 Use the `/v3/models` endpoint to retrieve all LLM models available through Eden AI, along with their capabilities: input modalities, reasoning, web search, and function calling.
@@ -153,7 +153,7 @@ What to expect from the shape:
 - The default (`view=endpoints`, or no parameter) is unchanged, and both entry shapes stay compatible with the OpenAI SDK's `client.models.list()`.
 - **Your routing policies are listed here too.** Send your API key and the grouped view adds one entry per [routing policy](/v3/llms/routing-policies) you can call, under its `policy/{name}` id, with `owned_by` set to `edenai`, an empty `endpoints` list and `endpoint_count` at `0`: which target serves a call is decided per request, so `pricing`, `context_length` and `regions` are `null` or empty. Policies never appear in the default view or under a `zero_data_retention` filter.
 
-Every model listing takes the same parameter: `/v3/models`, `/v3/embeddings/models`, `/v3/moderations/models`, `/v3/audio/transcriptions/models`, `/v3/audio/speech/models`, `/v3/images/models` and `/v3/videos/models`.
+Every model listing takes the same parameter: `/v3/models`, `/v3/embeddings/models`, `/v3/moderations/models`, `/v3/audio/transcriptions/models`, `/v3/audio/speech/models`, `/v3/images/models`, `/v3/videos/models` and `/v3/rerank/models`.
 
 ## Zero Data Retention
 

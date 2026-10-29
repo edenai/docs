@@ -14,7 +14,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "LLM API", "observability", "debugging", "provider routing"]}
   datePublished="2026-08-19T00:00:00Z"
-  dateModified="2026-10-27T00:00:00Z"
+  dateModified="2026-10-29T00:00:00Z"
 />
 
 Eden AI makes decisions on your behalf on every request: which provider serves a model sold by several, which region it runs in, whether to retry elsewhere when one fails, and whether to use your own provider key. None of that is visible in a normal response, because the answer looks the same whoever produced it.
@@ -136,7 +136,7 @@ If a stream fails partway through, the error frame carries a **corrected** block
 | Endpoint | Block |
 |---|---|
 | `/v3/chat/completions`, `/v3/responses`, `/v3/v1/messages` | Yes, streaming and non-streaming |
-| `/v3/embeddings`, `/v3/moderations`, `/v3/alpha/decisions` | Yes |
+| `/v3/embeddings`, `/v3/rerank`, `/v3/moderations`, `/v3/alpha/decisions` | Yes |
 | `/v3/images/generations`, `/v3/images/edits`, `/v3/audio/transcriptions` | Yes |
 | `/v3/videos` | Yes |
 | `/v3/universal-ai` | Yes, synchronous calls, with a shorter block (below) |

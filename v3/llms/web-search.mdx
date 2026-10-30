@@ -139,7 +139,7 @@ You can also browse models visually in the [Eden AI model catalog](https://app.e
 `qwen/qwen3.8-omni-flash` and `qwen/deepseek-v4.1-flash-1017` search the web through Alibaba's own search. On other Qwen models the request runs without search.
 
 - **Turn it on** with `web_search_options` on [Chat Completions](/v3/llms/chat-completions), or a `web_search` tool on [Responses](/v3/llms/responses). An `enable_search` field in your request is ignored: Eden AI sets it.
-- **Streaming only on `qwen/qwen3.8-omni-flash`.** Set `stream` to `true`. A search request without it is refused with `400`. `qwen/deepseek-v4.1-flash-1017` searches with or without streaming.
+- **Streaming only.** Set `stream` to `true`. A search request without it is refused with `400`.
 - **Global only.** Search runs on a Global-scope workspace, so it has no EU route. A call tagged `@eu` runs on the EU workspace and does not search. See [EU data residency](/v3/data-governance/provider-data-policies#eu-data-residency).
 - **No search rate, no search.** A model whose pricing carries no per-search rate answers `501`.
 

@@ -14,7 +14,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "guardrails", "usage policy", "access control", "rate limits", "model restrictions", "budget cap", "spending limit"]}
   datePublished="2026-06-11T00:00:00Z"
-  dateModified="2026-10-23T00:00:00Z"
+  dateModified="2026-10-29T00:00:00Z"
 />
 
 A **guardrail** is a reusable usage policy. It sets:
@@ -26,7 +26,7 @@ A **guardrail** is a reusable usage policy. It sets:
 Create a guardrail once, then attach it to a **role**, a **member** or an **API key**.
 
 <Note>
-Guardrails are part of the advanced organisation features. See [plans and pricing](https://www.edenai.co/pricing) for availability.
+Guardrails are part of the advanced organization features. See [plans and pricing](https://www.edenai.co/pricing) for availability.
 </Note>
 
 ## Create a guardrail
@@ -129,7 +129,7 @@ A guardrail does nothing until it is attached. Attach it under **Assignment** on
 Each role, member and API key holds one guardrail. When a request comes in, Eden AI resolves each limit on its own, the most specific level first:
 
 ```
-API key  →  member  →  role  →  organisation default
+API key  →  member  →  role  →  organization default
 ```
 
 Model access and the rate limit each come from the most specific level that sets them, so a key can override the model access and still inherit its role's rate limit. The member budget skips the API key level: it comes from the member or the role, amount and period together, never mixed across levels.

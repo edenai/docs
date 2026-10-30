@@ -16,6 +16,8 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   dependencies="You need an Eden AI organization and the permission to manage API keys."
   keywords={["Eden AI", "Management API", "API key", "issuer key", "service key"]}
+  datePublished="2026-08-21T00:00:00Z"
+  dateModified="2026-10-29T00:00:00Z"
 />
 
 The **Management API** lets your automation create and manage inference keys **programmatically**: the
@@ -40,7 +42,7 @@ every hop, but it can still mint its way down to inference, so **store it like a
 <Steps>
 <Step title="Generate an issuer key">
 From the dashboard (**Account → Management Keys**), generate an **issuer key**. Copy it once; it is shown
-only at creation. The org owner can always do this; the owner can also grant the *Manage API keys*
+only at creation. The org owner can always do this; the owner can also grant the *API Key Management*
 permission to other members via roles.
 </Step>
 <Step title="Mint an auth (worker) key">
@@ -87,8 +89,35 @@ inference key (`sk-eden-…`) and then manages that member's personal policies.
 | `GET · PATCH · DELETE /v3/manage/keys/{key_id}` | `manage:read` · `manage:write` | Read / update / revoke an inference key |
 | `POST /v3/manage/keys/{key_id}/rotate` | `manage:write` | Rotate an inference key's secret |
 | `GET /v3/manage/members` · `/usage` · `/keys/{key_id}/usage` · `/whoami` | `manage:read` | Members, usage, key introspection |
+| `PATCH /v3/manage/members/{email}/role` | `manage:write` | Set a member's role |
+| `GET /v3/manage/groups` | `manage:read` | List the organization's directory-synced groups |
+| `GET /v3/manage/groups/{external_group_id}` | `manage:read` | Retrieve one group and its members |
 | `GET /v3/manage/routing-policies` | `manage:read`, or an inference key | List the routing policies the credential can use: the organization's with a management key, the member's own and the organization's with an inference key |
 | `GET · PUT · DELETE /v3/manage/routing-policies/{name}` | `manage:read` · `manage:write`, or an inference key | Read / create or replace / delete a routing policy: the organization's with a management key, the member's personal one with an inference key |
+
+### Members and roles
+
+`PATCH /v3/manage/members/{email}/role` assigns a role to a member by email and returns the updated
+member. The request body is `{"role_id": <id>}`. A role's id is the `role.id` of a member who holds
+it in the `GET /v3/manage/members` response, which lists each member's `role` as `{"id", "name"}`
+(`null` for a member with no role). The outcomes:
+
+| Status | Cause |
+|--------|-------|
+| `200` | The role is assigned and the updated member is returned |
+| `400` | `role_id` is missing or not an integer |
+| `403` | The member is the organization owner, whose role cannot be changed |
+| `403` | The role grants more than member management and read access. A `manage:write` key may assign only roles limited to those two permissions, so a role holding API Key Management, organization configuration or billing authority is refused |
+| `404` | The email is not an active member of the organization, or `role_id` names no role available to the organization (unknown, or belonging to another organization) |
+| `409` | Role-based access control is not enabled for the organization |
+
+### Groups
+
+Groups are `DirectorySyncGroup` records synced from your identity provider over SCIM. They are
+read-only here: they are created and maintained in the identity provider, never through this API.
+`external_group_id` is the group's id in that provider and is what the detail URL takes. Each group
+returns the emails of its active members, matching `/v3/manage/members`, so the two can be
+correlated. A group belonging to another organization returns `404`.
 
 ## Routing policies
 

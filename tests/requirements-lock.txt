@@ -121,7 +121,7 @@ docstring-parser==0.18.0
     #   instructor
 durationpy==0.11
     # via kubernetes
-edenai-haystack==0.1.0
+edenai-haystack==1.0.0
     # via -r tests/requirements.txt
 email-validator==2.3.0
     # via pydantic

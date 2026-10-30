@@ -2,43 +2,45 @@
 title: "Use LangChain with Eden AI"
 sidebarTitle: "LangChain"
 icon: "/integration-logo/langchain-icondoc.svg"
-description: "Integrate Eden AI with LangChain for building powerful LLM applications with access to 500+ models."
+description: "Point LangChain's ChatOpenAI at the Eden AI base URL and call 500+ models from Python or TypeScript with one API key and no extra package."
 ---
 
 import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
 
 <TechArticleSchema
   title={"Use LangChain with Eden AI"}
-  description={"Integrate Eden AI with LangChain for building powerful LLM applications with access to 500+ models."}
+  description={"Point LangChain's ChatOpenAI at the Eden AI base URL and call 500+ models from Python or TypeScript with one API key and no extra package."}
   path="v3/integrations/langchain"
   articleSection="AI Frameworks"
   about={"LLM Framework Integration"}
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "LangChain"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-08-31T00:00:00Z"
+  dateModified="2026-10-27T00:00:00Z"
 />
 
-Integrate Eden AI with LangChain for building powerful LLM applications with access to 500+ models.
+Eden AI's `/v3` endpoint is OpenAI-compatible, so LangChain's `ChatOpenAI` talks to it once you change `base_url` and the model id. Every chat model in the catalog is then available through the same LangChain chat model interface, in Python and in TypeScript.
 
 ## Overview
 
-[LangChain](https://langchain.com) is a framework for developing applications powered by language models. Eden AI integrates seamlessly with LangChain's `ChatOpenAI` class, giving you access to multiple providers through a single interface.
+[LangChain](https://langchain.com) is a framework for developing applications powered by language models. LangChain's `ChatOpenAI` class (`langchain-openai` for Python, `@langchain/openai` for TypeScript) sends OpenAI-style chat completion requests to any base URL you give it, and Eden AI's `/v3/chat/completions` accepts them.
 
 ## Installation
 
+Python needs 3.10 or later, and the TypeScript package needs Node.js 22 or later.
+
 <CodeGroup>
 ```bash Python
-pip install "langchain~=1.2" "langchain-openai~=1.1" "langchain-community~=0.4" "langgraph~=1.0"
+pip install langchain-openai python-dotenv
 ```
 
 ```bash TypeScript
-npm install langchain @langchain/openai
+npm install @langchain/openai @langchain/core
 ```
 
 </CodeGroup>
 
-## Quick Start (Python)
+## Quick Start
 
 <CodeGroup>
 ```python Python
@@ -47,7 +49,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 
 llm = ChatOpenAI(
     model="openai/gpt-latest",
-    api_key="YOUR_EDEN_AI_API_KEY",
+    api_key="YOUR_API_KEY",
     base_url="https://api.edenai.run/v3"
 )
 
@@ -59,18 +61,14 @@ messages = [
 response = llm.invoke(messages)
 print(response.content)
 ```
-</CodeGroup>
 
-## Quick Start (TypeScript)
-
-<CodeGroup>
 ```typescript TypeScript
 import { ChatOpenAI } from "@langchain/openai";
 import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 
 const llm = new ChatOpenAI({
   model: "openai/gpt-latest",
-  apiKey: "YOUR_EDEN_AI_API_KEY",
+  apiKey: "YOUR_API_KEY",
   configuration: {
     baseURL: "https://api.edenai.run/v3",
   },
@@ -87,71 +85,11 @@ console.log(response.content);
 
 </CodeGroup>
 
-## Available Models
+The TypeScript sample uses top-level `await`, so run it as an ES module: save it as a `.mts` file, or set `"type": "module"` in `package.json`.
 
-Pass any `provider/model` string as the `model` (or `modelName`) parameter. For example:
+## Model naming
 
-- `openai/gpt-latest` — GPT-4
-- `anthropic/claude-sonnet-latest` — Claude Sonnet
-- `vertex/gemini-flash-latest` — Gemini Flash
-
-## Prompt Templates
-
-<CodeGroup>
-```python Python
-from langchain_openai import ChatOpenAI
-from langchain_core.prompts import ChatPromptTemplate
-
-llm = ChatOpenAI(
-    model="openai/gpt-latest",
-    api_key="YOUR_EDEN_AI_API_KEY",
-    base_url="https://api.edenai.run/v3"
-)
-
-prompt = ChatPromptTemplate.from_messages([
-    ("system", "You are a helpful assistant that translates {input_language} to {output_language}."),
-    ("human", "{text}")
-])
-
-chain = prompt | llm
-
-response = chain.invoke({
-    "input_language": "English",
-    "output_language": "French",
-    "text": "Hello, how are you?"
-})
-
-print(response.content)
-```
-</CodeGroup>
-
-## Chains
-
-<CodeGroup>
-```python Python
-from langchain_openai import ChatOpenAI
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.output_parsers import StrOutputParser
-
-llm = ChatOpenAI(
-    model="openai/gpt-latest",
-    api_key="YOUR_EDEN_AI_API_KEY",
-    base_url="https://api.edenai.run/v3"
-)
-
-joke_prompt = ChatPromptTemplate.from_template("Tell me a joke about {topic}")
-explanation_prompt = ChatPromptTemplate.from_template("Explain this joke: {joke}")
-
-joke_chain = joke_prompt | llm | StrOutputParser()
-explanation_chain = explanation_prompt | llm | StrOutputParser()
-
-full_chain = {"joke": joke_chain} | explanation_chain
-
-result = full_chain.invoke({"topic": "programming"})
-print(result)
-```
-
-</CodeGroup>
+Pass any `provider/model` id as `model`, for example `openai/gpt-latest`, `anthropic/claude-sonnet-latest` or `vertex/gemini-flash-latest`. Browse the catalog in [List LLM Models](/v3/llms/listing-models).
 
 ## Environment Variables
 
@@ -178,4 +116,7 @@ llm = ChatOpenAI(
 
 ## Next Steps
 
-- [OpenAI SDK (Python)](./openai-sdk-python) - Direct SDK usage
+- [List LLM Models](/v3/llms/listing-models) - Browse available providers and models
+- [OpenAI SDK (Python)](/v3/integrations/openai-sdk-python) - Direct SDK usage
+- [Haystack](/v3/integrations/haystack) - Another framework that talks to Eden AI
+- [LangChain documentation](https://docs.langchain.com) - Prompt templates, chains and agents

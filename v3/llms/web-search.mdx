@@ -117,7 +117,7 @@ print(web_search_models)
 ```
 </CodeGroup>
 
-On Qwen and DeepSeek, the models that search are `qwen/qwen3.8-omni-flash` and `deepseek/deepseek-v4-pro`. See [Qwen Web Search](#qwen-web-search) and [DeepSeek Web Search](#deepseek-web-search).
+On Qwen and DeepSeek, the models that search are `qwen/qwen3.8-omni-flash`, `qwen/deepseek-v4.1-flash-1017` and `deepseek/deepseek-v4-pro`. See [Qwen Web Search](#qwen-web-search) and [DeepSeek Web Search](#deepseek-web-search).
 
 <Tip>
 You can also browse models visually in the [Eden AI model catalog](https://app.edenai.run/models) and filter by capability, including web search.
@@ -136,10 +136,10 @@ You can also browse models visually in the [Eden AI model catalog](https://app.e
 
 ## Qwen Web Search
 
-`qwen/qwen3.8-omni-flash` searches the web through Alibaba's own search. On other Qwen models the request runs without search.
+`qwen/qwen3.8-omni-flash` and `qwen/deepseek-v4.1-flash-1017` search the web through Alibaba's own search. On other Qwen models the request runs without search.
 
 - **Turn it on** with `web_search_options` on [Chat Completions](/v3/llms/chat-completions), or a `web_search` tool on [Responses](/v3/llms/responses). An `enable_search` field in your request is ignored: Eden AI sets it.
-- **Streaming only.** Set `stream` to `true`. A search request without it is refused with `400`.
+- **Streaming only on `qwen/qwen3.8-omni-flash`.** Set `stream` to `true`. A search request without it is refused with `400`. `qwen/deepseek-v4.1-flash-1017` searches with or without streaming.
 - **Global only.** Search runs on a Global-scope workspace, so it has no EU route. A call tagged `@eu` runs on the EU workspace and does not search. See [EU data residency](/v3/data-governance/provider-data-policies#eu-data-residency).
 - **No search rate, no search.** A model whose pricing carries no per-search rate answers `501`.
 

@@ -1,23 +1,23 @@
 ---
 icon: "sitemap"
 title: "Routing Policies"
-description: "Save a model chain and its provider preferences once as a routing policy, then call it by name from any chat request or bind it to an API key."
+description: "Save a model chain and its provider preferences once as a routing policy, then call it by name from any chat request."
 ---
 import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
 
 <TechArticleSchema
   title={"Routing Policies"}
-  description={"Save a model chain and its provider preferences once as a routing policy, then call it by name from any chat request or bind it to an API key."}
+  description={"Save a model chain and its provider preferences once as a routing policy, then call it by name from any chat request."}
   path="v3/llms/routing-policies"
   articleSection="LLMs"
   about={"LLM API"}
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "LLM API", "routing policy", "model fallback", "load balancing", "provider routing"]}
   datePublished="2026-10-27T00:00:00Z"
-  dateModified="2026-10-27T00:00:00Z"
+  dateModified="2026-10-30T00:00:00Z"
 />
 
-A routing policy is a saved model chain: which models to try, how to pick among them, and the [provider routing](/v3/llms/provider-routing) preferences every attempt follows. Save it once under a name and every request can use it as `model: "policy/{name}"`, so an app that only lets you configure a model string, such as a coding agent or a chat UI, gets your fallbacks and provider preferences without any change to the request. Bind the policy to an API key and even the model string stays as it is.
+A routing policy is a saved model chain: which models to try, how to pick among them, and the [provider routing](/v3/llms/provider-routing) preferences every attempt follows. Save it once under a name and every request can use it as `model: "policy/{name}"`, so an app that only lets you configure a model string, such as a coding agent or a chat UI, gets your fallbacks and provider preferences without any change to the request.
 
 Policies are managed through the [Management API](/v3/organization/management-api). A management key manages the organization's policies, shared by every member and key of the organization; your own API key manages your personal ones.
 
@@ -101,9 +101,9 @@ The name is only accepted where a model chain is: the chat dialects above. To em
 | Field | What it holds |
 |---|---|
 | `description` | Free text, up to 500 characters |
-| `enabled` | `false` parks the policy: calling it by name is a `400`, a key bound to it behaves as unbound, and it leaves the [model listing](#finding-your-policies). Default `true` |
+| `enabled` | `false` parks the policy: calling it by name is a `400` and it leaves the [model listing](#finding-your-policies). Default `true` |
 | `strategy` | How the targets are ordered: `fallback`, `load_balance`, `cheapest` or `fastest`. Required with `targets` |
-| `targets` | 1 to 32 models to choose among, each a string or an object with the overrides below. Omitted on a routing-only policy, which holds `defaults.routing` for a [key](#binding-a-policy-to-an-api-key) to apply |
+| `targets` | 1 to 32 models to choose among, each a string or an object with the overrides below |
 | `defaults` | What every target inherits unless it sets its own: `routing`, `credentials` (default `auto`) and `retries` (default `0`) |
 | `lock` | Fields a request may not set: any of the `routing` fields a policy stores (listed below), or `region`. A request that sets one is refused with a `400` |
 | `fallbacks` | Up to 7 models tried after every target, in order, with the policy's default routing |
@@ -171,28 +171,6 @@ By default a target runs on your own provider key when you have [stored one](/v3
 
 `own` and `eden` need a concrete `provider/model` target, since a routable name fans out across providers, and a policy uses one mode per provider.
 
-## Binding a policy to an API key
-
-A key's `default_policy` applies a policy to every chat call made with the key, on the three dialects above; the other endpoints ignore it. Set it when you [create the key](/v3/general/custom-api-keys#create-a-key) or later:
-
-{/* skip-test: acts on the illustrative key id, which no account holds */}
-```bash cURL
-curl -X PATCH https://api.edenai.run/v3/manage/keys/3f1c2b6e-8a4d-4f0e-9b7a-2c5d6e7f8a90/ \
-  -H "Authorization: Bearer YOUR_MANAGEMENT_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"default_policy": "prod-chat"}'
-```
-
-What the bound policy does depends on the model the request names:
-
-| The request sends | What happens |
-|---|---|
-| `"model": "@edenai"` | The policy runs in full: its targets, strategy and fallbacks, as if the request had named `policy/prod-chat` |
-| Any model, such as `"gpt-5.6-sol"` | The model stays. The policy lends its `defaults.routing`, and its `lock` still applies. This is how a client whose model string you cannot change gets your provider preferences. Targets are not used |
-| `"model": "policy/other"` | The named policy wins over the key's |
-
-A routing-only policy, one without `targets`, exists for the second row: it cannot be called by name. Send `null` to unbind. Deleting a policy unbinds every key that used it, and a key bound to a disabled policy behaves as unbound. Through the Management API only the organization's policies can be bound.
-
 ## Organization and personal policies
 
 | Credential on `/v3/manage/routing-policies/` | Manages | Reads |
@@ -241,9 +219,9 @@ Send `x-edenai-metadata: enabled` and the [request metadata](/v3/llms/request-me
 | Field | Meaning |
 |---|---|
 | `name`, `version` | The policy that applied, at the version it had |
-| `strategy` | The policy's strategy, or `null` when a key lent its routing only |
+| `strategy` | The policy's strategy |
 | `scope` | `organization` or `user` |
-| `path` | The part of the policy that served the request: `[strategy, "targets[i]"]`, `[strategy, "fallbacks[j]"]`, `[strategy, "caller"]` for one of the request's own fallbacks, or `["defaults"]` for routing lent by a key |
+| `path` | The part of the policy that served the request: `[strategy, "targets[i]"]`, `[strategy, "fallbacks[j]"]`, `[strategy, "caller"]` for one of the request's own fallbacks |
 | `dropped` | The targets this call could not use, each with its reason |
 
 | Reason | The target was dropped because |
@@ -312,8 +290,8 @@ The entry carries the name only: which target serves a call is decided per reque
   <Card title="Fallback" icon="rotate-left" href="/v3/general/fallback">
     How a chain of models is tried
   </Card>
-  <Card title="Custom API Keys" icon="key" href="/v3/general/custom-api-keys">
-    Bind a policy when you create a key
+  <Card title="Request Metadata" icon="magnifying-glass" href="/v3/llms/request-metadata">
+    The `policy` block on every response the policy served
   </Card>
   <Card title="Management API" icon="gear" href="/v3/organization/management-api">
     The keys that manage policies

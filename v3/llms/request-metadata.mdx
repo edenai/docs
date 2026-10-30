@@ -14,7 +14,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "LLM API", "observability", "debugging", "provider routing"]}
   datePublished="2026-08-19T00:00:00Z"
-  dateModified="2026-10-29T00:00:00Z"
+  dateModified="2026-10-30T00:00:00Z"
 />
 
 Eden AI makes decisions on your behalf on every request: which provider serves a model sold by several, which region it runs in, whether to retry elsewhere when one fails, and whether to use your own provider key. None of that is visible in a normal response, because the answer looks the same whoever produced it.
@@ -99,7 +99,7 @@ The response gains one extra top-level key, `edenai_metadata`:
 | `direct` | You named a `provider/model`, so no routing happened |
 | `alias` | You named an alias, which resolved to a specific model |
 | `routed` | You named a model without a provider, so Eden AI picked one. See [Provider Routing](/v3/llms/provider-routing) |
-| `policy` | A [routing policy](/v3/llms/routing-policies) chose the chain: you named `policy/{name}`, or the API key's bound policy applied. The `policy` field says which, and how |
+| `policy` | A [routing policy](/v3/llms/routing-policies) chose the chain: you named `policy/{name}`. The `policy` field says which, and how |
 
 ## Tags
 

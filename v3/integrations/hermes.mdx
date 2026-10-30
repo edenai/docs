@@ -134,7 +134,7 @@ fallback_providers:
 hermes config set model.default policy/<name>
 ```
 
-Hermes sends the id unchanged to a `custom` provider (`hermes@v0.22.5:hermes_cli/model_normalize.py:141-142` strips only a literal `custom/` prefix), and Eden AI runs the policy's chain for `policy/<name>`. Binding a policy to an API key does not do this for a request that names an ordinary model: only `policy/<name>` or `@edenai` runs the chain.
+Hermes sends the id unchanged to a `custom` provider (`hermes@v0.22.5:hermes_cli/model_normalize.py:141-142` strips only a literal `custom/` prefix), and Eden AI runs the policy's chain for `policy/<name>`; a request that names an ordinary model runs that model.
 
 ### Add Eden AI as a provider plugin (optional)
 

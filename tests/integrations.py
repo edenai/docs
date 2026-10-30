@@ -108,6 +108,8 @@ TOOLS: dict[str, Tool] = {
     "openclaw": Tool("chat", sends_tools=True),
     "opencode": Tool("chat", sends_tools=True),
     "pi": Tool("chat", sends_tools=True),
+    # Open Code Review is a review agent: its loop sends tool definitions on every request.
+    "open-code-review": Tool("chat", sends_tools=True),
     # Lynkr sits in front of Claude Code and forwards its tool definitions.
     "lynkr": Tool("chat", sends_tools=True),
     # Chat interfaces, gateways and apps. Tools are optional in all of them.
@@ -115,7 +117,6 @@ TOOLS: dict[str, Tool] = {
     "deeptutor": Tool("chat"),
     "librechat": Tool("chat"),
     "n8n": Tool("chat"),
-    "open-code-review": Tool("chat"),
     "open-connector": Tool("chat"),
     "open-webui": Tool("chat"),
     "plano": Tool("chat"),

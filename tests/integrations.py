@@ -108,7 +108,8 @@ TOOLS: dict[str, Tool] = {
     "openclaw": Tool("chat", sends_tools=True),
     "opencode": Tool("chat", sends_tools=True),
     "pi": Tool("chat", sends_tools=True),
-    # Lynkr sits in front of Claude Code and forwards its tool definitions.
+    # Lynkr fronts Claude Code, Cursor and Codex, and calls Eden AI's chat
+    # completions route itself, forwarding the tool definitions it receives.
     "lynkr": Tool("chat", sends_tools=True),
     # Chat interfaces, gateways and apps. Tools are optional in all of them.
     "bifrost": Tool("chat"),

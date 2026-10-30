@@ -19,15 +19,14 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   dateModified="2026-10-27T00:00:00Z"
 />
 
-Configure [Codex CLI](https://github.com/openai/codex), OpenAI's open-source local coding agent, to use Eden AI for access to 500+ models behind a single API key.
+[Codex CLI](https://github.com/openai/codex) sends every request to the Responses API, and Eden AI serves it at `/v3/responses`. The provider block below sets `wire_api = "responses"` and a base URL, and Codex does the rest.
 
 ## Overview
 
-Codex CLI runs in your terminal and edits code in your project. Pointing it at Eden AI gives you:
+Eden AI serves the Responses API route that Codex CLI sends every request to, so Codex needs only a provider block and a key. Pointing it at Eden AI gives you:
 
 - **500+ models**: switch between Codex variants, Claude, Gemini, and more without reinstalling
 - **One API key**: unified billing and monitoring across providers
-- **Provider failover**: keep working when an upstream provider has an incident
 
 ## Prerequisites
 
@@ -49,7 +48,7 @@ model_reasoning_effort = "high"
 [model_providers.edenai]
 name = "Eden AI"
 base_url = "https://api.edenai.run/v3"
-env_key = "EDENAI_API_KEY"
+env_key = "EDEN_AI_API_KEY"
 wire_api = "responses"
 ```
 </CodeGroup>
@@ -59,11 +58,11 @@ wire_api = "responses"
 
 <CodeGroup>
 ```bash bash / zsh
-export EDENAI_API_KEY="YOUR_EDEN_AI_API_KEY"
+export EDEN_AI_API_KEY="YOUR_API_KEY"
 ```
 
 ```powershell PowerShell
-$env:EDENAI_API_KEY = "YOUR_EDEN_AI_API_KEY"
+$env:EDEN_AI_API_KEY = "YOUR_API_KEY"
 ```
 </CodeGroup>
 
@@ -77,27 +76,23 @@ codex
 
 Codex now sends requests to Eden AI using the model you set in `config.toml`.
 
+## Model naming
+
+Eden AI model IDs have the form `provider/model`, and Codex sends the value of `model` as it stands, so write the whole ID. Examples that suit Codex, which sends tool definitions with every request:
+
+- `openai/gpt-5.3-codex`, the default in the config above
+- `anthropic/claude-sonnet-latest`
+- `openai/gpt-latest`
+
+Browse the catalog in [List Models](/v3/llms/listing-models) or with `GET https://api.edenai.run/v3/models`.
+
 ## Switching models
 
-Eden AI uses the `provider/model` format. Update the `model` field in `~/.codex/config.toml` (or pass `--model` on the command line) to switch:
+Change the `model` field in `~/.codex/config.toml`, or pass `--model` on the command line for one session:
 
-{/* skip-test: alternative values for one key, not a whole config file */}
-<CodeGroup>
-```toml Codex variants
-model = "openai/gpt-5.3-codex"        # default
-model = "azure/gpt-5.1-codex-mini"    # cheaper, faster
-model = "azure/gpt-5.1-codex-max"     # largest context
-model = "azure/gpt-5.2-codex"         # Azure-hosted alternative
+```bash
+codex --model anthropic/claude-sonnet-latest
 ```
-
-```toml Other providers
-model = "anthropic/claude-sonnet-latest"
-model = "vertex/gemini-2.5-pro"
-model = "openai/gpt-latest"
-```
-</CodeGroup>
-
-Browse the full catalog via [List Models](/v3/llms/listing-models) or `GET https://api.edenai.run/v3/models`.
 
 ## Expert Models as Tools (MCP)
 
@@ -106,14 +101,14 @@ Eden AI also hosts an [MCP server](/v3/expert-models/mcp-server) that exposes th
 ```toml
 [mcp_servers.edenai]
 url = "https://mcp.edenai.run/mcp"
-bearer_token_env_var = "EDENAI_API_KEY"
+bearer_token_env_var = "EDEN_AI_API_KEY"
 ```
 
-Codex reads `EDENAI_API_KEY` from the environment at connect time and sends it as an `Authorization: Bearer` header, which keeps the key out of a config file that may be committed. The CLI equivalent is:
+Codex reads `EDEN_AI_API_KEY` from the environment at connect time and sends it as an `Authorization: Bearer` header, which keeps the key out of a config file that may be committed. The CLI equivalent is:
 
 ```bash
 codex mcp add edenai --url https://mcp.edenai.run/mcp \
-  --bearer-token-env-var EDENAI_API_KEY
+  --bearer-token-env-var EDEN_AI_API_KEY
 ```
 
 See the [MCP server page](/v3/expert-models/mcp-server) for the full tool catalog and the conventions its tools share.
@@ -122,20 +117,20 @@ See the [MCP server page](/v3/expert-models/mcp-server) for the full tool catalo
 
 ### Authentication errors
 
-Verify the API key is loaded in your shell and that it has LLM access. The check below uses a plain chat model on purpose: Codex models are served on `/responses` only, so sending one to `/chat/completions` returns a `400` that looks like a key problem but is not.
+Verify the API key is loaded in your shell (the first command prints `key is set` when it is) and that it has LLM access. The check below calls the same `/v3/responses` route Codex uses:
 
 ```bash
-echo $EDENAI_API_KEY
+test -n "$EDEN_AI_API_KEY" && echo "key is set"
 
-curl -X POST https://api.edenai.run/v3/chat/completions \
-  -H "Authorization: Bearer $EDENAI_API_KEY" \
+curl -X POST https://api.edenai.run/v3/responses \
+  -H "Authorization: Bearer $EDEN_AI_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"model": "openai/gpt-mini-latest", "messages": [{"role": "user", "content": "ping"}]}'
+  -d '{"model": "openai/gpt-mini-latest", "input": "ping"}'
 ```
 
 ### Model not found
 
-Use the full `provider/model` string (e.g. `openai/gpt-5.3-codex`, not `gpt-5.3-codex`). Confirm the ID is in the catalog returned by `GET /v3/models`.
+Codex sends the `model` value as written, so use the full `provider/model` string, as in the config above (for example `openai/gpt-5.3-codex`). A mistyped ID is the usual cause. Confirm the ID is in the catalog returned by `GET /v3/models`.
 
 ### Connection issues
 
@@ -143,6 +138,6 @@ Confirm `base_url` is exactly `https://api.edenai.run/v3`. Codex appends `/respo
 
 ## Next Steps
 
-- [Claude Code](./claude-code) — Anthropic's official CLI on Eden AI
-- [OpenCode](./opencode) — terminal coding agent with auto-generated config
+- [Claude Code](./claude-code): Anthropic's official CLI on Eden AI
+- [OpenCode](./opencode): terminal coding agent with auto-generated config
 - [Responses](/v3/llms/responses): full reference for the endpoint Codex sends every request to

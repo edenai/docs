@@ -15,7 +15,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "LLM API", "chat completion", "OpenAI compatible"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-10-29T00:00:00Z"
+  dateModified="2026-10-30T00:00:00Z"
 />
 
 Web search lets LLMs access real-time information from the internet when generating responses. Instead of relying solely on training data, the model can search the web to ground its answers with up-to-date facts, links, and sources.
@@ -117,7 +117,7 @@ print(web_search_models)
 ```
 </CodeGroup>
 
-On Qwen and DeepSeek, the models that search are `qwen/qwen3.8-omni-flash` and `deepseek/deepseek-v4-pro`. See [Qwen Web Search](#qwen-web-search) and [DeepSeek Web Search](#deepseek-web-search).
+On Qwen and DeepSeek, the models that search are `qwen/qwen3.8-omni-flash`, `qwen/deepseek-v4.1-flash-1017` and `deepseek/deepseek-v4-pro`. See [Qwen Web Search](#qwen-web-search) and [DeepSeek Web Search](#deepseek-web-search).
 
 <Tip>
 You can also browse models visually in the [Eden AI model catalog](https://app.edenai.run/models) and filter by capability, including web search.
@@ -136,7 +136,7 @@ You can also browse models visually in the [Eden AI model catalog](https://app.e
 
 ## Qwen Web Search
 
-`qwen/qwen3.8-omni-flash` searches the web through Alibaba's own search. On other Qwen models the request runs without search.
+`qwen/qwen3.8-omni-flash` and `qwen/deepseek-v4.1-flash-1017` search the web through Alibaba's own search. On other Qwen models the request runs without search.
 
 - **Turn it on** with `web_search_options` on [Chat Completions](/v3/llms/chat-completions), or a `web_search` tool on [Responses](/v3/llms/responses). An `enable_search` field in your request is ignored: Eden AI sets it.
 - **Streaming only.** Set `stream` to `true`. A search request without it is refused with `400`.

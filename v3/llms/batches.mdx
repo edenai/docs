@@ -62,6 +62,7 @@ No other key is allowed on a line.
 
 - `body.model` is an OpenAI model written as `openai/<model>`, with no `@` or `:` suffix. Every line of a batch names the same model.
 - The model must have published batch rates. Models without them, models that price long-context bands or cache writes, and models that price cached input without a cached batch rate are refused.
+- In [`GET /v3/models`](/v3/llms/listing-models), `capabilities.supports_batch` is `true` on each entry a batch accepts, by the same rules.
 - Messages carry text only. A message holds `role`, `content` and optionally `cache_control`. A `content` list may contain `text` parts only.
 - `max_tokens` or `max_completion_tokens` on each line sets how much output Eden AI reserves for that line. Without either, the reservation uses the model's maximum output. See [Billing](#billing).
 - `service_tier`, when present, is `auto` or `default`.
@@ -144,7 +145,8 @@ The response is the batch object:
   "created_at": 1790000000,
   "finished_at": null,
   "cost": null,
-  "error": null
+  "error": null,
+  "results_available": false
 }
 ```
 
@@ -158,6 +160,55 @@ The response is the batch object:
 | `created_at`, `finished_at` | Unix timestamps in seconds. `finished_at` is `null` until the batch has finished and settled. |
 | `cost` | What the batch billed, in US dollars. `null` until the batch has finished. |
 | `error` | Why the batch failed, when it did. |
+| `results_available` | `true` once [the results](#results) can be read: the batch has finished, was created at OpenAI, and OpenAI ended it. `false` while it runs, and for a batch that ended before OpenAI accepted it. |
+
+### Create from an uploaded file
+
+The create route also takes the JSON body the OpenAI SDK's `batches.create` sends. Upload the JSONL file with [`POST /v3/upload`](/v3/llms/file-upload), then send its `file_id` as `input_file_id`. The OpenAI SDK's `files.create` has no route here: upload through `/v3/upload` instead.
+
+| Field | Required | Description |
+|---|---|---|
+| `input_file_id` | yes | The `file_id` returned by `POST /v3/upload`. |
+| `endpoint` | no | `/v1/chat/completions`, the only value accepted. |
+| `completion_window` | no | `24h`, the only value accepted. |
+| `metadata` | no | A JSON object of string pairs, with the same limits as the form field. |
+| `webhook_receiver` | no | A URL Eden AI calls once the batch has finished and settled. |
+
+The file goes through the same checks as one sent in the form. A file id that does not exist, has expired, or belongs to another account answers `404`. A stored file larger than 100 MB answers `413`, and a file that is not JSONL answers `400`. Another `endpoint` or `completion_window` answers `400`.
+
+{/* skip-test: the batch routes are not on the API these tests run against yet; remove this marker once they are */}
+<CodeGroup>
+```python Python
+from openai import OpenAI
+import requests
+
+headers = {"Authorization": "Bearer YOUR_API_KEY"}
+
+with open("batch.jsonl", "rb") as f:
+    upload = requests.post(
+        "https://api.edenai.run/v3/upload",
+        headers=headers,
+        files={"file": ("batch.jsonl", f, "application/jsonl")},
+        timeout=(10, 120),
+    ).json()
+
+client = OpenAI(api_key="YOUR_API_KEY", base_url="https://api.edenai.run/v3")
+batch = client.batches.create(
+    input_file_id=upload["file_id"],
+    endpoint="/v1/chat/completions",
+    completion_window="24h",
+    metadata={"project": "taglines"},
+)
+print(batch.id, batch.status)
+```
+
+```bash cURL
+curl -X POST https://api.edenai.run/v3/batches \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"input_file_id": "FILE_ID", "endpoint": "/v1/chat/completions", "completion_window": "24h"}'
+```
+</CodeGroup>
 
 ## Check a batch
 
@@ -190,6 +241,7 @@ Poll this route every few minutes until `status` is `completed`, `failed`, `expi
 |---|---|
 | `limit` | Batches per page, from 1 to 100. Defaults to 20. |
 | `after` | The `last_id` of the previous page. An unknown id answers `404`. |
+| `model` | Only the batches run on this model, written as in the batch's lines (`openai/<model>`). A value without a `/` answers `422`. |
 
 The response holds `data` (the batch objects), `first_id`, `last_id` and `has_more`.
 

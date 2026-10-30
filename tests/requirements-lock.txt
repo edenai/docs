@@ -13,6 +13,8 @@ aiohttp==3.14.3
     #   litellm
 aiosignal==1.4.0
     # via aiohttp
+aisuite==0.2.0
+    # via -r tests/requirements.txt
 annotated-doc==0.0.5
     # via typer
 annotated-types==0.8.0
@@ -113,6 +115,7 @@ dnspython==2.8.0
     # via email-validator
 docstring-parser==0.18.0
     # via
+    #   aisuite
     #   anthropic
     #   haystack-ai
     #   instructor
@@ -183,6 +186,7 @@ httptools==0.8.0
     # via uvicorn
 httpx==0.28.1
     # via
+    #   aisuite
     #   anthropic
     #   any-llm-sdk
     #   chromadb
@@ -479,6 +483,7 @@ pycparser==3.0
 pydantic==2.13.5
     # via
     #   -r tests/requirements.txt
+    #   aisuite
     #   anthropic
     #   any-llm-sdk
     #   atomic-agents

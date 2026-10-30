@@ -26,6 +26,10 @@ datadog
 
 # integration guides (v3/integrations/)
 any-llm-sdk[edenai]
+# The Eden AI provider ships in 0.2.0. No extras: the `openai` extra caps openai
+# below 2.0.0, and the suite installs openai itself. The provider hardcodes the
+# production base URL (see _PRODUCTION_BASE_URL_FILES in snippet_extractor.py).
+aisuite==0.2.0
 # An unrelated atomic-agents 0.1 also exists on PyPI, and the resolver falls
 # back to it when the real framework's pins conflict, so require v2.
 atomic-agents>=2

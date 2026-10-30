@@ -76,6 +76,7 @@ _PRODUCTION_TOKEN_FILES = {
 # 401 a staging token gets from production.
 _PRODUCTION_BASE_URL_FILES = {
     "v3/integrations/haystack.mdx",
+    "v3/integrations/aisuite.mdx",
 }
 
 PRODUCTION_BASE_URL = "https://api.edenai.run"

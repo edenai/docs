@@ -101,7 +101,7 @@ def _clean_up(description: str, action: Callable[[], int]) -> bool:
 def pytest_configure(config: pytest.Config) -> None:
     """Publish the suite's credentials under the names third-party SDKs read.
 
-    The integration guides drive Eden AI through frameworks (any-llm, Haystack)
+    The integration guides drive Eden AI through frameworks (any-llm, Haystack, aisuite)
     that resolve the key and endpoint from the environment rather than taking
     them as arguments, so their snippets have no placeholder for the extractor
     to rewrite. Runs in the controller and in every xdist worker, because each

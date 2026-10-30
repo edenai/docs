@@ -378,7 +378,6 @@
                       "v3/integrations/aisuite",
                       "v3/integrations/haystack",
                       "v3/integrations/atomic-agents",
-                      "v3/integrations/repowise",
                       "v3/integrations/any-llm",
                       "v3/integrations/symfony"
                     ]
@@ -406,7 +405,8 @@
                       "v3/integrations/opencode",
                       "v3/integrations/open-code-review",
                       "v3/integrations/pi",
-                      "v3/integrations/kilo-code"
+                      "v3/integrations/kilo-code",
+                      "v3/integrations/repowise"
                     ]
                   },
                   {

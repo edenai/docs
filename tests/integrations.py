@@ -89,7 +89,8 @@ TOOLS: dict[str, Tool] = {
     # adds the models their prose names.
     "aisuite": Tool("chat"),
     "any-llm": Tool("chat"),
-    "atomic-agents": Tool("chat"),
+    # Instructor defaults to tool-call mode, so every request carries a tool.
+    "atomic-agents": Tool("chat", sends_tools=True),
     "haystack": Tool("chat"),
     "langchain": Tool("chat"),
     "openai-sdk-python": Tool("chat"),

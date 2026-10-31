@@ -160,7 +160,7 @@ The response is the batch object:
 | `created_at`, `finished_at` | Unix timestamps in seconds. `finished_at` is `null` until the batch has finished and settled. |
 | `cost` | What the batch billed, in US dollars. `null` until the batch has finished. |
 | `error` | Why the batch failed, when it did. |
-| `results_available` | `true` once [the results](#results) can be read: the batch has finished, was created at OpenAI, and OpenAI ended it. `false` while it runs, and for a batch that ended before OpenAI accepted it. |
+| `results_available` | `true` once [the results](#results) can be read: the batch has finished, was created at OpenAI, and OpenAI ended it. `false` while it runs, and for a batch that ended before OpenAI accepted it. Read from the stored batch with no call to OpenAI: a batch settled at [the 25-hour limit](#the-24-hour-window) before OpenAI ended it reads `false`, and the results route checks OpenAI and can still serve it. A sandbox batch reads `true` once it has finished. |
 
 ### Create from an uploaded file
 

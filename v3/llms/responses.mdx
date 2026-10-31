@@ -27,6 +27,7 @@ Eden AI supports the OpenAI Responses API, a stateful alternative to chat comple
 |--------|------|-------------|
 | `POST` | `/v3/responses` | Create a response |
 | `GET` | `/v3/responses/{response_id}` | Retrieve a stored response |
+| `POST` | `/v3/responses/{response_id}/cancel` | Cancel a background response |
 | `DELETE` | `/v3/responses/{response_id}` | Delete a stored response |
 
 <Warning>
@@ -109,6 +110,7 @@ curl -X POST https://api.edenai.run/v3/responses \
 | `previous_response_id` | string | - | Chain to a prior response for multi-turn conversations |
 | `store` | boolean | `true` | Persist the response server-side |
 | `stream` | boolean | `false` | Enable streaming via SSE |
+| `background` | boolean | `false` | Run the response in the background: the call answers `queued` at once and the output is read later with `GET /v3/responses/{response_id}`. See [Background Responses](#background-responses) |
 | `temperature` | float | `1.0` | Randomness (0–2) |
 | `max_output_tokens` | integer | - | Maximum tokens to generate |
 | `top_p` | float | `1.0` | Nucleus sampling threshold |
@@ -315,6 +317,17 @@ curl -X DELETE https://api.edenai.run/v3/responses/resp_abc123def456 \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 </CodeGroup>
+
+## Background Responses
+
+A request with `background: true` answers at once with status `queued`. Read the finished output with `GET /v3/responses/{response_id}`, or stop the run with `POST /v3/responses/{response_id}/cancel`. Background responses are refused under a zero data retention policy, since the provider keeps the response until it is read.
+
+| Moment | What is charged |
+|---|---|
+| The request is accepted | An estimate of the call, as for any request |
+| The response finishes, is cancelled or fails | The usage the provider reports for it, once, in place of the estimate, whether or not you read it |
+| The provider reports no usage, no longer has the response, or the response is not finished within 24 hours | An estimate of the prompt, of the output the response shows and of its reasoning, with the output held to the limit reserved at the start |
+| A cancelled or failed response that produced no output and reports no usage | The prompt only |
 
 ## OpenAI SDK
 

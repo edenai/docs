@@ -1,0 +1,75 @@
+---
+icon: "gauge-high"
+title: "OpenAI Service Tiers: Flex and Priority"
+sidebarTitle: "Service Tiers"
+description: "Send service_tier on Messages, Chat Completions or Responses to run OpenAI models on the flex or priority tier, and see which tier a call is billed on."
+---
+import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
+
+<TechArticleSchema
+  title={"OpenAI Service Tiers: Flex and Priority"}
+  description={"Send service_tier on Messages, Chat Completions or Responses to run OpenAI models on the flex or priority tier, and see which tier a call is billed on."}
+  path="v3/llms/service-tiers"
+  articleSection="LLMs"
+  about={"LLM API"}
+  proficiencyLevel="Intermediate"
+  keywords={["Eden AI", "LLM API", "service tier", "OpenAI flex", "OpenAI priority"]}
+  datePublished="2026-10-29T00:00:00Z"
+  dateModified="2026-10-29T00:00:00Z"
+/>
+
+`service_tier` asks OpenAI to run a request on a processing tier. A tier is billed at its own rates for the same model, and the call is billed on the tier that ran.
+
+## Accepted values
+
+| Route | `service_tier` values |
+|---|---|
+| `POST /v3/chat/completions` | `auto`, `default`, `flex`, `scale`, `priority` |
+| `POST /v3/responses` | `auto`, `default`, `flex`, `scale`, `priority`, `ultrafast` |
+| `POST /v3/v1/messages` | Any string is accepted. Only `flex` and `priority` change how the call runs and is billed. |
+
+On Chat Completions and Responses, a `priority` or `ultrafast` request is sent only when the model has rates for that tier. Otherwise the field is removed, the call runs on the standard tier and bills the standard rate.
+
+## Messages route
+
+`POST /v3/v1/messages` is the Anthropic-style route. Tiers apply to OpenAI models on it, and to no other provider.
+
+| Request | What runs and what is held |
+|---|---|
+| `flex` or `priority` on an OpenAI model | The tier is sent to OpenAI. The credit hold is priced at that tier's rates. |
+| `priority` on an OpenAI model with no `priority` rates | The field is removed. The call runs and is held at the standard tier. |
+| `ultrafast` | The field is removed. The call runs and is held at the standard tier. |
+| `auto`, `default` or any other value | Held and billed at the standard rate. |
+| Any value on a model from another provider | Held and billed at the standard rate. `priority` is removed from the request. |
+
+```bash cURL
+curl -X POST https://api.edenai.run/v3/v1/messages \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-mini",
+    "max_tokens": 100,
+    "service_tier": "flex",
+    "messages": [{"role": "user", "content": "Say hello in French."}]
+  }'
+```
+
+### What is billed
+
+The call is billed at the rates of the tier OpenAI reports it ran on, streaming or not.
+
+| OpenAI reports | Billed at |
+|---|---|
+| `flex` or `priority` | That tier's rates. |
+| `default` | The standard rate. A `priority` request that OpenAI ran on the default tier bills the standard rate. |
+| No tier | The dearer of the requested tier and the standard rate. |
+
+### Where the rates are read
+
+Each model's `pricing` object in [`GET /v3/models`](/v3/llms/listing-models) holds the standard rates and, when the model has tier rates, the same keys with the tier as a suffix, such as `input_cost_per_token_priority`. A model without the suffixed keys for a tier cannot bill that tier. The page states no prices: read them from the listing.
+
+## Related
+
+- [Chat Completions](/v3/llms/chat-completions) and [Responses](/v3/llms/responses) for the other routes that take `service_tier`.
+- [Batches](/v3/llms/batches) for the batch rates. A batch line accepts `auto` or `default` only on OpenAI, and no `service_tier` on Anthropic or Mistral.
+- [Listing models](/v3/llms/listing-models) for the `pricing` object.

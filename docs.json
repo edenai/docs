@@ -213,6 +213,7 @@
                   "v3/llms/request-metadata",
                   "v3/llms/streaming",
                   "v3/llms/batches",
+                  "v3/llms/service-tiers",
                   "v3/llms/image-generation",
                   "v3/llms/video-generation",
                   "v3/llms/text-to-speech",

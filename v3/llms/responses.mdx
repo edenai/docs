@@ -325,7 +325,8 @@ A request with `background: true` answers at once with status `queued`. Read the
 | Moment | What is charged |
 |---|---|
 | The request is accepted | An estimate of the call, as for any request |
-| The response finishes, is cancelled or fails | The usage the provider reports for it, once, in place of the estimate, whether or not you read it |
+| The response finishes, is cancelled or fails | The usage the provider reports for it, once, in place of the estimate, whether or not you read it. A provider that runs the call at once and answers finished is billed then |
+| The provider cannot be asked for the response again, and it did not answer finished | The prompt and the whole output budget: `max_output_tokens` when set, else the model's output limit |
 | The provider reports no usage, no longer has the response, or the response is not finished within 24 hours | An estimate of the prompt, of the output the response shows and of its reasoning, with the output held to the limit reserved at the start |
 | A cancelled or failed response that produced no output and reports no usage | The prompt only |
 

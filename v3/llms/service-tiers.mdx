@@ -1,0 +1,101 @@
+---
+icon: "gauge-high"
+title: "LLM Service Tiers: Flex and Priority"
+sidebarTitle: "Service Tiers"
+description: "Send service_tier to run OpenAI and Google Gemini models on the flex or priority tier, see how each tier is held and billed, and which providers take none."
+---
+import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
+
+<TechArticleSchema
+  title={"LLM Service Tiers: Flex and Priority"}
+  description={"Send service_tier to run OpenAI and Google Gemini models on the flex or priority tier, see how each tier is held and billed, and which providers take none."}
+  path="v3/llms/service-tiers"
+  articleSection="LLMs"
+  about={"LLM API"}
+  proficiencyLevel="Intermediate"
+  keywords={["Eden AI", "LLM API", "service tier", "OpenAI flex", "OpenAI priority", "Gemini flex", "Gemini priority"]}
+  datePublished="2026-10-29T00:00:00Z"
+  dateModified="2026-10-31T00:00:00Z"
+/>
+
+`service_tier` asks the provider to run a request on a processing tier. A tier is billed at its own rates for the same model, and the call is billed on the tier that ran. Tiers apply to OpenAI models, and to Google Gemini models (`google/<model>`) on Chat Completions. Models served through Vertex AI (`vertex/<model>`) are sent no tier.
+
+## Accepted values
+
+| Route | `service_tier` values |
+|---|---|
+| `POST /v3/chat/completions` | `auto`, `default`, `flex`, `scale`, `priority` |
+| `POST /v3/responses` | `auto`, `default`, `flex`, `scale`, `priority`, `ultrafast` |
+| `POST /v3/v1/messages` | Any string is accepted. Only `flex` and `priority` on OpenAI models change how the call runs and is billed. |
+
+A tier set in `extra_body`, as `service_tier` or `serviceTier`, is treated as the `service_tier` field.
+
+## Chat Completions and Responses
+
+| Request | What is sent and held |
+|---|---|
+| `priority` (or `ultrafast` on Responses) on a model with rates for that tier | The tier is sent. The credit hold is priced at that tier's rates. |
+| `priority` or `ultrafast` on a model without them | The field is removed. The call runs on the standard tier, and is held and billed at the standard rate. |
+| `flex` | The tier is sent as requested. The credit hold is priced at the standard rate, since the provider may serve a flex request on the standard tier. A call served at flex bills the model's flex rate where it has one. |
+| `auto`, `default` or `scale` | Sent as requested, and held at the standard rate. |
+
+### Google Gemini
+
+On Chat Completions, a Gemini model (`google/<model>`) is sent a tier only when the model has that tier's rates:
+
+| Request | Sent to Google |
+|---|---|
+| `flex` or `priority` | That tier, when the model has its rates. Otherwise the field is removed and the call runs on the standard tier. |
+| `auto` | `priority`, when the model has priority rates. Otherwise the field is removed. |
+| `default` or `scale` | Nothing: the field is removed. |
+
+A Gemini `flex` call is held at the standard rate, as on OpenAI. On Responses, a Gemini model is sent no tier, and the call runs and bills on the standard tier.
+
+### Vertex AI
+
+A model served through Vertex AI is sent no tier on any route, and runs and bills on the standard tier. An `X-Vertex-AI-LLM-Shared-Request-Type` header in `extra_headers` is removed from the request.
+
+## Messages route
+
+`POST /v3/v1/messages` is the Anthropic-style route. Tiers apply to OpenAI models on it, and to no other provider.
+
+| Request | What runs and what is held |
+|---|---|
+| `flex` on an OpenAI model | The tier is sent to OpenAI. The credit hold is priced at the standard rate. |
+| `priority` on an OpenAI model with `priority` rates | The tier is sent to OpenAI. The credit hold is priced at the `priority` rates. |
+| `priority` on an OpenAI model with no `priority` rates | The field is removed. The call runs and is held at the standard tier. |
+| `ultrafast` | The field is removed. The call runs and is held at the standard tier. |
+| `auto`, `default` or any other value | Held and billed at the standard rate. |
+| Any value on a model from another provider | Held and billed at the standard rate. `flex`, `priority` and `ultrafast` are removed from the request. |
+
+```bash cURL
+curl -X POST https://api.edenai.run/v3/v1/messages \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-mini",
+    "max_tokens": 100,
+    "service_tier": "flex",
+    "messages": [{"role": "user", "content": "Say hello in French."}]
+  }'
+```
+
+### What is billed
+
+The call is billed at the rates of the tier OpenAI reports it ran on, streaming or not.
+
+| OpenAI reports | Billed at |
+|---|---|
+| `flex` or `priority` | That tier's rates. |
+| `default` | The standard rate. A `priority` request that OpenAI ran on the default tier bills the standard rate. |
+| No tier | The dearer of the requested tier and the standard rate. |
+
+### Where the rates are read
+
+Each model's `pricing` object in [`GET /v3/models`](/v3/llms/listing-models) holds the standard rates and, when the model has tier rates, the same keys with the tier as a suffix, such as `input_cost_per_token_priority`. A model without the suffixed keys for a tier cannot bill that tier. The page states no prices: read them from the listing.
+
+## Related
+
+- [Chat Completions](/v3/llms/chat-completions) and [Responses](/v3/llms/responses) for the other routes that take `service_tier`.
+- [Batches](/v3/llms/batches) for the batch rates. A batch line accepts `service_tier` `auto` or `default` only.
+- [Listing models](/v3/llms/listing-models) for the `pricing` object.

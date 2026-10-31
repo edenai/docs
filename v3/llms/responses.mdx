@@ -1,23 +1,23 @@
 ---
 icon: "message"
 title: "Responses"
-description: "Eden AI supports the OpenAI Responses API — a stateful alternative to chat completions that stores conversation history server-side, so you don't need to resend the full message history on each turn."
+description: "Eden AI supports the OpenAI Responses API, a stateful alternative to chat completions that stores conversation history server-side, so you don't need to resend the full message history on each turn."
 ---
 import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
 
 <TechArticleSchema
   title={"Responses"}
-  description={"Eden AI supports the OpenAI Responses API — a stateful alternative to chat completions that stores conversation history server-side, so you don't need to resend the full message history on each turn."}
+  description={"Eden AI supports the OpenAI Responses API, a stateful alternative to chat completions that stores conversation history server-side, so you don't need to resend the full message history on each turn."}
   path="v3/llms/responses"
   articleSection="LLMs"
   about={"LLM API"}
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "LLM API", "chat completion", "OpenAI compatible"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-08-31T00:00:00Z"
+  dateModified="2026-10-31T00:00:00Z"
 />
 
-Eden AI supports the OpenAI Responses API — a stateful alternative to chat completions that stores conversation history server-side, so you don't need to resend the full message history on each turn.
+Eden AI supports the OpenAI Responses API, a stateful alternative to chat completions that stores conversation history server-side, so you don't need to resend the full message history on each turn.
 
 ## Overview
 
@@ -30,7 +30,7 @@ Eden AI supports the OpenAI Responses API — a stateful alternative to chat com
 | `DELETE` | `/v3/responses/{response_id}` | Delete a stored response |
 
 <Warning>
-**Provider-Dependent Behavior** — The Responses API is a passthrough to the underlying provider. Stateful features (server-side storage, response retrieval/deletion, and `previous_response_id` chaining) are only available when the provider natively supports the Responses API (e.g. OpenAI). For all other providers, responses are not stored and the retrieve/delete endpoints are not functional.
+**Provider-Dependent Behavior.** The Responses API is a passthrough to the underlying provider. Stateful features (server-side storage, response retrieval/deletion, and `previous_response_id` chaining) are only available when the provider natively supports the Responses API (e.g. OpenAI). For all other providers, responses are not stored and the retrieve/delete endpoints are not functional.
 </Warning>
 
 ## How It Differs from Chat Completions
@@ -104,19 +104,20 @@ curl -X POST https://api.edenai.run/v3/responses \
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `model` | string | Required | Model string, e.g. `openai/gpt-latest` |
-| `input` | string \| array | Required | User input — a plain string or an array of input items |
-| `instructions` | string | — | System-level instructions for the model (replaces the `system` message) |
-| `previous_response_id` | string | — | Chain to a prior response for multi-turn conversations |
+| `input` | string \| array | Required | User input: a plain string or an array of input items |
+| `instructions` | string | - | System-level instructions for the model (replaces the `system` message) |
+| `previous_response_id` | string | - | Chain to a prior response for multi-turn conversations |
 | `store` | boolean | `true` | Persist the response server-side |
 | `stream` | boolean | `false` | Enable streaming via SSE |
 | `temperature` | float | `1.0` | Randomness (0–2) |
-| `max_output_tokens` | integer | — | Maximum tokens to generate |
+| `max_output_tokens` | integer | - | Maximum tokens to generate |
 | `top_p` | float | `1.0` | Nucleus sampling threshold |
-| `tools` | array | — | Tool definitions (function calling, web search) |
+| `tools` | array | - | Tool definitions (function calling, web search) |
 | `tool_choice` | string \| object | `"auto"` | How the model selects tools |
 | `truncation` | string | `"disabled"` | Truncation strategy: `"auto"` or `"disabled"` |
-| `metadata` | object | — | Arbitrary key-value pairs attached to the response |
-| `user` | string | — | Stable identifier for the end-user |
+| `metadata` | object | - | Arbitrary key-value pairs attached to the response |
+| `user` | string | - | Stable identifier for the end-user |
+| `service_tier` | string | - | Processing tier: `"auto"`, `"default"`, `"flex"`, `"scale"`, `"priority"` or `"ultrafast"`, billed at that tier's rates. `"priority"` and `"ultrafast"` are sent only to a model that has that tier's rates; any other model runs on the default tier. `"flex"` is sent as requested: credits are reserved at the default rate, and a call the provider serves at flex bills the model's flex rate where it has one. `"auto"`, `"default"` and `"scale"` are sent as requested. Google Gemini models and models served through Vertex AI are sent no tier and run on the default tier. A tier set in `extra_body` is treated as this field. See [Service Tiers](/v3/llms/service-tiers) |
 
 ## Response Object
 
@@ -166,6 +167,7 @@ curl -X POST https://api.edenai.run/v3/responses \
 | `output` | array | List of output items (messages, tool calls, reasoning) |
 | `usage` | object | Token consumption |
 | `error` | object | Present when `status` is `"failed"` |
+| `service_tier` | string | The tier the call ran on, when the provider reports one, such as `"default"`, `"flex"` or `"priority"` |
 | `provider` | string | Eden AI: provider name extracted from the model string |
 | `cost` | float | Eden AI: estimated cost in USD for this request |
 | `provider_time` | float | Eden AI: provider response time in seconds |
@@ -211,7 +213,7 @@ res1 = requests.post(url, headers=headers, json={
 
 print(res1["output"][0]["content"][0]["text"])
 
-# Second turn — no need to resend history
+# Second turn: no need to resend history
 res2 = requests.post(url, headers=headers, json={
     "model": "openai/gpt-latest",
     "input": "What is its population?",
@@ -253,7 +255,7 @@ console.log(res2.output[0].content[0].text);
 </CodeGroup>
 
 <Warning>
-`previous_response_id` chaining only works for providers with native Responses API support. For other providers, responses are not stored server-side — you must manage conversation history client-side (e.g. by resending the full message array, as with chat completions).
+`previous_response_id` chaining only works for providers with native Responses API support. For other providers, responses are not stored server-side, so you must manage conversation history client-side (e.g. by resending the full message array, as with chat completions).
 </Warning>
 
 <Tip>

@@ -174,7 +174,7 @@ The create route also takes the JSON body the OpenAI SDK's `batches.create` send
 | `metadata` | no | A JSON object of string pairs, with the same limits as the form field. |
 | `webhook_receiver` | no | A URL Eden AI calls once the batch has finished and settled. |
 
-The file goes through the same checks as one sent in the form. A file id that does not exist, has expired, or belongs to another account answers `404`. A stored file larger than 100 MB answers `413`, and a file that is not JSONL answers `400`. Another `endpoint` or `completion_window` answers `400`.
+The file goes through the same checks as one sent in the form. A file id that does not exist, has expired, or belongs to another user answers `404`, and so does a file whose stored content can no longer be read: upload it again. A stored file larger than 100 MB answers `413`, and a file that is not JSONL answers `400`. Another `endpoint` or `completion_window` answers `400`.
 
 {/* skip-test: the batch routes are not on the API these tests run against yet; remove this marker once they are */}
 <CodeGroup>
@@ -241,7 +241,7 @@ Poll this route every few minutes until `status` is `completed`, `failed`, `expi
 |---|---|
 | `limit` | Batches per page, from 1 to 100. Defaults to 20. |
 | `after` | The `last_id` of the previous page. An unknown id answers `404`. |
-| `model` | Only the batches run on this model, written as in the batch's lines (`openai/<model>`). A value without a `/` answers `422`. |
+| `model` | Only the batches run on this model (`openai/<model>`), including those whose lines named one of its aliases. A value without a `/` answers `422`. |
 
 The response holds `data` (the batch objects), `first_id`, `last_id` and `has_more`.
 

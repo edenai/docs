@@ -198,7 +198,7 @@ The `capabilities` object describes what each model supports:
 | `output_modalities` | Output types the model produces |
 | `supports_reasoning` | Model supports extended thinking / reasoning mode |
 | `supports_web_search` | Model can perform live web searches via [`web_search_options`](/v3/llms/web-search) |
-| `supports_batch` | `true` when [`/v3/batches`](/v3/llms/batches) accepts a batch file whose lines name this entry's `id`; `false` when a batch on it is refused (not an OpenAI chat model, an entry that runs in a region variant, or no published batch rate). Computed per entry, so the same model can be `true` on one entry and `false` on another |
+| `supports_batch` | `true` when [`/v3/batches`](/v3/llms/batches) accepts a batch file whose lines name this entry's `id`; `false` when a batch on it is refused (not an OpenAI chat model, an entry that runs in a region variant, or no published batch rate). Computed per entry, so the same model can be `true` on one entry and `false` on another. It does not depend on the caller: a batch on a `true` entry can still be refused for your organization's own OpenAI key (`400`), zero data retention (`403`), a provider gate (`451`) or while batches are paused (`503`) |
 | `supports_function_calling` | Model supports function/tool calling |
 | `supports_tool_choice` | Model supports the `tool_choice` parameter |
 | `supports_prompt_caching` | Model supports [prompt caching](/v3/llms/prompt-caching) |

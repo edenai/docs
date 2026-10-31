@@ -1,27 +1,43 @@
 ---
-title: "OpenAI Batch API for Chat Completions"
+title: "LLM Batch API: OpenAI, Claude, Gemini, Mistral"
 sidebarTitle: "Batches"
 icon: "layer-group"
-description: "Run many OpenAI chat requests through the Batch API at batch rates. Upload a JSONL file, track the batch and download the results within 30 days."
+description: "Run chat, Responses or embeddings requests as one batch on OpenAI, Anthropic, Mistral, Amazon Bedrock or Vertex AI at batch rates, then download the results."
 ---
 
 import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
 
 <TechArticleSchema
-  title={"OpenAI Batch API for Chat Completions"}
-  description={"Run many OpenAI chat requests through the Batch API at batch rates. Upload a JSONL file, track the batch and download the results within 30 days."}
+  title={"LLM Batch API: OpenAI, Claude, Gemini, Mistral"}
+  description={"Run chat, Responses or embeddings requests as one batch on OpenAI, Anthropic, Mistral, Amazon Bedrock or Vertex AI at batch rates, then download the results."}
   path="v3/llms/batches"
   articleSection="LLMs"
   about={"LLM API"}
   proficiencyLevel="Intermediate"
-  keywords={["Eden AI", "LLM API", "batch API", "OpenAI batch", "chat completions"]}
+  keywords={["Eden AI", "LLM API", "batch API", "OpenAI batch", "Anthropic batch", "Mistral batch", "Bedrock batch inference", "Vertex AI batch prediction", "embeddings batch"]}
   datePublished="2026-10-29T00:00:00Z"
   dateModified="2026-11-01T00:00:00Z"
 />
 
-Run many chat requests as one asynchronous batch. You upload a file with one request per line, Eden AI runs the whole batch on OpenAI within 24 hours at OpenAI's batch rates, and you read the results when the batch has finished.
+Run many requests as one asynchronous batch. You upload a file with one request per line, Eden AI runs the whole batch on the provider at the provider's batch rates, and you read the results when the batch has finished.
 
-Batches suit work that does not need an immediate answer, such as classifying a dataset, summarizing documents or running an evaluation.
+## Providers and endpoints
+
+| Provider | Model id on every line | `url` on every line |
+|---|---|---|
+| OpenAI | `openai/<model>` | `/v1/chat/completions`, `/v1/responses` or `/v1/embeddings` |
+| Anthropic | `anthropic/<model>` | `/v1/chat/completions` |
+| Mistral | `mistral/<model>` | `/v1/chat/completions` |
+| Amazon Bedrock | `amazon/<model>@eu` | `/v1/chat/completions` |
+| Vertex AI | `vertex/<model>@eu` | `/v1/chat/completions` |
+
+A batch has one model and one `url`: every line names the same model and calls the same endpoint. Responses and embeddings batches run on OpenAI models only. In [`GET /v3/models`](/v3/llms/listing-models), `capabilities.supports_batch` is `true` on each entry a batch accepts. Image, audio and other endpoints are not available in a batch.
+
+Every provider's batch is created, listed, cancelled and read through the same routes. Chat lines use the chat completions format on every provider, and so do their results: an Anthropic, Amazon Bedrock or Vertex AI result is translated to a chat completion.
+
+### Regions
+
+Amazon Bedrock and Vertex AI batches run in the EU, so the model is named with its region tag, `amazon/<model>@eu` or `vertex/<model>@eu`. Without the tag the batch is refused with `400`. A batch on OpenAI, Anthropic or Mistral runs in the provider's default region, and a model named with a region tag is refused with `400`.
 
 ## Overview
 
@@ -37,13 +53,13 @@ All routes are under `https://api.edenai.run/v3/batches` and use the same `Autho
 
 A batch that belongs to another account, or that does not exist, answers `404`.
 
-`/v3/batches` is the only batch API. The V2 API has none: its `/v2/{feature}/{subfeature}/batch/{name}/` route runs each line as its own separate feature call and does not use OpenAI's batch endpoint.
+`/v3/batches` is the only batch API. The V2 API has none: its `/v2/{feature}/{subfeature}/batch/{name}/` route runs each line as its own separate feature call and does not use a provider's batch endpoint.
 
-A sandbox token sends nothing to OpenAI: the batch is answered at once with sample results and is not billed.
+A sandbox token sends nothing to the provider: the batch is answered at once with sample results and is not billed.
 
 ## Input file
 
-The input is a JSONL file: one JSON object per line, in UTF-8. Empty lines are ignored. Each line describes one chat request:
+The input is a JSONL file: one JSON object per line, in UTF-8. Empty lines are ignored. Each line describes one request:
 
 ```json
 {"custom_id": "request-1", "method": "POST", "url": "/v1/chat/completions", "body": {"model": "openai/gpt-5-mini", "messages": [{"role": "user", "content": "Say hello in French."}], "max_tokens": 50}}
@@ -53,26 +69,73 @@ The input is a JSONL file: one JSON object per line, in UTF-8. Empty lines are i
 |---|---|
 | `custom_id` | Required. A non-empty string, unique within the file. Results carry it back so you can match each answer to its request. |
 | `method` | Required. Must be `"POST"`. |
-| `url` | Required. Must be `"/v1/chat/completions"`. |
-| `body` | Required. A chat completion body. The fields are the ones of [Chat Completions](/v3/llms/chat-completions), with the restrictions below. |
+| `url` | Required. `"/v1/chat/completions"`, `"/v1/embeddings"` or `"/v1/responses"`, the same on every line. |
+| `body` | Required. A chat completion body for `/v1/chat/completions`, with the fields of [Chat Completions](/v3/llms/chat-completions) and the restrictions below. A Responses body for `/v1/responses`, see [Responses batches](#responses-batches). An embeddings body for `/v1/embeddings`, see [Embeddings batches](#embeddings-batches). |
 
 No other key is allowed on a line.
 
-### Rules for every line
+### Rules for every chat line
 
-- `body.model` is an OpenAI model written as `openai/<model>`, with no `@` or `:` suffix. Every line of a batch names the same model.
-- The model must have published batch rates. Models without them, models that price long-context bands or cache writes, and models that price cached input without a cached batch rate are refused.
-- In [`GET /v3/models`](/v3/llms/listing-models), `capabilities.supports_batch` is `true` on each entry a batch accepts, by the same rules.
-- Messages carry text only. A message holds `role`, `content` and optionally `cache_control`. A `content` list may contain `text` parts only.
-- `max_tokens` or `max_completion_tokens` on each line sets how much output Eden AI reserves for that line. Without either, the reservation uses the model's maximum output. See [Billing](#billing).
-- `service_tier`, when present, is `auto` or `default`.
+- `body.model` is `openai/<model>`, `anthropic/<model>` or `mistral/<model>` with no `@` or `:` suffix, or `amazon/<model>@eu` or `vertex/<model>@eu`. Every line of a batch names the same model.
+- The model must have published batch rates. Models without them, and models that price long-context bands, are refused. Models that price cached input without a cached batch rate are refused, except on Amazon Bedrock. Models that price cache writes are refused on OpenAI, Mistral and Vertex AI. An Anthropic or Amazon Bedrock line carries no cache marker, so cache-write rates do not refuse the model there.
+- Messages carry text only. A content list may contain `text` parts only.
+- `max_tokens` on each line (or `max_completion_tokens` where the provider accepts it, see the table below) sets how much output Eden AI reserves for that line. Without either, the reservation uses the model's maximum output. See [Billing](#billing).
+- On Anthropic, Mistral, Amazon Bedrock and Vertex AI, a line that states no output limit is sent with the reserved bound as its `max_tokens`. `max_tokens` applies to each completion, so a Mistral line with `n` above 1 is sent the reserved bound divided by `n`.
+- An output limit is checked as the provider's own API documents it, and a value the provider refuses fails the file with `400` naming the line. Anthropic takes a number of 0 or more, Mistral and Vertex AI an integer, and Amazon Bedrock an integer of 1 or more. An OpenAI line is sent to OpenAI as written.
+- A line that states both `max_tokens` and `max_completion_tokens` is reserved at the first one that is a positive integer, `max_tokens` first, and on Anthropic, Amazon Bedrock and Vertex AI that value is the one sent. A limit that is not a positive integer, such as `512.0`, reserves the model's maximum output, and on Anthropic and Mistral it is sent capped at that reservation.
 - `routing` may only contain `zero_data_retention`. See [Zero data retention](#zero-data-retention).
+- Every line is moderated. See [Content moderation](#content-moderation).
 
-These body fields are refused: `stream` set to true, `tools`, `functions`, `function_call`, `prediction`, `fallbacks`, `router_candidates`, `pre_hooks`, `post_hooks`, `session_id`, `tags`, `extra_headers` and `extra_body`. Fields that set the provider connection or how a call is priced, such as `api_key` and `api_base`, are refused as in any other request.
+These body fields are refused on every provider: `stream` set to true, `tools`, `functions`, `function_call`, `prediction`, `fallbacks`, `router_candidates`, `pre_hooks`, `post_hooks`, `session_id`, `tags`, `extra_headers` and `extra_body`. Fields that set the provider connection or how a call is priced, such as `api_key` and `api_base`, are refused as in any other request.
+
+### What each provider accepts on a chat line
+
+| Provider | Body fields accepted | Refused |
+|---|---|---|
+| OpenAI | The fields of [Chat Completions](/v3/llms/chat-completions) not listed above. A message holds `role`, `content` and optionally `cache_control`. `service_tier` is `auto` or `default`. | A `service_tier` of `flex`, `scale` or `priority`, and any other message key such as `tool_calls`. |
+| Anthropic | `model`, `messages`, `max_tokens`, `max_completion_tokens`, `temperature`, `top_p`, `stop`, `user`, `reasoning_effort`, `thinking` and `routing`. A message holds `role` and `content`, and a text part holds `type` and `text`. `thinking.budget_tokens` is below the line's output limit. | Every other body field, among them `n`, `logprobs`, `response_format` and `service_tier`, and `cache_control` on a message or a part. |
+| Mistral | `model`, `messages`, `max_tokens`, `temperature`, `top_p`, `stop`, `n`, `presence_penalty`, `frequency_penalty`, `response_format` and `routing`. A message holds `role` and `content`, with the role `system`, `user` or `assistant`, and a text part holds `type` and `text`. | Every other body field, among them `max_completion_tokens`, `seed`, `logit_bias`, `user`, `top_logprobs`, `stream_options` and `service_tier`, a message `name`, and `cache_control`. |
+| Amazon Bedrock | `model`, `messages`, `max_tokens`, `max_completion_tokens`, `temperature`, `top_p`, `stop` and `routing`. A message holds `role` and `content`, with the role `system`, `user` or `assistant`, and a text part holds `type` and `text`. System messages come first, the conversation starts and ends with a user message, and every message carries text. `temperature` and `top_p` are between 0 and 1, and `stop` holds at most 4 sequences. | Every other body field, among them `n`, `response_format`, `user` and `service_tier`, a message `name`, and `cache_control`. |
+| Vertex AI | `model`, `messages`, `max_tokens`, `max_completion_tokens`, `temperature`, `top_p`, `stop` and `routing`. A message holds `role` and `content`, with the role `system`, `user` or `assistant`, and a text part holds `type` and `text`. System messages come first, the conversation ends with a user message, and every message carries text. `temperature` is between 0 and 2 and `top_p` between 0 and 1. | Every other body field, among them `n`, `response_format`, `user` and `service_tier`, a message `name`, and `cache_control`. |
+
+A refused field fails the whole file with `400` and the message `Line N: ...` naming the field.
+
+An Anthropic line has the same shape as any chat line, with an `anthropic/` model and the fields from the table above:
+
+```json
+{"custom_id": "request-1", "method": "POST", "url": "/v1/chat/completions", "body": {"model": "anthropic/claude-haiku-4-5", "messages": [{"role": "user", "content": "Say hello in French."}], "max_tokens": 50}}
+```
+
+### Responses batches
+
+A Responses line is `{"custom_id": "...", "method": "POST", "url": "/v1/responses", "body": {...}}` on an OpenAI model, with a [Responses](/v3/llms/responses) body limited to `model`, `input`, `instructions`, `max_output_tokens`, `metadata`, `reasoning`, `truncation`, `store`, `user`, `prompt_cache_key`, `text`, `temperature`, `top_p`, `service_tier`, `stream`, `background` and `routing`. Any other field is refused with `400`.
+
+- `input` is a string, or a list of messages. A message holds `role`, `content` and `type` (`message`), and its content parts are `input_text` or `output_text` parts holding `type` and `text`. Any other input item or part, such as an image or a file, is refused.
+- `tools`, `tool_choice`, `parallel_tool_calls`, `previous_response_id`, `prompt`, `include`, `prompt_cache_retention` and `prompt_cache_options` are refused, and so are the fields refused on every chat line.
+- `stream`, `background` and `store` are refused when true. Each line is sent with `store` set to false, so a batch response cannot be retrieved later through `GET /v3/responses/{response_id}`.
+- `service_tier` is `auto` or `default`.
+- `max_output_tokens` sets how much output Eden AI reserves for the line, and without it the reservation uses the model's maximum output.
+- `instructions`, the message text and `text.format` are moderated as a chat line's text is.
+
+```json
+{"custom_id": "request-1", "method": "POST", "url": "/v1/responses", "body": {"model": "openai/gpt-5-mini", "input": "Say hello in French.", "max_output_tokens": 50}}
+```
+
+### Embeddings batches
+
+An embeddings line is `{"custom_id": "...", "method": "POST", "url": "/v1/embeddings", "body": {...}}` on an OpenAI model. The body takes `model`, `input`, `encoding_format`, `dimensions`, `user` and `routing`. Any other field is refused with `400`.
+
+`input` is a string, a list of strings, one list of token ids, or a list of such lists, written as JSON strings and integers. Any other `input`, such as a number or a token id written as a string, is refused with `400` naming the line. A file holds at most 50,000 inputs across all its lines. Embeddings lines are not moderated, as on the synchronous [embeddings route](/v3/llms/embeddings). Their cost is input tokens only.
+
+```json
+{"custom_id": "doc-1", "method": "POST", "url": "/v1/embeddings", "body": {"model": "openai/text-embedding-3-small", "input": "Eden AI batches"}}
+```
 
 ### File limits
 
 A batch holds at most 5,000 lines, and the file is at most 100 MB. A file with more than 5,000 requests is refused with `400`, and so is a file with no request.
+
+An Amazon Bedrock batch needs at least 100 lines, the minimum AWS sets for every job. A smaller file is refused with `400`. No other provider has a minimum.
 
 ## Create a batch
 
@@ -81,10 +144,9 @@ Send the file as `multipart/form-data`.
 | Form field | Required | Description |
 |---|---|---|
 | `file` | yes | The JSONL input file. |
-| `metadata` | no | A JSON object of string pairs, sent as text. Up to 14 pairs, keys up to 64 characters, values up to 512 characters. The keys `eden_batch_id` and `eden_request_id` are reserved. |
+| `metadata` | no | A JSON object of string pairs, sent as text. Up to 14 pairs, keys up to 64 characters, values up to 512 characters. On a Mistral batch, keys are at most 32 characters and values at least one. The keys `eden_batch_id` and `eden_request_id` are reserved. |
 | `webhook_receiver` | no | A URL Eden AI calls once the batch has finished and settled. See [Webhooks](#webhooks). |
 
-{/* skip-test: the batch routes are not on the API these tests run against yet; remove this marker once they are */}
 <CodeGroup>
 ```python Python
 import json
@@ -153,14 +215,15 @@ The response is the batch object:
 | Field | Description |
 |---|---|
 | `id` | The batch id. Use it in every other route. |
-| `model` | The model every request runs on. |
+| `endpoint` | The `url` every line calls. |
+| `model` | The model every request runs on, as the lines name it. |
 | `status` | Where the batch is in its lifecycle. See [Statuses](#statuses). |
 | `request_counts` | `total`, `completed` and `failed` requests, refreshed every few minutes. |
 | `metadata` | The pairs you sent at create. |
 | `created_at`, `finished_at` | Unix timestamps in seconds. `finished_at` is `null` until the batch has finished and settled. |
 | `cost` | What the batch billed, in US dollars. `null` until the batch has finished. |
 | `error` | Why the batch failed, when it did. |
-| `results_available` | `true` when the stored batch shows [the results](#results) as ready: the batch has finished, was created at OpenAI, and OpenAI ended it. `false` while it runs, and for a batch that ended before OpenAI accepted it. Read from the stored batch with no call to OpenAI: a batch settled at [the 25-hour limit](#the-24-hour-window) before OpenAI ended it reads `false`, and the results route checks OpenAI and can still serve it. The batch's age is not read, so a batch past the 30 days its results are kept still reads `true`. A sandbox batch reads `true` once it has finished. |
+| `results_available` | `true` when the stored batch shows [the results](#results) as ready: the batch has finished, was created at the provider, and the provider ended it. `false` while it runs, and for a batch that ended before the provider accepted it. Read from the stored batch with no call to the provider: a batch settled at [the 25-hour limit](#the-24-hour-window) before the provider ended it reads `false`, and the results route checks the provider and can still serve it. The batch's age is not read, so a batch past the 30 days its results are kept still reads `true`. A sandbox batch reads `true` once it has finished. |
 
 ### Create from an uploaded file
 
@@ -169,12 +232,12 @@ The create route also takes the JSON body the OpenAI SDK's `batches.create` send
 | Field | Required | Description |
 |---|---|---|
 | `input_file_id` | yes | The `file_id` returned by `POST /v3/upload`. |
-| `endpoint` | no | `/v1/chat/completions`, the only value accepted. |
+| `endpoint` | no | `/v1/chat/completions` (the default), `/v1/embeddings` or `/v1/responses`, the `url` the file's lines call. |
 | `completion_window` | no | `24h`, the only value accepted. |
 | `metadata` | no | A JSON object of string pairs, with the same limits as the form field. |
 | `webhook_receiver` | no | A URL Eden AI calls once the batch has finished and settled. |
 
-The file goes through the same checks as one sent in the form. A file id that does not exist, has expired, or belongs to another user answers `404`, and so does a file whose stored content can no longer be read: upload it again. A stored file larger than 100 MB answers `413`, and a file that is not JSONL answers `400`. Another `endpoint` or `completion_window` answers `400`.
+The file goes through the same checks as one sent in the form. A file id that does not exist, has expired, or belongs to another user answers `404`, and so does a file whose stored content can no longer be read: upload it again. A stored file larger than 100 MB answers `413`, and a file that is not JSONL answers `400`. Another `completion_window`, an `endpoint` outside the three above, or an `endpoint` other than the one the lines call answers `400`.
 
 {/* skip-test: the batch routes are not on the API these tests run against yet; remove this marker once they are */}
 <CodeGroup>
@@ -241,11 +304,10 @@ Poll this route every few minutes until `status` is `completed`, `failed`, `expi
 |---|---|
 | `limit` | Batches per page, from 1 to 100. Defaults to 20. |
 | `after` | The `last_id` of the previous page. An unknown id answers `404`. |
-| `model` | Only the batches run on this model (`openai/<model>`), including those whose lines named one of its aliases. A value without a `/` answers `422`. |
+| `model` | Only the batches run on this model (`<provider>/<model>`, such as `anthropic/<model>`), including those whose lines named one of its aliases. A value without a `/` answers `422`. |
 
 The response holds `data` (the batch objects), `first_id`, `last_id` and `has_more`.
 
-{/* skip-test: the batch routes are not on the API these tests run against yet; remove this marker once they are */}
 <CodeGroup>
 ```python Python
 import requests
@@ -274,7 +336,7 @@ curl "https://api.edenai.run/v3/batches?limit=10" \
 
 ## Cancel a batch
 
-`POST /v3/batches/{batch_id}/cancel` asks OpenAI to stop the batch. The response is the batch object, and its status reads `cancelling` until OpenAI has stopped it, then `cancelled`.
+`POST /v3/batches/{batch_id}/cancel` asks the provider to stop the batch. The response is the batch object, and its status reads `cancelling` until the provider has stopped it, then `cancelled`.
 
 Requests that completed before the cancel are billed, and their results stay available. A batch that has already finished answers `400`.
 
@@ -299,9 +361,9 @@ curl -X POST https://api.edenai.run/v3/batches/BATCH_ID/cancel \
 
 ## Results
 
-`GET /v3/batches/{batch_id}/results` streams the results as JSONL (`application/jsonl`), one line per request. Results stay available for 30 days after the batch was created.
+`GET /v3/batches/{batch_id}/results` streams the results as JSONL (`application/jsonl`), one line per request. Results stay available for 30 days after the batch was created on OpenAI and Amazon Bedrock, and 29 days on Anthropic.
 
-A request that succeeded carries `response`, with the `status_code` and the chat completion `body`. The `model` in the body is the Eden AI id you sent, `openai/<model>`. A request that failed carries `error` instead.
+A request that succeeded carries `response`, with the `status_code` and the `body`: a chat completion for a chat batch on every provider, a response object for a Responses batch, and the embeddings for an embeddings batch. The `model` in the body is the Eden AI id you sent, such as `openai/<model>`. A request that failed carries `error` instead.
 
 ```json
 {"custom_id":"request-1","response":{"status_code":200,"body":{"id":"chatcmpl-abc123","object":"chat.completion","model":"openai/gpt-5-mini","choices":[{"index":0,"message":{"role":"assistant","content":"Bonjour !"},"finish_reason":"stop"}],"usage":{"prompt_tokens":14,"completion_tokens":3,"total_tokens":17}}},"error":null}
@@ -339,7 +401,7 @@ curl https://api.edenai.run/v3/batches/BATCH_ID/results \
 ```
 </CodeGroup>
 
-The results route answers `400` while the batch is still running, and `409` when the batch is finished on Eden AI's side but OpenAI has not yet ended it. Retry after a short wait.
+The results route answers `400` while the batch is still running, and `409` when the batch is finished on Eden AI's side but the provider has not yet ended it. Retry after a short wait.
 
 ## Statuses
 
@@ -351,35 +413,35 @@ The results route answers `400` while the batch is still running, and `409` when
 | `completed` | The batch finished. Individual requests can still have failed, so read each line. |
 | `failed` | The batch failed as a whole. Any request that completed before the failure is billed. |
 | `expired` | The batch did not finish within its 24-hour window. Requests that completed are billed and their results are available. |
-| `cancelling` | A cancel was requested and OpenAI is stopping the batch. |
+| `cancelling` | A cancel was requested and the provider is stopping the batch. |
 | `cancelled` | The batch was cancelled. Requests that completed are billed. |
+
+An Amazon Bedrock job that ends with some requests left unprocessed reads `expired`. A Vertex AI job that partly succeeded reads `completed`, and a paused one reads `in_progress`.
 
 `cost` and `finished_at` are filled in once the batch has finished and Eden AI has settled it. That can be a few minutes after the status reaches a final value.
 
 ## The 24-hour window
 
-OpenAI runs a batch within 24 hours. If the batch has not finished 25 hours after it was created, Eden AI cancels it, bills the requests that completed and makes their results available. Cancel a batch yourself at any time before that.
+If the batch has not finished 25 hours after it was created, Eden AI cancels it, bills the requests that completed and makes their results available. Cancel a batch yourself at any time before that.
 
 ## Billing
 
 Batches are billed at the model's batch rates for input tokens, output tokens and, when the model has one, cached input tokens. These rates are lower than the standard rates of the same model.
 
-The rates are in the `pricing` object of each OpenAI model in [`GET /v3/models`](/v3/llms/listing-models), as `input_cost_per_token_batches`, `output_cost_per_token_batches` and `cache_read_input_token_cost_batches`, in US dollars per token. A model whose entry has no input and output batch rate cannot be batched.
+The rates are in the `pricing` object of each model in [`GET /v3/models`](/v3/llms/listing-models) for chat, and in the embeddings listing for embeddings, as `input_cost_per_token_batches`, `output_cost_per_token_batches` and `cache_read_input_token_cost_batches`, in US dollars per token. A chat model whose entry has no input and output batch rate cannot be batched. An embeddings model needs the input batch rate only.
 
 ### In your usage
 
 The batch shows in [usage monitoring](/v3/general/monitoring) as cost. The launch records the reservation and the settlement adds the difference between the final cost and the reservation, so the total is what the batch was charged. The settlement is not counted as a request or as tokens.
 
-- **At create.** Eden AI reserves the largest amount the batch could cost and deducts it from your balance. For each line, the reservation covers the prompt tokens plus the line's `max_tokens` (or `max_completion_tokens`, or the model's maximum output when neither is set), multiplied by `n`. If your balance or a member budget cannot cover it, the request answers `402` and nothing is sent.
-- **At the end.** The batch is settled once, from the results. Each request that succeeded bills the tokens it used. A request that failed bills nothing. A request that succeeded but reports no usage, or that OpenAI counts as completed but that has no line in the results, bills an estimate: its prompt tokens, plus the output its response shows and 8,192 tokens per completion, never more output than was reserved for it. The difference between the reservation and the final cost is returned to your balance.
+- **At create.** Eden AI reserves the largest amount the batch could cost and deducts it from your balance. For each line, the reservation covers the prompt held at an upper bound plus the line's output bound, all at the batch rates. The prompt's upper bound counts each text string at one token per UTF-8 byte. The output bound is the line's `max_tokens` (or `max_completion_tokens`, or `max_output_tokens` on a Responses line, or the model's maximum output when none is set), multiplied by `n`. An embeddings line reserves its input at the same upper bound, one token per UTF-8 byte of each string and one per token id, and no output. If your balance or a member budget cannot cover it, the request answers `402` and nothing is sent.
+- **At the end.** The batch is settled once, from the results. Each request that succeeded bills the tokens the provider reports it used. A request that failed, was cancelled or expired bills nothing. A request that succeeded but reports no usage, or that the provider counts as completed but that has no line in the results, bills an estimate: its prompt tokens, plus the output its response shows and 8,192 tokens per completion, never more output than was reserved for it. An embeddings line without usage bills the input tokens counted by the model's tokenizer, never more than the reservation. The difference between the reservation and the final cost is returned to your balance.
 - **When nothing completed.** The batch bills nothing and the whole reservation is returned.
-- **When results cannot be read.** Each request that may have run bills the same estimate, with no output shown. For a batch that has ended, that is as many requests as OpenAI counts as completed, the largest estimates first. Otherwise it is every request. A batch with a request that may have run is never settled at zero.
-
-Set `max_tokens` on every line to keep the reservation close to the real cost.
+- **When results cannot be read.** Each request that may have run bills the same estimate, with no output shown. For a batch that has ended, that is as many requests as the provider counts as completed, the largest estimates first. Otherwise it is every request. A batch with a request that may have run is never settled at zero.
 
 ## Content moderation
 
-Eden AI checks the text of every line before the batch is sent. Sampling does not apply, and the `bypass_moderation` setting does not skip the check.
+Eden AI checks the text of every chat and Responses line before the batch is sent, `response_format` and `text.format` included. Embeddings batches are not checked. Sampling does not apply, and the `bypass_moderation` setting does not skip the check.
 
 | Outcome | Result |
 |---|---|
@@ -389,11 +451,11 @@ Eden AI checks the text of every line before the batch is sent. Sampling does no
 
 ## Zero data retention
 
-OpenAI keeps batch input and output files until they are deleted, so batches cannot honor zero data retention. A batch is refused when your organization requires zero data retention (`403`) or when a line sets `routing.zero_data_retention` (`400`). A region restriction (`allowed_regions`) that excludes OpenAI's default region is refused with `451`.
+A batch is judged as a call that keeps its data at the provider, so batches cannot honor zero data retention on any provider. A batch is refused when your organization requires zero data retention (`403`) or when a line sets `routing.zero_data_retention` (`400`). A region restriction (`allowed_regions`) that excludes the region the batch runs in is refused with `451`.
 
-## Your own OpenAI key
+## Your own provider key
 
-Batches run on Eden AI's OpenAI account only. If your organization has added its own OpenAI key, create requests are refused with `400`.
+Batches run on Eden AI's account at the provider only. If your organization has added its own key for the batch's provider, create requests are refused with `400`.
 
 ## Webhooks
 
@@ -431,14 +493,14 @@ The payload has the shape of every Eden AI job notification. `job_id` is the bat
 |---|---|
 | `job_id` | The batch `id`. Use it with `GET /v3/batches/{batch_id}` and the results route. |
 | `status` | `success` or `fail`. |
-| `model` | The OpenAI model name, without the `openai/` prefix. `output.model` holds the id you sent. |
+| `model` | The provider's model name. `output.model` holds the Eden AI id you sent. |
 | `created_at`, `finished_at` | ISO 8601 timestamps. The batch object gives the same times in Unix seconds. |
-| `output` | On `success`: OpenAI's last reported status of the batch (`batch_status`), its request counts and your metadata. Absent on `fail`. |
+| `output` | On `success`: the provider's last reported status of the batch (`batch_status`), its request counts and your metadata. Absent on `fail`. |
 | `error` | On `fail`: `{"message": "..."}`, the same text as the batch's `error`. Absent on `success`. |
 
 To fetch the results when the notification arrives, read `job_id` and call the results route:
 
-{/* skip-test: the payload comes from a webhook delivery, and the batch routes are not on the API these tests run against yet */}
+{/* skip-test: the payload comes from a webhook delivery */}
 ```python Python
 import requests
 
@@ -465,34 +527,35 @@ The URL must be public. Addresses that resolve to private networks are refused.
 
 ## Limits and what batches do not do
 
-- A batch holds at most 5,000 lines and 100 MB.
-- A batch runs one model, and that model is an OpenAI model. Other providers are not supported.
-- Only chat completions are supported. Other endpoints such as embeddings and responses are not.
+- A batch holds at most 5,000 lines and 100 MB, and an Amazon Bedrock batch at least 100 lines.
+- A batch runs one model, on OpenAI, Anthropic, Mistral, Amazon Bedrock or Vertex AI. Other providers are not supported.
+- Chat completions are supported on all five, and Responses and embeddings on OpenAI. Other endpoints are not.
 - Lines cannot stream.
 - Lines cannot carry tools, function definitions, function calls or predicted outputs.
-- Lines cannot carry images or audio. Messages are text only.
-- Batches run on Eden AI's OpenAI account. Your own provider keys are not used.
+- Lines cannot carry images, audio or files. Messages are text only.
+- Batches run on Eden AI's provider accounts. Your own provider keys are not used.
 - Fallbacks, hooks, sessions and tags are not available on a line.
 
 ## Errors
 
 | Status | Meaning |
 |---|---|
-| `400` | The file or a line is invalid. The message names the line, for example `Line 3: ...`. Also returned for a model that is not in the catalog or cannot be batched, a flagged line, a zero data retention request, an organization with its own OpenAI key, and for cancelling or reading results of a batch in the wrong state. |
+| `400` | The file or a line is invalid. The message names the line, for example `Line 3: ...`. Also returned for a model that is not in the catalog or cannot be batched, an Amazon Bedrock or Vertex AI model named without `@eu`, an Amazon Bedrock file under 100 lines, a flagged line, a zero data retention request, an organization with its own key for the provider, and for cancelling or reading results of a batch in the wrong state. |
 | `401` | Missing or invalid `Authorization: Bearer` token. |
 | `402` | The balance or a member budget cannot cover the reservation, or the reservation is $100,000 or more, which is refused whatever the balance. Split the file into smaller batches. |
 | `403` | Your organization requires zero data retention, or a [guardrail](/v3/organization/guardrails) model rule does not allow the model: `Model(s) 'openai/...' not allowed by your guardrail policy.` |
 | `404` | The batch does not exist or is not yours. |
-| `409` | The batch was never created at OpenAI, so it cannot be cancelled or read. Also returned by results while OpenAI has not ended the batch. |
+| `409` | The batch was never created at the provider, so it cannot be cancelled or read. Also returned by results while the provider has not ended the batch. |
 | `413` | The file is larger than 100 MB. |
 | `422` | `metadata` is not a JSON object of strings, holds too many pairs, or uses a reserved key. |
-| `451` | A region restriction excludes OpenAI's default region. |
+| `451` | A region restriction excludes the region the batch runs in. |
 | `503` | Batches are temporarily unavailable, moderation could not run, or billing is unavailable. Nothing was charged. Retry later. |
 
-When OpenAI fails a create, cancel or results call, the error status OpenAI returned is passed on with its message.
+When the provider fails a create, cancel or results call, the error status it returned is passed on with its message.
 
 ## Related
 
-- [Chat Completions](/v3/llms/chat-completions) for the request body of each line.
+- [Chat Completions](/v3/llms/chat-completions) for the request body of each chat line.
+- [Responses](/v3/llms/responses) for the request body of each Responses line.
 - [Webhooks](/v3/expert-models/webhooks) for signed callbacks.
 - [Plans and pricing](/v3/overview/plans-prices) for credits and budgets.

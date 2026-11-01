@@ -340,7 +340,7 @@ curl -X POST https://api.edenai.run/v3/batches/BATCH_ID/cancel \
 
 ## Results
 
-`GET /v3/batches/{batch_id}/results` streams the results as JSONL (`application/jsonl`), one line per request. Results stay available for at least 29 days after the batch was created, on every provider, and Mistral does not expire them; once the provider no longer has them, the route answers `410`.
+`GET /v3/batches/{batch_id}/results` streams the results as JSONL (`application/jsonl`), one line per request. On OpenAI, results stay available for 30 days after the batch finished. On Anthropic, they stay available for 29 days after the batch was created. Mistral states that batch results do not expire. Amazon Bedrock and Vertex AI results are read from Eden AI's own storage. Once the provider no longer has them, the route answers `410`.
 
 A request that succeeded carries `response`, with the `status_code` and the chat completion `body`, on every provider. The `model` in the body is the Eden AI id you sent, such as `openai/<model>`. A request that failed carries `error` instead.
 

@@ -223,7 +223,7 @@ The response is the batch object:
 | `created_at`, `finished_at` | Unix timestamps in seconds. `finished_at` is `null` until the batch has finished and settled. |
 | `cost` | What the batch billed, in US dollars. `null` until the batch has finished. |
 | `error` | Why the batch failed, when it did. |
-| `results_available` | `true` when the stored batch shows [the results](#results) as ready: the batch has finished, was created at the provider, and the provider ended it. `false` while it runs, and for a batch that ended before the provider accepted it. Read from the stored batch with no call to the provider: a batch settled at [the 25-hour limit](#the-24-hour-window) before the provider ended it reads `false`, and the results route checks the provider and can still serve it. The batch's age is not read, so a batch past the 30 days its results are kept still reads `true`. A sandbox batch reads `true` once it has finished. |
+| `results_available` | `true` when the stored batch shows [the results](#results) as ready: the batch has finished, was created at the provider, and the provider ended it. `false` while it runs, and for a batch that ended before the provider accepted it. Read from the stored batch with no call to the provider: a batch settled at [the 25-hour limit](#the-24-hour-window) before the provider ended it reads `false`, and the results route checks the provider and can still serve it. The batch's age is not read, so a batch whose results are no longer kept still reads `true`. A sandbox batch reads `true` once it has finished. |
 
 ### Create from an uploaded file
 
@@ -361,7 +361,7 @@ curl -X POST https://api.edenai.run/v3/batches/BATCH_ID/cancel \
 
 ## Results
 
-`GET /v3/batches/{batch_id}/results` streams the results as JSONL (`application/jsonl`), one line per request. Results stay available for 30 days after the batch was created on OpenAI and Amazon Bedrock, and 29 days on Anthropic. Mistral does not expire batch results.
+`GET /v3/batches/{batch_id}/results` streams the results as JSONL (`application/jsonl`), one line per request. On OpenAI, results stay available for 30 days after the batch finished. On Anthropic, they stay available for 29 days after the batch was created. Mistral states that batch results do not expire. Amazon Bedrock and Vertex AI results are read from Eden AI's own storage.
 
 A request that succeeded carries `response`, with the `status_code` and the `body`: a chat completion for a chat batch on every provider, a response object for a Responses batch, and the embeddings for an embeddings batch. The `model` in the body is the Eden AI id you sent, such as `openai/<model>`. A request that failed carries `error` instead.
 

@@ -82,8 +82,8 @@ No other key is allowed on a line.
 - Messages carry text only. A `content` list may contain `text` parts only.
 - `max_tokens` or `max_completion_tokens` on each line sets how much output Eden AI reserves for that line. Without either, the reservation uses the model's maximum output. See [Billing](#billing). A `max_tokens` is sent to OpenAI as `max_completion_tokens`, which every OpenAI chat model takes; GPT-5 and o-series models refuse `max_tokens` in a batch.
 - On Anthropic, Mistral, Amazon Bedrock and Vertex AI, a line that states no output limit is sent with the reserved bound as its `max_tokens`. `max_tokens` applies to each completion, so a Mistral line with `n` above 1 is sent the reserved bound divided by `n`.
-- An output limit is checked as the provider's own API documents it, and a value the provider refuses fails the file with `400` naming the line. Anthropic takes a number of 0 or more, Mistral and Vertex AI an integer, and Amazon Bedrock an integer of 1 or more.
-- A line that states both `max_tokens` and `max_completion_tokens` is reserved at the first one that is a positive integer, `max_tokens` first, and on Anthropic, Amazon Bedrock and Vertex AI that value is the one sent. A limit that is not a positive integer, such as `512.0`, reserves the model's maximum output, and on Anthropic and Mistral it is sent capped at that reservation.
+- An output limit is checked as the provider's own API documents it, and a value the provider refuses fails the file with `400` naming the line. Anthropic takes a number of 0 or more, Mistral an integer of 0 or more, Vertex AI an integer, and Amazon Bedrock an integer of 1 or more.
+- A line that states both `max_tokens` and `max_completion_tokens` is reserved at the first one that is a positive integer, `max_tokens` first, and on Anthropic, Amazon Bedrock and Vertex AI that value is the one sent. A limit that is not a positive integer, such as `512.0`, reserves the model's maximum output, and on Anthropic and Mistral it is sent capped at that reservation, a whole number written as an integer (`512.0` is sent as `512`).
 - `service_tier`, when present on an OpenAI line, is `auto` or `default`.
 - `routing` may only contain `zero_data_retention`. See [Zero data retention](#zero-data-retention).
 - Every line is moderated. See [Content moderation](#content-moderation).
@@ -340,7 +340,7 @@ curl -X POST https://api.edenai.run/v3/batches/BATCH_ID/cancel \
 
 ## Results
 
-`GET /v3/batches/{batch_id}/results` streams the results as JSONL (`application/jsonl`), one line per request. Results stay available for at least 29 days after the batch was created, on every provider; once the provider no longer has them, the route answers `410`.
+`GET /v3/batches/{batch_id}/results` streams the results as JSONL (`application/jsonl`), one line per request. Results stay available for at least 29 days after the batch was created, on every provider, and Mistral does not expire them; once the provider no longer has them, the route answers `410`.
 
 A request that succeeded carries `response`, with the `status_code` and the chat completion `body`, on every provider. The `model` in the body is the Eden AI id you sent, such as `openai/<model>`. A request that failed carries `error` instead.
 

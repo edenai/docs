@@ -1,13 +1,14 @@
 ---
 icon: "message"
-title: "Responses"
-description: "Eden AI supports the OpenAI Responses API, a stateful alternative to chat completions that stores conversation history server-side, so you don't need to resend the full message history on each turn."
+title: "OpenAI-Compatible Responses API"
+sidebarTitle: "Responses"
+description: "Use the Responses API to create and retrieve responses, run background tasks, and continue conversations without resending history."
 ---
 import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
 
 <TechArticleSchema
-  title={"Responses"}
-  description={"Eden AI supports the OpenAI Responses API, a stateful alternative to chat completions that stores conversation history server-side, so you don't need to resend the full message history on each turn."}
+  title={"OpenAI-Compatible Responses API"}
+  description={"Use the Responses API to create and retrieve responses, run background tasks, and continue conversations without resending history."}
   path="v3/llms/responses"
   articleSection="LLMs"
   about={"LLM API"}
@@ -110,7 +111,7 @@ curl -X POST https://api.edenai.run/v3/responses \
 | `previous_response_id` | string | - | Chain to a prior response for multi-turn conversations |
 | `store` | boolean | `true` | Persist the response server-side |
 | `stream` | boolean | `false` | Enable streaming via SSE |
-| `background` | boolean | `false` | Run the response in the background: the call answers `queued` at once and the output is read later with `GET /v3/responses/{response_id}`. See [Background Responses](#background-responses) |
+| `background` | boolean | `false` | Run the response in the background: the call answers at once with `queued`, or with a finished status when the provider has already completed the run, and the output is read later with `GET /v3/responses/{response_id}`. See [Background Responses](#background-responses) |
 | `temperature` | float | `1.0` | Randomness (0–2) |
 | `max_output_tokens` | integer | - | Maximum tokens to generate |
 | `top_p` | float | `1.0` | Nucleus sampling threshold |
@@ -320,7 +321,7 @@ curl -X DELETE https://api.edenai.run/v3/responses/resp_abc123def456 \
 
 ## Background Responses
 
-A request with `background: true` answers at once with status `queued`. Read the finished output with `GET /v3/responses/{response_id}`, or stop the run with `POST /v3/responses/{response_id}/cancel`. Background responses are refused under a zero data retention policy, since the provider keeps the response until it is read.
+A request with `background: true` answers at once with status `queued`, or with a finished status when the provider has already completed the run. Read the finished output with `GET /v3/responses/{response_id}`, or stop the run with `POST /v3/responses/{response_id}/cancel`. Background responses are refused under a zero data retention policy, since the provider keeps the response until it is read.
 
 | Moment | What is charged |
 |---|---|

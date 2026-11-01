@@ -2,13 +2,13 @@
 icon: "gauge-high"
 title: "LLM Service Tiers: Flex and Priority"
 sidebarTitle: "Service Tiers"
-description: "Send service_tier to run OpenAI and Google Gemini models on the flex or priority tier, see how each tier is held and billed, and which providers take none."
+description: "Use LLM service tiers to run OpenAI, Amazon Bedrock and Google Gemini models on flex or priority, see how each tier is billed, and which providers take none."
 ---
 import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
 
 <TechArticleSchema
   title={"LLM Service Tiers: Flex and Priority"}
-  description={"Send service_tier to run OpenAI and Google Gemini models on the flex or priority tier, see how each tier is held and billed, and which providers take none."}
+  description={"Use LLM service tiers to run OpenAI, Amazon Bedrock and Google Gemini models on flex or priority, see how each tier is billed, and which providers take none."}
   path="v3/llms/service-tiers"
   articleSection="LLMs"
   about={"LLM API"}
@@ -57,7 +57,7 @@ A model served through Vertex AI is sent no tier on any route, and runs and bill
 
 ### Amazon Bedrock
 
-A Bedrock model (`amazon/<model>`) reports the tier it ran only on a chat reply that is not streamed. A streamed chat call, and every call on Responses, is billed at the tier it was sent and held at.
+A Bedrock model (`amazon/<model>`) reports the tier it ran only on a chat reply that is not streamed. A call whose reply names no tier is billed at the tier its credit hold was priced at: a streamed chat call, every call on Responses, and a chat reply that is not streamed but omits the tier. A `flex` call is held at the standard rate, so it bills at the standard rate when Bedrock does not report its tier.
 
 ## Messages route
 

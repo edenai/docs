@@ -19,11 +19,11 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   dateModified="2026-11-02T00:00:00Z"
 />
 
-[Codex CLI](https://github.com/openai/codex) sends every request to the Responses API, and Eden AI serves it at `/v3/responses`. The provider block below sets `wire_api = "responses"` and a base URL, and Codex does the rest.
+[Codex CLI](https://github.com/openai/codex) sends every model request to the Responses API, and Eden AI serves it at `/v3/responses`. The provider block below sets `wire_api = "responses"` and a base URL, and Codex does the rest.
 
 ## Overview
 
-Eden AI serves the Responses API route that Codex CLI sends every request to, so Codex needs only a provider block and a key. Pointing it at Eden AI gives you:
+Eden AI serves the Responses API route that Codex CLI sends every model request to, so Codex needs only a provider block and a key. Pointing it at Eden AI gives you:
 
 - **500+ models**: switch between Codex variants, Claude, Gemini, and more without reinstalling
 - **One API key**: unified billing and monitoring across providers
@@ -140,4 +140,4 @@ Confirm `base_url` is exactly `https://api.edenai.run/v3`. Codex appends `/respo
 
 - [Claude Code](./claude-code): Anthropic's official CLI on Eden AI
 - [OpenCode](./opencode): terminal coding agent with auto-generated config
-- [Responses](/v3/llms/responses): full reference for the endpoint Codex sends every request to
+- [Responses](/v3/llms/responses): full reference for the endpoint Codex sends every model request to

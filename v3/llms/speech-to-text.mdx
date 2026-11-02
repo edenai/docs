@@ -16,7 +16,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "speech to text", "transcription", "OpenAI compatible", "whisper", "deepgram", "voxtral"]}
   datePublished="2026-10-13T00:00:00Z"
-  dateModified="2026-10-13T00:00:00Z"
+  dateModified="2026-10-28T00:00:00Z"
 />
 
 Transcribe audio through Eden AI's OpenAI-compatible transcriptions endpoint. Point any OpenAI client at `https://api.edenai.run/v3` and `client.audio.transcriptions` works as a drop-in replacement for OpenAI's speech to text.
@@ -135,7 +135,7 @@ curl -X POST https://api.edenai.run/v3/audio/transcriptions \
 | `timestamp_granularities` | no | `["segment"]` and/or `["word"]`, with `verbose_json`. Honored by the models that support it |
 | `temperature` | no | Sampling temperature between 0 and 1 |
 
-Unknown fields are ignored. The audio can be at most 25 MB.
+Unknown fields are ignored. The audio can be at most 100 MB (individual providers may enforce lower limits).
 
 ## Response format
 
@@ -169,7 +169,7 @@ Transcription is billed per second of audio, at the rate `GET /v3/audio/transcri
 
 ## Limitations
 
-- **Files up to 25 MB.** A larger file returns `413`. A file whose duration cannot be read returns `400`.
+- **Files up to 100 MB.** A larger file returns `413`. Providers with lower limits (such as Groq) reject files exceeding their limit with a `413`. A file whose duration cannot be read returns `400`.
 - **No `@edenai` routing.** `"model": "@edenai"` returns `400`; name a model.
 - **No `fallbacks`.** The field is ignored, like any unknown field: only `model` is tried, and a failure is not retried on another model.
 - **No streaming.** The transcript is returned in one response once the whole file is transcribed.

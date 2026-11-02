@@ -89,7 +89,8 @@ TOOLS: dict[str, Tool] = {
     # adds the models their prose names.
     "aisuite": Tool("chat"),
     "any-llm": Tool("chat"),
-    "atomic-agents": Tool("chat"),
+    # Instructor defaults to tool-call mode, so every request carries a tool.
+    "atomic-agents": Tool("chat", sends_tools=True),
     "haystack": Tool("chat"),
     "langchain": Tool("chat"),
     "openai-sdk-python": Tool("chat"),
@@ -107,6 +108,8 @@ TOOLS: dict[str, Tool] = {
     "openclaw": Tool("chat", sends_tools=True),
     "opencode": Tool("chat", sends_tools=True),
     "pi": Tool("chat", sends_tools=True),
+    # Open Code Review is a review agent: its loop sends tool definitions on every request.
+    "open-code-review": Tool("chat", sends_tools=True),
     # Lynkr fronts Claude Code, Cursor and Codex, and calls Eden AI's chat
     # completions route itself, forwarding the tool definitions it receives.
     "lynkr": Tool("chat", sends_tools=True),
@@ -115,7 +118,6 @@ TOOLS: dict[str, Tool] = {
     "deeptutor": Tool("chat"),
     "librechat": Tool("chat"),
     "n8n": Tool("chat"),
-    "open-code-review": Tool("chat"),
     "open-connector": Tool("chat"),
     "open-webui": Tool("chat"),
     "plano": Tool("chat"),

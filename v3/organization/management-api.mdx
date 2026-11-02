@@ -92,7 +92,7 @@ inference key (`sk-eden-…`) and then manages that member's personal policies.
 
 ## Routing policies
 
-A [routing policy](/v3/llms/routing-policies) is a saved model chain and its provider preferences, called from an inference request as `model: "policy/{name}"` or applied to every chat call of an inference key through the key's `default_policy` field (on `POST` and `PATCH /v3/manage/keys`). With a management key these endpoints manage the organization's policies; called with a member's own inference key, they manage that member's personal ones.
+A [routing policy](/v3/llms/routing-policies) is a saved model chain and its provider preferences, called from an inference request as `model: "policy/{name}"`. With a management key these endpoints manage the organization's policies; called with a member's own inference key, they manage that member's personal ones.
 
 ## Migrating from a dashboard-only key
 

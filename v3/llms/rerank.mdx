@@ -16,7 +16,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "LLM API", "rerank API", "reranking", "RAG", "semantic search"]}
   datePublished="2026-10-29T00:00:00Z"
-  dateModified="2026-10-30T00:00:00Z"
+  dateModified="2026-11-02T00:00:00Z"
 />
 
 A reranker reads a query and a list of texts and scores how relevant each text is to the query. Use it after a first retrieval step, such as [embeddings](/v3/llms/embeddings) or keyword search, to put the best passages first before you hand them to an LLM.
@@ -38,7 +38,6 @@ The V2 API has no rerank route. This is the only rerank API Eden AI offers.
 
 `GET /v3/rerank/models` lists the models that can serve a rerank call. It takes the same `view` and `zero_data_retention` parameters as the other [model listings](/v3/llms/listing-models), and each entry carries `zero_data_retention`, which says whether the provider keeps your inputs after the response. Only models that are in this list can be called, by their `provider/model` id. With `view=models` the entries are grouped under a model name that rerank does not accept: call one of the nested `endpoints[].id` values instead. Rerank lists no routing policy.
 
-{/* skip-test: the rerank routes are not on the API these tests run against yet; remove this marker once they are */}
 <CodeGroup>
 ```python Python
 import requests
@@ -55,7 +54,7 @@ curl https://api.edenai.run/v3/rerank/models
 
 ## Rank documents
 
-{/* skip-test: the rerank routes are not on the API these tests run against yet; remove this marker once they are */}
+{/* paid-test: a rerank call bills a search unit */}
 <CodeGroup>
 ```python Python
 import requests
@@ -115,14 +114,13 @@ curl -X POST https://api.edenai.run/v3/rerank \
 | `extra_headers` | object | no | Additional HTTP headers forwarded to the provider. Credential headers are refused. |
 | `tags` | object | no | Key/value labels recorded with the call, for [usage tracking](/v3/general/tags). |
 
-`fallbacks` is refused with `400`. Any other top-level field is forwarded to the provider. Fields that decide the provider connection, the region, or how the call is made, priced or answered, such as `api_key`, `api_base` or `base_url`, are refused with `422`.
+A non-empty `fallbacks` list is refused with `400`. Any other top-level field is forwarded to the provider. Fields that decide the provider connection, the region, or how the call is made, priced or answered, such as `api_key`, `api_base` or `base_url`, are refused with `422`.
 
 ### Response
 
 ```json
 {
   "status": "success",
-  "cost": 0.001,
   "id": "vertex_ai_rerank_cdca4d41-66f0-46a3-a3de-5c90d1f16b73",
   "results": [
     {
@@ -152,7 +150,7 @@ curl -X POST https://api.edenai.run/v3/rerank \
 | `results[].document.text` | The document text. Present only when `return_documents` is `true`. |
 | `meta` | The provider's own billing metadata, as the provider returned it. |
 | `usage` | The units the call is billed on: `search_units` for a model priced per search, `total_tokens` for a model priced per token. The other is `null`. |
-| `cost` | What the call cost, in US dollars. |
+| `cost` | What the call cost, in US dollars. Left out of the example above. |
 | `provider` | The provider that served the call. |
 
 ## Providers
@@ -165,20 +163,19 @@ For how each provider handles your data, see [Provider data policies](/v3/data-g
 
 ## Billing
 
-A model is priced either per search unit or per token, never both. A model whose pricing row sets both rates, or neither, cannot be called. The unit and its rate are in the `pricing` of the model's entry in `GET /v3/rerank/models`.
+A model is priced either per search unit or per token, never both. A model whose pricing row sets both rates, or neither, answers `500` when you name it. The unit and its rate are in the `pricing` of the model's entry in `GET /v3/rerank/models`.
 
 | Billing unit | Providers | What is counted |
 |---|---|---|
-| Search unit, one per 100 document chunks | Google Vertex, Amazon Bedrock | A document longer than 500 tokens, query included, is split into chunks, and each chunk counts as a document toward the 100. A call over 100 chunks bills more than one unit. |
-| Token | DeepInfra, Fireworks, Qwen | The tokens the provider reports for the call. |
+| Search unit, one per 100 documents | Google Vertex | The documents in the request: a call with up to 100 bills one unit, 101 to 200 bill two. |
+| Search unit, one per 100 document chunks | Amazon Bedrock | A document longer than 500 tokens, query included, is split into chunks, and each chunk counts as a document toward the 100. A call over 100 chunks bills more than one unit. |
+| Token | DeepInfra, Fireworks, Qwen, GreenPT, IONOS, Infomaniak | The tokens the provider reports for the call. |
 
-GreenPT, IONOS and Infomaniak bill in the unit their pricing row names.
+Amazon Bedrock reports no usage, so Eden AI counts the chunks from your request. For `cohere.rerank-v3-5:0` the tokens are counted with Cohere's published tokenizer. For other Bedrock models no tokenizer is published, so each text is counted at an upper bound of one token per character, and the count can come out above the units AWS bills.
 
-Amazon Bedrock reports no usage, so Eden AI counts the search units from your request with the same chunk rule.
+Eden AI estimates the cost before the call, holds that amount, and charges the actual cost when the call returns. For a per-token model the estimate reads the query once per document, plus the document tokens and a fixed allowance per query and document pair for the reranker's prompt template. For a per-search model it is the number of search units the Bedrock chunk rule gives, which is never below the Vertex count.
 
-Eden AI estimates the cost before the call, holds that amount, and charges the actual cost when the call returns. For a per-token model the estimate reads the query once per document, plus the document tokens and a fixed allowance per query and document pair for the reranker's prompt template. For a per-search model it is the number of search units the chunk rule gives.
-
-When a provider reports no billable count, or reports zero, the call is charged at the estimate made before the call, never at zero. The response `cost` then holds that amount.
+When a provider reports no billable count, or reports zero, the call is charged at the estimate made before the call. The response `cost` then holds that amount. A call that holds nothing beforehand, such as one on your own provider key, is charged zero in that case.
 
 ## Regions, guardrails and tags
 
@@ -191,7 +188,7 @@ When a provider reports no billable count, or reports zero, the call is charged 
 - **Model routing.** `@edenai` is refused with `400`. Name a rerank model directly, for example `vertex/semantic-ranker-default-004`.
 - **Model names without a provider.** `semantic-ranker-default-004` answers `400`. Name it as `provider/model`, for example `vertex/semantic-ranker-default-004`.
 - **Models that are not rerank models.** A chat model such as `openai/gpt-5` answers `400` before any provider is called.
-- **Fallbacks.** `fallbacks` answers `400`. Send one model per request.
+- **Fallbacks.** A non-empty `fallbacks` list answers `400`. Send one model per request.
 - **Routing preferences other than zero data retention.** With a named `provider/model` there is no provider to choose, so `sort`, `order`, `allowed_providers`, `ignored_providers` and `max_price` have no effect.
 - **Routing policies.** `policy/{name}` is not a rerank model.
 - **Non-text documents.** `documents` is a list of strings. Send the text of each passage; images and structured objects are refused with `422`.
@@ -201,10 +198,11 @@ When a provider reports no billable count, or reports zero, the call is charged 
 
 | Status | Meaning |
 |---|---|
-| `400` | `@edenai` routing, a model name without its provider, `fallbacks`, a region the model does not offer, a model that is not a rerank model, or a model that does not meet `routing.zero_data_retention`. |
+| `400` | `@edenai` routing, a model name without its provider, a non-empty `fallbacks` list, a region the model does not offer, a model that is not a rerank model, or a model that does not meet `routing.zero_data_retention`. |
 | `403` | A [guardrail](/v3/organization/guardrails) model rule does not allow the model, or your organization requires zero data retention and the model does not meet it. |
 | `422` | The body is invalid: an empty `query` or `documents`, more than 1,000 documents, a `top_n` of 0 or less, or a refused field. |
 | `451` | The EU or another regional endpoint does not serve the model. |
+| `500` | The model's pricing row sets both rates or neither, so the call cannot be billed. |
 
 ## Related
 

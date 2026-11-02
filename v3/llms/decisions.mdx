@@ -17,7 +17,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "LLM API", "decision model", "decisions", "classification", "routing", "System One", "TypeSafe", "Jev"]}
   datePublished="2026-09-22T00:00:00Z"
-  dateModified="2026-10-29T00:00:00Z"
+  dateModified="2026-11-02T00:00:00Z"
 />
 
 <Warning>
@@ -313,7 +313,7 @@ curl -X POST https://api.edenai.run/v3/alpha/decisions \
 | `state` | string, object, or array | yes | The content every question in this request refers to. |
 | `questions` | object | yes | At least one question, keyed by a name you choose. The answers come back under the same names. |
 | `fallbacks` | string[] | no | Decision models to try, in order, if the primary model fails. Each is a `provider/model` id or a model name with no provider prefix. At most 7. |
-| `routing` | object | no | How to pick between the providers that serve a model named without a provider prefix, in `model` and in `fallbacks`. Takes the fields described in [provider routing](/v3/llms/provider-routing), including `zero_data_retention`. |
+| `routing` | object | no | How to pick between the providers that serve a model named without a provider prefix, in `model` and in `fallbacks`. Takes the fields described in [provider routing](/v3/llms/provider-routing), including `zero_data_retention`. Routing policies, `router_candidates` and `session_id` apply to chat only and have no effect here. |
 
 `routing` and `fallbacks` are not forwarded to the provider. A malformed value returns a `422`.
 
@@ -392,8 +392,9 @@ Validation is done by the provider and passed through unchanged, so you get the 
 
 | Status | Meaning |
 | --- | --- |
-| 400 | Unknown model. Check `GET /v3/alpha/decisions/models` for what is callable. |
+| 400 | Unknown model. Check `GET /v3/alpha/decisions/models` for what is callable. Also returned when `routing.zero_data_retention` is `true` and no provider of a requested model qualifies. |
 | 402 | Not enough credits. |
+| 403 | Your organization requires zero data retention and no provider of a requested model qualifies. |
 | 422 | The request did not validate, for example a question with no `criteria` or an empty score rubric. |
 | 429 | Rate limited. |
 

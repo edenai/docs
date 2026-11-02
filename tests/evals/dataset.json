@@ -66,7 +66,7 @@
     {
         "id": "q09",
         "question": "How do I use Eden AI with Claude Code?",
-        "expected_output": "Set environment variables: ANTHROPIC_API_KEY to your Eden AI API key and ANTHROPIC_BASE_URL to https://api.edenai.run/v3. Optionally set ANTHROPIC_MODEL to a provider/model string (e.g. 'anthropic/claude-sonnet-4-5').",
+        "expected_output": "Set environment variables: ANTHROPIC_API_KEY to your Eden AI API key and ANTHROPIC_BASE_URL to https://api.edenai.run/v3. Optionally set ANTHROPIC_MODEL to a provider/model string (e.g. 'anthropic/claude-opus-latest').",
         "source_doc": "v3/integrations/claude-code.mdx",
         "category": "integrations",
         "difficulty": "basic"

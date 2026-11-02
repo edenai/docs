@@ -110,7 +110,8 @@ TOOLS: dict[str, Tool] = {
     "pi": Tool("chat", sends_tools=True),
     # Open Code Review is a review agent: its loop sends tool definitions on every request.
     "open-code-review": Tool("chat", sends_tools=True),
-    # Lynkr sits in front of Claude Code and forwards its tool definitions.
+    # Lynkr fronts Claude Code, Cursor and Codex, and calls Eden AI's chat
+    # completions route itself, forwarding the tool definitions it receives.
     "lynkr": Tool("chat", sends_tools=True),
     # Chat interfaces, gateways and apps. Tools are optional in all of them.
     "bifrost": Tool("chat"),

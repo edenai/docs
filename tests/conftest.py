@@ -113,6 +113,7 @@ def pytest_configure(config: pytest.Config) -> None:
     # Individual tests raise this to the production token where the samples
     # need a real provider answer.
     os.environ["EDENAI_API_KEY"] = sandbox_token
+    os.environ["EDEN_AI_API_KEY"] = sandbox_token
     base_url = os.environ.get("EDEN_AI_BASE_URL", DEFAULT_BASE_URL)
     os.environ["EDENAI_API_BASE"] = f"{base_url}/v3"
 

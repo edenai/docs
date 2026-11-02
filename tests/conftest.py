@@ -247,6 +247,32 @@ def _populate_fixtures_dir(d: Path) -> None:
 
     (d / "app.py").write_text("def main():\n    print('hello')\n")
 
+    # The batch input file the cURL create sample on v3/llms/batches.mdx uploads, the same
+    # three chat lines its Python sample writes.
+    (d / "batch.jsonl").write_text(
+        "".join(
+            json.dumps(
+                {
+                    "custom_id": f"request-{i}",
+                    "method": "POST",
+                    "url": "/v1/chat/completions",
+                    "body": {
+                        "model": "openai/gpt-5-mini",
+                        "messages": [
+                            {
+                                "role": "user",
+                                "content": f"Write a one-line tagline for product {i}.",
+                            }
+                        ],
+                        "max_tokens": 50,
+                    },
+                }
+            )
+            + "\n"
+            for i in range(1, 4)
+        )
+    )
+
     (d / "document.txt").write_text(
         "Eden AI is a platform that provides access to multiple AI providers "
         "through a single API. It supports text analysis, image processing, "

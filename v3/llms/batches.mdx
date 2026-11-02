@@ -46,7 +46,7 @@ A sandbox token sends nothing to OpenAI: the batch is answered at once with samp
 The input is a JSONL file: one JSON object per line, in UTF-8. Empty lines are ignored. Each line describes one chat request:
 
 ```json
-{"custom_id": "request-1", "method": "POST", "url": "/v1/chat/completions", "body": {"model": "openai/gpt-5-mini", "messages": [{"role": "user", "content": "Say hello in French."}], "max_tokens": 50}}
+{"custom_id": "request-1", "method": "POST", "url": "/v1/chat/completions", "body": {"model": "openai/gpt-5-mini", "messages": [{"role": "user", "content": "Say hello in French."}], "max_completion_tokens": 50}}
 ```
 
 | Field | Rules |
@@ -64,7 +64,7 @@ No other key is allowed on a line.
 - The model must have published batch rates. Models without them, models that price long-context bands, cache writes or audio, and models that price cached input without a cached batch rate are refused.
 - In [`GET /v3/models`](/v3/llms/listing-models), `capabilities.supports_batch` is `true` on each entry a batch accepts, by the same rules.
 - Messages carry text only. A message holds `role`, `content` and optionally `cache_control`. A `content` list may contain `text` parts only.
-- `max_tokens` or `max_completion_tokens` on each line sets how much output Eden AI reserves for that line. Without either, the reservation uses the model's maximum output. See [Billing](#billing).
+- `max_tokens` or `max_completion_tokens` on each line sets how much output Eden AI reserves for that line. Without either, the reservation uses the model's maximum output. See [Billing](#billing). A `max_tokens` is sent to OpenAI as `max_completion_tokens`, which every OpenAI chat model takes; GPT-5 and o-series models refuse `max_tokens` in a batch.
 - `service_tier`, when present, is `auto` or `default`.
 - `routing` may only contain `zero_data_retention`. See [Zero data retention](#zero-data-retention).
 
@@ -98,7 +98,7 @@ lines = [
         "body": {
             "model": "openai/gpt-5-mini",
             "messages": [{"role": "user", "content": f"Write a one-line tagline for product {i}."}],
-            "max_tokens": 50,
+            "max_completion_tokens": 50,
         },
     }
     for i in range(1, 4)
@@ -375,7 +375,7 @@ The batch shows in [usage monitoring](/v3/general/monitoring) as cost. The launc
 - **When nothing completed.** The batch bills nothing and the whole reservation is returned.
 - **When results cannot be read.** Each request that may have run bills the same estimate, with no output shown. For a batch that has ended, that is as many requests as OpenAI counts as completed, the largest estimates first. Otherwise it is every request. A batch with a request that may have run is never settled at zero.
 
-Set `max_tokens` on every line to keep the reservation close to the real cost.
+Set `max_completion_tokens` on every line to keep the reservation close to the real cost.
 
 ## Content moderation
 

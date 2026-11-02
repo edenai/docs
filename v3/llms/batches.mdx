@@ -1,20 +1,20 @@
 ---
-title: "LLM Batch API: OpenAI, Claude, Gemini, Mistral"
+title: "LLM Batch API: OpenAI, Claude, Mistral"
 sidebarTitle: "Batches"
 icon: "layer-group"
-description: "Run chat requests as one batch on OpenAI, Anthropic, Mistral, Amazon Bedrock or Vertex AI at batch rates, then download the results."
+description: "Run thousands of chat requests as one batch on OpenAI, Anthropic or Mistral at the provider's batch rates, then download the results."
 ---
 
 import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
 
 <TechArticleSchema
-  title={"LLM Batch API: OpenAI, Claude, Gemini, Mistral"}
-  description={"Run chat requests as one batch on OpenAI, Anthropic, Mistral, Amazon Bedrock or Vertex AI at batch rates, then download the results."}
+  title={"LLM Batch API: OpenAI, Claude, Mistral"}
+  description={"Run thousands of chat requests as one batch on OpenAI, Anthropic or Mistral at the provider's batch rates, then download the results."}
   path="v3/llms/batches"
   articleSection="LLMs"
   about={"LLM API"}
   proficiencyLevel="Intermediate"
-  keywords={["Eden AI", "LLM API", "batch API", "OpenAI batch", "Anthropic batch", "Mistral batch", "Bedrock batch inference", "Vertex AI batch prediction"]}
+  keywords={["Eden AI", "LLM API", "batch API", "OpenAI batch", "Anthropic batch", "Mistral batch"]}
   datePublished="2026-10-29T00:00:00Z"
   dateModified="2026-11-02T00:00:00Z"
 />
@@ -28,16 +28,14 @@ Run many requests as one asynchronous batch. You upload a file with one request 
 | OpenAI | `openai/<model>` | `/v1/chat/completions` |
 | Anthropic | `anthropic/<model>` | `/v1/chat/completions` |
 | Mistral | `mistral/<model>` | `/v1/chat/completions` |
-| Amazon Bedrock | `amazon/<model>@eu` | `/v1/chat/completions` |
-| Vertex AI | `vertex/<model>@eu` | `/v1/chat/completions` |
 
 A batch has one model and one `url`: every line names the same model and calls the same endpoint. In [`GET /v3/models`](/v3/llms/listing-models), `capabilities.supports_batch` is `true` on each entry a batch accepts. Image, audio and other endpoints are not available in a batch.
 
-Every provider's batch is created, listed, cancelled and read through the same routes. Chat lines use the chat completions format on every provider, and so do their results: an Anthropic, Amazon Bedrock or Vertex AI result is translated to a chat completion.
+Every provider's batch is created, listed, cancelled and read through the same routes. Chat lines use the chat completions format on every provider, and so do their results: an Anthropic result is translated to a chat completion.
 
 ### Regions
 
-Amazon Bedrock and Vertex AI batches run in the EU, so the model is named with its region tag, `amazon/<model>@eu` or `vertex/<model>@eu`. Without the tag the batch is refused with `400`. A batch on OpenAI, Anthropic or Mistral runs in the provider's default region, and a model named with a region tag is refused with `400`.
+A batch runs in the provider's default region, and a model named with a region tag is refused with `400`.
 
 ## Overview
 
@@ -76,14 +74,14 @@ No other key is allowed on a line.
 
 ### Rules for every chat line
 
-- `body.model` is `openai/<model>`, `anthropic/<model>` or `mistral/<model>` with no `@` or `:` suffix, or `amazon/<model>@eu` or `vertex/<model>@eu`. Every line of a batch names the same model.
-- The model must have published batch rates. Models without them, models that price long-context bands, and models that price cached input without a cached batch rate are refused, except that cached input needs no cached batch rate on Amazon Bedrock. Models that price cache writes or audio are refused too, except that cache-write rates do not refuse an Anthropic or Amazon Bedrock model (their lines carry no cache marker) and audio rates do not refuse a Vertex AI model (its lines are text only).
+- `body.model` is `openai/<model>`, `anthropic/<model>` or `mistral/<model>` with no `@` or `:` suffix. Every line of a batch names the same model.
+- The model must have published batch rates. Models without them, models that price long-context bands, and models that price cached input without a cached batch rate are refused. Models that price cache writes or audio are refused too, except that cache-write rates do not refuse an Anthropic model (its lines carry no cache marker).
 - In [`GET /v3/models`](/v3/llms/listing-models), `capabilities.supports_batch` is `true` on each entry a batch accepts, by the same rules.
 - Messages carry text only. A `content` list may contain `text` parts only.
 - `max_tokens` or `max_completion_tokens` on each line sets how much output Eden AI reserves for that line. Without either, the reservation uses the model's maximum output. See [Billing](#billing). A `max_tokens` is sent to OpenAI as `max_completion_tokens`, which every OpenAI chat model takes; GPT-5 and o-series models refuse `max_tokens` in a batch.
-- On Anthropic, Mistral, Amazon Bedrock and Vertex AI, a line that states no output limit is sent with the reserved bound as its `max_tokens`. `max_tokens` applies to each completion, so a Mistral line with `n` above 1 is sent the reserved bound divided by `n`.
-- An output limit is checked as the provider's own API documents it, and a value the provider refuses fails the file with `400` naming the line. Anthropic takes a number of 0 or more, Mistral an integer of 0 or more, Vertex AI an integer, and Amazon Bedrock an integer of 1 or more.
-- A line that states both `max_tokens` and `max_completion_tokens` is reserved at the first one that is a positive integer, `max_tokens` first, and on Anthropic, Amazon Bedrock and Vertex AI that value is the one sent. A limit that is not a positive integer, such as `512.0`, reserves the model's maximum output, and on Anthropic and Mistral it is sent capped at that reservation, a whole number written as an integer (`512.0` is sent as `512`).
+- On Anthropic and Mistral, a line that states no output limit is sent with the reserved bound as its `max_tokens`. `max_tokens` applies to each completion, so a Mistral line with `n` above 1 is sent the reserved bound divided by `n`.
+- An output limit is checked as the provider's own API documents it, and a value the provider refuses fails the file with `400` naming the line. Anthropic takes a number of 0 or more, and Mistral an integer of 0 or more.
+- A line that states both `max_tokens` and `max_completion_tokens` is reserved at the first one that is a positive integer, `max_tokens` first, and on Anthropic that value is the one sent. A limit that is not a positive integer, such as `512.0`, reserves the model's maximum output, and on Anthropic and Mistral it is sent capped at that reservation, a whole number written as an integer (`512.0` is sent as `512`).
 - `service_tier`, when present on an OpenAI line, is `auto` or `default`.
 - `routing` may only contain `zero_data_retention`. See [Zero data retention](#zero-data-retention).
 - Every line is moderated. See [Content moderation](#content-moderation).
@@ -99,8 +97,6 @@ These body fields are refused on every provider: `stream` set to true, `tools`, 
 | OpenAI | The fields listed above. A message holds `role`, `content` and optionally `cache_control`. `service_tier` is `auto` or `default`. | A `service_tier` of `flex`, `scale` or `priority`, any other body field, and any other message key such as `tool_calls`. |
 | Anthropic | `model`, `messages`, `max_tokens`, `max_completion_tokens`, `temperature`, `top_p`, `stop`, `user`, `reasoning_effort`, `thinking` and `routing`. A message holds `role` and `content`, and a text part holds `type` and `text`. `thinking.budget_tokens` is below the line's output limit. | Every other body field, among them `n`, `logprobs`, `response_format` and `service_tier`, and `cache_control` on a message or a part. |
 | Mistral | `model`, `messages`, `max_tokens`, `temperature`, `top_p`, `stop`, `n`, `presence_penalty`, `frequency_penalty`, `response_format` and `routing`. A message holds `role` and `content`, with the role `system`, `user` or `assistant`, and a text part holds `type` and `text`. | Every other body field, among them `max_completion_tokens`, `seed`, `logit_bias`, `user`, `top_logprobs`, `stream_options` and `service_tier`, a message `name`, and `cache_control`. |
-| Amazon Bedrock | `model`, `messages`, `max_tokens`, `max_completion_tokens`, `temperature`, `top_p`, `stop` and `routing`. A message holds `role` and `content`, with the role `system`, `user` or `assistant`, and a text part holds `type` and `text`. System messages come first, the conversation starts and ends with a user message, and every message carries text. `temperature` and `top_p` are between 0 and 1, and `stop` holds at most 4 sequences. | Every other body field, among them `n`, `response_format`, `user` and `service_tier`, a message `name`, and `cache_control`. |
-| Vertex AI | `model`, `messages`, `max_tokens`, `max_completion_tokens`, `temperature`, `top_p`, `stop` and `routing`. A message holds `role` and `content`, with the role `system`, `user` or `assistant`, and a text part holds `type` and `text`. System messages come first, the conversation ends with a user message, and every message carries text. `temperature` is between 0 and 2 and `top_p` between 0 and 1. | Every other body field, among them `n`, `response_format`, `user` and `service_tier`, a message `name`, and `cache_control`. |
 
 A refused field fails the whole file with `400` and the message `Line N: ...` naming the field.
 
@@ -113,8 +109,6 @@ An Anthropic line has the same shape as any chat line, with an `anthropic/` mode
 ### File limits
 
 A batch holds at most 5,000 lines, and the file is at most 100 MB. A file with more than 5,000 requests is refused with `400`, and so is a file with no request.
-
-An Amazon Bedrock batch needs at least 100 lines, the minimum AWS sets for every job. A smaller file is refused with `400`. No other provider has a minimum.
 
 ## Create a batch
 
@@ -340,7 +334,7 @@ curl -X POST https://api.edenai.run/v3/batches/BATCH_ID/cancel \
 
 ## Results
 
-`GET /v3/batches/{batch_id}/results` streams the results as JSONL (`application/jsonl`), one line per request. On OpenAI, results stay available for 30 days after the batch finished. On Anthropic, they stay available for 29 days after the batch was created. Mistral states that batch results do not expire. Amazon Bedrock and Vertex AI results are read from Eden AI's own storage. Once the provider no longer has them, the route answers `410`.
+`GET /v3/batches/{batch_id}/results` streams the results as JSONL (`application/jsonl`), one line per request. On OpenAI, results stay available for 30 days after the batch finished. On Anthropic, they stay available for 29 days after the batch was created. Mistral states that batch results do not expire. Once the provider no longer has them, the route answers `410`.
 
 A request that succeeded carries `response`, with the `status_code` and the chat completion `body`, on every provider. The `model` in the body is the Eden AI id you sent, such as `openai/<model>`. A request that failed carries `error` instead.
 
@@ -394,8 +388,6 @@ The results route answers `400` while the batch is still running, and `409` when
 | `expired` | The batch did not finish within its 24-hour window. Requests that completed are billed and their results are available. |
 | `cancelling` | A cancel was requested and the provider is stopping the batch. |
 | `cancelled` | The batch was cancelled. Requests that completed are billed. |
-
-An Amazon Bedrock job that ends with some requests left unprocessed reads `expired`. A Vertex AI job that partly succeeded reads `completed`, and a paused one reads `in_progress`.
 
 `cost` and `finished_at` are filled in once the batch has finished and Eden AI has settled it. That can be a few minutes after the status reaches a final value.
 
@@ -508,9 +500,9 @@ The URL must be public. Addresses that resolve to private networks are refused.
 
 ## Limits and what batches do not do
 
-- A batch holds at most 5,000 lines and 100 MB, and an Amazon Bedrock batch at least 100 lines.
-- A batch runs one model, on OpenAI, Anthropic, Mistral, Amazon Bedrock or Vertex AI. Other providers are not supported.
-- Chat completions are supported on all five providers. Other endpoints are not.
+- A batch holds at most 5,000 lines and 100 MB.
+- A batch runs one model, on OpenAI, Anthropic or Mistral. Other providers are not supported.
+- Chat completions are supported on all three providers. Other endpoints are not.
 - Lines cannot stream.
 - Lines cannot carry tools, function definitions, function calls or predicted outputs.
 - Lines cannot carry images, audio or files. Messages are text only.
@@ -521,7 +513,7 @@ The URL must be public. Addresses that resolve to private networks are refused.
 
 | Status | Meaning |
 |---|---|
-| `400` | The file or a line is invalid. The message names the line, for example `Line 3: ...`. Also returned for a model that is not in the catalog or cannot be batched, an Amazon Bedrock or Vertex AI model named without `@eu`, an Amazon Bedrock file under 100 lines, a flagged line, a zero data retention request, an organization with its own key for the provider, and for cancelling or reading results of a batch in the wrong state. |
+| `400` | The file or a line is invalid. The message names the line, for example `Line 3: ...`. Also returned for a model that is not in the catalog or cannot be batched, a model named with a region tag, a flagged line, a zero data retention request, an organization with its own key for the provider, and for cancelling or reading results of a batch in the wrong state. |
 | `401` | Missing or invalid `Authorization: Bearer` token. |
 | `402` | The balance is zero or less (checked before the file is read), the balance or a member budget cannot cover the reservation, or the reservation is $100,000 or more, which is refused whatever the balance. Add credits, or raise the member budget, when the balance or budget is short; split the file into smaller batches when the reservation reaches $100,000. |
 | `403` | Your organization requires zero data retention, or a [guardrail](/v3/organization/guardrails) model rule does not allow the model: `Model(s) 'openai/...' not allowed by your guardrail policy.` |

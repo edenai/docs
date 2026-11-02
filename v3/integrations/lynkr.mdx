@@ -61,6 +61,10 @@ lynkr start
 
 `lynkr start` serves an Anthropic-compatible `/v1/messages` endpoint for Claude Code, an OpenAI-compatible `/v1/chat/completions` endpoint for Cursor, and a `/v1/responses` endpoint for Codex, on port 8081 (the port `lynkr init` writes). To configure by hand instead of using the wizard, set the variables in [Configuration](#configuration), including `PORT`, before `lynkr start`: without it Lynkr listens on port 8080.
 
+<Warning>
+Lynkr does not check the key a client sends, and it listens on every network interface, not only `localhost`. Anyone who can reach its port can send requests billed to your Eden AI key. On a shared network, block the port from other machines with a firewall, or put Lynkr behind a proxy that requires authentication.
+</Warning>
+
 ### Connect your tool
 
 Point the tool at Lynkr, not at Eden AI. Your Eden AI key stays in Lynkr's configuration, so the tool's own key setting can hold any value.
@@ -145,7 +149,7 @@ Use the `provider/model` format for any Eden AI model, after the `edenai:` prefi
 
 ### Tier routing is not active
 
-Lynkr turns tier routing off, with a warning at startup, unless all four of `TIER_SIMPLE`, `TIER_MEDIUM`, `TIER_COMPLEX` and `TIER_REASONING` are set. The warning names the missing ones. Until you set them, every request goes to the `MODEL_PROVIDER` model.
+Lynkr turns tier routing off, with a warning at startup, unless all four of `TIER_SIMPLE`, `TIER_MEDIUM`, `TIER_COMPLEX` and `TIER_REASONING` are set. The warning names the missing ones. Until you set them, Lynkr routes statically and every request uses `EDENAI_MODEL`.
 
 ### Authentication errors
 

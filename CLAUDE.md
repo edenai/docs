@@ -60,6 +60,16 @@ The JSON, YAML and TOML blocks under `v3/integrations/` are configuration a read
 - What counts as a model id is decided by the catalog's own provider list, not a hardcoded one, so `image/gif` and `ghcr.io/open-webui/open-webui:main` are correctly not models. A new provider needs no change here.
 - `nginx` blocks are out of scope: no parser reads them and they name no models.
 
+## What the Integration Pages' Tools Send
+
+A config that parses can still point its tool at Eden AI in a way the tool cannot use, so `tests/test_integrations.py` checks the request each page's tool sends, and `tests/test_integration_clis.py` runs the real Claude Code, Codex and OpenCode CLIs with the page's settings. See `tests/README.md` for the details.
+
+- A new page under `v3/integrations/` needs an entry in `TOOLS` in `tests/integrations.py`: the protocol its tool speaks (chat completions, Anthropic Messages, Responses) and whether it sends tool definitions. The test fails until it has one. Find out from the tool's source or docs; do not default to chat completions.
+- A setting that holds a model (`model`, `titleModel`, `RAG_EMBEDDING_MODEL`, `--model`) names the whole `provider/model` id from the catalog. Tools send the value as it stands, and a bare `whisper-1` is rejected.
+- A page for a coding agent names only models whose catalog entry has `supports_function_calling`, because the agent sends its tools with every request.
+- Every model a page names is checked, in prose and tables as well as code. Do NOT name a retired model as an example.
+- The CLI tests read the Claude Code page's `export` lines, the Codex page's `config.toml` block and the OpenCode page's config generator. Restructuring those pages means keeping those shapes, or updating the test that reads them.
+
 ## Common Pitfalls in .mdx Code Blocks
 
 - Double underscores (`__name__`) can render as bold in some contexts — always verify inside code fences

@@ -12,6 +12,9 @@ holds them rather than a reviewer reading prose:
     for about 40, so the title fits with that suffix, but that is a target
     for a writer rather than a line a test can hold.
   - No two pages share a title, or they compete for the same search.
+  - No .md file is published. Mintlify serves one as a page, but nothing here
+    reads it, so it would ship without a title or description. Notes that
+    belong in the repo go in .mintignore, and pages are .mdx.
   - <TechArticleSchema> repeats the title, the description and the page's own
     path exactly. It adds a second structured-data block beside the one
     Mintlify builds from the frontmatter, so a copy a retitle leaves behind
@@ -27,7 +30,7 @@ from pathlib import Path
 import pytest
 
 from tests.page_metadata import frontmatter, schema_props
-from tests.snippet_extractor import DOCS_ROOT, mdx_files
+from tests.snippet_extractor import DOCS_ROOT, mdx_files, stray_markdown_files
 
 TITLE_MAX = 60
 
@@ -70,6 +73,15 @@ def test_no_two_pages_share_a_title():
     assert shared == {}, f"these pages share a title: {shared}"
 
 
+def test_no_markdown_file_is_published():
+    stray = [path.relative_to(DOCS_ROOT).as_posix() for path in stray_markdown_files()]
+    assert stray == [], (
+        f"Mintlify publishes {stray} as pages, and no check reads a .md file. "
+        "Add the file or its directory to .mintignore, or convert it to .mdx "
+        "with a title and a description"
+    )
+
+
 @pytest.mark.parametrize("page", list(_SCHEMAS), ids=_name)
 def test_the_structured_data_repeats_the_frontmatter(page):
     meta = _META[page]
@@ -104,6 +116,33 @@ def test_each_way_of_writing_a_prop_is_read(tmp_path):
         "description": "Uses `code` and ${x}",
         "path": "v3/data-governance/static-ip",
     }
+
+
+def test_a_markdown_file_is_published_unless_something_excludes_it(tmp_path):
+    for name in (
+        "README.md",
+        "CLAUDE.md",
+        "v3/x.md",
+        "v3/README.md",
+        "v3/feedback/review.md",
+        "v3/page.mdx",
+        ".mintlify/Assistant.md",
+        "tests/notes.md",
+        "tests/.venv/lib/pkg.md",
+        "v3/tests/nested.md",
+    ):
+        path = tmp_path / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("# note\n")
+    (tmp_path / ".mintignore").write_text(
+        "# comment\n\nCLAUDE.md\ntests/\ntests/.venv/\nv3/feedback/\n"
+    )
+
+    stray = stray_markdown_files(tmp_path)
+    assert [p.relative_to(tmp_path).as_posix() for p in stray] == [
+        "v3/README.md",
+        "v3/x.md",
+    ]
 
 
 def test_a_page_without_structured_data_has_no_props(tmp_path):

@@ -14,7 +14,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "LLM API", "chat completion", "OpenAI compatible"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-08-24T00:00:00Z"
+  dateModified="2026-11-02T00:00:00Z"
 />
 
 Use the `/v3/models` endpoint to retrieve all LLM models available through Eden AI, along with their capabilities: input modalities, reasoning, web search, and function calling.
@@ -101,13 +101,18 @@ Each entry includes the model's identity, context window, capabilities, pricing,
 
 Each model `id` is used directly as the `model` parameter in your requests.
 
+`pricing` holds the rates a call bills at, after any discount, and `list_pricing` the provider's list rates before it, most of them in US dollars per token. Models that can run as a [batch](/v3/llms/batches) (OpenAI, Anthropic and Mistral) also carry `input_cost_per_token_batches`, `output_cost_per_token_batches` and `cache_read_input_token_cost_batches`, the rates a batch bills at when the model has them.
+
 ## Grouped view: one entry per routable name
 
 Many models are sold by more than one provider. Pass `view=models` to get one entry per **routable model name**, with the provider endpoints nested underneath. This is how you discover the names that [Provider Routing](/v3/llms/provider-routing) accepts.
 
 ```bash cURL
-curl "https://api.edenai.run/v3/models?view=models"
+curl "https://api.edenai.run/v3/models?view=models" \
+  -H "Authorization: Bearer YOUR_API_KEY"
 ```
+
+The key is optional here: without one, the listing holds the catalog only.
 
 ```json
 {
@@ -142,14 +147,15 @@ curl "https://api.edenai.run/v3/models?view=models"
 
 What to expect from the shape:
 
-- **`id` is the routable name.** Send it as `model` and Eden AI picks which provider serves it.
+- **`id` is the routable name.** Send it as `model` and Eden AI picks which provider serves it. Rerank is the exception: `POST /v3/rerank` refuses a name without its provider with `400`, so from `/v3/rerank/models` send one of the `endpoints[].id` values instead.
 - **Top-level fields summarise the model across its endpoints.** `context_length` is the largest window among the endpoints. `capabilities` is the union across endpoints, so a flag is true and a modality listed when any endpoint supports it. `pricing` carries the full price list of the cheapest endpoint for a typical call (untagged endpoints only, since an `@region` variant prices a tagged call), identified by `pricing_endpoint`; both are `null` when no endpoint has a price. A routed call is billed at the prices of the provider that served it. `regions` lists every region where at least one endpoint runs, sorted by code.
 - **Each entry in `endpoints` is the same object the default view returns**, with that provider's own pricing, capabilities, context length, and regions. To compare providers or see per-provider values, read `endpoints`.
 - **`owned_by` changes meaning between the views.** On a grouped entry it is who authored the model (`openai`); on an endpoint entry it is the provider selling it (`azure`).
 - **`created` is the newest endpoint's timestamp**, and `endpoint_count` equals `endpoints.length`.
 - The default (`view=endpoints`, or no parameter) is unchanged, and both entry shapes stay compatible with the OpenAI SDK's `client.models.list()`.
+- **Your routing policies are listed here too.** Send your API key and the grouped view adds one entry per [routing policy](/v3/llms/routing-policies) you can call, under its `policy/{name}` id, with `owned_by` set to `edenai`, an empty `endpoints` list and `endpoint_count` at `0`: which target serves a call is decided per request, so `pricing`, `context_length` and `regions` are `null` or empty. Policies never appear in the default view or under a `zero_data_retention` filter.
 
-Every model listing takes the same parameter: `/v3/models`, `/v3/embeddings/models`, `/v3/moderations/models`, `/v3/audio/transcriptions/models`, `/v3/audio/speech/models`, `/v3/images/models` and `/v3/videos/models`.
+Every model listing takes the same parameter: `/v3/models`, `/v3/embeddings/models`, `/v3/moderations/models`, `/v3/audio/transcriptions/models`, `/v3/audio/speech/models`, `/v3/images/models`, `/v3/videos/models` and `/v3/rerank/models`.
 
 ## Zero Data Retention
 
@@ -192,6 +198,7 @@ The `capabilities` object describes what each model supports:
 | `output_modalities` | Output types the model produces |
 | `supports_reasoning` | Model supports extended thinking / reasoning mode |
 | `supports_web_search` | Model can perform live web searches via [`web_search_options`](/v3/llms/web-search) |
+| `supports_batch` | `true` when this entry's `id` passes the model rules of [`/v3/batches`](/v3/llms/batches), so a batch file whose lines name it is eligible; `false` when a batch on it is refused (a provider batches do not run on, a model that does not serve chat completions, a region its provider's batches do not run in, or no published batch rate). Computed per entry, so the same model can be `true` on one entry and `false` on another. With `view=models`, a model's flag is `true` when any of its endpoints is: name an `endpoints[].id` that reads `true`. It does not depend on the caller: a batch on a `true` entry can still be refused for your organization's own key for the provider (`400`), zero data retention (`403`), a provider gate (`451`) or while batches are paused (`503`) |
 | `supports_function_calling` | Model supports function/tool calling |
 | `supports_tool_choice` | Model supports the `tool_choice` parameter |
 | `supports_prompt_caching` | Model supports [prompt caching](/v3/llms/prompt-caching) |

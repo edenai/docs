@@ -2,32 +2,28 @@
 title: "Use Cline with Eden AI"
 sidebarTitle: "Cline"
 icon: "/integration-logo/cline-icondoc.svg"
-description: "Configure Cline, the autonomous AI coding agent for VS Code, to use Eden AI for access to +300 LLM models."
+description: "Set up Cline in VS Code to run on Eden AI: point its OpenAI Compatible provider at one endpoint, pick any of 500+ models, and add expert models as MCP tools."
 ---
 
 import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
 
 <TechArticleSchema
   title={"Use Cline with Eden AI"}
-  description={"Configure Cline, the autonomous AI coding agent for VS Code, to use Eden AI for access to +300 LLM models."}
+  description={"Set up Cline in VS Code to run on Eden AI: point its OpenAI Compatible provider at one endpoint, pick any of 500+ models, and add expert models as MCP tools."}
   path="v3/integrations/cline"
   articleSection="Coding Agents"
   about={"AI Coding Assistants"}
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "Cline"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-08-31T00:00:00Z"
+  dateModified="2026-10-27T00:00:00Z"
 />
 
-Configure [Cline](https://github.com/cline/cline), the autonomous AI coding agent for VS Code, to use Eden AI for access to +300 LLM models.
+Cline talks to any OpenAI-compatible endpoint, so Eden AI needs no extension or plugin: you enter a base URL, a key and a model ID. Cline sends tool definitions with every request, so pick a model that supports function calling.
 
 ## Overview
 
-Cline is a VS Code extension that gives you an autonomous AI agent capable of creating files, running terminal commands, and completing multi-step coding tasks. By pointing it at Eden AI's OpenAI-compatible endpoint, you get:
-
-- **+300 LLM models**: Access OpenAI, Anthropic, Google, Cohere, and more through a single API key
-- **Cost savings**: Leverage Eden AI's competitive pricing across all providers
-- **Provider flexibility**: Switch models without leaving VS Code
+[Cline](https://github.com/cline/cline) is a VS Code extension that gives you an autonomous coding agent: it creates files, runs terminal commands and completes multi-step tasks. Pointed at Eden AI's OpenAI-compatible endpoint, it can use 500+ models from OpenAI, Anthropic, Google and more with one API key, and you switch models without leaving VS Code.
 
 ## Prerequisites
 
@@ -35,13 +31,14 @@ Cline is a VS Code extension that gives you an autonomous AI agent capable of cr
 - [Cline](https://docs.cline.bot/getting-started/installing-cline) installed in VS Code
 - Eden AI API key from [https://app.edenai.run](https://app.edenai.run)
 
-## Configuration
+## Setup
 
-### Step 1: Open Cline 
+### Step 1: Open Cline
 
-1. Click the **Cline icon** in the VS Code activity bar
-2. Select the third option **Bring my own API key** on the Cline panel
-3. Click on **Continue** 
+1. Click the **Cline icon** in the VS Code activity bar.
+2. On the onboarding screen, select **Bring my own API key** ("Use Cline with your provider of choice") and click **Continue**.
+
+Already set up? Click the settings icon in the Cline panel and use the **API Provider** dropdown there.
 
 ### Step 2: Configure your provider
 
@@ -57,19 +54,23 @@ Fill in the following fields:
 
 Click **Continue**.
 
-## Available Models
+## Model naming
 
-Use any model from Eden AI's catalog in the `provider/model` format. A few examples covering different use cases:
+Cline sends the Model ID as you write it, so use the full `provider/model` id. Aliases ending in `-latest` follow the newest model of a family. Examples that support function calling:
 
-- `anthropic/claude-sonnet-latest` — powerful, best for complex coding tasks
-- `vertex/gemini-flash-latest` — fast and low-cost, good for quick iterations
-- `openai/gpt-mini-latest` — cheapest, suitable for simple edits
+- `anthropic/claude-sonnet-latest`
+- `vertex/gemini-flash-latest`
+- `openai/gpt-mini-latest`
 
-Browse the full catalog with pricing and capabilities at [app.edenai.run/models](https://app.edenai.run/models).
+List the available models, with their capabilities and pricing, in [Listing models](/v3/llms/listing-models).
+
+## Switching models
+
+Open the Cline settings and change the **Model ID** under the **OpenAI Compatible** provider. Settings apply as you edit; click **Done** to close the view. The Base URL and API key stay the same.
 
 ## Expert Models as Tools (MCP)
 
-Eden AI also hosts an [MCP server](/v3/expert-models/mcp-server) that exposes the expert model catalog (OCR, web search, speech, translation and more) as tools. Open **MCP Servers** in the Cline sidebar, choose **Configure MCP Servers**, and add the server to `cline_mcp_settings.json`:
+Eden AI also hosts an [MCP server](/v3/expert-models/mcp-server) that exposes the expert model catalog (OCR, web search, speech, translation and more) as tools. Click the **MCP Servers** icon in the Cline panel toolbar, open the **Configure** tab, and click **Configure MCP Servers**. This opens `cline_mcp_settings.json`; add the server under `mcpServers`:
 
 ```json
 {
@@ -78,29 +79,34 @@ Eden AI also hosts an [MCP server](/v3/expert-models/mcp-server) that exposes th
       "type": "streamableHttp",
       "url": "https://mcp.edenai.run/mcp",
       "headers": {
-        "Authorization": "Bearer YOUR_EDEN_AI_API_KEY"
+        "Authorization": "Bearer YOUR_API_KEY"
       }
     }
   }
 }
 ```
 
-The tools appear in Cline's MCP panel once the server connects. See the [MCP server page](/v3/expert-models/mcp-server) for the full tool catalog and the conventions its tools share.
+See the [MCP server page](/v3/expert-models/mcp-server) for the full tool catalog and the conventions its tools share.
 
 ## Troubleshooting
 
 ### Authentication Errors (401)
 
-1. Confirm your Eden AI API key is correct — copy it from [app.edenai.run](https://app.edenai.run) → **API Keys**
-2. Make sure there are no leading/trailing spaces in the key
+1. Confirm your Eden AI API key is correct: copy it from [app.edenai.run](https://app.edenai.run) under **API Keys**.
+2. Make sure there are no leading or trailing spaces in the key.
+3. A 401 with `Invalid API key` means the `sk-eden-...` key is wrong or revoked; `Invalid token` means the credential is not an Eden AI key at all.
 
 ### Connection Issues
 
 1. Verify the base URL is exactly: `https://api.edenai.run/v3`
 2. Check Eden AI status: [https://app-edenai.instatus.com](https://app-edenai.instatus.com)
 
+### The agent ignores edits or fails to call tools
+
+Cline sends tool definitions with every request. Choose a model that supports function calling, such as the ones under [Model naming](#model-naming).
 
 ## Next Steps
 
-- [Continue.dev](./continue-dev) - Inline AI code assistant for VS Code and JetBrains
+- [Kilo Code](./kilo-code) - Another VS Code coding agent on Eden AI
+- [Continue](./continue-dev) - Inline AI code assistant for VS Code and JetBrains
 - [Claude Code](./claude-code) - Official Claude CLI

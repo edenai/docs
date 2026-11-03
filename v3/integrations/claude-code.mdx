@@ -92,7 +92,7 @@ export ANTHROPIC_DEFAULT_SONNET_MODEL="anthropic/claude-sonnet-5-5"
 export ANTHROPIC_DEFAULT_HAIKU_MODEL="anthropic/claude-haiku-5-5"
 ```
 
-In PowerShell, `$env:NAME = "value"` does the same. Variables set this way are lost when you close the window. The next `claude` you start in a new window then shows the login menu, or quietly runs on your claude.ai login if one is saved. When `settings.json` also sets a variable, the `settings.json` value wins.
+In PowerShell, `$env:NAME = "value"` does the same. Variables set this way are lost when you close the window, unless you add the lines to your shell profile (`~/.bashrc`, `~/.zshrc`, or your PowerShell `$PROFILE`). Otherwise, the next `claude` you start in a new window shows the login menu, or quietly runs on your claude.ai login if one is saved. When `settings.json` also sets a variable, the `settings.json` value wins.
 
 ### 2. Launch Claude Code
 
@@ -106,7 +106,7 @@ The Claude Desktop app does not take its base URL or key from `settings.json` or
 
 ## Model naming
 
-Eden AI model IDs have the form `provider/model`, such as `anthropic/claude-sonnet-5-5` or `openai/gpt-latest`. For Claude models, use the versioned ID rather than a `-latest` alias: Claude Code infers the context window from the model name, and with an alias it does not recognize, such as `anthropic/claude-sonnet-latest`, it falls back to a 200K window instead of the model's real one. Claude Code sends tool definitions with every request, so pick a model that supports function calling. Browse the catalog in [List Models](/v3/llms/listing-models) or with `GET https://api.edenai.run/v3/models`.
+Eden AI model IDs have the form `provider/model`, such as `anthropic/claude-sonnet-5-5` or `openai/gpt-latest`. A `-latest` alias points to the current release of that model. For Claude models, use the versioned ID rather than a `-latest` alias: Claude Code infers the context window from the model name, and with an alias it does not recognize, such as `anthropic/claude-sonnet-latest`, it falls back to a 200K window instead of the model's real one. Claude Code sends tool definitions with every request, so pick a model that supports function calling. Browse the catalog in [List Models](/v3/llms/listing-models) or with `GET https://api.edenai.run/v3/models`.
 
 ## Switching models
 

@@ -14,7 +14,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "guardrails", "usage policy", "access control", "rate limits", "model restrictions", "budget cap", "spending limit"]}
   datePublished="2026-06-11T00:00:00Z"
-  dateModified="2026-10-23T00:00:00Z"
+  dateModified="2026-10-26T00:00:00Z"
 />
 
 A **guardrail** is a reusable usage policy. It sets:
@@ -23,7 +23,7 @@ A **guardrail** is a reusable usage policy. It sets:
 - **Member budget**: how much each member can spend per day, week or month.
 - **Rate limit**: how many requests each member can make per second, minute, hour or day.
 
-Create a guardrail once, then attach it to a **role**, a **member** or an **API key**.
+Create a guardrail once, then attach it to a **role**, a **member** or an **API key**, or make it the **organisation default** for everyone else.
 
 <Note>
 Guardrails are part of the advanced organisation features. See [plans and pricing](https://www.edenai.co/pricing) for availability.
@@ -111,7 +111,7 @@ Under **Budget & rate limit**, set an **Amount** in USD and a period: daily, wee
 - **Real usage only.** [Sandbox](/v3/general/sandbox) calls and calls made with your own provider keys ([BYOK](/v3/general/byok)) don't count. Refunds credit it back.
 
 <Note>
-The budget applies only when the guardrail is attached to a **role** or a **member**. On a guardrail attached to an **API key** it is ignored: use a [token budget](/v3/general/custom-api-keys) to cap a single key.
+The budget applies only when the guardrail is attached to a **role** or a **member**, or is the **organisation default**. On a guardrail attached to an **API key** it is ignored: use a [token budget](/v3/general/custom-api-keys) to cap a single key.
 </Note>
 
 ## Rate limit
@@ -125,6 +125,7 @@ A guardrail does nothing until it is attached. Attach it under **Assignment** on
 - **A role**: from **Settings → Roles & Permissions**, so everyone with that role inherits the policy.
 - **A member**: from **Settings → Members**, to apply it to one person.
 - **An API key**: to constrain a single key, for example a shared or CI key.
+- **The organisation default**: from the **Default guardrail** card in **Settings → Guardrails**. It applies to members with no guardrail of their own or from their role. Without a default, they have no limits: every model, your plan's rate limit, no budget.
 
 Each role, member and API key holds one guardrail. When a request comes in, Eden AI resolves each limit on its own, the most specific level first:
 
@@ -132,11 +133,15 @@ Each role, member and API key holds one guardrail. When a request comes in, Eden
 API key  →  member  →  role  →  organisation default
 ```
 
-Model access and the rate limit each come from the most specific level that sets them, so a key can override the model access and still inherit its role's rate limit. The member budget skips the API key level: it comes from the member or the role, amount and period together, never mixed across levels.
+Model access and the rate limit each come from the most specific level that sets them, so a key can override the model access and still inherit its role's rate limit. The member budget skips the API key level: it comes from the member, the role or the organisation default, amount and period together, never mixed across levels.
 
 <Note>
 Guardrails are configured in the dashboard; there is no API for them yet. To automate the per-key side of provisioning (budgets, expiry, attribution to a member), use the [Management API](/v3/organization/management-api).
 </Note>
+
+## Pausing a guardrail
+
+In **Settings → Guardrails**, each guardrail has an on/off switch. Turn it off to pause the guardrail: it stays assigned, but requests skip it and take each limit from the next level instead (`API key → member → role → organisation default`), and it sends no budget alerts. A paused organisation default applies to nobody. Turn it back on to apply it again.
 
 ## Related
 

@@ -140,6 +140,8 @@ Each `routing` field is settled independently: the request wins, then the target
 
 ```json
 {
+  "strategy": "fallback",
+  "targets": ["openai/gpt-5.6-sol", "kimi-k2.6"],
   "defaults": {"routing": {"sort": "cost", "ignored_providers": ["deepinfra"]}},
   "lock": ["ignored_providers"]
 }

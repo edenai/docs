@@ -14,7 +14,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "LLM API", "routing policy", "model fallback", "load balancing", "provider routing"]}
   datePublished="2026-10-27T00:00:00Z"
-  dateModified="2026-11-02T00:00:00Z"
+  dateModified="2026-11-03T00:00:00Z"
 />
 
 A routing policy is a saved model chain: which models to try, how to pick among them, and the [provider routing](/v3/llms/provider-routing) preferences every attempt follows. Save it once under a name and every request can use it as `model: "policy/{name}"`, so an app that only lets you configure a model string, such as a coding agent or a chat UI, gets your fallbacks and provider preferences without any change to the request.
@@ -102,8 +102,8 @@ The name is only accepted where a model chain is: the chat dialects above. To em
 |---|---|
 | `description` | Free text, up to 500 characters |
 | `enabled` | `false` parks the policy: calling it by name is a `400` and it leaves the [model listing](#finding-your-policies). Default `true` |
-| `strategy` | How the targets are ordered: `fallback`, `load_balance`, `cheapest` or `fastest`. Required with `targets` |
-| `targets` | 1 to 32 models to choose among, each a string or an object with the overrides below |
+| `strategy` | How the targets are ordered: `fallback`, `load_balance`, `cheapest` or `fastest`. Required |
+| `targets` | 1 to 32 models to choose among, each a string or an object with the overrides below. Required |
 | `defaults` | What every target inherits unless it sets its own: `routing`, `credentials` (default `auto`) and `retries` (default `0`) |
 | `lock` | Fields a request may not set: any of the `routing` fields a policy stores (listed below), or `region`. A request that sets one is refused with a `400` |
 | `fallbacks` | Up to 7 models tried after every target, in order, with the policy's default routing |
@@ -140,6 +140,8 @@ Each `routing` field is settled independently: the request wins, then the target
 
 ```json
 {
+  "strategy": "fallback",
+  "targets": ["openai/gpt-5.6-sol", "kimi-k2.6"],
   "defaults": {"routing": {"sort": "cost", "ignored_providers": ["deepinfra"]}},
   "lock": ["ignored_providers"]
 }
@@ -241,7 +243,7 @@ Eden AI also records the policy's name and version on every request it serves, s
 
 ## Zero data retention
 
-A policy that sets `routing.zero_data_retention: true`, in `defaults` or on any target, holds the whole request to it: every target and fallback, the request's own fallbacks included, is served only by providers that keep no prompts or outputs, and Eden AI saves neither the request nor the response. A key that lends a policy's routing only holds the request when `defaults` ask for it. See [Compliance Policies](/v3/data-governance/compliance-policies).
+A policy that sets `routing.zero_data_retention: true`, in `defaults` or on any target, holds the whole request to it: every target and fallback, the request's own fallbacks included, is served only by providers that keep no prompts or outputs, and Eden AI saves neither the request nor the response. See [Compliance Policies](/v3/data-governance/compliance-policies).
 
 ## Finding your policies
 

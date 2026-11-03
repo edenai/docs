@@ -30,34 +30,69 @@ Claude Code runs in your terminal and edits code in your project. Pointing it at
 
 ## Prerequisites
 
-- Claude Code installed ([install instructions](https://github.com/anthropics/claude-code))
-- Eden AI API key from [app.edenai.run](https://app.edenai.run) → **API Keys**
+- Claude Code installed ([install instructions](https://code.claude.com/docs/en/setup)). On Windows, the native installer puts `claude.exe` in `%USERPROFILE%\.local\bin` but does not always add that folder to your `PATH`. If `claude` is not recognized afterwards, see [Troubleshooting](#claude-command-not-recognized-on-windows). The installer also shows no progress while it downloads, so give it a few minutes.
+- Eden AI API key from [app.edenai.run](https://app.edenai.run) → **API Keys**. You do not need an Anthropic API key or a claude.ai account.
 
 ## Setup
 
-### 1. Export your API key
+### 1. Point Claude Code at Eden AI
 
-<CodeGroup>
-```bash bash / zsh
-export ANTHROPIC_API_KEY="YOUR_API_KEY"
+Put the settings in Claude Code's user settings file so they apply to every terminal and every project. The file is `~/.claude/settings.json` on macOS and Linux, and `%USERPROFILE%\.claude\settings.json` on Windows. Create it if it does not exist:
+
+```json
+{
+  "env": {
+    "ANTHROPIC_BASE_URL": "https://api.edenai.run/v3",
+    "ANTHROPIC_AUTH_TOKEN": "YOUR_EDEN_AI_API_KEY",
+    "ANTHROPIC_MODEL": "anthropic/claude-sonnet-5-5",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "anthropic/claude-opus-5-5",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "anthropic/claude-sonnet-5-5",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "anthropic/claude-haiku-5-5"
+  }
+}
+```
+
+On Windows, this PowerShell snippet adds the settings for you. It asks for the key so it never lands in your shell history, keeps any other settings already in the file (saving a copy as `settings.json.bak`), and writes the file without a byte order mark:
+
+{/* skip-test: PowerShell, edits the reader's Claude Code settings */}
+```powershell
+$key = Read-Host "Eden AI API key"
+$dir = "$env:USERPROFILE\.claude"
+$file = "$dir\settings.json"
+New-Item -ItemType Directory -Force $dir | Out-Null
+$j = [pscustomobject]@{}
+if (Test-Path $file) {
+  Copy-Item $file "$file.bak"
+  $raw = Get-Content $file -Raw
+  if ($raw) { $j = $raw | ConvertFrom-Json }
+}
+if (-not $j.env) { $j | Add-Member -Force -NotePropertyName env -NotePropertyValue ([pscustomobject]@{}) }
+$vars = [ordered]@{
+  ANTHROPIC_BASE_URL             = "https://api.edenai.run/v3"
+  ANTHROPIC_AUTH_TOKEN           = $key
+  ANTHROPIC_MODEL                = "anthropic/claude-sonnet-5-5"
+  ANTHROPIC_DEFAULT_OPUS_MODEL   = "anthropic/claude-opus-5-5"
+  ANTHROPIC_DEFAULT_SONNET_MODEL = "anthropic/claude-sonnet-5-5"
+  ANTHROPIC_DEFAULT_HAIKU_MODEL  = "anthropic/claude-haiku-5-5"
+}
+foreach ($k in $vars.Keys) { $j.env | Add-Member -Force -NotePropertyName $k -NotePropertyValue $vars[$k] }
+[IO.File]::WriteAllText($file, ($j | ConvertTo-Json -Depth 100), (New-Object Text.UTF8Encoding $false))
+```
+
+Use `ANTHROPIC_AUTH_TOKEN` for the key. Claude Code sends it as an `Authorization: Bearer` header and uses it without asking. `ANTHROPIC_API_KEY` also works with Eden AI, but Claude Code asks you to approve the key the first time; choose **Yes**. Either variable takes precedence over a claude.ai login saved on the machine, so you do not need to log out.
+
+To try it in one terminal without touching the settings file, export the same variables:
+
+```bash
 export ANTHROPIC_BASE_URL="https://api.edenai.run/v3"
-export ANTHROPIC_MODEL="anthropic/claude-opus-latest"
-export ANTHROPIC_DEFAULT_HAIKU_MODEL="anthropic/claude-haiku-latest"
-export ANTHROPIC_DEFAULT_SONNET_MODEL="anthropic/claude-sonnet-latest"
-export ANTHROPIC_DEFAULT_OPUS_MODEL="anthropic/claude-opus-latest"
+export ANTHROPIC_AUTH_TOKEN="YOUR_EDEN_AI_API_KEY"
+export ANTHROPIC_MODEL="anthropic/claude-sonnet-5-5"
+export ANTHROPIC_DEFAULT_OPUS_MODEL="anthropic/claude-opus-5-5"
+export ANTHROPIC_DEFAULT_SONNET_MODEL="anthropic/claude-sonnet-5-5"
+export ANTHROPIC_DEFAULT_HAIKU_MODEL="anthropic/claude-haiku-5-5"
 ```
 
-```powershell PowerShell
-$env:ANTHROPIC_API_KEY = "YOUR_API_KEY"
-$env:ANTHROPIC_BASE_URL = "https://api.edenai.run/v3"
-$env:ANTHROPIC_MODEL = "anthropic/claude-opus-latest"
-$env:ANTHROPIC_DEFAULT_HAIKU_MODEL="anthropic/claude-haiku-latest"
-$env:ANTHROPIC_DEFAULT_SONNET_MODEL="anthropic/claude-sonnet-latest"
-$env:ANTHROPIC_DEFAULT_OPUS_MODEL="anthropic/claude-opus-latest"
-```
-</CodeGroup>
-
-To make it permanent, add the `export` lines to `~/.bashrc` or `~/.zshrc` and reload your shell.
+In PowerShell, `$env:NAME = "value"` does the same. Variables set this way are lost when you close the window, and the next `claude` you start in a new window shows the login menu. When `settings.json` also sets a variable, the `settings.json` value wins.
 
 ### 2. Launch Claude Code
 
@@ -65,28 +100,28 @@ To make it permanent, add the `export` lines to `~/.bashrc` or `~/.zshrc` and re
 claude
 ```
 
-Claude Code now sends requests to Eden AI using the model you set in `ANTHROPIC_MODEL`, and background tasks use the model in `ANTHROPIC_DEFAULT_HAIKU_MODEL`.
+Run `/status` inside Claude Code to check the setup. The **Status** tab should show `Anthropic base URL: https://api.edenai.run/v3`, an `Auth token` line naming `ANTHROPIC_AUTH_TOKEN`, and the model you set. Claude Code now sends requests to Eden AI with the model in `ANTHROPIC_MODEL`, and background tasks use the model in `ANTHROPIC_DEFAULT_HAIKU_MODEL`.
 
-The first time you launch `claude` with `ANTHROPIC_API_KEY` set, it asks whether to use that key: choose **Yes**. To skip the prompt, export the key as `ANTHROPIC_AUTH_TOKEN` instead, which Claude Code sends as an `Authorization: Bearer` header. Eden AI accepts the key in either header. If you are logged in to a claude.ai account, the exported key takes precedence over it while the variable is set.
+The Claude Desktop app does not read `settings.json` or `ANTHROPIC_BASE_URL`. To use Eden AI there, configure its own gateway: see [Claude Desktop](./claude-desktop).
 
 ## Model naming
 
-Eden AI model IDs have the form `provider/model`, such as `anthropic/claude-opus-latest` or `openai/gpt-latest`. A `-latest` alias points to the current release of that model. Claude Code sends tool definitions with every request, so pick a model that supports function calling. Browse the catalog in [List Models](/v3/llms/listing-models) or with `GET https://api.edenai.run/v3/models`.
+Eden AI model IDs have the form `provider/model`, such as `anthropic/claude-sonnet-5-5` or `openai/gpt-latest`. For Claude models, use the versioned ID rather than a `-latest` alias: Claude Code infers the context window from the model name, and with an alias it does not recognize, such as `anthropic/claude-sonnet-latest`, it falls back to a 200K window instead of the model's real one. Claude Code sends tool definitions with every request, so pick a model that supports function calling. Browse the catalog in [List Models](/v3/llms/listing-models) or with `GET https://api.edenai.run/v3/models`.
 
 ## Switching models
 
-Update the `ANTHROPIC_MODEL` environment variable (or pass `--model` on the command line) to switch:
+Change `ANTHROPIC_MODEL` in `settings.json` to change the default. For one session, start Claude Code with `--model`, or run `/model` inside it. An exported `ANTHROPIC_MODEL` does not override the value in `settings.json`.
 
 <CodeGroup>
 ```bash Claude variants
-export ANTHROPIC_MODEL="anthropic/claude-opus-latest"     # default
-export ANTHROPIC_MODEL="anthropic/claude-sonnet-latest"   # cheaper, faster
-export ANTHROPIC_MODEL="anthropic/claude-haiku-latest"    # fastest
+claude --model anthropic/claude-opus-5-5     # most capable
+claude --model anthropic/claude-sonnet-5-5   # cheaper, faster
+claude --model anthropic/claude-haiku-5-5    # fastest
 ```
 
 ```bash Other providers
-export ANTHROPIC_MODEL="openai/gpt-latest"
-export ANTHROPIC_MODEL="vertex/gemini-pro-latest"
+claude --model openai/gpt-latest
+claude --model vertex/gemini-pro-latest
 ```
 </CodeGroup>
 
@@ -95,9 +130,10 @@ export ANTHROPIC_MODEL="vertex/gemini-pro-latest"
 Eden AI also hosts an [MCP server](/v3/expert-models/mcp-server) that exposes the expert model catalog (OCR, web search, speech, translation and more) as tools. Add it and Claude Code can read documents or search the web through the same API key:
 
 ```bash
-claude mcp add --transport http edenai https://mcp.edenai.run/mcp \
-  --header "Authorization: Bearer YOUR_API_KEY"
+claude mcp add --transport http --scope user edenai https://mcp.edenai.run/mcp --header "Authorization: Bearer YOUR_EDEN_AI_API_KEY"
 ```
+
+`--scope user` makes the server available in every project; without it, Claude Code adds it to the current project only. The command is one line, so it runs as is in PowerShell too.
 
 To share it with your team instead, commit the equivalent block to the project's `.mcp.json`. Claude Code expands `${VAR}` in that file, so the block names the variable and each teammate exports `EDEN_AI_API_KEY` in their own shell. The key itself is never committed:
 
@@ -119,24 +155,53 @@ Keep the `type` field: without it Claude Code reads the entry as a stdio server.
 
 ## Troubleshooting
 
+### Claude Code shows the login menu
+
+Claude Code did not find an Eden AI key, so it asks you to log in to Anthropic. Do not pick any of the login options. Check that `~/.claude/settings.json` (`%USERPROFILE%\.claude\settings.json` on Windows) exists, is valid JSON and has the `env` block from [Setup](#1-point-claude-code-at-eden-ai). Then restart `claude` and run `/status`. If you set the variables with `export` or `$env:`, they only last for that terminal window. If you used `ANTHROPIC_API_KEY` and declined the approval prompt once, Claude Code ignores the key from then on: turn it back on under `/config` with **Use custom API key**, or switch to `ANTHROPIC_AUTH_TOKEN`.
+
 ### Authentication errors
 
-Verify the API key is loaded in your shell (the first command prints `set` when it is) and that it has LLM access. The check below sends what Claude Code sends with `ANTHROPIC_API_KEY`: it appends `/v1/messages` to `ANTHROPIC_BASE_URL` and passes the key in the `x-api-key` header. If you export `ANTHROPIC_AUTH_TOKEN` instead, send `-H "Authorization: Bearer $ANTHROPIC_AUTH_TOKEN"` in place of the `x-api-key` line; Eden AI accepts either.
+Check that the key works outside Claude Code. Claude Code appends `/v1/messages` to `ANTHROPIC_BASE_URL` and sends the key from `ANTHROPIC_AUTH_TOKEN` as a Bearer token, so this request is the same call. Replace `YOUR_EDEN_AI_API_KEY` with your key:
 
-{/* skip-test: reads $ANTHROPIC_API_KEY, which the reader exports earlier on the page */}
-```bash
-echo "${ANTHROPIC_API_KEY:+set}"
-
+<CodeGroup>
+```bash bash / zsh
 curl -X POST https://api.edenai.run/v3/v1/messages \
-  -H "x-api-key: $ANTHROPIC_API_KEY" \
+  -H "Authorization: Bearer YOUR_EDEN_AI_API_KEY" \
   -H "anthropic-version: 2023-06-01" \
   -H "Content-Type: application/json" \
-  -d '{"model": "anthropic/claude-opus-latest", "max_tokens": 64, "messages": [{"role": "user", "content": "ping"}]}'
+  -d '{"model": "anthropic/claude-sonnet-5-5", "max_tokens": 64, "messages": [{"role": "user", "content": "ping"}]}'
 ```
+
+```powershell PowerShell
+$key = Read-Host "Eden AI API key"
+try {
+  $r = Invoke-RestMethod -Method Post -Uri "https://api.edenai.run/v3/v1/messages" `
+    -Headers @{ Authorization = "Bearer $key"; "anthropic-version" = "2023-06-01" } `
+    -ContentType "application/json" `
+    -Body (@{ model = "anthropic/claude-sonnet-5-5"; max_tokens = 16; messages = @(@{ role = "user"; content = "ping" }) } | ConvertTo-Json -Depth 5)
+  "OK: " + $r.content[0].text
+} catch { "HTTP " + $_.Exception.Response.StatusCode.value__ + " " + $_.ErrorDetails.Message }
+```
+</CodeGroup>
+
+A `401` means the key is wrong, a `402` that the account is out of credits, a `403` that a policy on your Eden AI account blocks the model, and a `451` that the model is not available in the region your account is restricted to.
 
 ### Model not found
 
-Use the full `provider/model` string (for example `anthropic/claude-opus-latest`, not a bare `claude-opus-latest`). The Messages route answers a bare name such as `claude-opus-latest` or `claude-opus-5-5` with a `400` that reads `Model(s) not found or inactive`. Confirm the ID is in the catalog returned by `GET /v3/models`.
+Use the full `provider/model` string (for example `anthropic/claude-sonnet-5-5`, not a bare `claude-sonnet-5-5`). The Messages route answers a bare name such as `claude-opus-latest` or `claude-opus-5-5` with a `400` that reads `Model(s) not found or inactive`. Confirm the ID is in the catalog returned by `GET /v3/models`. Type the ID rather than pasting it if the error names an ID that looks right: a pasted space or dash variant is enough to miss.
+
+### "This session isn't eligible" notice in auto mode
+
+In auto mode, Claude Code may show a notice that auto mode no longer charges for classifier requests, but that this session isn't eligible because requests go through `api.edenai.run`. Nothing is broken: Eden AI does not pass Anthropic's server-side auto mode checks through yet, so Claude Code runs those checks itself as ordinary requests, billed to your Eden AI account as before. Press **Enter** to continue. To stop the notice, add `"CLAUDE_CODE_AUTO_MODE_SERVER": "0"` to the `env` block of `settings.json`.
+
+### Claude command not recognized on Windows
+
+The native installer puts `claude.exe` in `%USERPROFILE%\.local\bin`. Add that folder to your user `PATH`, then open a new PowerShell window. Anthropic's [installation troubleshooting](https://code.claude.com/docs/en/troubleshoot-install) covers other cases.
+
+{/* skip-test: PowerShell, changes the reader's PATH */}
+```powershell
+[Environment]::SetEnvironmentVariable("Path", [Environment]::GetEnvironmentVariable("Path", "User") + ";$env:USERPROFILE\.local\bin", "User")
+```
 
 ### Connection issues
 
@@ -144,6 +209,7 @@ Confirm `ANTHROPIC_BASE_URL` is exactly `https://api.edenai.run/v3`. Check Eden 
 
 ## Next Steps
 
+- [Claude Desktop](./claude-desktop): the Claude desktop app's Code tab and Eden AI tools
 - [Codex CLI](./codex-cli): OpenAI's open-source coding agent on Eden AI
 - [OpenCode](./opencode): terminal coding agent with auto-generated config
 - [Prompt Caching](/v3/llms/prompt-caching): how caching works on the Messages endpoint Claude Code uses

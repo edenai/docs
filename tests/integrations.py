@@ -99,6 +99,8 @@ TOOLS: dict[str, Tool] = {
     "symfony": Tool("chat"),
     # Coding agents. Every request carries their tool definitions.
     "claude-code": Tool("messages", sends_tools=True),
+    # The Code tab runs the Claude Code agent loop behind the app.
+    "claude-desktop": Tool("messages", sends_tools=True),
     "codex-cli": Tool("responses", sends_tools=True),
     "cline": Tool("chat", sends_tools=True),
     "continue-dev": Tool("chat", sends_tools=True),

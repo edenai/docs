@@ -1,0 +1,199 @@
+---
+title: "Use Claude Desktop with Eden AI"
+sidebarTitle: "Claude Desktop"
+icon: "/integration-logo/claude-ai-icondoc.svg"
+description: "Run Claude Desktop on Claude models through Eden AI's gateway, and give it Eden AI's expert models as tools over MCP, with one API key."
+---
+
+import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
+
+<TechArticleSchema
+  title={"Use Claude Desktop with Eden AI"}
+  description={"Run Claude Desktop on Claude models through Eden AI's gateway, and give it Eden AI's expert models as tools over MCP, with one API key."}
+  path="v3/integrations/claude-desktop"
+  articleSection="Coding Agents"
+  about={"AI Coding Assistants"}
+  proficiencyLevel="Intermediate"
+  keywords={["Eden AI", "AI API", "Claude Desktop", "MCP"]}
+  datePublished="2026-11-03T00:00:00Z"
+  dateModified="2026-11-03T00:00:00Z"
+/>
+
+Claude Desktop can use Eden AI in two ways, separately or together:
+
+- **Models**: Claude Desktop sends its model requests to Eden AI's Anthropic-compatible endpoint instead of Anthropic, and they are billed to your Eden AI account.
+- **Tools**: Eden AI's [MCP server](/v3/expert-models/mcp-server) gives Claude OCR, translation, speech, web search and the rest of the expert model catalog as tools.
+
+Using Eden AI for the models switches Claude Desktop to what Anthropic calls [third-party mode](https://claude.com/docs/third-party/claude-desktop/overview). In that mode:
+
+- Chat, Cowork and Code all run on the models you configure through Eden AI.
+- You do not sign in to an Anthropic account, and your claude.ai conversations and account features are not available. Conversations are stored on your computer.
+- To go back to your claude.ai account, choose the Anthropic sign-in option on the sign-in screen. Your Eden AI configuration is kept for next time.
+
+Claude Desktop does not read the [Claude Code CLI](./claude-code) settings (`settings.json`, `ANTHROPIC_BASE_URL`), so configure each one you use.
+
+## Prerequisites
+
+- [Claude Desktop](https://claude.com/download) installed. On Windows, Cowork needs the `.msix` installer from that page.
+- Eden AI API key from [app.edenai.run](https://app.edenai.run) → **API Keys**
+
+## Use Eden AI for the models
+
+Claude Desktop accepts only Claude models through a gateway: it rejects other model IDs when you save the configuration, and Anthropic [does not support](https://code.claude.com/docs/en/llm-gateway) routing Claude Code to non-Claude models. To run GPT, Gemini, DeepSeek or other models as a coding agent, point the [Claude Code CLI](./claude-code) or another coding agent such as [OpenCode](./opencode) at Eden AI instead.
+
+### 1. Open the configuration window
+
+Launch Claude Desktop and stay on the sign-in screen without signing in. From the menu bar on macOS, or the **☰** menu at the top left on Windows, choose **Help → Troubleshooting → Enable Developer Mode**. Then choose **Developer → Configure Third-Party Inference**.
+
+### 2. Configure the gateway
+
+Fill in:
+
+| Field | Value |
+| --- | --- |
+| Inference provider | **Gateway** |
+| Gateway base URL | `https://api.edenai.run/v3` |
+| Credential kind | **Static API key** |
+| Gateway API key | your Eden AI API key |
+| Gateway auth scheme | **Bearer** |
+
+### 3. Add the models
+
+Under **Models**, add one entry per model:
+
+| Model ID | Claude model behind this ID |
+| --- | --- |
+| `anthropic/claude-sonnet-5-5` | `claude-sonnet-5-5` |
+| `anthropic/claude-opus-5-5` | `claude-opus-5-5` |
+| `anthropic/claude-haiku-5-5` | `claude-haiku-5-5` |
+
+The model ID is what Claude Desktop sends to Eden AI, so it needs the `anthropic/` prefix. The second column tells Claude Desktop which Claude model the ID is, so it uses that model's context window and effort controls. Without these entries, Claude Desktop tries to build the model list from the gateway, which does not work with Eden AI yet.
+
+### 4. Apply and restart
+
+Click **Apply Changes**, then **Save & Restart**. When the app relaunches, choose the option on the sign-in screen to start with the third-party configuration.
+
+### 5. Start a session
+
+Open the **Code** tab, choose a folder for the session to work in, and send a message. The requests appear in your Eden AI usage on [app.edenai.run](https://app.edenai.run).
+
+To change the configuration later, open the same window again. If the **Developer** menu is gone after the restart, choose **Help → Troubleshooting → Enable Developer Mode** again.
+
+## Use Eden AI's expert models as tools
+
+Eden AI's MCP server needs your API key in an `Authorization` header on every tool call. How you give it that header depends on the mode Claude Desktop runs in.
+
+### In third-party mode
+
+If you set up Eden AI for the models above, add the MCP server in the same configuration window:
+
+1. Open **Developer → Configure Third-Party Inference** and go to **Connectors**.
+2. Add a server with these values:
+
+   | Field | Value |
+   | --- | --- |
+   | Name | `edenai` |
+   | Transport | **Streamable HTTP** |
+   | URL | `https://mcp.edenai.run/mcp` |
+   | Headers | `Authorization` = `Bearer YOUR_EDEN_AI_API_KEY` |
+
+3. Click **Test this connection**. It should list the Eden AI tools. Claude Desktop warns that the `Authorization` header looks like a credential: the warning does not block saving, but the key is stored in the configuration in plain text. On a shared or managed machine, use a [headers helper](https://claude.com/docs/third-party/claude-desktop/extensions) instead, a command that prints the header when Claude Desktop needs it.
+4. Click **Apply Changes**, then **Save & Restart**.
+
+The tools are then available in Chat, Cowork and Code. Ask for something an expert model does, for example "Use the Eden AI translation tool to translate 'good morning' to French". Claude asks for permission the first time it calls each tool.
+
+### Signed in with a claude.ai account
+
+**Settings → Connectors → Add custom connector** does not work with Eden AI: the form has no field for an API key, so the tools list but every call fails with "No Eden AI API key was provided". Add the server to Claude Desktop's configuration file instead, through the [`mcp-remote`](https://www.npmjs.com/package/mcp-remote) bridge, which passes the key as a header. This needs [Node.js](https://nodejs.org) installed.
+
+1. Open **Settings → Developer → Edit Config**. This opens `claude_desktop_config.json`. Add an `edenai` entry under `mcpServers`, keeping whatever else the file already holds:
+
+   {/* skip-test: shows only the entry to add; the reader's file holds other settings too */}
+   ```json
+   {
+     "mcpServers": {
+       "edenai": {
+         "command": "npx",
+         "args": [
+           "-y",
+           "mcp-remote",
+           "https://mcp.edenai.run/mcp",
+           "--header",
+           "Authorization:${AUTH_HEADER}"
+         ],
+         "env": {
+           "AUTH_HEADER": "Bearer YOUR_EDEN_AI_API_KEY"
+         }
+       }
+     }
+   }
+   ```
+
+   Write `Authorization:${AUTH_HEADER}` without a space after the colon. Claude Desktop on Windows does not escape spaces inside `args`, which breaks the header.
+
+   On Windows, this PowerShell snippet adds the entry for you to `%APPDATA%\Claude\claude_desktop_config.json`, the file **Edit Config** opens. It saves a copy of the file first, asks for the key so it never lands in your shell history, and keeps the rest of the file:
+
+   {/* skip-test: PowerShell, edits the reader's Claude Desktop config */}
+   ```powershell
+   $cfg = "$env:APPDATA\Claude\claude_desktop_config.json"
+   $j = [pscustomobject]@{}
+   if (Test-Path $cfg) {
+     Copy-Item $cfg "$cfg.bak"
+     $raw = Get-Content $cfg -Raw
+     if ($raw) { $j = $raw | ConvertFrom-Json }
+   }
+   $key = Read-Host "Eden AI API key"
+   $server = [pscustomobject]@{
+     command = "npx"
+     args = @("-y", "mcp-remote", "https://mcp.edenai.run/mcp", "--header", "Authorization:`${AUTH_HEADER}")
+     env = [pscustomobject]@{ AUTH_HEADER = "Bearer $key" }
+   }
+   if (-not $j.mcpServers) { $j | Add-Member -NotePropertyName mcpServers -NotePropertyValue ([pscustomobject]@{}) }
+   $j.mcpServers | Add-Member -Force -NotePropertyName edenai -NotePropertyValue $server
+   [IO.File]::WriteAllText($cfg, ($j | ConvertTo-Json -Depth 100), (New-Object Text.UTF8Encoding $false))
+   ```
+
+2. Quit Claude Desktop completely and start it again: it reads the file only at startup, and closing the window leaves it running. On macOS, press **Cmd+Q**. On Windows, right-click the Claude icon in the system tray and choose **Quit**.
+3. In a new chat, open the **+** menu and switch **edenai** on, then ask for a translation as above.
+
+## Troubleshooting
+
+### "Couldn't sign in to gateway" or "the provider rejected your credentials"
+
+Claude Desktop shows this when Eden AI answers `401` or `403`, and it also showed it for a model ID without the `anthropic/` prefix. Check the model IDs first, then test the key outside Claude Desktop:
+
+{/* skip-test: PowerShell, asks for the reader's key */}
+```powershell
+$key = Read-Host "Eden AI API key"
+try {
+  $r = Invoke-RestMethod -Method Post -Uri "https://api.edenai.run/v3/v1/messages" `
+    -Headers @{ Authorization = "Bearer $key"; "anthropic-version" = "2023-06-01" } `
+    -ContentType "application/json" `
+    -Body (@{ model = "anthropic/claude-sonnet-5-5"; max_tokens = 16; messages = @(@{ role = "user"; content = "hi" }) } | ConvertTo-Json -Depth 5)
+  "OK: " + $r.content[0].text
+} catch { "HTTP " + $_.Exception.Response.StatusCode.value__ + " " + $_.ErrorDetails.Message }
+```
+
+`OK` means the key and the model work, so the problem is in the configuration window: re-enter the key and check the model IDs. A `401` means the key is wrong. A `403` means a policy on your Eden AI account blocks the model, and a `451` that the model is not available in the region your account is restricted to. When the account is out of credits, Eden AI answers `402` and Claude Desktop shows a **Billing issue** card instead.
+
+### "Configured model not available" or "Model(s) not found or inactive"
+
+The model ID that reached Eden AI is not in the catalog. Check that it has the `anthropic/` prefix, uses dashes in the version (`claude-sonnet-5-5`, not `claude-sonnet-5.5`), and has no space before or after it.
+
+### "Couldn't load your organization model list"
+
+The configuration has no model entries. Add the entries from [step 3](#3-add-the-models).
+
+### "Reinstall the desktop app to access Cowork"
+
+On Windows, Cowork needs Claude Desktop installed from the `.msix` package on [claude.com/download](https://claude.com/download). The Code tab works without it.
+
+### The Eden AI MCP server does not start
+
+Claude Desktop writes a log per MCP server, `mcp-server-edenai.log`. In third-party mode the logs are in `~/Library/Logs/Claude-3p/` on macOS and `%LOCALAPPDATA%\Claude-3p\Logs\` on Windows. Signed in with a claude.ai account, they are in `~/Library/Logs/Claude/` on macOS and `%LOCALAPPDATA%\Claude\logs\` on Windows. If there is no such log, Claude Desktop did not restart: quit it fully and start it again. If the log shows `npx` not found, install Node.js and restart Claude Desktop.
+
+## Next Steps
+
+- [Claude Code](./claude-code): the Claude Code CLI on Eden AI, with any model in the catalog
+- [MCP server](/v3/expert-models/mcp-server): the full tool catalog and how its tools work
+- [Prompt Caching](/v3/llms/prompt-caching): how caching works on the Messages endpoint

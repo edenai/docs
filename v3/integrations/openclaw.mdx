@@ -16,7 +16,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "OpenClaw"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-10-27T00:00:00Z"
+  dateModified="2026-11-03T00:00:00Z"
 />
 
 OpenClaw has no built-in Eden AI provider, so you declare one in `openclaw.json`: a base URL, an API key and the models you want, under `models.providers`.
@@ -136,7 +136,7 @@ A backup model can come from either side, and the two are separate mechanisms.
 "fallbacks": ["edenai/anthropic/claude-haiku-latest"]
 ```
 
-**Eden AI switches models.** A [routing policy](/v3/llms/routing-policies) is a saved model chain that Eden AI runs for you. Create one whose targets all support function calling, then add `policy/<name>` as a model `id` under `models.providers.edenai.models` and select the ref `edenai/policy/<name>` (OpenClaw splits the provider at the first `/`). On a custom endpoint OpenClaw accepts model names it does not list (`openclaw@v2026.10.8:docs/concepts/models.md:237`), and Eden AI runs the policy's chain for `policy/<name>`. Binding a policy to an API key does not do this for a request that names an ordinary model: only `policy/<name>` or `@edenai` runs the chain.
+**Eden AI switches models.** A [routing policy](/v3/llms/routing-policies) is a saved model chain that Eden AI runs for you. Create one whose targets all support function calling, then add `policy/<name>` as a model `id` under `models.providers.edenai.models` and select the ref `edenai/policy/<name>` (OpenClaw splits the provider at the first `/`). On a custom endpoint OpenClaw accepts model names it does not list (`openclaw@v2026.10.8:docs/concepts/models.md:237`), and Eden AI runs the policy's chain for `policy/<name>`; a request that names an ordinary model runs that model.
 
 ## Expert Models as Tools (MCP)
 

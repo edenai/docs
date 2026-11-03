@@ -2,58 +2,60 @@
 title: "Use PyGPT with Eden AI"
 sidebarTitle: "PyGPT"
 icon: "/integration-logo/py-gpt-icondoc.svg"
-description: "Configure PyGPT, the desktop AI assistant, to use Eden AI for 500+ models behind one API key."
+description: "Set up PyGPT, the desktop AI assistant, with an Eden AI key to chat with 500+ models, build embeddings indexes and switch to the EU endpoint."
 ---
 
 import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
 
 <TechArticleSchema
   title={"Use PyGPT with Eden AI"}
-  description={"Configure PyGPT, the desktop AI assistant, to use Eden AI for 500+ models behind one API key."}
+  description={"Set up PyGPT, the desktop AI assistant, with an Eden AI key to chat with 500+ models, build embeddings indexes and switch to the EU endpoint."}
   path="v3/integrations/py-gpt"
   articleSection="Chat UI"
   about={"LLM Chat Interface"}
   proficiencyLevel="Beginner"
   keywords={["Eden AI", "AI API", "PyGPT", "Desktop Assistant", "LlamaIndex"]}
   datePublished="2026-08-31T00:00:00Z"
-  dateModified="2026-08-31T00:00:00Z"
+  dateModified="2026-10-27T00:00:00Z"
 />
 
-Configure [PyGPT](https://github.com/szczyglis-dev/py-gpt), the desktop AI assistant, to use Eden AI for 500+ models behind one API key.
+PyGPT ships Eden AI as a built-in provider, so setup is a key and an endpoint in the settings window, with no config file to edit. This page covers the key, the model entry, the embeddings switch and the EU endpoint.
 
 ## Overview
 
-PyGPT is a desktop application for chat, vision, image generation and agents. Eden AI is a **built-in provider**, configured entirely from the settings window with no file editing:
+[PyGPT](https://github.com/szczyglis-dev/py-gpt) is a desktop application for chat, vision, image generation and agents. Eden AI is a **built-in provider**:
 
 - **500+ models**: reach OpenAI, Anthropic, Google, Mistral and more through one key
-- **Its own settings tab**: Eden AI has a dedicated tab under API keys
-- **LLM and embeddings**: the provider serves both, so semantic index features work from the same key
+- **Its own settings tab**: Eden AI has a dedicated tab under **API Keys**
+- **LLM and embeddings**: the provider can serve both, but embeddings stay on OpenAI until you select Eden AI (see [Embeddings](#embeddings))
 - **EU endpoint**: change one field to route through `api.eu.edenai.run`
 
 ## Prerequisites
 
 - PyGPT installed. See the [PyGPT repository](https://github.com/szczyglis-dev/py-gpt)
-- An Eden AI API key from [app.edenai.run](https://app.edenai.run) → **API Keys**
+- An Eden AI API key from [app.edenai.run](https://app.edenai.run)
 
 ## Setup
 
 ### 1. Enter your key
 
-1. Open **Config** then **Settings**.
+1. Open **Config** > **Settings...**.
 2. Go to the **API Keys** section and select the **Eden AI** tab.
 3. Paste your key into **Eden AI API key**.
 4. Leave **API Endpoint** at its default, `https://api.edenai.run/v3`.
-5. Save.
+5. Click **Save**.
 
 ### 2. Add an Eden AI model
 
-Models are declared in the model editor with `edenai` as their provider, and the model name in Eden AI's `vendor/model` form. For example `anthropic/claude-sonnet-latest` or `openai/gpt-5-mini`.
+1. Open **Config** > **Models** > **Edit models**.
+2. Add a model and choose **Eden AI** as its provider.
+3. Set the model id to Eden AI's `vendor/model` form, for example `anthropic/claude-sonnet-latest`.
 
-Once saved, the model appears in the model picker like any other.
+The model editor has a **Tool calls (function calling)** option. Turn it on for models that support function calling. PyGPT sends tool definitions only when its **Tools** option is enabled (it is off by default).
 
 ## Model naming
 
-Eden AI addresses models as `vendor/model`, and PyGPT forwards the name unchanged. The live catalogue is public and needs no key:
+Eden AI addresses models as `vendor/model`, and PyGPT forwards the name unchanged. Good starting points are `anthropic/claude-sonnet-latest`, `openai/gpt-latest` and `mistral/mistral-large-latest`. The live catalogue is public and needs no key:
 
 <CodeGroup>
 ```bash cURL
@@ -61,11 +63,17 @@ curl https://api.edenai.run/v3/models
 ```
 </CodeGroup>
 
-Read the catalogue rather than copying a list from a guide, since IDs are retired over time. `anthropic/claude-sonnet-latest` is an alias that always resolves to the current Sonnet, which makes it a safe default for a model entry you do not want to revisit.
+Read the catalogue rather than copying a list from a guide, since ids are retired over time. A `-latest` id is an alias that follows the current model, which makes it a safe default for a model entry you do not want to revisit. See [List LLM Models](/v3/llms/listing-models) for the filters.
 
 ## Embeddings
 
-The Eden AI provider also serves embeddings, so PyGPT's index and semantic search features work from the same key. Embedding models live on a **separate catalogue**:
+PyGPT does not use Eden AI for embeddings until you select it. Its **Embeddings provider** defaults to OpenAI, and it ships no default embedding model for Eden AI.
+
+1. Open **Config** > **Settings...** and go to **Indexes / RAG**, then the **Embeddings** tab.
+2. Set **Embeddings provider** to **Eden AI**.
+3. In **Default embedding models**, add an entry for the `edenai` provider with an Eden AI embedding model id, for example `mistral/mistral-embed`.
+
+The key and endpoint come from the **Eden AI** tab under **API Keys**. Embedding models live on a **separate catalogue**:
 
 <CodeGroup>
 ```bash cURL
@@ -83,21 +91,29 @@ Change the **API Endpoint** field in the Eden AI settings tab:
 https://api.eu.edenai.run/v3
 ```
 
-The EU endpoint serves the subset of the catalogue available in the EU, so a model that works on the global endpoint is not guaranteed to be reachable through it.
+The EU endpoint serves only the models cleared for the EU and rejects any other with HTTP 451. After switching, pick models from the EU catalogue, which is public:
+
+<CodeGroup>
+```bash cURL
+curl https://api.eu.edenai.run/v3/models
+```
+</CodeGroup>
+
+`mistral/mistral-large-latest` is served there. `anthropic/claude-sonnet-latest` is not, so replace it in your model entries. Embeddings use the same endpoint field, so pick an id from `https://api.eu.edenai.run/v3/embeddings/models`, for example `mistral/mistral-embed`. See [EU Data Residency Endpoint](/v3/data-governance/eu-endpoint).
 
 ## Troubleshooting
 
 ### Authentication errors
 
-Re-check the key in **Settings** then **API Keys** then **Eden AI**. Make sure it is an Eden AI key and not a vendor key, and that it was pasted into the Eden AI tab rather than another provider's.
+Re-check the key in **Config** > **Settings...** > **API Keys** > **Eden AI**. Make sure it is an Eden AI key and not a vendor key, and that it was pasted into the Eden AI tab rather than another provider's. Eden AI answers 401 with `Invalid API key` for a wrong or revoked `sk-eden-` key and `Invalid token` for other token shapes.
 
-### `model not found`
+### The wrong model name
 
-Use the full `vendor/model` form, for example `openai/gpt-5-mini` and not `gpt-5-mini`. Copy the identifier exactly as `GET /v3/models` returns it.
+PyGPT sends the model id exactly as you typed it. Use the id exactly as the catalog lists it, in the `vendor/model` form, for example `openai/gpt-latest`, as `GET /v3/models` returns it.
 
 ### The endpoint field was cleared
 
-An empty **API Endpoint** leaves the provider without a base URL. Restore the default, `https://api.edenai.run/v3`, or the EU host if that is what you want.
+Set **API Endpoint** back to `https://api.edenai.run/v3`, or to `https://api.eu.edenai.run/v3` for the EU endpoint.
 
 ## Next Steps
 

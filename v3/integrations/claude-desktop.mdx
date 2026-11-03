@@ -198,7 +198,7 @@ On Windows, Cowork needs the `.msix` package of Claude Desktop; see Anthropic's 
 
 In third-party mode, open the Connectors section and click **Test this connection** to see the error. Connection events are logged in `mcp.log`, in `~/Library/Logs/Claude-3p/` on macOS and `%LOCALAPPDATA%\Claude-3p\logs\` on Windows.
 
-Signed in with a claude.ai account, Claude Desktop writes `mcp-server-edenai.log` in `~/Library/Logs/Claude/` on macOS and `%LOCALAPPDATA%\Claude\logs\` on Windows. If there is no such log, look for errors about `edenai` in `mcp.log` in the same folder, check that `claude_desktop_config.json` is valid JSON, and make sure you quit Claude Desktop fully before starting it again. If `mcp-server-edenai.log` shows `npx` not found, install Node.js and restart Claude Desktop.
+Signed in with a claude.ai account, Claude Desktop writes `mcp-server-edenai.log` in `~/Library/Logs/Claude/` on macOS. On Windows, look in `%LOCALAPPDATA%\Claude\logs\`, or in `%APPDATA%\Claude\logs\` on some installs. If there is no such log, look for errors about `edenai` in `mcp.log` in the same folder, check that `claude_desktop_config.json` is valid JSON, and make sure you quit Claude Desktop fully before starting it again. If `mcp-server-edenai.log` shows `npx` not found, install Node.js and restart Claude Desktop.
 
 ## Next Steps
 

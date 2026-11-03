@@ -68,9 +68,9 @@ Under **Models**, add one entry per model:
 | `anthropic/claude-haiku-5-5` | `claude-haiku-5-5` |
 | `claude-sonnet-5` | `claude-sonnet-5` |
 
-The model ID is what Claude Desktop sends to Eden AI, so it needs the `anthropic/` prefix. The second column tells Claude Desktop which Claude model the ID is, so it uses that model's context window and effort controls. Without these entries, Claude Desktop tries to build the model list from the gateway, which does not work with Eden AI yet.
+The model ID is what Claude Desktop sends to Eden AI, so the first three need the `anthropic/` prefix. The second column tells Claude Desktop which Claude model the ID is, so it uses that model's context window and effort controls. Without these entries, Claude Desktop tries to build the model list from the gateway, which does not work with Eden AI yet.
 
-The last entry is for auto mode in the Code tab: its safety checks call `claude-sonnet-5`, and Anthropic's [configuration reference](https://claude.com/docs/third-party/claude-desktop/configuration) says that if the ID is missing from the list, auto mode can block actions it would otherwise allow. Eden AI accepts `claude-sonnet-5` as is and routes it to a Claude Sonnet 5 provider.
+The last entry is for auto mode in the Code tab, and it is the exception: enter it exactly as `claude-sonnet-5`, without the prefix. Auto mode's safety checks call that ID, and Anthropic's [configuration reference](https://claude.com/docs/third-party/claude-desktop/configuration) says that if the ID is missing from the list, auto mode can block actions it would otherwise allow. Eden AI accepts `claude-sonnet-5` as is and routes it to a Claude Sonnet 5 provider.
 
 ### 4. Apply and restart
 
@@ -166,7 +166,7 @@ A custom connector (**Add custom connector**) does not work with Eden AI: the fo
 
 ### "Couldn't sign in to gateway" or "the provider rejected your credentials"
 
-Claude Desktop showed this for a model ID without the `anthropic/` prefix, and a wrong or revoked key also gives a credentials error. Check the model IDs first, then test the key outside Claude Desktop:
+Claude Desktop showed this for `claude-sonnet-5-5` entered without the `anthropic/` prefix, and a wrong or revoked key also gives a credentials error. Check the model IDs first, then test the key outside Claude Desktop:
 
 {/* skip-test: PowerShell, asks for the reader's key */}
 ```powershell
@@ -184,7 +184,7 @@ try {
 
 ### "Model(s) not found or inactive"
 
-The model ID that reached Eden AI is not in the catalog. Check that it matches the table in [step 3](#3-add-the-models) exactly: `anthropic/claude-sonnet-5-5` works, while a bare `claude-sonnet-5-5` or a dot in the version does not. If it looks right, delete the entry and type it again.
+The model ID that reached Eden AI is not in the catalog. Check that it matches the table in [step 3](#3-add-the-models) exactly: `anthropic/claude-sonnet-5-5` works, while a bare `claude-sonnet-5-5` or a dot in the version does not. The `claude-sonnet-5` entry for auto mode is the one that stays without a prefix. If an ID looks right, delete the entry and type it again.
 
 ### "Couldn't load your organization model list"
 
@@ -192,13 +192,13 @@ This appears when the configuration has no model entries. Add the entries from [
 
 ### "Reinstall the desktop app to access Cowork"
 
-On Windows, Cowork needs Claude Desktop installed from the `.msix` package on [claude.com/download](https://claude.com/download). The Code tab works without it.
+On Windows, Cowork needs the `.msix` package of Claude Desktop; see Anthropic's [installation guide](https://claude.com/docs/third-party/claude-desktop/installation). The Code tab works without it.
 
 ### The Eden AI tools do not appear
 
 In third-party mode, open the Connectors section and click **Test this connection** to see the error. Connection events are logged in `mcp.log`, in `~/Library/Logs/Claude-3p/` on macOS and `%LOCALAPPDATA%\Claude-3p\logs\` on Windows.
 
-Signed in with a claude.ai account, Claude Desktop writes `mcp-server-edenai.log` in `~/Library/Logs/Claude/` on macOS and `%LOCALAPPDATA%\Claude\logs\` on Windows. If there is no such log, Claude Desktop did not restart: quit it fully and start it again. If the log shows `npx` not found, install Node.js and restart Claude Desktop.
+Signed in with a claude.ai account, Claude Desktop writes `mcp-server-edenai.log` in `~/Library/Logs/Claude/` on macOS and `%LOCALAPPDATA%\Claude\logs\` on Windows. If there is no such log, look for errors about `edenai` in `mcp.log` in the same folder, check that `claude_desktop_config.json` is valid JSON, and make sure you quit Claude Desktop fully before starting it again. If `mcp-server-edenai.log` shows `npx` not found, install Node.js and restart Claude Desktop.
 
 ## Next Steps
 

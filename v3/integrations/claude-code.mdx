@@ -37,7 +37,7 @@ Claude Code runs in your terminal and edits code in your project. Pointing it at
 
 ### 1. Point Claude Code at Eden AI
 
-Put the settings in Claude Code's user settings file so they apply to every terminal and every project. The file is `~/.claude/settings.json` on macOS and Linux, and `%USERPROFILE%\.claude\settings.json` on Windows. Create it if it does not exist:
+Put the settings in Claude Code's user settings file so they apply to every terminal and every project. The file is `~/.claude/settings.json` on macOS and Linux, and `%USERPROFILE%\.claude\settings.json` on Windows. Create it if it does not exist. If it already exists, add these entries to its `env` block and keep the rest of the file:
 
 ```json
 {

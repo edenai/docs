@@ -30,7 +30,7 @@ Claude Code runs in your terminal and edits code in your project. Pointing it at
 
 ## Prerequisites
 
-- Claude Code installed ([install instructions](https://code.claude.com/docs/en/setup)). On Windows, the native installer puts `claude.exe` in `%USERPROFILE%\.local\bin` but does not always add that folder to your `PATH`. If `claude` is not recognized afterwards, see [Troubleshooting](#claude-command-not-recognized-on-windows). The installer also shows no progress while it downloads, so give it a few minutes.
+- Claude Code installed ([install instructions](https://code.claude.com/docs/en/setup)). On Windows, the native installer puts `claude.exe` in `%USERPROFILE%\.local\bin` but does not add that folder to your `PATH`; it prints a note about it instead. If `claude` is not recognized afterwards, see [Troubleshooting](#claude-command-not-recognized-on-windows). The installer also shows no progress while it downloads, so give it a few minutes.
 - Eden AI API key from [app.edenai.run](https://app.edenai.run) → **API Keys**. You do not need an Anthropic API key or a claude.ai account.
 
 ## Setup
@@ -92,7 +92,7 @@ export ANTHROPIC_DEFAULT_SONNET_MODEL="anthropic/claude-sonnet-5-5"
 export ANTHROPIC_DEFAULT_HAIKU_MODEL="anthropic/claude-haiku-5-5"
 ```
 
-In PowerShell, `$env:NAME = "value"` does the same. Variables set this way are lost when you close the window, and the next `claude` you start in a new window shows the login menu. When `settings.json` also sets a variable, the `settings.json` value wins.
+In PowerShell, `$env:NAME = "value"` does the same. Variables set this way are lost when you close the window. The next `claude` you start in a new window then shows the login menu, or quietly runs on your claude.ai login if one is saved. When `settings.json` also sets a variable, the `settings.json` value wins.
 
 ### 2. Launch Claude Code
 
@@ -102,7 +102,7 @@ claude
 
 Run `/status` inside Claude Code to check the setup. The **Status** tab should show `Anthropic base URL: https://api.edenai.run/v3`, an `Auth token` line naming `ANTHROPIC_AUTH_TOKEN`, and the model you set. Claude Code now sends requests to Eden AI with the model in `ANTHROPIC_MODEL`, and background tasks use the model in `ANTHROPIC_DEFAULT_HAIKU_MODEL`.
 
-The Claude Desktop app does not read `settings.json` or `ANTHROPIC_BASE_URL`. To use Eden AI there, configure its own gateway: see [Claude Desktop](./claude-desktop).
+The Claude Desktop app does not take its base URL or key from `settings.json` or the environment. To use Eden AI there, configure its own gateway: see [Claude Desktop](./claude-desktop).
 
 ## Model naming
 
@@ -184,15 +184,15 @@ try {
 ```
 </CodeGroup>
 
-A `401` means the key is wrong, a `402` that the account is out of credits, a `403` that a policy on your Eden AI account blocks the model, and a `451` that the model is not available in the region your account is restricted to.
+A `401` means the key is wrong, a `402` that the account is out of credits or over a spending budget, a `403` that a policy on your Eden AI account blocks the model, and a `451` that the model is not available in the region your account is restricted to.
 
 ### Model not found
 
-Use the full `provider/model` string (for example `anthropic/claude-sonnet-5-5`, not a bare `claude-sonnet-5-5`). The Messages route answers a bare name such as `claude-opus-latest` or `claude-opus-5-5` with a `400` that reads `Model(s) not found or inactive`. Confirm the ID is in the catalog returned by `GET /v3/models`. Type the ID rather than pasting it if the error names an ID that looks right: a pasted space or dash variant is enough to miss.
+Use the full `provider/model` string from the catalog, for example `anthropic/claude-sonnet-5-5`. Anthropic's own spelling without the prefix, such as `claude-sonnet-5-5`, gets a `400` that reads `Model(s) not found or inactive`. Confirm the ID is in the catalog returned by `GET /v3/models`.
 
 ### "This session isn't eligible" notice in auto mode
 
-In auto mode, Claude Code may show a notice that auto mode no longer charges for classifier requests, but that this session isn't eligible because requests go through `api.edenai.run`. Nothing is broken: Eden AI does not pass Anthropic's server-side auto mode checks through yet, so Claude Code runs those checks itself as ordinary requests, billed to your Eden AI account as before. Press **Enter** to continue. To stop the notice, add `"CLAUDE_CODE_AUTO_MODE_SERVER": "0"` to the `env` block of `settings.json`.
+In auto mode, Claude Code may show a notice that auto mode is changing to no longer charge for classifier requests, but that this session isn't eligible because requests go through `api.edenai.run`. Nothing is broken: Eden AI does not support Anthropic's server-side auto mode checks yet, so Claude Code runs those checks itself as ordinary requests, billed to your Eden AI account as before. Press **Enter** to continue. To stop the notice, add `"CLAUDE_CODE_AUTO_MODE_SERVER": "0"` to the `env` block of `settings.json`.
 
 ### Claude command not recognized on Windows
 
@@ -209,7 +209,7 @@ Confirm `ANTHROPIC_BASE_URL` is exactly `https://api.edenai.run/v3`. Check Eden 
 
 ## Next Steps
 
-- [Claude Desktop](./claude-desktop): the Claude desktop app's Code tab and Eden AI tools
+- [Claude Desktop](./claude-desktop): Claude models and Eden AI tools in the Claude desktop app
 - [Codex CLI](./codex-cli): OpenAI's open-source coding agent on Eden AI
 - [OpenCode](./opencode): terminal coding agent with auto-generated config
 - [Prompt Caching](/v3/llms/prompt-caching): how caching works on the Messages endpoint Claude Code uses

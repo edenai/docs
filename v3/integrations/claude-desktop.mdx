@@ -196,7 +196,7 @@ try {
 } catch { "HTTP " + $_.Exception.Response.StatusCode.value__ + " " + $_.ErrorDetails.Message }
 ```
 
-`OK` means the key and the model work, so the problem is in the configuration window: re-enter the key and check the model IDs. A `401` means the key is wrong. A `402` means the account is out of credits or over a spending budget; Anthropic's [gateway guide](https://claude.com/docs/third-party/claude-desktop/gateway) says Claude Desktop shows a **Billing issue** card for it. A `403` means a policy on your Eden AI account blocks the model, and a `451` that the model is not available in the region your account is restricted to, or, on the EU endpoint, outside the EU. On the EU endpoint, use the `vertex/` IDs from [Use the EU endpoint](#use-the-eu-endpoint). To test against it, replace `api.edenai.run` with `api.eu.edenai.run` in the snippet.
+`OK` means the key and the model work, so the problem is in the configuration window: re-enter the key and check the model IDs. A `401` means the key is wrong. A `402` means the account is out of credits or over a spending budget; Anthropic's [gateway guide](https://claude.com/docs/third-party/claude-desktop/gateway) says Claude Desktop shows a **Billing issue** card for it. A `403` means a policy on your Eden AI account blocks the model, and a `451` that the model is not available in the region your account is restricted to, or, on the EU endpoint, outside the EU. On the EU endpoint, use the `vertex/` IDs from [Use the EU endpoint](#use-the-eu-endpoint). To test against it, replace `api.edenai.run` with `api.eu.edenai.run` in the snippet, and `anthropic/claude-sonnet-5-5` with `vertex/claude-sonnet-5-5`.
 
 ### "Model(s) not found or inactive"
 

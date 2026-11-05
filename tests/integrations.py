@@ -110,6 +110,9 @@ TOOLS: dict[str, Tool] = {
     "openclaw": Tool("chat", sends_tools=True),
     "opencode": Tool("chat", sends_tools=True),
     "pi": Tool("chat", sends_tools=True),
+    # Qoder also offers Responses and Anthropic Messages as API types; the page
+    # recommends Chat Completions.
+    "qoder": Tool("chat", sends_tools=True),
     # Open Code Review is a review agent: its loop sends tool definitions on every request.
     "open-code-review": Tool("chat", sends_tools=True),
     # Lynkr fronts Claude Code, Cursor and Codex, and calls Eden AI's chat

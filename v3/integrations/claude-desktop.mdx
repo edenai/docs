@@ -16,7 +16,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "Claude Desktop", "MCP"]}
   datePublished="2026-11-03T00:00:00Z"
-  dateModified="2026-11-03T00:00:00Z"
+  dateModified="2026-11-05T00:00:00Z"
 />
 
 Claude Desktop can use Eden AI in two ways, separately or together:
@@ -28,6 +28,7 @@ Using Eden AI for the models switches Claude Desktop to what Anthropic calls [th
 
 - Chat, Cowork and Code all run on the models you configure through Eden AI.
 - The app does not use your claude.ai account: your claude.ai conversations are not shown, and new conversations are stored on your computer.
+- Files Claude creates, in Cowork or in the Code tab, are written to your computer, in the folder you chose for the session. They are not uploaded to claude.ai. Their content still passes through Eden AI as part of the model requests, like any other prompt or answer.
 - To go back to your claude.ai account, choose the Anthropic sign-in option on the sign-in screen, as described in Anthropic's [setup guide](https://claude.com/docs/third-party/claude-desktop/installation).
 
 Claude Desktop does not take its base URL or key from the [Claude Code CLI](./claude-code) settings, so configure each one you use.
@@ -52,7 +53,7 @@ Fill in:
 | Field | Value |
 | --- | --- |
 | Inference provider | **Gateway** |
-| Gateway base URL | `https://api.edenai.run/v3` |
+| Gateway base URL | `https://api.edenai.run/v3`, or `https://api.eu.edenai.run/v3` for the [EU endpoint](#use-the-eu-endpoint) |
 | Credential kind | **Static API key** |
 | Gateway API key | your Eden AI API key |
 | Gateway auth scheme | **Bearer** |
@@ -71,6 +72,21 @@ Under **Models**, add one entry per model:
 The model ID is what Claude Desktop sends to Eden AI, so the first three need the `anthropic/` prefix. The second column tells Claude Desktop which Claude model the ID is, so it uses that model's context window and effort controls. Without these entries, Claude Desktop tries to build the model list from the gateway, which does not work with Eden AI yet.
 
 The last entry is for auto mode in the Code tab, and it is the exception: enter it exactly as `claude-sonnet-5`, without the prefix. Auto mode's safety checks call that ID, and Anthropic's [configuration reference](https://claude.com/docs/third-party/claude-desktop/configuration) says that if the ID is missing from the list, auto mode can block actions it would otherwise allow. Eden AI accepts `claude-sonnet-5` as is and routes it to a Claude Sonnet 5 provider.
+
+You can also use the same Claude model from another provider in the catalog. For example, enter `vertex/claude-opus-5-5` as the model ID and `claude-opus-5-5` as the Claude model behind it to run Claude Opus 5.5 on Google Vertex AI.
+
+### Use the EU endpoint
+
+To keep requests in the EU, set the gateway base URL to `https://api.eu.edenai.run/v3`. The API key stays the same. This endpoint only serves models processed in the EU, and the `anthropic/` models are not among them: they return a `451` error. Use the Vertex AI IDs instead:
+
+| Model ID | Claude model behind this ID |
+| --- | --- |
+| `vertex/claude-sonnet-5-5` | `claude-sonnet-5-5` |
+| `vertex/claude-opus-5-5` | `claude-opus-5-5` |
+| `vertex/claude-haiku-5-5` | `claude-haiku-5-5` |
+| `claude-sonnet-5` | `claude-sonnet-5` |
+
+Keep the `claude-sonnet-5` entry for auto mode as it is: on the EU endpoint, Eden AI routes it to a provider in the EU. To see every Claude model the EU endpoint serves, list `https://api.eu.edenai.run/v3/models`.
 
 ### 4. Apply and restart
 
@@ -180,7 +196,7 @@ try {
 } catch { "HTTP " + $_.Exception.Response.StatusCode.value__ + " " + $_.ErrorDetails.Message }
 ```
 
-`OK` means the key and the model work, so the problem is in the configuration window: re-enter the key and check the model IDs. A `401` means the key is wrong. A `402` means the account is out of credits or over a spending budget; Anthropic's [gateway guide](https://claude.com/docs/third-party/claude-desktop/gateway) says Claude Desktop shows a **Billing issue** card for it. A `403` means a policy on your Eden AI account blocks the model, and a `451` that the model is not available in the region your account is restricted to.
+`OK` means the key and the model work, so the problem is in the configuration window: re-enter the key and check the model IDs. A `401` means the key is wrong. A `402` means the account is out of credits or over a spending budget; Anthropic's [gateway guide](https://claude.com/docs/third-party/claude-desktop/gateway) says Claude Desktop shows a **Billing issue** card for it. A `403` means a policy on your Eden AI account blocks the model, and a `451` that the model is not available in the region your account is restricted to, or, on the EU endpoint, outside the EU. On the EU endpoint, use the `vertex/` IDs from [Use the EU endpoint](#use-the-eu-endpoint). To test against it, replace `api.edenai.run` with `api.eu.edenai.run` in the snippet.
 
 ### "Model(s) not found or inactive"
 

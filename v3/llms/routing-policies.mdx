@@ -14,7 +14,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "LLM API", "routing policy", "model fallback", "load balancing", "provider routing"]}
   datePublished="2026-10-27T00:00:00Z"
-  dateModified="2026-11-03T00:00:00Z"
+  dateModified="2026-11-05T00:00:00Z"
 />
 
 A routing policy is a saved model chain: which models to try, how to pick among them, and the [provider routing](/v3/llms/provider-routing) preferences every attempt follows. Save it once under a name and every request can use it as `model: "policy/{name}"`, so an app that only lets you configure a model string, such as a coding agent or a chat UI, gets your fallbacks and provider preferences without any change to the request.
@@ -55,7 +55,7 @@ curl -X PUT https://api.edenai.run/v3/manage/routing-policies/prod-chat/ \
     {"model": "openai/gpt-5.6-sol"},
     {"model": "kimi-k2.6"}
   ],
-  "defaults": {"routing": {"sort": "cost"}, "credentials": "auto", "retries": 0},
+  "defaults": {"routing": {"sort": "cost"}, "retries": 0},
   "lock": ["allowed_providers"],
   "fallbacks": ["deepseek-v4-flash"],
   "version": 1,
@@ -104,7 +104,7 @@ The name is only accepted where a model chain is: the chat dialects above. To em
 | `enabled` | `false` parks the policy: calling it by name is a `400` and it leaves the [model listing](#finding-your-policies). Default `true` |
 | `strategy` | How the targets are ordered: `fallback`, `load_balance`, `cheapest` or `fastest`. Required |
 | `targets` | 1 to 32 models to choose among, each a string or an object with the overrides below. Required |
-| `defaults` | What every target inherits unless it sets its own: `routing`, `credentials` (default `auto`) and `retries` (default `0`) |
+| `defaults` | What every target inherits unless it sets its own: `routing` and `retries` (default `0`) |
 | `lock` | Fields a request may not set: any of the `routing` fields a policy stores (listed below), or `region`. A request that sets one is refused with a `400` |
 | `fallbacks` | Up to 7 models tried after every target, in order, with the policy's default routing |
 
@@ -115,7 +115,6 @@ A target:
 | `model` | A `provider/model` id, a routable name such as `kimi-k2.6` (Eden AI picks the provider on each call), or an alias, with an optional `@region` tag |
 | `weight` | 1 to 100, `load_balance` only. Default `1` |
 | `retries` | 0 to 3, `fallback` only: how many more times this target is tried before moving on. A retry is the same target called again |
-| `credentials` | `auto`, `own` or `eden`. See [Credentials](#credentials) |
 | `routing` | This target's provider preferences, applied over the policy's defaults |
 | `region` | Pin the target to a region, the same as an `@region` tag on `model`. Set one or the other |
 
@@ -160,18 +159,6 @@ With this policy a request may send `routing.sort: "latency"` and get it, but a 
 ```
 
 A `:sort` suffix on the model counts as `sort`, and an `@region` tag as `region`. A merge that names a provider in both `allowed_providers` and `ignored_providers`, one from the policy and one from the request, is also a `400`.
-
-## Credentials
-
-By default a target runs on your own provider key when you have [stored one](/v3/general/byok) for its provider, and on Eden AI's otherwise. `credentials` fixes that per target, or for all of them in `defaults`:
-
-| Value | Effect |
-|---|---|
-| `auto` | Your own key when you have one for the provider, else Eden AI's. Default |
-| `own` | Your own key only. Without a stored key for the provider, the target is dropped for the call (`no_own_key`) and the chain moves on |
-| `eden` | Eden AI's key, even when you stored your own. Your key for that provider is set aside for the whole request, a Responses turn that continues it included |
-
-`own` and `eden` need a concrete `provider/model` target, since a routable name fans out across providers, and a policy uses one mode per provider.
 
 ## Organization and personal policies
 
@@ -228,7 +215,7 @@ Send `x-edenai-metadata: enabled` and the [request metadata](/v3/llms/request-me
 
 | Reason | The target was dropped because |
 |---|---|
-| `no_own_key` | Its provider needs your own key and none is usable: `credentials: own` with no stored key for the provider, or a stored key that holds no credentials |
+| `no_own_key` | The target runs on your [own key](/v3/general/byok) for its provider, and no usable one is stored |
 | `guardrail` | An [organization guardrail](/v3/organization/guardrails) forbids the model |
 | `region` | The model is not served in the region the call or the target pins |
 | `zero_data_retention` | The call requires zero data retention and no provider of the model qualifies |

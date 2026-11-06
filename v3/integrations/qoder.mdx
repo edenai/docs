@@ -53,7 +53,9 @@ In the **Add model** dialog, fill in the fields:
 | **API type** | **Chat Completions API** (recommended) |
 | **Base URL** | `https://api.edenai.run/v3` |
 | **API key** | Your Eden AI API key |
-| **Model IDs** | e.g. `anthropic/claude-sonnet-latest` |
+| **Model IDs** | e.g. `claude-sonnet-5.5` or `gpt-5.5` |
+
+A Model ID is a canonical model name. It names the model only, so Eden AI chooses the provider that serves it, by price, speed or latency, with automatic failover. The full list of canonical names is at `GET https://api.edenai.run/v3/models?view=models` (public, no key needed).
 
 Click **+ Add Model ID** to add more models on the same endpoint, then click **Next**.
 
@@ -66,7 +68,7 @@ Click **+ Add Model ID** to add more models on the same endpoint, then click **N
 The **Configure model capabilities** screen describes the model to Qoder:
 
 - **Display name**: the name shown in the model picker.
-- **Supported context windows** and **Default context window**: use the model's `context_length` from `GET https://api.edenai.run/v3/models` (see [List Models](/v3/llms/listing-models)).
+- **Supported context windows** and **Default context window**: use the model's `context_length` from `GET https://api.edenai.run/v3/models?view=models` (see [List Models](/v3/llms/listing-models)).
 - **Capabilities**: turn on **Vision** and **Thinking** when the model supports them.
 - **Reasoning effort**: **Minimal**, **Low**, **Medium**, **High**, **Extra high** or **Maximum**. See [Reasoning effort](#reasoning-effort) for what Qoder sends for each.
 
@@ -105,12 +107,7 @@ Open the model picker at the bottom of the chat and choose the model under **Cus
 
 ## Model naming
 
-Qoder sends the Model ID as you write it, so use the full `provider/model` id. Aliases ending in `-latest` follow the newest model of a family. Qoder sends tool definitions with every request, so choose a model whose catalog entry has `supports_function_calling: true` in `GET /v3/models`. These were tested end to end with Chat Completions:
-
-- `anthropic/claude-sonnet-latest`
-- `openai/gpt-latest`
-- `vertex/gemini-flash-latest`
-- `mistral/devstral-latest`
+Qoder sends the Model ID as you write it, so use a canonical model name as listed by `GET https://api.edenai.run/v3/models?view=models`, such as `claude-sonnet-5.5` or `gpt-5.5`. Qoder sends tool definitions with every request, so choose a model whose entry has `supports_function_calling: true`. Claude Sonnet, GPT, Gemini Flash and Devstral were tested end to end with Chat Completions.
 
 List the available models, with their capabilities and pricing, in [List Models](/v3/llms/listing-models).
 

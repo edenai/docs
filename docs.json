@@ -407,7 +407,8 @@
                       "v3/integrations/open-code-review",
                       "v3/integrations/pi",
                       "v3/integrations/kilo-code",
-                      "v3/integrations/repowise"
+                      "v3/integrations/repowise",
+                      "v3/integrations/qoder"
                     ]
                   },
                   {

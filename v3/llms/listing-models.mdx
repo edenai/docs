@@ -14,7 +14,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "LLM API", "chat completion", "OpenAI compatible"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-11-02T00:00:00Z"
+  dateModified="2026-11-06T00:00:00Z"
 />
 
 Use the `/v3/models` endpoint to retrieve all LLM models available through Eden AI, along with their capabilities: input modalities, reasoning, web search, and function calling.
@@ -53,7 +53,7 @@ data.forEach(model => console.log(model.id));
 
 ## Response
 
-Each entry includes the model's identity, context window, capabilities, pricing, available regions, and whether the provider retains your data (list truncated for readability):
+Each entry includes the model's identity, context window, token limits (`max_input_tokens` and `max_output_tokens`), capabilities, pricing, available regions, and whether the provider retains your data (list truncated for readability):
 
 ```json
 {
@@ -66,6 +66,8 @@ Each entry includes the model's identity, context window, capabilities, pricing,
       "owned_by": "google",
       "model_name": "gemini-3.6-flash",
       "context_length": 1048576,
+      "max_input_tokens": 1048576,
+      "max_output_tokens": 65536,
       "description": "Gemini 3.6 Flash is a high-efficiency model from Google...",
       "capabilities": {
         "input_modalities": ["text", "image", "video", "file", "audio"],
@@ -100,6 +102,12 @@ Each entry includes the model's identity, context window, capabilities, pricing,
 ```
 
 Each model `id` is used directly as the `model` parameter in your requests.
+
+Token limits and context windows:
+
+- `context_length`: Total context window in tokens, covering the prompt and completion together.
+- `max_input_tokens`: The most tokens the prompt may hold. Below `context_length` when the provider caps the prompt separately (for example OpenAI models). Set to `null` when unknown.
+- `max_output_tokens`: The most tokens one completion may hold. Set to `null` when unknown.
 
 `pricing` holds the rates a call bills at, after any discount, and `list_pricing` the provider's list rates before it, most of them in US dollars per token. Models that can run as a [batch](/v3/llms/batches) (OpenAI, Anthropic and Mistral) also carry `input_cost_per_token_batches`, `output_cost_per_token_batches` and `cache_read_input_token_cost_batches`, the rates a batch bills at when the model has them.
 
@@ -149,7 +157,7 @@ What to expect from the shape:
 
 - **`id` is the routable name.** Send it as `model` and Eden AI picks which provider serves it. Rerank is the exception: `POST /v3/rerank` refuses a name without its provider with `400`, so from `/v3/rerank/models` send one of the `endpoints[].id` values instead.
 - **Top-level fields summarise the model across its endpoints.** `context_length` is the largest window among the endpoints. `capabilities` is the union across endpoints, so a flag is true and a modality listed when any endpoint supports it. `pricing` carries the full price list of the cheapest endpoint for a typical call (untagged endpoints only, since an `@region` variant prices a tagged call), identified by `pricing_endpoint`; both are `null` when no endpoint has a price. A routed call is billed at the prices of the provider that served it. `regions` lists every region where at least one endpoint runs, sorted by code.
-- **Each entry in `endpoints` is the same object the default view returns**, with that provider's own pricing, capabilities, context length, and regions. To compare providers or see per-provider values, read `endpoints`.
+- **Each entry in `endpoints` is the same object the default view returns**, with that provider's own pricing, capabilities, context length, token limits (`max_input_tokens` and `max_output_tokens`), and regions. To compare providers or see per-provider values, read `endpoints`.
 - **`owned_by` changes meaning between the views.** On a grouped entry it is who authored the model (`openai`); on an endpoint entry it is the provider selling it (`azure`).
 - **`created` is the newest endpoint's timestamp**, and `endpoint_count` equals `endpoints.length`.
 - The default (`view=endpoints`, or no parameter) is unchanged, and both entry shapes stay compatible with the OpenAI SDK's `client.models.list()`.

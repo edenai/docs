@@ -14,7 +14,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "expert models", "multi-provider"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-05-07T00:00:00Z"
+  dateModified="2026-07-10T00:00:00Z"
 />
 
 Webhooks let you receive results from async Universal AI jobs via HTTP callbacks instead of polling. When a job completes, Eden AI sends a signed `POST` request to the URL you provided.
@@ -40,7 +40,7 @@ Every webhook request Eden AI sends includes these headers:
 | ------------------------- | ---------------------- | ---------------------------------------------------------------------- |
 | `Content-Type`            | `application/json`     | Body is always JSON.                                                   |
 | `User-Agent`              | `EdenAI/Ai-Features`   | Identifies the sender.                                                 |
-| `X-Edenai-Webhook`        | `true`                 | Flag marking the request as an Eden AI webhook.                        |
+| `X-EdenAI-Webhook`        | `true`                 | Flag marking the request as an Eden AI webhook.                        |
 | `X-Edenai-Signature`      | `a8f3...` (hex)        | RSA PKCS1 v1.5 signature of the payload.                               |
 | `X-Edenai-Hash-Algorithm` | `SHA256`               | Hash algorithm used to produce the signature.                          |
 
@@ -80,20 +80,30 @@ Every webhook request Eden AI sends includes these headers:
 
 ## Signature Verification
 
-Every webhook is signed with Eden AI's RSA private key so you can verify it was not forged or tampered with in transit.
+Every webhook is signed with Eden AI's RSA private key so you can verify it was not forged or tampered with in transit. Verify each request against Eden AI's **public key** below. Save it as `edenai_webhook_rsa.pub.pem` next to your handler — this is the file the examples load.
 
-<Tip>
-Ask Eden AI support for the webhook **public key** (`webhook_rsa.pub.pem`) and store it with your service configuration.
-</Tip>
+```text edenai_webhook_rsa.pub.pem
+-----BEGIN PUBLIC KEY-----
+MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEA2fQneVfTrhkDdlvqs2Vi
+T0tZ9PCkL0vHanZMc+6YyvvewIQRp1bH8Q13gYDf0t/tCKhVJqnPQ7qXekhtBrC1
+uMAf/qDhUhkKB0w9Xt5DXbEZaxFQjrlDSHwcWdhH+BOAVDxQvaDuWveS8/kEIuo8
+x/QLNOVTrUSKnjXnnqZ2k6OeD0WHv/6bLqPjFxdwL+4hi0nw1O57IfW7Oqzcd5JF
+X1Aq8nU4N0P8PEetUl84LKCiiT801wKOksUJUtjGHqdtOqP4g0Vk0w5BtBDPVPyF
+eQNLpALTxeG2WUtNtOiZCl0757K6dY13FYR86e7KUlQzaZhy2vBKtghi5Rf03puk
+8fTS8zuO5LSX9GmHxZ1aywIvx6kcjp52S52/q6ZdXuTe+0DCxjoFCnJ3C/6cNphE
+pZggShdZUtJFo85ImMRAesD0+hjeHuhqGuis/i1JOHzYcSpKVCaksujrscR+m7Id
+1XrF/DY4gF8hizGHsEcurP+A6epUblTDtg/F0foYfitfAgMBAAE=
+-----END PUBLIC KEY-----
+```
 
 The signature is built as follows:
 
-1. The payload is serialized with canonical JSON (sorted keys, 2-space indent, UTF-8).
-2. `sha256(canonical_json_bytes)` is computed and its **hex digest** is taken.
-3. That hex digest is signed with RSA PKCS1 v1.5 / SHA-256.
-4. The hex-encoded signature is sent in `X-Edenai-Signature`.
+1. The payload is serialized to **canonical JSON**: keys sorted alphabetically, 2-space indent, UTF-8 with non-ASCII characters left as-is (not `\u`-escaped). This is exactly `orjson.dumps(payload, option=OPT_INDENT_2 | OPT_SORT_KEYS)`.
+2. `sha256(canonical_json_bytes)` is computed and its **hex digest** (a 64-character string) is taken.
+3. That hex digest string is signed with RSA PKCS1 v1.5 over SHA-256.
+4. The signature is hex-encoded and sent in the `X-Edenai-Signature` header.
 
-To verify, reproduce the same canonical JSON before hashing — do **not** re-serialize with default formatting.
+The delivered request body is compact JSON, so you must re-serialize it into the canonical form above before hashing — do **not** hash the raw body, and do **not** re-serialize with default formatting.
 
 ## Example
 
@@ -244,6 +254,8 @@ To verify, reproduce the same canonical JSON before hashing — do **not** re-se
 
 <Warning>
 Do **not** re-serialize the parsed JSON with defaults (e.g. `JSON.stringify(obj)` or `json.dumps(obj)` without `sort_keys=True, indent=2`) — any difference in spacing, key ordering, or unicode escaping will make the signature fail to verify.
+
+Number formatting differs across languages too: a whole-number float in the payload (for example a `1.0` confidence score) serializes as `1.0` on the Eden AI side but as `1` with JavaScript's `JSON.stringify`, which breaks verification. If your payloads can contain such values, verify from a Python service or normalize the numbers before hashing.
 </Warning>
 
 ## Retry Behavior

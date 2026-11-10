@@ -184,7 +184,16 @@ Some models are available under a **stable alias**, a version-agnostic name that
 - **Stable alias:** `google/gemini-flash-latest`, `anthropic/claude-sonnet-latest`, `deepseek/deepseek-chat`
 - **Versioned snapshot:** `anthropic/claude-opus-4-5-20251101`
 
-Use the **stable alias** when you want your integration to keep working as providers ship new versions. **Pin a versioned snapshot** when you need a fixed, reproducible model. Either form works as the `model` parameter. Alias entries report the concrete model they currently resolve to in the `alias_of` field, as in the response example above.
+Use the **stable alias** when you want your integration to keep working as providers ship new versions. **Pin a versioned snapshot** when you need a fixed, reproducible model. Either form works as the `model` parameter.
+
+An alias comes in two forms, and `alias_of` tells you which:
+
+| Alias | `alias_of` | Who serves the call |
+|-------|-----------|---------------------|
+| With a provider, such as `anthropic/claude-sonnet-latest` | A `provider/model` id | That provider, always |
+| Without a provider, such as `claude-sonnet-latest` | A routable model name | The provider Eden AI picks, as with [Provider Routing](/v3/llms/provider-routing) |
+
+An alias without a provider is listed in both views. With `view=models` it repeats the entry of the model it names, endpoints included. In the default view its `pricing`, `context_length`, `capabilities` and `regions` are that model's top-level values, and the call is billed at the prices of the provider that served it.
 
 The catalog lists both forms when a provider exposes them, so you may see a stable alias (e.g. `anthropic/claude-opus-4-5`) and one or more dated snapshots (e.g. `anthropic/claude-opus-4-5-20251101`) side by side. Use the stable alias to always get the latest version, or a dated snapshot to pin to a specific release.
 

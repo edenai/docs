@@ -154,6 +154,7 @@ What to expect from the shape:
 - **`created` is the newest endpoint's timestamp**, and `endpoint_count` equals `endpoints.length`.
 - The default (`view=endpoints`, or no parameter) is unchanged, and both entry shapes stay compatible with the OpenAI SDK's `client.models.list()`.
 - **Your routing policies are listed here too.** Send your API key and the grouped view adds one entry per [routing policy](/v3/llms/routing-policies) you can call, under its `policy/{name}` id, with `owned_by` set to `edenai`, an empty `endpoints` list and `endpoint_count` at `0`: which target serves a call is decided per request, so `pricing`, `context_length` and `regions` are `null` or empty. Policies never appear in the default view or under a `zero_data_retention` filter.
+- **Aliases of routable models are listed here too.** An [alias without a provider](#model-aliases) appears under its own name, with `alias_of` naming the model it points to and that model's values and endpoints repeated. An alias with a provider appears in the default view only.
 
 Every model listing takes the same parameter: `/v3/models`, `/v3/embeddings/models`, `/v3/moderations/models`, `/v3/audio/transcriptions/models`, `/v3/audio/speech/models`, `/v3/images/models`, `/v3/videos/models` and `/v3/rerank/models`.
 
@@ -193,7 +194,7 @@ An alias comes in two forms, and `alias_of` tells you which:
 | With a provider, such as `anthropic/claude-sonnet-latest` | A `provider/model` id | That provider, unless the call falls back to a model you listed in [`fallbacks`](/v3/general/fallback) |
 | Without a provider, such as `claude-sonnet-latest` | A routable model name | The provider Eden AI picks, as with [Provider Routing](/v3/llms/provider-routing) |
 
-An alias without a provider is listed in both views. With `view=models` it repeats the entry of the model it names, endpoints included. In the default view its `pricing`, `context_length`, `capabilities` and `regions` are that model's top-level values, described under the [grouped view](#grouped-view-one-entry-per-routable-name), and the call is billed at the prices of the provider that served it.
+An alias without a provider is listed in both views. With `view=models` it repeats the entry of the model it names, endpoints included. In the default view its `pricing`, `context_length`, `capabilities` and `regions` are that model's top-level values, described under the [grouped view](#grouped-view-one-entry-per-routable-name), and the call is billed at the prices of the provider that served it. Its `supports_batch` is always `false`: a [batch](/v3/llms/batches) runs on one provider's model.
 
 The catalog lists both forms when a provider exposes them, so you may see a stable alias (e.g. `anthropic/claude-opus-4-5`) and one or more dated snapshots (e.g. `anthropic/claude-opus-4-5-20251101`) side by side. Use the stable alias to always get the latest version, or a dated snapshot to pin to a specific release.
 

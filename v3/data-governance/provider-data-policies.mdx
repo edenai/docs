@@ -32,7 +32,7 @@ The tables below show, for each provider on Eden AI, the country of the company 
 **Incorporated in** is the country where the provider company that Eden AI signs with is incorporated. For many providers this is a European subsidiary rather than the parent company's home country: Microsoft Azure, for example, is contracted through Microsoft Ireland Operations. It is not where your data is processed, and the laws of other countries, such as the GDPR, can apply as well. For processing location, see [EU data residency](#eu-data-residency).
 
 <Note>
-  This information was last updated on 28 October 2026.
+  This information was last updated on 10 November 2026.
 </Note>
 
 ### LLM providers
@@ -85,9 +85,11 @@ A **Yes** above is the provider's default. These models keep data even on a prov
 | OpenAI models, except gpt-oss | Amazon Bedrock | No | Up to 30 days for traffic flagged by abuse detection |
 | Anthropic (Claude) models | DeepInfra | No | Anthropic's retention applies |
 | Gemini models | DeepInfra | No | Google's retention applies |
-| Labs models (`labs-` prefix) | Mistral | No | 30 days |
+| Labs models (`labs-` prefix) | Mistral | No | Not specified. Mistral [may train on their inputs and outputs](https://legal.mistral.ai/terms/commercial-terms-of-service/), even with ZDR on |
 
 Scaleway keeps no data in normal operation, but [may store full requests for up to two weeks](https://www.scaleway.com/en/docs/generative-apis/reference-content/data-privacy/) when it detects misuse or a server error.
+
+A [batch](/v3/llms/batches#zero-data-retention) keeps its files at the provider, so it never counts as zero data retention, on Mistral or any other provider.
 
 To check a specific model, read the `zero_data_retention` field of its provider entry in [Listing Models](/v3/llms/listing-models), for example `vertex/claude-opus-5`: `true` means no data is kept, `false` means it is, `null` means not verified yet. The same model can have different values on different providers. With `view=models`, read the field on each entry under `endpoints`. The field already includes these exceptions.
 

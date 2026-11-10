@@ -97,8 +97,8 @@ The response gains one extra top-level key, `edenai_metadata`:
 | Value | Meaning |
 |---|---|
 | `direct` | You named a `provider/model`, so no routing happened |
-| `alias` | You named an alias, which resolved to a specific model |
-| `routed` | You named a model without a provider, so Eden AI picked one. See [Provider Routing](/v3/llms/provider-routing) |
+| `alias` | You named an alias that resolved to a specific provider model |
+| `routed` | You named a model without a provider, or an alias pointing to one, so Eden AI picked one. See [Provider Routing](/v3/llms/provider-routing) |
 | `policy` | A [routing policy](/v3/llms/routing-policies) chose the chain: you named `policy/{name}`. The `policy` field says which, and how |
 
 ## Tags

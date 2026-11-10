@@ -153,6 +153,7 @@ What to expect from the shape:
 - **`owned_by` changes meaning between the views.** On a grouped entry it is who authored the model (`openai`); on an endpoint entry it is the provider selling it (`azure`).
 - **`created` is the newest endpoint's timestamp**, and `endpoint_count` equals `endpoints.length`.
 - The default (`view=endpoints`, or no parameter) is unchanged, and both entry shapes stay compatible with the OpenAI SDK's `client.models.list()`.
+- **Aliases of routable models appear here too.** If an alias points to a routable model name, it is listed under its alias name with `alias_of` set to the target model, repeating that model's values and endpoints. Aliases pointing to a single provider model appear in the default view only.
 - **Your routing policies are listed here too.** Send your API key and the grouped view adds one entry per [routing policy](/v3/llms/routing-policies) you can call, under its `policy/{name}` id, with `owned_by` set to `edenai`, an empty `endpoints` list and `endpoint_count` at `0`: which target serves a call is decided per request, so `pricing`, `context_length` and `regions` are `null` or empty. Policies never appear in the default view or under a `zero_data_retention` filter.
 
 Every model listing takes the same parameter: `/v3/models`, `/v3/embeddings/models`, `/v3/moderations/models`, `/v3/audio/transcriptions/models`, `/v3/audio/speech/models`, `/v3/images/models`, `/v3/videos/models` and `/v3/rerank/models`.
@@ -184,7 +185,14 @@ Some models are available under a **stable alias**, a version-agnostic name that
 - **Stable alias:** `google/gemini-flash-latest`, `anthropic/claude-sonnet-latest`, `deepseek/deepseek-chat`
 - **Versioned snapshot:** `anthropic/claude-opus-4-5-20251101`
 
-Use the **stable alias** when you want your integration to keep working as providers ship new versions. **Pin a versioned snapshot** when you need a fixed, reproducible model. Either form works as the `model` parameter. Alias entries report the concrete model they currently resolve to in the `alias_of` field, as in the response example above.
+Use the **stable alias** when you want your integration to keep working as providers ship new versions. **Pin a versioned snapshot** when you need a fixed, reproducible model. Either form works as the `model` parameter.
+
+An alias can point either to a specific provider model (such as `google/gemini-3.6-flash`) or to a routable model name without a provider prefix (such as `claude-sonnet-4.5`). When calling an alias of a routable model, Eden AI routes across providers according to your routing objective, exactly like calling the target model directly.
+
+Alias entries report what they currently resolve to in the `alias_of` field:
+
+- For an alias of a specific provider model, `alias_of` is the `provider/model` identifier.
+- For an alias of a routable model, `alias_of` is the routable model name without a provider prefix. In the default view (`view=endpoints`), the alias carries the model-level values of `?view=models` and has `supports_batch` set to `false`. In the grouped view (`view=models`), it appears as an entry repeating the target model's values and endpoints, with `alias_of` naming the target model.
 
 The catalog lists both forms when a provider exposes them, so you may see a stable alias (e.g. `anthropic/claude-opus-4-5`) and one or more dated snapshots (e.g. `anthropic/claude-opus-4-5-20251101`) side by side. Use the stable alias to always get the latest version, or a dated snapshot to pin to a specific release.
 

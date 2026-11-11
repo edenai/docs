@@ -14,7 +14,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "LLM API", "chat completion", "OpenAI compatible"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-11-10T00:00:00Z"
+  dateModified="2026-11-11T00:00:00Z"
 />
 
 Use the `/v3/models` endpoint to retrieve all LLM models available through Eden AI, along with their capabilities: input modalities, reasoning, web search, and function calling.
@@ -53,7 +53,7 @@ data.forEach(model => console.log(model.id));
 
 ## Response
 
-Each entry includes the model's identity, context window, capabilities, pricing, available regions, and whether the provider retains your data (list truncated for readability):
+Each entry includes the model's identity, context window, capabilities, pricing, available regions, weight precision, and whether the provider retains your data (list truncated for readability):
 
 ```json
 {
@@ -93,6 +93,7 @@ Each entry includes the model's identity, context window, capabilities, pricing,
         { "code": "eu", "name": "Europe" }
       ],
       "zero_data_retention": false,
+      "quantization": null,
       "alias_of": "google/gemini-3.6-flash"
     }
   ]
@@ -149,7 +150,7 @@ What to expect from the shape:
 
 - **`id` is the routable name.** Send it as `model` and Eden AI picks which provider serves it. Rerank is the exception: `POST /v3/rerank` refuses a name without its provider with `400`, so from `/v3/rerank/models` send one of the `endpoints[].id` values instead.
 - **Top-level fields summarise the model across its endpoints.** `context_length` is the largest window among the endpoints. `capabilities` is the union across endpoints, so a flag is true and a modality listed when any endpoint supports it. `pricing` carries the full price list of the cheapest endpoint for a typical call (untagged endpoints only, since an `@region` variant prices a tagged call), identified by `pricing_endpoint`; both are `null` when no endpoint has a price. A routed call is billed at the prices of the provider that served it. `regions` lists every region where at least one endpoint runs, sorted by code.
-- **Each entry in `endpoints` is the same object the default view returns**, with that provider's own pricing, capabilities, context length, and regions. To compare providers or see per-provider values, read `endpoints`.
+- **Each entry in `endpoints` is the same object the default view returns**, with that provider's own pricing, capabilities, context length, regions, and quantization. To compare providers or see per-provider values, read `endpoints`.
 - **`owned_by` changes meaning between the views.** On a grouped entry it is who authored the model (`openai`); on an endpoint entry it is the provider selling it (`azure`).
 - **`created` is the newest endpoint's timestamp**, and `endpoint_count` equals `endpoints.length`.
 - The default (`view=endpoints`, or no parameter) is unchanged, and both entry shapes stay compatible with the OpenAI SDK's `client.models.list()`.
@@ -178,6 +179,19 @@ curl "https://api.edenai.run/v3/models?zero_data_retention=true"
 
 `zero_data_retention=false` lists only the endpoints known to keep data, and entries still at `null` match neither. With `view=models`, each model keeps only its matching endpoints and recomputes its model-level fields from them, and is left out when none match. Every model listing above takes the parameter.
 
+## Quantization
+
+Every endpoint entry (each entry of the default view, and each item of `endpoints` with `view=models`) carries `quantization`, which indicates the weight precision the provider serves the model at:
+
+| Value | Meaning |
+|-------|---------|
+| `int4`, `int8`, `fp4`, `fp6`, `fp8`, `fp16`, `bf16`, `fp32` | Weight precision as stated by the provider |
+| `null` | The provider does not state a precision (including all closed-weight models), or providers disagree on an alias |
+
+Because different sellers can serve the same model at different precisions (for example, `fp4` on one provider and `bf16` or `fp8` on another), `quantization` is reported per endpoint rather than at the model level in `view=models`. To check or compare precisions across providers, read each item in `endpoints`.
+
+In the default flat view, an alias without a provider only reports a precision when all its underlying provider endpoints share the exact same value. If their precisions differ, the alias reports `null`.
+
 ## Model aliases
 
 Some models are available under a **stable alias**, a version-agnostic name that always points to the current release, alongside versioned or dated snapshot IDs:
@@ -194,7 +208,7 @@ An alias comes in two forms, and `alias_of` tells you which:
 | With a provider, such as `anthropic/claude-sonnet-latest` | A `provider/model` id | That provider, unless the call falls back to a model you listed in [`fallbacks`](/v3/general/fallback) |
 | Without a provider, such as `claude-sonnet-latest` | A routable model name | The provider Eden AI picks, as with [Provider Routing](/v3/llms/provider-routing) |
 
-An alias without a provider is listed in both views. With `view=models` it repeats the entry of the model it names, endpoints included. In the default view its `pricing`, `context_length`, `capabilities` and `regions` are that model's top-level values, described under the [grouped view](#grouped-view-one-entry-per-routable-name), and the call is billed at the prices of the provider that served it. Its `supports_batch` is always `false`: a [batch](/v3/llms/batches) runs on one provider's model.
+An alias without a provider is listed in both views. With `view=models` it repeats the entry of the model it names, endpoints included. In the default view its `pricing`, `context_length`, `capabilities` and `regions` are that model's top-level values, described under the [grouped view](#grouped-view-one-entry-per-routable-name), and the call is billed at the prices of the provider that served it. Its `quantization` and `zero_data_retention` only report a value when all providers serving that model share it, otherwise `null`. Its `supports_batch` is always `false`: a [batch](/v3/llms/batches) runs on one provider's model.
 
 The catalog lists both forms when a provider exposes them, so you may see a stable alias (e.g. `anthropic/claude-opus-4-5`) and one or more dated snapshots (e.g. `anthropic/claude-opus-4-5-20251101`) side by side. Use the stable alias to always get the latest version, or a dated snapshot to pin to a specific release.
 

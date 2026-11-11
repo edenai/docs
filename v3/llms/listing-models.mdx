@@ -14,7 +14,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "LLM API", "chat completion", "OpenAI compatible"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-11-10T00:00:00Z"
+  dateModified="2026-11-11T00:00:00Z"
 />
 
 Use the `/v3/models` endpoint to retrieve all LLM models available through Eden AI, along with their capabilities: input modalities, reasoning, web search, and function calling.
@@ -93,6 +93,7 @@ Each entry includes the model's identity, context window, capabilities, pricing,
         { "code": "eu", "name": "Europe" }
       ],
       "zero_data_retention": false,
+      "quantization": null,
       "alias_of": "google/gemini-3.6-flash"
     }
   ]
@@ -177,6 +178,23 @@ curl "https://api.edenai.run/v3/models?zero_data_retention=true"
 ```
 
 `zero_data_retention=false` lists only the endpoints known to keep data, and entries still at `null` match neither. With `view=models`, each model keeps only its matching endpoints and recomputes its model-level fields from them, and is left out when none match. Every model listing above takes the parameter.
+
+## Quantization
+
+Every endpoint entry also carries `quantization`: the precision the provider runs the model's weights at. Different providers often serve the same open model at different precisions, and a lower one is usually cheaper and faster but can be slightly less accurate. `gpt-oss-120b`, for example, is served at `fp4` by one provider and `bf16` by another.
+
+| Value | Meaning |
+|-------|---------|
+| `fp32` | 32 bits per weight |
+| `bf16`, `fp16` | 16 bits per weight, the precision most open models are released at |
+| `fp8`, `int8` | 8 bits per weight |
+| `fp6` | 6 bits per weight |
+| `fp4`, `int4` | 4 bits per weight |
+| `null` | No precision to show: the provider does not state one, an Ollama level has no value in this list, or the providers behind an alias differ |
+
+The bit count is nominal. Some formats keep a few tensors at a higher precision and store scaling data alongside the weights, so read it as a category rather than an exact memory size. The value is what the provider states; Eden AI does not measure it. It is `null` for every closed-weight model (OpenAI, Anthropic, Google Gemini and similar), whose makers do not publish how they serve them. In the default view, an alias with no provider shows a precision only when every provider behind it serves the same one.
+
+For a model on your own private deployment, the value comes from the level your Ollama server reports: `Q4_0`, `Q4_1`, `Q4_K_S` and `Q4_K_M` are `int4`, `Q8_0` is `int8`, and `F16`, `BF16` and `F32` are `fp16`, `bf16` and `fp32`. Any other level is `null`, and the model's `description` still names it.
 
 ## Model aliases
 

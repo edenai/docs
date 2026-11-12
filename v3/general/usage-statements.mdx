@@ -92,13 +92,13 @@ You can list statement months, retrieve monthly breakdowns, and download stateme
 
 <CodeGroup>
 
-{/* skip-test: GET /v3/manage/billing/statements/ is not released to production yet; remove this marker once it is */}
+{/* skip-test: GET /v3/manage/billing/statements/ requires a management key with manage:read scope */}
 ```bash cURL
 curl "https://api.edenai.run/v3/manage/billing/statements/" \
   -H "Authorization: Bearer $MANAGEMENT_KEY"
 ```
 
-{/* skip-test: GET /v3/manage/billing/statements/ is not released to production yet; remove this marker once it is */}
+{/* skip-test: GET /v3/manage/billing/statements/ requires a management key with manage:read scope */}
 ```python Python
 import requests
 
@@ -147,17 +147,17 @@ Each month has one of three statuses:
 
 `GET /v3/manage/billing/statements/{period}/`, where `{period}` is formatted as `YYYY-MM` (such as `2026-10`), returns that month's detailed breakdown folded level by level.
 
-If the period is invalid, the endpoint returns `404`. If the month is still preliminary and not ready, it returns `409`.
+If the period is malformed, the endpoint returns `404`. A month that has not started yet returns `400`, and a month that is not ready yet returns `409`.
 
 <CodeGroup>
 
-{/* skip-test: GET /v3/manage/billing/statements/{period}/ is not released to production yet; remove this marker once it is */}
+{/* skip-test: GET /v3/manage/billing/statements/{period}/ requires a management key with manage:read scope */}
 ```bash cURL
 curl "https://api.edenai.run/v3/manage/billing/statements/2026-10/" \
   -H "Authorization: Bearer $MANAGEMENT_KEY"
 ```
 
-{/* skip-test: GET /v3/manage/billing/statements/{period}/ is not released to production yet; remove this marker once it is */}
+{/* skip-test: GET /v3/manage/billing/statements/{period}/ requires a management key with manage:read scope */}
 ```python Python
 import requests
 
@@ -180,9 +180,9 @@ print(f"Statement {statement['number']}: {statement['total_cents'] / 100:.2f} US
 
 `GET /v3/manage/billing/statements/{period}/pdf/` and `GET /v3/manage/billing/statements/{period}/csv/` return the statement file as a binary download.
 
-<Important>
+<Warning>
 Downloading via the API returns the issued statement if the month has already been issued, or a draft file otherwise. Unlike dashboard downloads, API downloads never issue a month: they leave unissued months in their draft state so your configured split is not frozen prematurely.
-</Important>
+</Warning>
 
 ### Service availability
 

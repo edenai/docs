@@ -1,0 +1,125 @@
+---
+icon: "wallet"
+title: "Check Your Credit Balance via API"
+sidebarTitle: "Credit Balance"
+description: "Read your organization's remaining Eden AI credits from the API with a management key, and alert your team before the balance runs out."
+---
+import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
+
+<TechArticleSchema
+  title={"Check Your Credit Balance via API"}
+  description={"Read your organization's remaining Eden AI credits from the API with a management key, and alert your team before the balance runs out."}
+  path="v3/general/credit-balance"
+  articleSection="General"
+  about={"Billing"}
+  proficiencyLevel="Beginner"
+  dependencies="You need an Eden AI organization and a management key with the manage:read scope."
+  keywords={["Eden AI", "credit balance", "remaining credits", "balance API", "management key", "billing"]}
+  datePublished="2026-11-12T00:00:00Z"
+  dateModified="2026-11-12T00:00:00Z"
+/>
+
+`GET /v3/manage/credits/` returns the credits your organization has left. Use it to show the balance in your own tools, or to raise an alert before requests start being refused.
+
+## Authentication
+
+The endpoint takes a [management key](/v3/organization/management-api) (`mgmt-eden-…`) that holds the `manage:read` scope, the same key that reads [usage](/v3/general/monitoring). An inference key (`sk-eden-…`) is refused.
+
+The key only ever sees the balance of its own organization.
+
+## Read the balance
+
+<CodeGroup>
+
+{/* skip-test: GET /v3/manage/credits/ is not released to production yet; remove this marker once it is */}
+```bash cURL
+curl https://api.edenai.run/v3/manage/credits/ \
+  -H "Authorization: Bearer $MANAGEMENT_KEY"
+```
+
+{/* skip-test: GET /v3/manage/credits/ is not released to production yet; remove this marker once it is */}
+```python Python
+import requests
+
+headers = {"Authorization": "Bearer YOUR_MANAGEMENT_KEY"}
+
+response = requests.get(
+    "https://api.edenai.run/v3/manage/credits/",
+    headers=headers,
+    timeout=30,
+)
+response.raise_for_status()
+
+balance = response.json()
+print(f"{balance['credits']:.2f} {balance['currency']} left")
+```
+
+</CodeGroup>
+
+```json Response
+{
+  "organization_id": 123,
+  "credits": 42.5,
+  "currency": "USD",
+  "billing_mode": "prepaid",
+  "credit_overdraft_limit": 0.0,
+  "postpaid_unbilled_usage": null
+}
+```
+
+## Response fields
+
+| Field | Description |
+|-------|-------------|
+| `organization_id` | The organization the management key belongs to. |
+| `credits` | The current balance, as a number. It can be negative when the organization uses its overdraft allowance or is invoiced monthly. |
+| `currency` | Always `USD`: balances are held in US dollars, whatever currency you pay in. |
+| `billing_mode` | `prepaid` (credits bought ahead) or `postpaid` (invoiced monthly). |
+| `credit_overdraft_limit` | How far below zero `credits` may go before requests are refused. `0` means requests stop at zero. |
+| `postpaid_unbilled_usage` | For a postpaid organization, the usage of the current period that is not invoiced yet. `null` for a prepaid organization. |
+
+## How the balance is computed
+
+`credits` is the number the dashboard shows:
+
+- **Charges that are not settled yet are included.** A request you just made lowers the balance within seconds, before the charge is written to your account.
+- **Holds on requests still running are not included.** While a request is in progress, Eden AI reserves an estimate of its cost. That estimate is not a charge, so it does not lower `credits`. The real cost is counted when the request ends.
+
+So the balance can move slightly between two calls even when no new request starts.
+
+## Alert on a low balance
+
+Requests are refused when the balance reaches `-credit_overdraft_limit`. Compare against that floor rather than against zero:
+
+{/* skip-test: GET /v3/manage/credits/ is not released to production yet; remove this marker once it is */}
+```python Python
+import requests
+
+ALERT_BELOW = 50  # dollars of headroom before requests are refused
+
+response = requests.get(
+    "https://api.edenai.run/v3/manage/credits/",
+    headers={"Authorization": "Bearer YOUR_MANAGEMENT_KEY"},
+    timeout=30,
+)
+response.raise_for_status()
+balance = response.json()
+
+headroom = balance["credits"] + balance["credit_overdraft_limit"]
+if headroom < ALERT_BELOW:
+    print(f"Low balance: {headroom:.2f} USD left before requests are refused")
+```
+
+To top up without a human in the loop, turn on auto-refill: see [Buying credits](/v3/general/buying-credits).
+
+## Rate limit
+
+A management key can make 60 requests per minute, counted together with its calls to the usage endpoints. Above that the API answers `429`. The balance is cheap to read, but polling it once a minute is more than enough for an alert.
+
+## Errors
+
+| Status | Meaning |
+|--------|---------|
+| `401` | The key is missing, invalid, revoked or expired, or it is an inference key. |
+| `403` | The management key does not hold the `manage:read` scope. |
+| `429` | Too many requests with this key. Wait and retry. |

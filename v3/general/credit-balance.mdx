@@ -1,0 +1,151 @@
+---
+icon: "wallet"
+title: "Check Your Credit Balance via API"
+sidebarTitle: "Credit Balance"
+description: "Read your organization's remaining Eden AI credits and auto-refill state from the API with a management key, and alert before the balance runs out."
+---
+import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
+
+<TechArticleSchema
+  title={"Check Your Credit Balance via API"}
+  description={"Read your organization's remaining Eden AI credits and auto-refill state from the API with a management key, and alert before the balance runs out."}
+  path="v3/general/credit-balance"
+  articleSection="General"
+  about={"Billing"}
+  proficiencyLevel="Beginner"
+  dependencies="You need an Eden AI organization and a management key with the manage:read scope."
+  keywords={["Eden AI", "credit balance", "remaining credits", "billing API", "auto-refill", "management key"]}
+  datePublished="2026-11-12T00:00:00Z"
+  dateModified="2026-11-12T00:00:00Z"
+/>
+
+`GET /v3/manage/billing/` returns the credits your organization has left, with its billing mode and its auto-refill settings. Use it to show the balance in your own tools, or to raise an alert before requests start being refused.
+
+## Authentication
+
+The endpoint takes a [management key](/v3/organization/management-api) (`mgmt-eden-…`) that holds the `manage:read` scope, the same key that reads [usage](/v3/general/monitoring). An inference key (`sk-eden-…`) is refused.
+
+The key only ever sees the billing of its own organization. The endpoint is read-only: it never buys credits or changes a setting.
+
+## Read the balance
+
+<CodeGroup>
+
+{/* skip-test: GET /v3/manage/billing/ is not released to production yet; remove this marker once it is */}
+```bash cURL
+curl https://api.edenai.run/v3/manage/billing/ \
+  -H "Authorization: Bearer $MANAGEMENT_KEY"
+```
+
+{/* skip-test: GET /v3/manage/billing/ is not released to production yet; remove this marker once it is */}
+```python Python
+import requests
+
+headers = {"Authorization": "Bearer YOUR_MANAGEMENT_KEY"}
+
+response = requests.get(
+    "https://api.edenai.run/v3/manage/billing/",
+    headers=headers,
+    timeout=30,
+)
+response.raise_for_status()
+
+billing = response.json()
+print(f"{billing['balance']:.2f} USD left")
+```
+
+</CodeGroup>
+
+```json Response
+{
+  "billing_mode": "prepaid",
+  "currency": "usd",
+  "balance": 42.5,
+  "postpaid_unbilled_usage": null,
+  "credit_overdraft_limit": 0.0,
+  "auto_refill": {
+    "enabled": true,
+    "threshold": 20,
+    "amount": 100,
+    "monthly_limit": null,
+    "credits_bought_this_month": 300.0,
+    "status": "finished",
+    "last_failure": null
+  }
+}
+```
+
+## Response fields
+
+| Field | Description |
+|-------|-------------|
+| `billing_mode` | `prepaid` (credits bought ahead) or `postpaid` (invoiced monthly). |
+| `currency` | The currency your payments are charged in: `usd` or `eur`, or `null` until one is set. It is **not** the currency of `balance`. |
+| `balance` | The credits left, in US dollars, as a number. It can be negative when the organization uses its overdraft allowance or is invoiced monthly. |
+| `postpaid_unbilled_usage` | For a postpaid organization, the usage of the current period that is not invoiced yet. `null` for a prepaid organization. |
+| `credit_overdraft_limit` | How far below zero `balance` may go before requests are refused. `0` means requests stop at zero. |
+| `auto_refill` | The [auto-refill](/v3/general/buying-credits#auto-refill) settings and state, described below. |
+
+### `auto_refill`
+
+| Field | Description |
+|-------|-------------|
+| `enabled` | Whether auto-refill is on. |
+| `threshold` | A refill starts when the balance falls below this many credits. |
+| `amount` | The credits bought by each refill. |
+| `monthly_limit` | The most credits that refills may buy in a calendar month, or `null` for no limit. |
+| `credits_bought_this_month` | The credits already bought this calendar month by card, PayPal or bank-transfer checkout. This is what `monthly_limit` is compared with. |
+| `status` | The state of the last refill: `scheduled`, `processing`, `finished` or `failed`. |
+| `last_failure` | Why the last refill failed (the reason, the bank's decline code when there is one, and when), until a refill succeeds. `null` otherwise. |
+
+Credits are counted in US dollars: `balance`, `threshold`, `amount` and `monthly_limit` are all dollar amounts, whatever `currency` says.
+
+## How the balance is computed
+
+`balance` is the number the dashboard shows:
+
+- **Charges that are not settled yet are included.** A request you just made lowers the balance within seconds, before the charge is written to your account.
+- **Holds on requests still running are not included.** While a request is in progress, Eden AI reserves an estimate of its cost. That estimate is not a charge, so it does not lower `balance`. The real cost is counted when the request ends.
+
+So the balance can move slightly between two calls even when no new request starts.
+
+## Alert on a low balance
+
+Requests are refused when the balance reaches `-credit_overdraft_limit`. Compare against that floor rather than against zero, and check that auto-refill is still working:
+
+{/* skip-test: GET /v3/manage/billing/ is not released to production yet; remove this marker once it is */}
+```python Python
+import requests
+
+ALERT_BELOW = 50  # dollars of headroom before requests are refused
+
+response = requests.get(
+    "https://api.edenai.run/v3/manage/billing/",
+    headers={"Authorization": "Bearer YOUR_MANAGEMENT_KEY"},
+    timeout=30,
+)
+response.raise_for_status()
+billing = response.json()
+
+headroom = billing["balance"] + billing["credit_overdraft_limit"]
+if headroom < ALERT_BELOW:
+    print(f"Low balance: {headroom:.2f} USD left before requests are refused")
+
+refill = billing["auto_refill"]
+if refill["last_failure"]:
+    print(f"Auto-refill stopped: {refill['last_failure']}")
+```
+
+To top up without a human in the loop, turn on auto-refill: see [Buying credits](/v3/general/buying-credits#auto-refill).
+
+## Rate limit
+
+A management key can make 60 requests per minute, counted together with its calls to the usage endpoints. Above that the API answers `429`. The balance is cheap to read, but polling it once a minute is more than enough for an alert.
+
+## Errors
+
+| Status | Meaning |
+|--------|---------|
+| `401` | The key is missing, invalid, revoked or expired, or it is an inference key. |
+| `403` | The management key does not hold the `manage:read` scope. |
+| `429` | Too many requests with this key. Wait and retry. |

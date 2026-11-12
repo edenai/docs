@@ -20,7 +20,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
 
 Learn how to track your Eden AI API consumption and costs with the Management API usage endpoints.
 
-The [dashboard](https://app.edenai.run/) shows the same data, plus your current **credit balance**, which is not exposed by the API. Use the endpoints below when you want to pull consumption into your own reporting, alerting or chargeback tooling.
+The [dashboard](https://app.edenai.run/) shows the same data, plus your current **credit balance**. Use the endpoints below when you want to pull consumption or credit balance figures into your own reporting, alerting or chargeback tooling.
 
 ## Authentication
 
@@ -36,6 +36,7 @@ Generate a management key from the dashboard (**Account → Management Keys**) o
 
 | Endpoint | What it returns |
 |----------|-----------------|
+| `GET /v3/manage/credits/` | The organization's credit balance, billing mode, overdraft limit, and unbilled postpaid usage. |
 | `GET /v3/manage/usage/` | The organization's consumption: a time series per API key, or one total per member with `group_by=user`. |
 | `GET /v3/manage/keys/{key_id}/usage/` | The consumption of one API key as a time series. |
 
@@ -265,7 +266,56 @@ A key that belongs to another organization returns `404`.
 
 ## Checking Your Credit Balance
 
-The account credit balance is not exposed by the Management API. Check it in the [Eden AI dashboard](https://app.edenai.run/), or cap spending per key with a [key budget](/v3/general/custom-api-keys#create-a-key-with-budget) so a runaway integration cannot drain the account.
+Call `GET /v3/manage/credits/` with a management key holding the `manage:read` scope to retrieve your organization's current credit balance.
+
+The returned `credits` amount matches the figure displayed in the [Eden AI dashboard](https://app.edenai.run/). Charges that the batched rollup has not settled yet are included, while holds on in-flight requests are not.
+
+<CodeGroup>
+```python Python
+import requests
+
+headers = {"Authorization": "Bearer YOUR_MANAGEMENT_KEY"}
+
+response = requests.get(
+    "https://api.edenai.run/v3/manage/credits/",
+    headers=headers
+)
+response.raise_for_status()
+
+data = response.json()
+print(f"Credits: ${data['credits']:.2f} {data['currency']}")
+print(f"Billing mode: {data['billing_mode']}")
+```
+
+```bash cURL
+curl https://api.edenai.run/v3/manage/credits/ \
+  -H "Authorization: Bearer YOUR_MANAGEMENT_KEY"
+```
+</CodeGroup>
+
+```json
+{
+  "organization_id": 123,
+  "credits": 42.5,
+  "currency": "USD",
+  "billing_mode": "prepaid",
+  "credit_overdraft_limit": 0.0,
+  "postpaid_unbilled_usage": null
+}
+```
+
+### Response Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `organization_id` | integer | Identifier of the organization. |
+| `credits` | number | Current balance in USD matching the dashboard reading. Unsettled charges are included. Negative when the organization is using its overdraft allowance or is postpaid. |
+| `currency` | string | Always `USD`. Balances are denominated in USD. |
+| `billing_mode` | string | `prepaid` or `postpaid`. |
+| `credit_overdraft_limit` | number | How far below zero `credits` may drop before requests fail with `402 Payment Required`. |
+| `postpaid_unbilled_usage` | number or null | Usage of the current period not invoiced yet for postpaid organizations (`null` for prepaid organizations). |
+
+You can also cap spending per key with a [key budget](/v3/general/custom-api-keys#create-a-key-with-budget) so a runaway integration cannot drain the account.
 
 ## Error Responses
 

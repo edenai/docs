@@ -89,6 +89,8 @@ inference key (`sk-eden-…`) and then manages that member's personal policies.
 | `GET /v3/manage/members` · `/usage` · `/keys/{key_id}/usage` · `/whoami` | `manage:read` | Members, usage, key introspection |
 | `GET /v3/manage/usage/requests` · `/usage/requests/{request_id}` · `/usage/requests/volume` · `/usage/requests/export` · `/usage/facets` · `/usage/llm` | `manage:read` | The organization's [request logs](/v3/general/request-logs), CSV export and LLM metrics |
 | `GET /v3/manage/billing` | `manage:read` | The organization's [credit balance](/v3/general/credit-balance) and auto-refill state |
+| `GET /v3/manage/billing/details` · `/contacts` · `/invoices` | `manage:read` | Read invoice details, billing contacts, and postpaid [invoices](/v3/general/invoices) |
+| `GET /v3/manage/billing/statements` | `manage:read` | List and download monthly [usage statements](/v3/general/usage-statements) |
 | `GET /v3/manage/routing-policies` | `manage:read`, or an inference key | List the routing policies the credential can use: the organization's with a management key, the member's own and the organization's with an inference key |
 | `GET · PUT · DELETE /v3/manage/routing-policies/{name}` | `manage:read` · `manage:write`, or an inference key | Read / create or replace / delete a routing policy: the organization's with a management key, the member's personal one with an inference key |
 

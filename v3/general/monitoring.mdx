@@ -15,7 +15,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "rate limits", "billing", "monitoring"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-11-02T00:00:00Z"
+  dateModified="2026-11-12T00:00:00Z"
 />
 
 Learn how to track your Eden AI API consumption and costs with the Management API usage endpoints.
@@ -38,6 +38,7 @@ Generate a management key from the dashboard (**Account → Management Keys**) o
 |----------|-----------------|
 | `GET /v3/manage/usage/` | The organization's consumption: a time series per API key, or one total per member with `group_by=user`. |
 | `GET /v3/manage/keys/{key_id}/usage/` | The consumption of one API key as a time series. |
+| `GET /v3/manage/usage/requests/` | Granular request logs, provider attempts, and CSV exports. See [Request Logs](/v3/general/request-logs). |
 
 ## Key Concepts
 
@@ -282,3 +283,14 @@ The account credit balance is not exposed by the Management API. Check it in the
   "detail": "This endpoint needs a management key. An inference key (sk-eden...) cannot manage an organization; mint a management key from the dashboard and use it here."
 }
 ```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Request Logs" icon="rectangle-list" href="/v3/general/request-logs">
+    Inspect individual API calls, provider attempts, and export logs to CSV
+  </Card>
+  <Card title="Usage Statements" icon="file-invoice" href="/v3/general/usage-statements">
+    Get monthly PDF and CSV reports of billed usage
+  </Card>
+</CardGroup>

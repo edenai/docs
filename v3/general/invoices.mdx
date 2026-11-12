@@ -1,0 +1,288 @@
+---
+icon: "receipt"
+title: "Invoices and Billing Details API"
+sidebarTitle: "Invoices"
+description: "List and retrieve your organization's monthly postpaid invoices, payment links, billing details, and billing contacts with a management key."
+---
+import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
+
+<TechArticleSchema
+  title={"Invoices and Billing Details API"}
+  description={"List and retrieve your organization's monthly postpaid invoices, payment links, billing details, and billing contacts with a management key."}
+  path="v3/general/invoices"
+  articleSection="General"
+  about={"Billing"}
+  proficiencyLevel="Beginner"
+  dependencies="You need an Eden AI organization and a management key with the manage:read scope."
+  keywords={["Eden AI", "invoices API", "postpaid invoices", "billing details", "billing contacts", "management key"]}
+  datePublished="2026-11-12T00:00:00Z"
+  dateModified="2026-11-12T00:00:00Z"
+/>
+
+Organizations on postpaid billing receive monthly invoices that accrue across the month and settle after the billing period. With the Management API, you can list and inspect your invoices programmatically, access direct Stripe payment and PDF download links, verify invoice billing details, and check your billing notification recipients.
+
+Prepaid organizations top up credits up front and do not receive monthly postpaid invoices. For monthly cost breakdowns by tag, API key, or member, see [Usage Statements](/v3/general/usage-statements).
+
+## Authentication
+
+Every billing endpoint authenticates with a [management key](/v3/organization/management-api) (`mgmt-eden-…`) holding the `manage:read` scope. An inference key (`sk-eden-…`) is refused with a `401` status.
+
+The key only ever accesses billing records for its own organization. All billing endpoints in this section are strictly read-only.
+
+## List Postpaid Invoices
+
+`GET /v3/manage/billing/invoices/` lists your organization's monthly postpaid invoices, ordered newest first.
+
+Draft invoices, which are invoices the finance team has not finalized or sent yet, are excluded from the list. Customers cannot pay draft invoices because they have no hosted payment link until finalized.
+
+<CodeGroup>
+
+{/* skip-test: GET /v3/manage/billing/invoices/ is not released to production yet; remove this marker once it is */}
+```bash cURL
+curl "https://api.edenai.run/v3/manage/billing/invoices/" \
+  -H "Authorization: Bearer $MANAGEMENT_KEY"
+```
+
+{/* skip-test: GET /v3/manage/billing/invoices/ is not released to production yet; remove this marker once it is */}
+```python Python
+import requests
+
+response = requests.get(
+    "https://api.edenai.run/v3/manage/billing/invoices/",
+    headers={"Authorization": "Bearer YOUR_MANAGEMENT_KEY"},
+    timeout=30,
+)
+response.raise_for_status()
+
+data = response.json()
+for invoice in data["results"]:
+    amount = invoice["amount_cents"] / 100
+    print(f"Invoice {invoice['id']}: {amount:.2f} USD ({invoice['status']})")
+```
+
+</CodeGroup>
+
+```json Response
+{
+  "total_count": 1,
+  "next": null,
+  "previous": null,
+  "results": [
+    {
+      "id": "in_1234567890",
+      "status": "open",
+      "amount_cents": 123400,
+      "period_start": "2026-10-01T00:00:00Z",
+      "period_end": "2026-10-31T23:59:59Z",
+      "due_date": "2026-11-30T00:00:00Z",
+      "paid_at": null
+    }
+  ]
+}
+```
+
+### Response fields
+
+| Field | Description |
+|-------|-------------|
+| `id` | The Stripe invoice identifier, such as `in_1234567890`. |
+| `status` | The invoice state, such as `open` or `paid`. |
+| `amount_cents` | The total billed amount, in cents. |
+| `period_start` | The start timestamp of the invoiced usage period. |
+| `period_end` | The end timestamp of the invoiced usage period. |
+| `due_date` | When payment is due. |
+| `paid_at` | When payment was completed, or `null` if unpaid. |
+
+## Retrieve an Invoice
+
+`GET /v3/manage/billing/invoices/{invoice_id}/` returns one invoice with its individual line items, a Stripe-hosted payment link, and a direct PDF download link.
+
+An invoice identifier that belongs to another organization, or an invoice that is still in draft state, returns `404`.
+
+<CodeGroup>
+
+{/* skip-test: GET /v3/manage/billing/invoices/{invoice_id}/ is not released to production yet; remove this marker once it is */}
+```bash cURL
+curl "https://api.edenai.run/v3/manage/billing/invoices/in_1234567890/" \
+  -H "Authorization: Bearer $MANAGEMENT_KEY"
+```
+
+{/* skip-test: GET /v3/manage/billing/invoices/{invoice_id}/ is not released to production yet; remove this marker once it is */}
+```python Python
+import requests
+
+invoice_id = "in_1234567890"
+
+response = requests.get(
+    f"https://api.edenai.run/v3/manage/billing/invoices/{invoice_id}/",
+    headers={"Authorization": "Bearer YOUR_MANAGEMENT_KEY"},
+    timeout=30,
+)
+response.raise_for_status()
+
+invoice = response.json()
+print(f"Payment link: {invoice['hosted_invoice_url']}")
+print(f"PDF download: {invoice['pdf_url']}")
+```
+
+</CodeGroup>
+
+```json Response
+{
+  "id": "in_1234567890",
+  "status": "open",
+  "amount_cents": 123400,
+  "period_start": "2026-10-01T00:00:00Z",
+  "period_end": "2026-10-31T23:59:59Z",
+  "due_date": "2026-11-30T00:00:00Z",
+  "paid_at": null,
+  "hosted_invoice_url": "https://invoice.stripe.com/i/acct_123/test_123",
+  "pdf_url": "https://pay.stripe.com/invoice/acct_123/test_123/pdf",
+  "lines": [
+    {
+      "description": "API Usage (October 2026)",
+      "amount": 123400,
+      "quantity": 1
+    }
+  ]
+}
+```
+
+### Additional detail fields
+
+| Field | Description |
+|-------|-------------|
+| `hosted_invoice_url` | A Stripe-hosted page where your finance team can pay the invoice online. |
+| `pdf_url` | A link to download the official invoice PDF generated by Stripe. |
+| `lines` | Billed line items, including usage charges, fees, or applied credits. |
+
+## Invoice Billing Details
+
+`GET /v3/manage/billing/details/` returns the legal name, email, postal address, and tax IDs printed on your organization's invoices.
+
+These details are edited in the [Eden AI dashboard](https://app.edenai.run/). If Stripe is temporarily unreachable, the endpoint returns `502`.
+
+<CodeGroup>
+
+{/* skip-test: GET /v3/manage/billing/details/ is not released to production yet; remove this marker once it is */}
+```bash cURL
+curl "https://api.edenai.run/v3/manage/billing/details/" \
+  -H "Authorization: Bearer $MANAGEMENT_KEY"
+```
+
+{/* skip-test: GET /v3/manage/billing/details/ is not released to production yet; remove this marker once it is */}
+```python Python
+import requests
+
+response = requests.get(
+    "https://api.edenai.run/v3/manage/billing/details/",
+    headers={"Authorization": "Bearer YOUR_MANAGEMENT_KEY"},
+    timeout=30,
+)
+response.raise_for_status()
+
+details = response.json()
+print(f"Customer: {details['name']} ({details['email']})")
+```
+
+</CodeGroup>
+
+```json Response
+{
+  "name": "Acme Corp",
+  "email": "billing@acme.example",
+  "address": {
+    "line1": "123 Innovation Way",
+    "line2": "Suite 400",
+    "city": "San Francisco",
+    "postal_code": "94105",
+    "state": "CA",
+    "country": "US"
+  },
+  "tax_ids": [
+    {
+      "type": "eu_vat",
+      "value": "FR12345678901"
+    }
+  ]
+}
+```
+
+## Billing Contacts
+
+`GET /v3/manage/billing/contacts/` returns who receives billing emails for your organization, including monthly invoice emails, low balance alerts, and auto-refill failure notices.
+
+The response includes the organization owner, members assigned the billing management role, and external contacts.
+
+<CodeGroup>
+
+{/* skip-test: GET /v3/manage/billing/contacts/ is not released to production yet; remove this marker once it is */}
+```bash cURL
+curl "https://api.edenai.run/v3/manage/billing/contacts/" \
+  -H "Authorization: Bearer $MANAGEMENT_KEY"
+```
+
+{/* skip-test: GET /v3/manage/billing/contacts/ is not released to production yet; remove this marker once it is */}
+```python Python
+import requests
+
+response = requests.get(
+    "https://api.edenai.run/v3/manage/billing/contacts/",
+    headers={"Authorization": "Bearer YOUR_MANAGEMENT_KEY"},
+    timeout=30,
+)
+response.raise_for_status()
+
+contacts = response.json()
+print(f"Owner: {contacts['owner_email']}")
+for contact in contacts["contacts"]:
+    print(f"Contact: {contact['email']} ({contact['email_types']})")
+```
+
+</CodeGroup>
+
+```json Response
+{
+  "owner_email": "owner@acme.example",
+  "billing_managers": [
+    {
+      "email": "finance@acme.example",
+      "role": "Billing Manager"
+    }
+  ],
+  "max_contacts": 5,
+  "contacts": [
+    {
+      "id": 12,
+      "email": "ap@acme.example",
+      "is_member": false,
+      "email_types": "all",
+      "added_by": "owner@acme.example",
+      "created_at": "2026-10-15T12:00:00Z"
+    }
+  ]
+}
+```
+
+## Rate Limits and Errors
+
+Calls to billing endpoints share the Management API rate limit of 60 requests per minute per key.
+
+| Status | Meaning |
+|--------|---------|
+| `401` | The key is missing, invalid, or an inference key instead of a management key. |
+| `403` | The management key does not hold the `manage:read` scope. |
+| `404` | The requested invoice was not found, belongs to another organization, or is an unfinalized draft. |
+| `429` | Rate limit exceeded. Wait before retrying. |
+| `502` | Stripe is temporarily unreachable. Retry shortly. |
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Usage Statements" icon="file-invoice" href="/v3/general/usage-statements">
+    Get monthly usage breakdowns by tag, key, and member
+  </Card>
+  <Card title="Management API" icon="key" href="/v3/organization/management-api">
+    Manage keys and organization settings programmatically
+  </Card>
+</CardGroup>

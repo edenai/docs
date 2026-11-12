@@ -106,7 +106,7 @@ The name is only accepted where a model chain is: the chat dialects above. To em
 | `targets` | 1 to 8 models to choose among, each a string or an object with the overrides below. Required |
 | `defaults` | What every target inherits unless it sets its own: `routing` and `retries` (default `0`) |
 | `lock` | Fields a request may not set: any of the `routing` fields a policy stores (listed below), or `region`. A request that sets one is refused with a `400` |
-| `fallbacks` | Up to 7 models tried after every target, in order, with the policy's default routing. One may be another policy, as `policy/{name}` |
+| `fallbacks` | Up to 7 models tried after every target, in order, with the policy's default routing. Any of them may be another policy, as `policy/{name}` |
 
 A target:
 
@@ -191,6 +191,10 @@ A save checks both sides of a nest, in the scope of the policy saved: a parent a
 | `prod-chat names this policy; this target cannot allow and ignore openai.` | Keep the target's provider lists apart from its `defaults`' |
 | `cheapest and fastest cannot rank a policy; list it in fallbacks.` | Move the reference to `fallbacks`, or change the strategy |
 | `A policy reference takes only a weight.` | Remove the reference's other settings |
+| `A policy reference takes no @region tag; the request's region applies to the child.` | Remove the `@region` tag: a region tag on the request's model pins the child too |
+| `A policy reference takes no :mode suffix.` | Remove the `:sort` suffix: one on the request's model reaches the child too |
+| `Not a policy name.` | Use the policy's name: 2 to 63 lowercase letters, digits or dashes |
+| `A policy cannot reference itself.` | Name another policy |
 
 An organization policy's save is not checked against its members' personal policies: if an edit leaves one of them unable to run it, that member's requests skip it with the reason `policy_invalid`.
 

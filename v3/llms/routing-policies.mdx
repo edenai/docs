@@ -14,7 +14,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "LLM API", "routing policy", "model fallback", "load balancing", "provider routing"]}
   datePublished="2026-10-27T00:00:00Z"
-  dateModified="2026-11-05T00:00:00Z"
+  dateModified="2026-11-13T00:00:00Z"
 />
 
 A routing policy is a saved model chain: which models to try, how to pick among them, and the [provider routing](/v3/llms/provider-routing) preferences every attempt follows. Save it once under a name and every request can use it as `model: "policy/{name}"`, so an app that only lets you configure a model string, such as a coding agent or a chat UI, gets your fallbacks and provider preferences without any change to the request.
@@ -131,7 +131,7 @@ Each strategy turns the targets into an ordered chain for the request, which the
 | `cheapest` | By the estimated cost of this request on each target, prompt and completion both counted, each target priced on the provider and in the region it would actually run. A target that cannot be estimated goes last |
 | `fastest` | By the observed time to first token of each target's providers. A target without data goes last |
 
-Whatever the strategy, a request makes at most 8 attempts, retries included: entries beyond the limit are dropped for the call with the reason `chain_limit`.
+Whatever the strategy, a request makes at most 12 attempts, retries included: entries beyond the limit are dropped for the call with the reason `chain_limit`.
 
 ## Routing preferences and precedence
 
@@ -222,7 +222,7 @@ Send `x-edenai-metadata: enabled` and the [request metadata](/v3/llms/request-me
 | `not_in_catalog` | The model has left the catalog since the policy was saved |
 | `endpoint` | The model does not serve this endpoint, such as an embeddings model on chat |
 | `no_eligible_seller` | After the routing preferences, no provider of a routable name was left |
-| `chain_limit` | The chain was longer than 8 attempts |
+| `chain_limit` | The chain was longer than 12 attempts |
 
 A dropped target is skipped, and the chain goes on with the next target, then the policy's `fallbacks`, then your own. Only when nothing at all is left does the request fail rather than run elsewhere: `403` when every drop is the guardrail's, `451` when every drop is the region's, `400` otherwise, naming the policy and the reasons.
 

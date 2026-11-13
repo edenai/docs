@@ -14,7 +14,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "LLM API", "provider routing", "load balancing", "failover"]}
   datePublished="2026-08-19T00:00:00Z"
-  dateModified="2026-11-06T00:00:00Z"
+  dateModified="2026-11-13T00:00:00Z"
 />
 
 Many models are sold by more than one provider. `gpt-5.6-sol` is served by four providers, `kimi-k2.6` by seven, `gpt-oss-120b` by fifteen. They run the same weights at different prices, speeds and reliability.
@@ -128,7 +128,7 @@ The providers you list are tried first, in your order. The model's other provide
 
 - **A provider marked down moves last.** If health checks mark a listed provider as down, it moves to the end of the chain, whatever its position in your list.
 - **`order` is a preference, not a restriction.** If none of the providers you list sells the model, or all of them are marked down, the request starts with another provider of the model. With `allow_fallbacks: false`, that provider is the only one tried. To make sure only certain providers are ever used, list them in [`allowed_providers`](#restricting-which-providers-may-be-used) too.
-- **Long lists may not be tried in full.** A request makes at most 8 attempts, and the entries in your `fallbacks` keep their slots first. See [Fallback](/v3/general/fallback#provider-level-failover-llm).
+- **Long lists may not be tried in full.** A request makes at most 12 attempts, and the entries in your `fallbacks` keep their slots first. See [Fallback](/v3/general/fallback#provider-level-failover-llm).
 - **An entry that does not sell the model is skipped.** Naming any `order` still turns off [sticky routing](#keeping-a-conversation-on-one-provider), as an explicit `sort` does, even when none of its entries sell the model.
 
 ## Restricting which providers may be used

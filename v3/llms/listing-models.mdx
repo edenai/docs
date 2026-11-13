@@ -14,7 +14,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "LLM API", "chat completion", "OpenAI compatible"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-11-06T00:00:00Z"
+  dateModified="2026-11-13T00:00:00Z"
 />
 
 Use the `/v3/models` endpoint to retrieve all LLM models available through Eden AI, along with their capabilities: input modalities, reasoning, web search, and function calling.
@@ -95,6 +95,7 @@ Each entry includes the model's identity, context window, token limits (`max_inp
         { "code": "eu", "name": "Europe" }
       ],
       "zero_data_retention": false,
+      "quantization": null,
       "alias_of": "google/gemini-3.6-flash"
     }
   ]
@@ -109,7 +110,7 @@ Token limits and context windows:
 - `max_input_tokens`: The most tokens the prompt may hold. Below `context_length` when the provider caps the prompt separately (for example OpenAI models). Set to `null` when unknown.
 - `max_output_tokens`: The most tokens one completion may hold. Set to `null` when unknown.
 
-`pricing` holds the rates a call bills at, after any discount, and `list_pricing` the provider's list rates before it, most of them in US dollars per token. Models that can run as a [batch](/v3/llms/batches) (OpenAI, Anthropic and Mistral) also carry `input_cost_per_token_batches`, `output_cost_per_token_batches` and `cache_read_input_token_cost_batches`, the rates a batch bills at when the model has them.
+`pricing` holds the rates a call bills at, after any discount, and `list_pricing` the provider's list rates before it, most of them in US dollars per token. The one exception is an [alias without a provider](#model-aliases): its `pricing` is the cheapest provider's price list, and the call bills at the rates of the provider that served it. Models that can run as a [batch](/v3/llms/batches) (OpenAI, Anthropic and Mistral) also carry `input_cost_per_token_batches`, `output_cost_per_token_batches` and `cache_read_input_token_cost_batches`, the rates a batch bills at when the model has them.
 
 ## Grouped view: one entry per routable name
 
@@ -162,6 +163,7 @@ What to expect from the shape:
 - **`created` is the newest endpoint's timestamp**, and `endpoint_count` equals `endpoints.length`.
 - The default (`view=endpoints`, or no parameter) is unchanged, and both entry shapes stay compatible with the OpenAI SDK's `client.models.list()`.
 - **Your routing policies are listed here too.** Send your API key and the grouped view adds one entry per [routing policy](/v3/llms/routing-policies) you can call, under its `policy/{name}` id, with `owned_by` set to `edenai`, an empty `endpoints` list and `endpoint_count` at `0`: which target serves a call is decided per request, so `pricing`, `context_length` and `regions` are `null` or empty. Policies never appear in the default view or under a `zero_data_retention` filter.
+- **Aliases of routable models are listed here too.** An [alias without a provider](#model-aliases) appears under its own name (which starts with `~`), with `alias_of` naming the model it points to and that model's values and endpoints repeated. An alias with a provider appears in the default view only.
 
 Every model listing takes the same parameter: `/v3/models`, `/v3/embeddings/models`, `/v3/moderations/models`, `/v3/audio/transcriptions/models`, `/v3/audio/speech/models`, `/v3/images/models`, `/v3/videos/models` and `/v3/rerank/models`.
 
@@ -185,6 +187,23 @@ curl "https://api.edenai.run/v3/models?zero_data_retention=true"
 
 `zero_data_retention=false` lists only the endpoints known to keep data, and entries still at `null` match neither. With `view=models`, each model keeps only its matching endpoints and recomputes its model-level fields from them, and is left out when none match. Every model listing above takes the parameter.
 
+## Quantization
+
+Every endpoint entry also carries `quantization`: the precision the provider runs the model's weights at. Different providers often serve the same open model at different precisions, and a lower one is usually cheaper and faster but can be slightly less accurate. `gpt-oss-120b`, for example, is served at `fp4` by one provider and `bf16` by another.
+
+| Value | Meaning |
+|-------|---------|
+| `fp32` | 32 bits per weight |
+| `bf16`, `fp16` | 16 bits per weight, the precision most open models are released at |
+| `fp8`, `int8` | 8 bits per weight |
+| `fp6` | 6 bits per weight |
+| `fp4`, `int4` | 4 bits per weight |
+| `null` | No precision to show: the provider does not state one, an Ollama level has no value in this list, or the providers behind an alias differ |
+
+The bit count is nominal. Some formats keep a few tensors at a higher precision and store scaling data alongside the weights, so read it as a category rather than an exact memory size. The value is what the provider states; Eden AI does not measure it. It is `null` for every closed-weight model (OpenAI, Anthropic, Google Gemini and similar), whose makers do not publish how they serve them. In the default view, an alias with no provider shows a precision only when every provider behind it serves the same one.
+
+For a model on your own private deployment, the value comes from the level your Ollama server reports: `Q4_0`, `Q4_1`, `Q4_K_S` and `Q4_K_M` are `int4`, `Q8_0` is `int8`, and `F16`, `BF16` and `F32` are `fp16`, `bf16` and `fp32`. Any other level is `null`, and the model's `description` still names it.
+
 ## Model aliases
 
 Some models are available under a **stable alias**, a version-agnostic name that always points to the current release, alongside versioned or dated snapshot IDs:
@@ -192,7 +211,16 @@ Some models are available under a **stable alias**, a version-agnostic name that
 - **Stable alias:** `google/gemini-flash-latest`, `anthropic/claude-sonnet-latest`, `deepseek/deepseek-chat`
 - **Versioned snapshot:** `anthropic/claude-opus-4-5-20251101`
 
-Use the **stable alias** when you want your integration to keep working as providers ship new versions. **Pin a versioned snapshot** when you need a fixed, reproducible model. Either form works as the `model` parameter. Alias entries report the concrete model they currently resolve to in the `alias_of` field, as in the response example above.
+Use the **stable alias** when you want your integration to keep working as providers ship new versions. **Pin a versioned snapshot** when you need a fixed, reproducible model. Either form works as the `model` parameter.
+
+An alias comes in two forms, and `alias_of` tells you which:
+
+| Alias | `alias_of` | Who serves the call |
+|-------|-----------|---------------------|
+| With a provider, such as `anthropic/claude-sonnet-latest` | A `provider/model` id | That provider, unless the call falls back to a model you listed in [`fallbacks`](/v3/general/fallback) |
+| Without a provider, such as `~claude-sonnet-latest` | A routable model name | The provider Eden AI picks, as with [Provider Routing](/v3/llms/provider-routing) |
+
+An alias without a provider starts with `~` (e.g. `~claude-sonnet-latest`) so it can never share a name with a model. In a shell, quote it (`--model '~claude-sonnet-latest'`): some shells, such as zsh, expand an unquoted leading `~`. It is listed in both views. With `view=models` it repeats the entry of the model it names, endpoints included. In the default view its `pricing`, `context_length`, `capabilities` and `regions` are that model's top-level values, described under the [grouped view](#grouped-view-one-entry-per-routable-name), and the call is billed at the prices of the provider that served it. Its `supports_batch` is always `false`: a [batch](/v3/llms/batches) runs on one provider's model.
 
 The catalog lists both forms when a provider exposes them, so you may see a stable alias (e.g. `anthropic/claude-opus-4-5`) and one or more dated snapshots (e.g. `anthropic/claude-opus-4-5-20251101`) side by side. Use the stable alias to always get the latest version, or a dated snapshot to pin to a specific release.
 

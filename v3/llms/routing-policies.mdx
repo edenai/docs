@@ -103,7 +103,7 @@ The name is only accepted where a model chain is: the chat dialects above. To em
 | `description` | Free text, up to 500 characters |
 | `enabled` | `false` parks the policy: calling it by name is a `400` and it leaves the [model listing](#finding-your-policies). Default `true` |
 | `strategy` | How the targets are ordered: `fallback`, `load_balance`, `cheapest` or `fastest`. Required |
-| `targets` | 1 to 8 models to choose among, each a string or an object with the overrides below. Required |
+| `targets` | 1 to 12 models to choose among, each a string or an object with the overrides below. Required |
 | `defaults` | What every target inherits unless it sets its own: `routing` and `retries` (default `0`) |
 | `lock` | Fields a request may not set: any of the `routing` fields a policy stores (listed below), or `region`. A request that sets one is refused with a `400` |
 | `fallbacks` | Up to 7 models tried after every target, in order, with the policy's default routing. Any of them may be another policy, as `policy/{name}` |

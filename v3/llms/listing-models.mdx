@@ -94,6 +94,7 @@ Each entry includes the model's identity, context window, capabilities, pricing,
       ],
       "zero_data_retention": false,
       "quantization": null,
+      "retirement_date": null,
       "alias_of": "google/gemini-3.6-flash"
     }
   ]
@@ -195,6 +196,12 @@ Every endpoint entry also carries `quantization`: the precision the provider run
 The bit count is nominal. Some formats keep a few tensors at a higher precision and store scaling data alongside the weights, so read it as a category rather than an exact memory size. The value is what the provider states; Eden AI does not measure it. It is `null` for every closed-weight model (OpenAI, Anthropic, Google Gemini and similar), whose makers do not publish how they serve them. In the default view, an alias with no provider shows a precision only when every provider behind it serves the same one.
 
 For a model on your own private deployment, the value comes from the level your Ollama server reports: `Q4_0`, `Q4_1`, `Q4_K_S` and `Q4_K_M` are `int4`, `Q8_0` is `int8`, and `F16`, `BF16` and `F32` are `fp16`, `bf16` and `fp32`. Any other level is `null`, and the model's `description` still names it.
+
+## Retirement date
+
+Every endpoint entry also carries `retirement_date`: the day the provider has announced it will stop serving the model, as `YYYY-MM-DD`. Move to another model or provider before then, since calls on that endpoint will start failing once the provider turns it off. Different providers retire the same model on different days, so the date belongs to the endpoint, not to the model.
+
+`null` means no date has been published. It does not promise the model will stay. An alias with a provider shows the date of the model it points to.
 
 ## Model aliases
 

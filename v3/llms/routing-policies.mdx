@@ -177,7 +177,7 @@ Nesting also combines strategies, which one policy cannot. This parent sends fou
 - **The name is read in the parent's scope.** In an organization policy, `policy/safety-net` is the organization's policy of that name: a member's personal policy is never used. In a personal policy, it is your personal policy of that name, else the organization's.
 - **One level deep.** A policy that another names cannot name a policy itself, and no policy can name itself, so a loop cannot form.
 - **`cheapest` and `fastest` cannot rank a policy**, as a whole chain has no single cost or latency. List it in `fallbacks` instead.
-- **The 8-attempt limit counts the whole chain**, the child's entries included. A child named twice runs twice.
+- **The attempt limit counts the whole chain**, the child's entries included. A child named twice runs twice.
 - **Deleting or disabling a child is allowed.** The parent then skips it: the reference is [dropped](#seeing-what-the-policy-did) for the call with the reason `policy_not_found` or `policy_disabled`, and the rest of the parent runs.
 
 A save checks both sides of a nest, in the scope of the policy saved: a parent against the children it names, and a policy that others name against those parents. A save that would break a nest is a `422` whose `error.fields` names the field at fault:

@@ -281,6 +281,9 @@ Send `x-edenai-metadata: enabled` and the [request metadata](/v3/llms/request-me
 
 | Reason | The target was dropped because |
 |---|---|
+| `policy_not_found` | A [nested policy](#nesting-a-policy) of that name does not exist, or not in the parent's scope |
+| `policy_disabled` | The nested policy is disabled |
+| `policy_invalid` | The nested policy can no longer run under a parent, for instance after an organization edit that the save of a member's personal parent did not see |
 | `no_own_key` | The target runs on your [own key](/v3/general/byok) for its provider, and no usable one is stored |
 | `guardrail` | An [organization guardrail](/v3/organization/guardrails) forbids the model |
 | `region` | The model is not served in the region the call or the target pins |
@@ -289,9 +292,6 @@ Send `x-edenai-metadata: enabled` and the [request metadata](/v3/llms/request-me
 | `endpoint` | The model does not serve this endpoint, such as an embeddings model on chat |
 | `no_eligible_seller` | After the routing preferences, no provider of a routable name was left |
 | `chain_limit` | The chain was longer than 8 attempts |
-| `policy_not_found` | A [nested policy](#nesting-a-policy) of that name does not exist, or not in the parent's scope |
-| `policy_disabled` | The nested policy is disabled |
-| `policy_invalid` | The nested policy can no longer run under a parent, for instance after an organization edit that the save of a member's personal parent did not see |
 
 When a nested policy served, the block also names it:
 

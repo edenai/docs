@@ -1,0 +1,271 @@
+---
+title: "API Request Logs"
+sidebarTitle: "Request Logs"
+icon: "rectangle-list"
+description: "Retrieve your organization's API request logs, inspect provider attempts and fallbacks, export logs to CSV, and analyze LLM performance metrics."
+---
+
+import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
+
+<TechArticleSchema
+  title={"API Request Logs"}
+  description={"Retrieve your organization's API request logs, inspect provider attempts and fallbacks, export logs to CSV, and analyze LLM performance metrics."}
+  path="v3/general/request-logs"
+  articleSection="General"
+  about={"API Monitoring"}
+  proficiencyLevel="Intermediate"
+  keywords={["Eden AI", "API request logs", "monitoring", "audit logs", "LLM metrics", "CSV export"]}
+  datePublished="2026-11-12T00:00:00Z"
+  dateModified="2026-11-12T00:00:00Z"
+/>
+
+Retrieve detailed logs of every API call made across your organization, inspect provider attempts and fallbacks, download CSV exports, and monitor LLM latency and reliability metrics.
+
+While the aggregate [Monitoring](/v3/general/monitoring) endpoints report bucketed spend and call totals over time, the request log endpoints provide granular per-request auditing for debugging, cost attribution, and compliance.
+
+## Authentication
+
+Request log endpoints belong to the [Management API](/v3/organization/management-api). They require a **management key** (`mgmt-eden-…`) with the `manage:read` scope:
+
+```
+Authorization: Bearer <management_key>
+```
+
+Inference keys (`sk-eden-…`) cannot call management endpoints and return `401`.
+
+## Endpoints
+
+| Endpoint | Method | Scope | Description |
+|----------|--------|-------|-------------|
+| `/v3/manage/usage/requests/` | `GET` | `manage:read` | List organization request logs with pagination and filters. |
+| `/v3/manage/usage/requests/{request_id}/` | `GET` | `manage:read` | Retrieve metadata and outcome for a single request. |
+| `/v3/manage/usage/requests/{request_id}/attempts/` | `GET` | `manage:read` | List provider attempts and fallbacks for a request. |
+| `/v3/manage/usage/requests/volume/` | `GET` | `manage:read` | Request count time series bucketed by hour or day. |
+| `/v3/manage/usage/requests/export/` | `GET` | `manage:read` | Export matching request logs as a CSV file. |
+| `/v3/manage/usage/facets/` | `GET` | `manage:read` | List available filter values over a date window. |
+| `/v3/manage/usage/llm/` | `GET` | `manage:read` | Aggregate LLM latency, cache hit rate, and error metrics. |
+| `/v3/manage/usage/llm/models/` | `GET` | `manage:read` | LLM performance and reliability metrics broken down by model. |
+
+## Query Parameters and Filtering
+
+The request list, volume, and CSV export endpoints share a common set of query filters. Unknown query parameters are rejected with `400` rather than silently ignored.
+
+### Date Window
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `begin` | ISO 8601 datetime | Window start, inclusive (for example, `2026-11-01T00:00:00Z`). Defaults to 7 days ago. |
+| `end` | ISO 8601 datetime | Window end, exclusive. Maximum window length is 366 days. |
+
+### Filters
+
+Filter parameters accept multiple comma-separated values to match any of the listed options:
+
+| Parameter | Type | Description | Example |
+|-----------|------|-------------|---------|
+| `feature` | string | Feature category | `llm`, `ocr`, `image` |
+| `subfeature` | string | Specific subfeature | `chat`, `embeddings` |
+| `provider` | string | AI provider involved in the call | `openai`, `anthropic` |
+| `api_key` | string | API key ID. Use `0` for personal keys, or `0:<user_id>` for a specific member's key. | `12`, `0` |
+| `user` | UUID | Member ID who initiated the request | `3fa85f64-5717-4562-b3fc-2c963f66afa6` |
+| `outcome` | string | Request outcome: `any` (default), `success`, `error`, `provider_fault`, `caller_fault`, or `rate_limit` | `error` |
+| `streaming` | boolean | Filter by streaming requests (`true` or `false`) | `true` |
+| `search` | string | Free-text search across errors, models, and request paths | `timeout` |
+| `tag.<key>` | string | Filter by caller tag value. Multiple values are comma-separated. | `tag.env=production,staging` |
+| `exclude_tag.<key>` | string | Exclude requests with the specified tag value | `exclude_tag.env=test` |
+| `exclude_<facet>` | string | Exclude specific values for any filter facet | `exclude_provider=mock` |
+
+## List Requests
+
+`GET /v3/manage/usage/requests/` returns requests ordered newest first by default:
+
+{/* skip-test: requires a management key with manage:read scope */}
+```python Python
+import requests
+
+headers = {"Authorization": "Bearer YOUR_MANAGEMENT_KEY"}
+
+response = requests.get(
+    "https://api.edenai.run/v3/manage/usage/requests/",
+    headers=headers,
+    params={
+        "limit": 20,
+        "feature": "llm",
+        "outcome": "error"
+    }
+)
+response.raise_for_status()
+
+data = response.json()
+print(f"Total matching requests: {data['total_count']}")
+for req in data["results"]:
+    print(f"{req['created_at']} | {req['feature']}/{req['subfeature']} | status {req['status_code']} | cost: ${req['cost']:.4f}")
+```
+
+{/* skip-test: requires a management key with manage:read scope */}
+```bash cURL
+curl -X GET "https://api.edenai.run/v3/manage/usage/requests/?limit=20&feature=llm&outcome=error" \
+  -H "Authorization: Bearer YOUR_MANAGEMENT_KEY"
+```
+
+### Pagination
+
+The request list uses offset pagination with standard envelope links:
+
+- `limit`: Number of records to return, from `1` to `200` (default `50`).
+- `offset`: Starting row offset, from `0` up to `10000`. Offsets past `10000` return `400` to prevent query degradation; narrow your `begin` and `end` timestamps to inspect deeper historical logs.
+- `order`: Sort direction, either `newest` (default) or `oldest`.
+
+```json
+{
+  "results": [
+    {
+      "request_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "created_at": "2026-11-12T14:32:01.120000Z",
+      "org_id": 42,
+      "user_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+      "user_email": "dev@example.com",
+      "user_former": false,
+      "custom_token_id": 15,
+      "custom_token_name": "prod-backend",
+      "custom_token_masked": "sk-eden-…8a90",
+      "custom_token_revoked": false,
+      "custom_token_expired": false,
+      "call_type": "sync",
+      "url": "/v3/llms/chat/completions",
+      "method": "POST",
+      "api_version": "v3",
+      "feature": "llm",
+      "subfeature": "chat",
+      "job_id": null,
+      "status_code": 200,
+      "error_kind": "none",
+      "error_message": "",
+      "providers": ["openai"],
+      "attempt_count": 1,
+      "is_streaming": true,
+      "is_cached": false,
+      "requested_model": "openai/gpt-4o",
+      "routing_strategy": "",
+      "routing_mode": "",
+      "cost": 0.0042,
+      "latency_ns": 482000000,
+      "tags": {
+        "client": "acme",
+        "env": "production"
+      }
+    }
+  ],
+  "limit": 20,
+  "offset": 0,
+  "total_count": 1,
+  "next": null,
+  "previous": null
+}
+```
+
+<Note>
+To safeguard data privacy, stored request and response bodies are excluded from the Management API. Management keys inspect audit metadata, performance, and spending without exposing user payload content.
+</Note>
+
+## Inspect a Request and Provider Attempts
+
+To inspect an individual request, pass its `request_id`:
+
+{/* skip-test: requires a management key with manage:read scope */}
+```bash cURL
+curl -X GET "https://api.edenai.run/v3/manage/usage/requests/3fa85f64-5717-4562-b3fc-2c963f66afa6/" \
+  -H "Authorization: Bearer YOUR_MANAGEMENT_KEY"
+```
+
+To see every provider call Eden AI made for that request, including automatic fallback steps:
+
+{/* skip-test: requires a management key with manage:read scope */}
+```bash cURL
+curl -X GET "https://api.edenai.run/v3/manage/usage/requests/3fa85f64-5717-4562-b3fc-2c963f66afa6/attempts/" \
+  -H "Authorization: Bearer YOUR_MANAGEMENT_KEY"
+```
+
+Each attempt records the provider, model, latency, outcome, and prompt and completion token counts.
+
+<Tip>
+When querying an individual request or its attempts, pass the `created_at` timestamp returned in the list (for example, `?created_at=2026-11-12T14:32:01.120000Z`) to make ClickHouse partition pruning faster.
+</Tip>
+
+## Request Volume Time Series
+
+`GET /v3/manage/usage/requests/volume/` aggregates call counts into time buckets using the same filters as the request list:
+
+{/* skip-test: requires a management key with manage:read scope */}
+```bash cURL
+curl -X GET "https://api.edenai.run/v3/manage/usage/requests/volume/?interval=hour&feature=llm" \
+  -H "Authorization: Bearer YOUR_MANAGEMENT_KEY"
+```
+
+Set `interval` to `hour` or `day` (default `day`).
+
+## Export Requests as CSV
+
+`GET /v3/manage/usage/requests/export/` streams matching requests as a CSV file, ordered newest first:
+
+{/* skip-test: requires a management key with manage:read scope */}
+```bash cURL
+curl -X GET "https://api.edenai.run/v3/manage/usage/requests/export/?feature=llm" \
+  -H "Authorization: Bearer YOUR_MANAGEMENT_KEY" \
+  -o request_logs.csv
+```
+
+CSV export details:
+
+- **Row limit**: A single export streams up to 100,000 rows. When truncated, the response includes the header `X-EdenAI-Export-Truncated: true`.
+- **Tag columns**: Up to 50 distinct caller tag keys appear as individual columns prefixed with `tag:<key>`. Any tags beyond the first 50 are aggregated into an `other_tags` column.
+- **Throttling**: To protect database stability, CSV exports are capped at **20 exports per hour** per management key (`manage_usage_export`). Ordinary API reads are not subject to this export rate limit.
+
+## Filter Facets
+
+`GET /v3/manage/usage/facets/` returns all distinct values present in your organization's traffic over a date window:
+
+{/* skip-test: requires a management key with manage:read scope */}
+```bash cURL
+curl -X GET "https://api.edenai.run/v3/manage/usage/facets/?begin=2026-11-01&end=2026-11-08" \
+  -H "Authorization: Bearer YOUR_MANAGEMENT_KEY"
+```
+
+The response includes lists of features, providers, members, API keys, and tag keys seen during that period. Pass `tag_key=<key>` to list the observed values for a specific tag.
+
+## LLM Performance and Reliability Metrics
+
+Track cache efficiency, latency percentiles, and error rates across all LLM requests:
+
+- `GET /v3/manage/usage/llm/`: Time series of LLM metrics bucketed by `interval` (`hour` or `day`). Reports cache hit rate, time to first token (TTFT) p50, provider latency percentiles, fallback rates, and token mix.
+- `GET /v3/manage/usage/llm/models/`: Metrics per provider and model. Sort by `sort` (`attempts`, `cost`, `cache_hit_rate`, `error_rate`, `ttft_p50_ns`, or `latency_p95_ns`) and `order` (`desc` or `asc`).
+
+{/* skip-test: requires a management key with manage:read scope */}
+```bash cURL
+curl -X GET "https://api.edenai.run/v3/manage/usage/llm/models/?sort=cost&order=desc&limit=10" \
+  -H "Authorization: Bearer YOUR_MANAGEMENT_KEY"
+```
+
+## Rate Limits
+
+| Operation | Limit | Scope |
+|-----------|-------|-------|
+| Request log reads | 60 requests per minute | Per management key (`manage_usage`) |
+| CSV export | 20 exports per hour | Per management key (`manage_usage_export`) |
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Monitoring" icon="chart-line" href="/v3/general/monitoring">
+    Track aggregated spend and consumption time series
+  </Card>
+  <Card title="Usage Statements" icon="file-invoice" href="/v3/general/usage-statements">
+    Download monthly PDF and CSV reports of billed usage
+  </Card>
+  <Card title="Tags" icon="tags" href="/v3/general/tags">
+    Attach customer or environment tags to inference calls
+  </Card>
+  <Card title="Management API" icon="key" href="/v3/organization/management-api">
+    Manage keys, members, and organization policies
+  </Card>
+</CardGroup>

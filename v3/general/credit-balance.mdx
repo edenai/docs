@@ -31,13 +31,13 @@ The key only ever sees the billing of its own organization. The endpoint is read
 
 <CodeGroup>
 
-{/* skip-test: GET /v3/manage/billing/ is not released to production yet; remove this marker once it is */}
+{/* skip-test: GET /v3/manage/billing/ requires a management key with manage:read scope */}
 ```bash cURL
 curl https://api.edenai.run/v3/manage/billing/ \
   -H "Authorization: Bearer $MANAGEMENT_KEY"
 ```
 
-{/* skip-test: GET /v3/manage/billing/ is not released to production yet; remove this marker once it is */}
+{/* skip-test: GET /v3/manage/billing/ requires a management key with manage:read scope */}
 ```python Python
 import requests
 
@@ -113,7 +113,7 @@ So the balance can move slightly between two calls even when no new request star
 
 Requests are refused when the balance reaches `-credit_overdraft_limit`. Compare against that floor rather than against zero, and check that auto-refill is still working:
 
-{/* skip-test: GET /v3/manage/billing/ is not released to production yet; remove this marker once it is */}
+{/* skip-test: GET /v3/manage/billing/ requires a management key with manage:read scope */}
 ```python Python
 import requests
 

@@ -15,7 +15,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Beginner"
   keywords={["Eden AI", "usage statement", "monthly usage report", "cost breakdown", "tags", "billing"]}
   datePublished="2026-10-19T00:00:00Z"
-  dateModified="2026-10-19T00:00:00Z"
+  dateModified="2026-11-12T00:00:00Z"
 />
 
 A usage statement is one month of your organization's billed usage, split the way your finance team needs it: by [tag](/v3/general/tags), API key, member, feature or provider. It comes as a PDF summary and a CSV with every line.
@@ -78,13 +78,122 @@ Turn on **Email each month** to issue last month's statement on the 1st after 12
 
 ## With postpaid billing
 
-On a postpaid plan, a month's statement adds up to the usage line of that month's invoice and names the invoice. When the two differ, the PDF and the page show the difference.
+On a postpaid plan, a month's statement adds up to the usage line of that month's [invoice](/v3/general/invoices) and names the invoice. When the two differ, the PDF and the page show the difference.
 
 The monthly email waits until that invoice is sent. Each whole-month invoice also links to its statement in the invoice memo.
+
+## Accessing statements via API
+
+You can list statement months, retrieve monthly breakdowns, and download statement PDF and CSV files programmatically using a [management key](/v3/organization/management-api) with the `manage:read` scope.
+
+### List statement months
+
+`GET /v3/manage/billing/statements/` returns the last twelve months with billed usage, newest first, alongside your current split configuration and email preference.
+
+<CodeGroup>
+
+{/* skip-test: GET /v3/manage/billing/statements/ requires a management key with manage:read scope */}
+```bash cURL
+curl "https://api.edenai.run/v3/manage/billing/statements/" \
+  -H "Authorization: Bearer $MANAGEMENT_KEY"
+```
+
+{/* skip-test: GET /v3/manage/billing/statements/ requires a management key with manage:read scope */}
+```python Python
+import requests
+
+response = requests.get(
+    "https://api.edenai.run/v3/manage/billing/statements/",
+    headers={"Authorization": "Bearer YOUR_MANAGEMENT_KEY"},
+    timeout=30,
+)
+response.raise_for_status()
+
+overview = response.json()
+print(f"Configured split: {overview['levels']}")
+for month in overview["months"]:
+    spend = month["total_cents"] / 100
+    print(f"{month['period']}: {month['status']} ({spend:.2f} USD)")
+```
+
+</CodeGroup>
+
+```json Response
+{
+  "levels": ["tag:client", "api_key"],
+  "email_monthly": true,
+  "months": [
+    {
+      "period": "2026-10",
+      "status": "issued",
+      "total_cents": 35000,
+      "calls": 1250,
+      "number": "ST-2026-10-0001",
+      "invoice_number": "INV-2026-10-001",
+      "invoice_usage_cents": 35000,
+      "issued_at": "2026-11-01T12:05:00Z"
+    }
+  ]
+}
+```
+
+Each month has one of three statuses:
+
+- `preliminary`: The month is still running (until the 1st of the following month at 12:00 UTC).
+- `available`: The month has ended and is ready to be issued.
+- `issued`: The statement has been finalized with a permanent number and frozen split.
+
+### Retrieve statement breakdown
+
+`GET /v3/manage/billing/statements/{period}/`, where `{period}` is formatted as `YYYY-MM` (such as `2026-10`), returns that month's detailed breakdown folded level by level.
+
+If the period is malformed, the endpoint returns `404`. A month that has not started yet returns `400`, and a month that is not ready yet returns `409`.
+
+<CodeGroup>
+
+{/* skip-test: GET /v3/manage/billing/statements/{period}/ requires a management key with manage:read scope */}
+```bash cURL
+curl "https://api.edenai.run/v3/manage/billing/statements/2026-10/" \
+  -H "Authorization: Bearer $MANAGEMENT_KEY"
+```
+
+{/* skip-test: GET /v3/manage/billing/statements/{period}/ requires a management key with manage:read scope */}
+```python Python
+import requests
+
+period = "2026-10"
+
+response = requests.get(
+    f"https://api.edenai.run/v3/manage/billing/statements/{period}/",
+    headers={"Authorization": "Bearer YOUR_MANAGEMENT_KEY"},
+    timeout=30,
+)
+response.raise_for_status()
+
+statement = response.json()
+print(f"Statement {statement['number']}: {statement['total_cents'] / 100:.2f} USD")
+```
+
+</CodeGroup>
+
+### Download PDF and CSV files
+
+`GET /v3/manage/billing/statements/{period}/pdf/` and `GET /v3/manage/billing/statements/{period}/csv/` return the statement file as a binary download.
+
+<Warning>
+Downloading via the API returns the issued statement if the month has already been issued, or a draft file otherwise. Unlike dashboard downloads, API downloads never issue a month: they leave unissued months in their draft state so your configured split is not frozen prematurely.
+</Warning>
+
+### Service availability
+
+Usage statements read aggregated data from ClickHouse. If ClickHouse is temporarily unavailable, statement endpoints return `503` with a message asking you to retry shortly.
 
 ## Next Steps
 
 <CardGroup cols={2}>
+  <Card title="Invoices" icon="receipt" href="/v3/general/invoices">
+    List postpaid invoices and payment links via API
+  </Card>
   <Card title="Tags" icon="tags" href="/v3/general/tags">
     Label calls by client or project to split statements by them
   </Card>

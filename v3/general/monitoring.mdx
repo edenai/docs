@@ -15,12 +15,12 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "rate limits", "billing", "monitoring"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-10-16T00:00:00Z"
+  dateModified="2026-11-12T00:00:00Z"
 />
 
 Learn how to track your Eden AI API consumption and costs with the Management API usage endpoints.
 
-The [dashboard](https://app.edenai.run/) shows the same data, plus your current **credit balance**, which is not exposed by the API. Use the endpoints below when you want to pull consumption into your own reporting, alerting or chargeback tooling.
+The [dashboard](https://app.edenai.run/) shows the same data. You can also read your current **credit balance** and auto-refill state through the [billing endpoint](/v3/general/credit-balance). Use the endpoints below when you want to pull consumption into your own reporting, alerting or chargeback tooling.
 
 ## Authentication
 
@@ -38,6 +38,7 @@ Generate a management key from the dashboard (**Account → Management Keys**) o
 |----------|-----------------|
 | `GET /v3/manage/usage/` | The organization's consumption: a time series per API key, or one total per member with `group_by=user`. |
 | `GET /v3/manage/keys/{key_id}/usage/` | The consumption of one API key as a time series. |
+| `GET /v3/manage/usage/requests/` | Granular request logs, provider attempts, and CSV exports. See [Request Logs](/v3/general/request-logs). |
 
 ## Key Concepts
 
@@ -49,6 +50,10 @@ Generate a management key from the dashboard (**Account → Management Keys**) o
 | `end` | Day **after** the last day of the window, exclusive (`YYYY-MM-DD`). For example, `begin=2026-10-01&end=2026-11-01` covers all of October 2026. |
 
 Provide both or neither. Without them you get the **last 7 days**. The window may not exceed **366 days**.
+
+### Batch cost
+
+A [batch](/v3/llms/batches) shows as cost on the day it was created. The launch records the reservation and the settlement adds the difference between the final cost and the reservation. The settlement counts as no request and carries no tokens.
 
 ### Response caching
 
@@ -261,7 +266,7 @@ A key that belongs to another organization returns `404`.
 
 ## Checking Your Credit Balance
 
-The account credit balance is not exposed by the Management API. Check it in the [Eden AI dashboard](https://app.edenai.run/), or cap spending per key with a [key budget](/v3/general/custom-api-keys#create-a-key-with-budget) so a runaway integration cannot drain the account.
+Read your organization's balance and auto-refill settings programmatically with `GET /v3/manage/billing/`: see [Check Your Credit Balance via API](/v3/general/credit-balance). You can also view it in the [Eden AI dashboard](https://app.edenai.run/), or cap spending per key with a [key budget](/v3/general/custom-api-keys#create-a-key-with-budget) so a runaway integration cannot drain the account.
 
 ## Error Responses
 
@@ -278,3 +283,14 @@ The account credit balance is not exposed by the Management API. Check it in the
   "detail": "This endpoint needs a management key. An inference key (sk-eden...) cannot manage an organization; mint a management key from the dashboard and use it here."
 }
 ```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Request Logs" icon="rectangle-list" href="/v3/general/request-logs">
+    Inspect individual API calls, provider attempts, and export logs to CSV
+  </Card>
+  <Card title="Usage Statements" icon="file-invoice" href="/v3/general/usage-statements">
+    Get monthly PDF and CSV reports of billed usage
+  </Card>
+</CardGroup>

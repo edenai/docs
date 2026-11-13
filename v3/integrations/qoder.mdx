@@ -1,0 +1,242 @@
+---
+title: "Use Qoder with Eden AI"
+sidebarTitle: "Qoder"
+icon: "/integration-logo/qoder-icondoc.svg"
+description: "Set up Qoder, the AI coding agent, to run on Eden AI: add it as a custom model provider for 500+ models with one key, and plug in expert models as MCP tools."
+---
+
+import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
+
+<TechArticleSchema
+  title={"Use Qoder with Eden AI"}
+  description={"Set up Qoder, the AI coding agent, to run on Eden AI: add it as a custom model provider for 500+ models with one key, and plug in expert models as MCP tools."}
+  path="v3/integrations/qoder"
+  articleSection="Coding Agents"
+  about={"AI Coding Assistants"}
+  proficiencyLevel="Intermediate"
+  keywords={["Eden AI", "AI API", "Qoder"]}
+  datePublished="2026-11-06T00:00:00Z"
+  dateModified="2026-11-06T00:00:00Z"
+/>
+
+Qoder accepts custom OpenAI-compatible and Anthropic-compatible model providers, so Eden AI needs no plugin: you enter a base URL, a key and a model ID in the desktop app, and the model appears in the chat's model picker and in the Qoder CLI. Qoder sends tool definitions with every request, so pick a model that supports function calling.
+
+## Overview
+
+[Qoder](https://qoder.com) is an AI coding agent that comes as a desktop app and a CLI. Eden AI plugs into it in two ways:
+
+- **As a custom model provider**: one API key gives the agent 500+ models from OpenAI, Anthropic, Google, Mistral and more, with unified billing and monitoring.
+- **As an MCP server**: Eden AI's expert models (OCR, web search, speech, translation and more) become tools the agent can call.
+
+This page was tested with the Qoder desktop app and Qoder CLI v1.1.83.
+
+## Prerequisites
+
+- The [Qoder](https://qoder.com) desktop app installed
+- Eden AI API key from [app.edenai.run](https://app.edenai.run) → **API Keys**
+
+## Setup
+
+### 1. Add Eden AI as a model provider
+
+Open **Settings** (the gear icon, bottom left), go to **Models** and click **Add model**.
+
+<Frame>
+  <img src="/images/qoder/00_settings_models.png" alt="The Models page in Qoder settings, listing custom models with an Add model button" />
+</Frame>
+
+In the **Add model** dialog, fill in the fields:
+
+| Field | Value |
+|---|---|
+| **Provider** | **OpenAI Compatible** |
+| **API type** | **Chat Completions API** (recommended) |
+| **Base URL** | `https://api.edenai.run/v3` |
+| **API key** | Your Eden AI API key |
+| **Model IDs** | e.g. `claude-sonnet-5.5` or `gpt-5.5` |
+
+A Model ID is a canonical model name. It names the model only, so Eden AI chooses the provider that serves it, by price, speed or latency, with automatic failover. The full list of canonical names is at `GET https://api.edenai.run/v3/models?view=models` (public, no key needed).
+
+Click **+ Add Model ID** to add more models on the same endpoint, then click **Next**.
+
+<Frame>
+  <img src="/images/qoder/01_add_model.png" alt="The Add model dialog with OpenAI Compatible, Chat Completions API, the Eden AI base URL, an API key and one model ID" />
+</Frame>
+
+### 2. Configure model capabilities
+
+The **Configure model capabilities** screen describes the model to Qoder:
+
+- **Display name**: the name shown in the model picker.
+- **Supported context windows** and **Default context window**: use the model's `context_length` from `GET https://api.edenai.run/v3/models?view=models` (see [List Models](/v3/llms/listing-models)).
+- **Capabilities**: turn on **Vision** and **Thinking** when the model supports them.
+- **Reasoning effort**: **Minimal**, **Low**, **Medium**, **High**, **Extra high** or **Maximum**. See [Reasoning effort](#reasoning-effort) for what Qoder sends for each.
+
+<Frame>
+  <img src="/images/qoder/02_config_model_cap_1.png" alt="The Configure model capabilities screen with display name, context windows, Vision and Thinking capabilities and reasoning effort buttons" />
+</Frame>
+
+Click **Validate and save**. The **Models saved** dialog confirms the model was added; click **Done**.
+
+<Frame>
+  <img src="/images/qoder/03_model_saved.png" alt="The Models saved dialog confirming the model configuration check passed and one model was added" />
+</Frame>
+
+<Note>
+**Validate and save** does not test the connection. A wrong key is only reported when you send the first message; see [Troubleshooting](#custom-model-authentication-failed).
+</Note>
+
+<Warning>
+Provider, API type and model cannot be changed after adding. To switch, add a new model.
+</Warning>
+
+### 3. Pick the model in the chat
+
+Open the model picker at the bottom of the chat and choose the model under **Custom**. The picker also lets you change the **Thinking effort** of the selected model.
+
+<Frame>
+  <img src="/images/qoder/11_chat_picker.png" alt="The chat model picker on the Custom tab, listing the Eden AI models and the Thinking effort of the selected one" />
+</Frame>
+
+### Other API types
+
+**Chat Completions API** is the recommended API type. The two others work with the same Base URL:
+
+- **OpenAI Compatible** with **Responses API**: Qoder sends the full conversation history each turn, so no server-side state is needed.
+- **Anthropic Compatible**: Qoder calls `/v1/messages` under the same Base URL, `https://api.edenai.run/v3`. Use it for Claude models only: in this mode, a non-Claude model (Devstral) stopped without using its tools, while the same model worked with Chat Completions.
+
+## Model naming
+
+Qoder sends the Model ID as you write it, so use a canonical model name as listed by `GET https://api.edenai.run/v3/models?view=models`, such as `claude-sonnet-5.5` or `gpt-5.5`. Qoder sends tool definitions with every request, so choose a model whose entry has `supports_function_calling: true`. Claude Sonnet, GPT, Gemini Flash and Devstral were tested end to end with Chat Completions.
+
+List the available models, with their capabilities and pricing, in [List Models](/v3/llms/listing-models).
+
+### Reasoning effort
+
+The effort chosen in the model settings or the chat picker is sent as the parameter of the API type in use:
+
+| API type | What Qoder sends |
+|---|---|
+| **Chat Completions API** | `reasoning_effort`: `low`, `medium`, `high`, `xhigh` or `max`. **Minimal** sends nothing. |
+| **Responses API** | `reasoning.effort` |
+| **Anthropic Compatible** | `thinking` in adaptive mode, plus `effort` |
+
+## Switching models
+
+Open the model picker in the chat and choose another model; switching mid-chat works. To add a model, or to change the provider or API type of one, go to **Settings** > **Models** > **Add model** again.
+
+## Costs
+
+- **Prompt caching** works without any setup: Qoder sends a session id header per chat, so the agent's steps reuse 30,000 to 50,000 cached tokens. See [Prompt Caching](/v3/llms/prompt-caching).
+- With **Auto approve** on, Qoder asks the selected model for a short safety check before each tool call. These small requests also go through Eden AI.
+
+## Qoder CLI
+
+The CLI uses the same custom models as the desktop app. Qoder's documentation lists custom models under the Individual plan; this was tested on a Pro trial.
+
+### Install
+
+On Windows, run in PowerShell:
+
+```powershell
+irm https://qoder.com/install.ps1 | iex
+```
+
+The command is `qodercli`. If `qodercli is not recognized`, the binary is in `%USERPROFILE%\.qoder\bin\qodercli\`: add that folder to your `PATH` and open a new terminal.
+
+### Pick a model
+
+Run `qodercli` in your project folder, then `/model` and open the **Custom** tab. Models added in the desktop app appear automatically under **Local endpoints** on the same computer.
+
+<Frame>
+  <img src="/images/qoder/07_mymodels_CLI.png" alt="The Custom tab of /model in the Qoder CLI, listing the models added in the desktop app under Local endpoints with their effort" />
+</Frame>
+
+To add a model from the CLI instead, choose **OpenAI-compatible...** (Chat Completions / Responses) or **Anthropic-compatible...** under **Custom providers** and enter the same values as in the desktop app.
+
+<Frame>
+  <img src="/images/qoder/06_CLI_custom_models.png" alt="The Custom providers list in the Qoder CLI: OpenAI-compatible and Anthropic-compatible, above the platform presets" />
+</Frame>
+
+Keys in the model list: `←`/`→` change the effort, `e` edits a model, `n` adds one, `d` deletes one and `s` selects it for this session only.
+
+## Expert Models as Tools (MCP)
+
+Eden AI also hosts an [MCP server](/v3/expert-models/mcp-server) that exposes the expert model catalog (OCR, web search, speech, translation and more) as tools. In Qoder, open **Extensions** in the left sidebar, go to **Connectors**, click **Add Connector** and choose **Add custom MCP**. On the **Form** tab, fill in:
+
+| Field | Value |
+|---|---|
+| **MCP name** | `edenai` |
+| **Transport** | **HTTP** |
+| **Server URL** | `https://mcp.edenai.run/mcp` |
+| **Headers** | `Authorization` = `Bearer YOUR_EDEN_AI_API_KEY` |
+
+Click **Add MCP**.
+
+<Frame>
+  <img src="/images/qoder/08_add_MCP.png" alt="The Add custom MCP form with the name edenai, HTTP transport, the Eden AI MCP server URL and an Authorization header" />
+</Frame>
+
+The **JSON** tab takes the same server as a block. Qoder saves it under `mcpServers` in `~/.qoder/settings.json`, which the CLI reads too:
+
+```json
+{
+  "mcpServers": {
+    "edenai": {
+      "type": "streamable-http",
+      "url": "https://mcp.edenai.run/mcp",
+      "headers": {
+        "Authorization": "Bearer YOUR_EDEN_AI_API_KEY"
+      }
+    }
+  }
+}
+```
+
+The connector shows **Ready** and lists its 42 tools; the switch next to it turns it on and off. Qoder loads the tools on demand, so they do not add to every request.
+
+<Frame>
+  <img src="/images/qoder/09_MCP_tools.png" alt="The edenai connector marked Ready under Custom Connectors, with its tools listed" />
+</Frame>
+
+Try it with a prompt such as: "Use the Eden AI web search tool to find the latest stable Python release."
+
+<Frame>
+  <img src="/images/qoder/10_mcp_web_search.png" alt="A Qoder chat where the agent ran the Eden AI web search tool and answered with the latest Python release and its sources" />
+</Frame>
+
+A few things to know about the tools:
+
+- **Files**: pass public URLs. Some sites block automated downloads and answer 403. For a local file, upload it through the [file upload API](/v3/llms/file-upload) first and give the agent the file ID in a code block. Do not ask the agent to upload a large file itself: it has to write the file out as base64 and hits its output limit.
+- **Billing**: each tool call is billed as a normal expert model call and shows in monitoring.
+
+See the [MCP server page](/v3/expert-models/mcp-server) for the full tool catalog and the conventions its tools share.
+
+## Troubleshooting
+
+### Custom model authentication failed
+
+The message reads "Authentication for the custom model failed. Please check whether the API key and related configuration are correct." The key is wrong or expired: copy it again from [app.edenai.run](https://app.edenai.run) under **API Keys**, with no leading or trailing spaces, and check the model's configuration under **Settings** > **Models**.
+
+<Frame>
+  <img src="/images/qoder/05_response_wrong_key.png" alt="The Custom model authentication failed error shown in the chat after the first message with a wrong key" />
+</Frame>
+
+### Response incomplete
+
+"Response incomplete. The model reached its output token limit" means the answer did not fit in the model's output. Narrow the request. It is typical when the agent tries to pass large file content through a tool; see [Files](#expert-models-as-tools-mcp) above.
+
+### MCP tool not found
+
+A message ending in "not found" for an MCP tool is transient. Retry; the agent usually recovers on its own.
+
+### Warning about HTTP addresses
+
+A yellow "HTTP addresses can be used..." warning in the model settings means the Base URL does not start with `https://`. Use `https://api.edenai.run/v3`.
+
+## Next Steps
+
+- [Cline](./cline): VS Code coding agent on Eden AI
+- [Claude Code](./claude-code): Anthropic's official CLI coding agent on Eden AI
+- [List Models](/v3/llms/listing-models): browse the catalog with capabilities and pricing
+- [MCP server](/v3/expert-models/mcp-server): the full expert model tool catalog

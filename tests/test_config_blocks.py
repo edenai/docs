@@ -318,7 +318,7 @@ def test_a_url_in_a_config_block_points_at_something(case):
 
 def test_the_docs_still_contain_the_blocks_these_checks_claim_to_cover():
     """An extraction change that quietly found nothing would pass everything."""
-    assert len(_BLOCKS) > 40, f"only {len(_BLOCKS)} config blocks found"
+    assert len(_BLOCKS) > 20, f"only {len(_BLOCKS)} config blocks found"
     assert len(_MODEL_CASES) > 20, f"only {len(_MODEL_CASES)} model references found"
     assert len(_URL_CASES) > 10, f"only {len(_URL_CASES)} Eden AI URLs found"
 

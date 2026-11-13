@@ -1,23 +1,23 @@
 ---
 icon: "sitemap"
 title: "Routing Policies"
-description: "Save a model chain and its provider preferences once as a routing policy, then call it by name from any chat request or bind it to an API key."
+description: "Save a model chain and its provider preferences once as a routing policy, then call it by name from any chat request or coding agent."
 ---
 import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
 
 <TechArticleSchema
   title={"Routing Policies"}
-  description={"Save a model chain and its provider preferences once as a routing policy, then call it by name from any chat request or bind it to an API key."}
+  description={"Save a model chain and its provider preferences once as a routing policy, then call it by name from any chat request or coding agent."}
   path="v3/llms/routing-policies"
   articleSection="LLMs"
   about={"LLM API"}
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "LLM API", "routing policy", "model fallback", "load balancing", "provider routing"]}
   datePublished="2026-10-27T00:00:00Z"
-  dateModified="2026-10-27T00:00:00Z"
+  dateModified="2026-11-13T00:00:00Z"
 />
 
-A routing policy is a saved model chain: which models to try, how to pick among them, and the [provider routing](/v3/llms/provider-routing) preferences every attempt follows. Save it once under a name and every request can use it as `model: "policy/{name}"`, so an app that only lets you configure a model string, such as a coding agent or a chat UI, gets your fallbacks and provider preferences without any change to the request. Bind the policy to an API key and even the model string stays as it is.
+A routing policy is a saved model chain: which models to try, how to pick among them, and the [provider routing](/v3/llms/provider-routing) preferences every attempt follows. Save it once under a name and every request can use it as `model: "policy/{name}"`, so an app that only lets you configure a model string, such as a coding agent or a chat UI, gets your fallbacks and provider preferences without any change to the request.
 
 Policies are managed through the [Management API](/v3/organization/management-api). A management key manages the organization's policies, shared by every member and key of the organization; your own API key manages your personal ones.
 
@@ -55,7 +55,7 @@ curl -X PUT https://api.edenai.run/v3/manage/routing-policies/prod-chat/ \
     {"model": "openai/gpt-5.6-sol"},
     {"model": "kimi-k2.6"}
   ],
-  "defaults": {"routing": {"sort": "cost"}, "credentials": "auto", "retries": 0},
+  "defaults": {"routing": {"sort": "cost"}, "retries": 0},
   "lock": ["allowed_providers"],
   "fallbacks": ["deepseek-v4-flash"],
   "version": 1,
@@ -101,21 +101,20 @@ The name is only accepted where a model chain is: the chat dialects above. To em
 | Field | What it holds |
 |---|---|
 | `description` | Free text, up to 500 characters |
-| `enabled` | `false` parks the policy: calling it by name is a `400`, a key bound to it behaves as unbound, and it leaves the [model listing](#finding-your-policies). Default `true` |
-| `strategy` | How the targets are ordered: `fallback`, `load_balance`, `cheapest` or `fastest`. Required with `targets` |
-| `targets` | 1 to 32 models to choose among, each a string or an object with the overrides below. Omitted on a routing-only policy, which holds `defaults.routing` for a [key](#binding-a-policy-to-an-api-key) to apply |
-| `defaults` | What every target inherits unless it sets its own: `routing`, `credentials` (default `auto`) and `retries` (default `0`) |
+| `enabled` | `false` parks the policy: calling it by name is a `400` and it leaves the [model listing](#finding-your-policies). Default `true` |
+| `strategy` | How the targets are ordered: `fallback`, `load_balance`, `cheapest` or `fastest`. Required |
+| `targets` | 1 to 12 models to choose among, each a string or an object with the overrides below. Required |
+| `defaults` | What every target inherits unless it sets its own: `routing` and `retries` (default `0`) |
 | `lock` | Fields a request may not set: any of the `routing` fields a policy stores (listed below), or `region`. A request that sets one is refused with a `400` |
-| `fallbacks` | Up to 7 models tried after every target, in order, with the policy's default routing |
+| `fallbacks` | Up to 7 models tried after every target, in order, with the policy's default routing. Any of them may be another policy, as `policy/{name}` |
 
 A target:
 
 | Field | What it holds |
 |---|---|
-| `model` | A `provider/model` id, a routable name such as `kimi-k2.6` (Eden AI picks the provider on each call), or an alias, with an optional `@region` tag |
+| `model` | A `provider/model` id, a routable name such as `kimi-k2.6` (Eden AI picks the provider on each call), or an alias, with an optional `@region` tag. Or another policy, as `policy/{name}`: see [Nesting a policy](#nesting-a-policy) |
 | `weight` | 1 to 100, `load_balance` only. Default `1` |
 | `retries` | 0 to 3, `fallback` only: how many more times this target is tried before moving on. A retry is the same target called again |
-| `credentials` | `auto`, `own` or `eden`. See [Credentials](#credentials) |
 | `routing` | This target's provider preferences, applied over the policy's defaults |
 | `region` | Pin the target to a region, the same as an `@region` tag on `model`. Set one or the other |
 
@@ -132,7 +131,72 @@ Each strategy turns the targets into an ordered chain for the request, which the
 | `cheapest` | By the estimated cost of this request on each target, prompt and completion both counted, each target priced on the provider and in the region it would actually run. A target that cannot be estimated goes last |
 | `fastest` | By the observed time to first token of each target's providers. A target without data goes last |
 
-Whatever the strategy, a request makes at most 8 attempts, retries included: entries beyond the limit are dropped for the call with the reason `chain_limit`.
+Whatever the strategy, a request makes at most 12 attempts, retries included: entries beyond the limit are dropped for the call with the reason `chain_limit`.
+
+## Nesting a policy
+
+A target or a fallback can be another policy, written `policy/{name}`. The request then runs that policy's chain (the child) where the reference sits in the policy the request named (the parent). Keep one safety net and name it from every policy that needs it: edit it once, and every parent uses the new version on its next request.
+
+Save the child first, as any policy:
+
+```json
+{
+  "description": "Safety net: Kimi, then DeepSeek",
+  "strategy": "fallback",
+  "targets": ["kimi-k2.6", "deepseek-v4-flash"]
+}
+```
+
+Then name it from the parent. Saved as `safety-net`, it makes this `prod-chat` try GPT on Azure twice, then Kimi, then DeepSeek:
+
+```json
+{
+  "strategy": "fallback",
+  "targets": [
+    {"model": "azure/gpt-5.6-sol", "retries": 1},
+    "policy/safety-net"
+  ]
+}
+```
+
+Nesting also combines strategies, which one policy cannot. This parent sends four requests in five to one chain and the fifth to another, each saved as its own `fallback` policy; the chain not drawn follows as the backup:
+
+```json
+{
+  "strategy": "load_balance",
+  "targets": [
+    {"model": "policy/openai-first", "weight": 4},
+    {"model": "policy/azure-first", "weight": 1}
+  ]
+}
+```
+
+- **The child runs as if the request had named it**: its own targets, strategy, `defaults`, retries and fallbacks, with the request's settings on top. The parent's `defaults` apply to the parent's own targets only. The request's region tag and `:sort` suffix reach the child too, and a field either policy locks is locked for the request.
+- **Zero data retention holds the whole request.** When the parent or a policy it names asks for it, every target and fallback of both is held to it, the request's own fallbacks included.
+- **A reference takes only a `weight`**, which counts under `load_balance`. It takes no `region`, `routing` or `retries`, and no `@region` tag or `:sort` suffix. To run the same models with other settings, save a second policy with those settings.
+- **The name is read in the parent's scope.** In an organization policy, `policy/safety-net` is the organization's policy of that name: a member's personal policy is never used. In a personal policy, it is your personal policy of that name, else the organization's.
+- **One level deep.** A policy that another names cannot name a policy itself, and no policy can name itself, so a loop cannot form.
+- **`cheapest` and `fastest` cannot rank a policy**, as a whole chain has no single cost or latency. List it in `fallbacks` instead.
+- **The attempt limit counts the whole chain**, the child's entries included. A child named twice runs twice.
+- **Deleting or disabling a child is allowed**, and a disabled policy can be named. The parent then skips it: the reference is [dropped](#seeing-what-the-policy-did) for the call with the reason `policy_not_found` or `policy_disabled`, and the rest of the parent runs. Deleting a personal policy that another of your policies names makes the name read your organization's policy of that name, if there is one, which no save has checked against the parent: requests skip it with the reason `policy_invalid` if it cannot run there.
+
+A save checks both sides of a nest, in the scope of the policy saved: a parent against the children it names, and a policy that others name against those parents. A save that would break a nest is a `422` whose `error.fields` names the field at fault:
+
+| Message | What to change |
+|---|---|
+| `No policy named safety-net here.` | Save the child first, in the parent's scope |
+| `safety-net names another policy; policies nest one level only.` | Name a policy that names none |
+| `safety-net allows and ignores openai in one target; fix its routing first.` | One of the child's targets allows a provider its `defaults` ignore, or the other way round: fix the child |
+| `prod-chat names this policy; it cannot name others.` | `prod-chat` names the policy you are saving, so it cannot name a policy |
+| `prod-chat names this policy; this target cannot allow and ignore openai.` | Keep the target's provider lists apart from its `defaults`' |
+| `cheapest and fastest cannot rank a policy; list it in fallbacks.` | Move the reference to `fallbacks`, or change the strategy |
+| `A policy reference takes only a weight.` | Remove the reference's other settings |
+| `A policy reference takes no @region tag; the request's region applies to the child.` | Remove the `@region` tag: a region tag on the request's model pins the child too |
+| `A policy reference takes no :mode suffix.` | Remove the `:sort` suffix: one on the request's model reaches the child too |
+| `Not a policy name.` | Use the policy's name: 2 to 63 lowercase letters, digits or dashes |
+| `A policy cannot reference itself.` | Name another policy |
+
+An organization policy's save is not checked against its members' personal policies: if an edit leaves one of them unable to run it, that member's requests skip it with the reason `policy_invalid`.
 
 ## Routing preferences and precedence
 
@@ -140,6 +204,8 @@ Each `routing` field is settled independently: the request wins, then the target
 
 ```json
 {
+  "strategy": "fallback",
+  "targets": ["openai/gpt-5.6-sol", "kimi-k2.6"],
   "defaults": {"routing": {"sort": "cost", "ignored_providers": ["deepinfra"]}},
   "lock": ["ignored_providers"]
 }
@@ -158,40 +224,6 @@ With this policy a request may send `routing.sort: "latency"` and get it, but a 
 ```
 
 A `:sort` suffix on the model counts as `sort`, and an `@region` tag as `region`. A merge that names a provider in both `allowed_providers` and `ignored_providers`, one from the policy and one from the request, is also a `400`.
-
-## Credentials
-
-By default a target runs on your own provider key when you have [stored one](/v3/general/byok) for its provider, and on Eden AI's otherwise. `credentials` fixes that per target, or for all of them in `defaults`:
-
-| Value | Effect |
-|---|---|
-| `auto` | Your own key when you have one for the provider, else Eden AI's. Default |
-| `own` | Your own key only. Without a stored key for the provider, the target is dropped for the call (`no_own_key`) and the chain moves on |
-| `eden` | Eden AI's key, even when you stored your own. Your key for that provider is set aside for the whole request, a Responses turn that continues it included |
-
-`own` and `eden` need a concrete `provider/model` target, since a routable name fans out across providers, and a policy uses one mode per provider.
-
-## Binding a policy to an API key
-
-A key's `default_policy` applies a policy to every chat call made with the key, on the three dialects above; the other endpoints ignore it. Set it when you [create the key](/v3/general/custom-api-keys#create-a-key) or later:
-
-{/* skip-test: acts on the illustrative key id, which no account holds */}
-```bash cURL
-curl -X PATCH https://api.edenai.run/v3/manage/keys/3f1c2b6e-8a4d-4f0e-9b7a-2c5d6e7f8a90/ \
-  -H "Authorization: Bearer YOUR_MANAGEMENT_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"default_policy": "prod-chat"}'
-```
-
-What the bound policy does depends on the model the request names:
-
-| The request sends | What happens |
-|---|---|
-| `"model": "@edenai"` | The policy runs in full: its targets, strategy and fallbacks, as if the request had named `policy/prod-chat` |
-| Any model, such as `"gpt-5.6-sol"` | The model stays. The policy lends its `defaults.routing`, and its `lock` still applies. This is how a client whose model string you cannot change gets your provider preferences. Targets are not used |
-| `"model": "policy/other"` | The named policy wins over the key's |
-
-A routing-only policy, one without `targets`, exists for the second row: it cannot be called by name. Send `null` to unbind. Deleting a policy unbinds every key that used it, and a key bound to a disabled policy behaves as unbound. Through the Management API only the organization's policies can be bound.
 
 ## Organization and personal policies
 
@@ -241,21 +273,39 @@ Send `x-edenai-metadata: enabled` and the [request metadata](/v3/llms/request-me
 | Field | Meaning |
 |---|---|
 | `name`, `version` | The policy that applied, at the version it had |
-| `strategy` | The policy's strategy, or `null` when a key lent its routing only |
+| `strategy` | The policy's strategy |
 | `scope` | `organization` or `user` |
-| `path` | The part of the policy that served the request: `[strategy, "targets[i]"]`, `[strategy, "fallbacks[j]"]`, `[strategy, "caller"]` for one of the request's own fallbacks, or `["defaults"]` for routing lent by a key |
+| `path` | The part of the policy that served the request: `[strategy, "targets[i]"]`, `[strategy, "fallbacks[j]"]`, `[strategy, "caller"]` for one of the request's own fallbacks. When that part is a [nested policy](#nesting-a-policy), `path` goes on into it: `[strategy, "targets[i]", child strategy, "targets[k]"]` |
+| `child` | Only when a nested policy served: its `name`, `version` and `scope`. Editing a child does not change its parent's `version` |
 | `dropped` | The targets this call could not use, each with its reason |
 
 | Reason | The target was dropped because |
 |---|---|
-| `no_own_key` | Its provider needs your own key and none is usable: `credentials: own` with no stored key for the provider, or a stored key that holds no credentials |
+| `policy_not_found` | A [nested policy](#nesting-a-policy) of that name does not exist, or not in the parent's scope |
+| `policy_disabled` | The nested policy is disabled |
+| `policy_invalid` | The nested policy can no longer run under a parent, for instance after an organization edit that the save of a member's personal parent did not see |
+| `no_own_key` | The target runs on your [own key](/v3/general/byok) for its provider, and no usable one is stored |
 | `guardrail` | An [organization guardrail](/v3/organization/guardrails) forbids the model |
 | `region` | The model is not served in the region the call or the target pins |
 | `zero_data_retention` | The call requires zero data retention and no provider of the model qualifies |
 | `not_in_catalog` | The model has left the catalog since the policy was saved |
 | `endpoint` | The model does not serve this endpoint, such as an embeddings model on chat |
 | `no_eligible_seller` | After the routing preferences, no provider of a routable name was left |
-| `chain_limit` | The chain was longer than 8 attempts |
+| `chain_limit` | The chain was longer than 12 attempts |
+
+When a nested policy served, the block also names it:
+
+```json
+"policy": {
+  "name": "prod-chat",
+  "version": 7,
+  "strategy": "fallback",
+  "scope": "organization",
+  "path": ["fallback", "targets[1]", "fallback", "targets[0]"],
+  "child": {"name": "safety-net", "version": 3, "scope": "organization"},
+  "dropped": []
+}
+```
 
 A dropped target is skipped, and the chain goes on with the next target, then the policy's `fallbacks`, then your own. Only when nothing at all is left does the request fail rather than run elsewhere: `403` when every drop is the guardrail's, `451` when every drop is the region's, `400` otherwise, naming the policy and the reasons.
 
@@ -263,7 +313,7 @@ Eden AI also records the policy's name and version on every request it serves, s
 
 ## Zero data retention
 
-A policy that sets `routing.zero_data_retention: true`, in `defaults` or on any target, holds the whole request to it: every target and fallback, the request's own fallbacks included, is served only by providers that keep no prompts or outputs, and Eden AI saves neither the request nor the response. A key that lends a policy's routing only holds the request when `defaults` ask for it. See [Compliance Policies](/v3/data-governance/compliance-policies).
+A policy that sets `routing.zero_data_retention: true`, in `defaults` or on any target, holds the whole request to it: every target and fallback, the request's own fallbacks included, is served only by providers that keep no prompts or outputs, and Eden AI saves neither the request nor the response. See [Compliance Policies](/v3/data-governance/compliance-policies).
 
 ## Finding your policies
 
@@ -301,7 +351,7 @@ The entry carries the name only: which target serves a call is decided per reque
 | `451` | Every target and fallback was dropped for the region |
 | `404` | On the Management API, no policy of that name in a scope you can read |
 | `412` | `If-Match` names a version that is no longer current |
-| `422` | The policy body breaks a rule; `error.fields` lists each field by path |
+| `422` | The policy body breaks a rule, including a [nest](#nesting-a-policy) that could not run; `error.fields` lists each field by path |
 
 ## Next Steps
 
@@ -312,8 +362,8 @@ The entry carries the name only: which target serves a call is decided per reque
   <Card title="Fallback" icon="rotate-left" href="/v3/general/fallback">
     How a chain of models is tried
   </Card>
-  <Card title="Custom API Keys" icon="key" href="/v3/general/custom-api-keys">
-    Bind a policy when you create a key
+  <Card title="Request Metadata" icon="magnifying-glass" href="/v3/llms/request-metadata">
+    The `policy` block, when `x-edenai-metadata` is enabled
   </Card>
   <Card title="Management API" icon="gear" href="/v3/organization/management-api">
     The keys that manage policies

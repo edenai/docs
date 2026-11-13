@@ -101,7 +101,7 @@ def _clean_up(description: str, action: Callable[[], int]) -> bool:
 def pytest_configure(config: pytest.Config) -> None:
     """Publish the suite's credentials under the names third-party SDKs read.
 
-    The integration guides drive Eden AI through frameworks (any-llm, Haystack)
+    The integration guides drive Eden AI through frameworks (any-llm, Haystack, aisuite)
     that resolve the key and endpoint from the environment rather than taking
     them as arguments, so their snippets have no placeholder for the extractor
     to rewrite. Runs in the controller and in every xdist worker, because each
@@ -113,6 +113,7 @@ def pytest_configure(config: pytest.Config) -> None:
     # Individual tests raise this to the production token where the samples
     # need a real provider answer.
     os.environ["EDENAI_API_KEY"] = sandbox_token
+    os.environ["EDEN_AI_API_KEY"] = sandbox_token
     base_url = os.environ.get("EDEN_AI_BASE_URL", DEFAULT_BASE_URL)
     os.environ["EDENAI_API_BASE"] = f"{base_url}/v3"
 
@@ -245,6 +246,32 @@ def _populate_fixtures_dir(d: Path) -> None:
     (d / "recording.wav").write_bytes(silent_wav())
 
     (d / "app.py").write_text("def main():\n    print('hello')\n")
+
+    # The batch input file the cURL create sample on v3/llms/batches.mdx uploads, the same
+    # three chat lines its Python sample writes.
+    (d / "batch.jsonl").write_text(
+        "".join(
+            json.dumps(
+                {
+                    "custom_id": f"request-{i}",
+                    "method": "POST",
+                    "url": "/v1/chat/completions",
+                    "body": {
+                        "model": "openai/gpt-5-mini",
+                        "messages": [
+                            {
+                                "role": "user",
+                                "content": f"Write a one-line tagline for product {i}.",
+                            }
+                        ],
+                        "max_tokens": 50,
+                    },
+                }
+            )
+            + "\n"
+            for i in range(1, 4)
+        )
+    )
 
     (d / "document.txt").write_text(
         "Eden AI is a platform that provides access to multiple AI providers "

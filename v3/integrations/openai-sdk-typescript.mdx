@@ -2,32 +2,32 @@
 title: "Use the OpenAI TS/JS SDK with Eden AI"
 sidebarTitle: "OpenAI TS/JS SDK"
 icon: "/integration-logo/open-ai-icondoc.svg"
-description: "Use the official OpenAI TypeScript/JavaScript SDK with Eden AI for seamless multi-provider access."
+description: "Call Eden AI with the official OpenAI TypeScript SDK: set the base URL, stream chat completions, send images and files, and handle API errors."
 ---
 
 import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
 
 <TechArticleSchema
   title={"Use the OpenAI TS/JS SDK with Eden AI"}
-  description={"Use the official OpenAI TypeScript/JavaScript SDK with Eden AI for seamless multi-provider access."}
+  description={"Call Eden AI with the official OpenAI TypeScript SDK: set the base URL, stream chat completions, send images and files, and handle API errors."}
   path="v3/integrations/openai-sdk-typescript"
   articleSection="AI Frameworks"
   about={"LLM Framework Integration"}
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "OpenAI SDK", "TypeScript"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-08-31T00:00:00Z"
+  dateModified="2026-10-27T00:00:00Z"
 />
 
-Use the official OpenAI TypeScript/JavaScript SDK with Eden AI for seamless multi-provider access.
+Eden AI's V3 chat endpoint accepts OpenAI SDK requests unchanged. Your code changes in three places: `baseURL`, the API key and the model id.
 
 ## Overview
 
-The OpenAI TypeScript SDK works perfectly with Eden AI's V3 API. Configure the base URL and start using 500+ models from multiple providers.
+Point the OpenAI TypeScript SDK at Eden AI and it can call any of the 500+ models.
 
 ## Installation
 
-Install the OpenAI SDK for Node.js:
+Install the OpenAI SDK for Node.js. The Environment Variables section below also uses `dotenv`, which you install the same way (`npm install dotenv`):
 
 <CodeGroup>
 ```bash npm
@@ -52,7 +52,7 @@ Configure the client to use Eden AI:
 import OpenAI from 'openai';
 
 const client = new OpenAI({
-  apiKey: 'YOUR_EDEN_AI_API_KEY',
+  apiKey: 'YOUR_API_KEY',
   baseURL: 'https://api.edenai.run/v3',
 });
 
@@ -78,7 +78,7 @@ main();
 import OpenAI from 'openai';
 
 const client = new OpenAI({
-  apiKey: 'YOUR_EDEN_AI_API_KEY',
+  apiKey: 'YOUR_API_KEY',
   baseURL: 'https://api.edenai.run/v3',
 });
 
@@ -100,7 +100,7 @@ for await (const chunk of stream) {
 const OpenAI = require('openai');
 
 const client = new OpenAI({
-  apiKey: 'YOUR_EDEN_AI_API_KEY',
+  apiKey: 'YOUR_API_KEY',
   baseURL: 'https://api.edenai.run/v3',
 });
 
@@ -123,28 +123,9 @@ main();
 ```
 </CodeGroup>
 
-## Available Models
+## Model naming
 
-Access models from multiple providers:
-
-### OpenAI
-- `openai/gpt-latest`
-- `openai/gpt-latest`
-- `openai/gpt-latest`
-- `openai/gpt-mini-latest`
-
-### Anthropic
-- `anthropic/claude-sonnet-latest`
-- `anthropic/claude-opus-latest`
-- `anthropic/claude-sonnet-latest`
-
-### Google
-- `vertex/gemini-2.5-pro`
-- `vertex/gemini-flash-latest`
-
-### Cohere and Meta Llama
-- `cohere/command-a-03-2025`
-- `scaleway/llama-3.3-70b-instruct`
+Models use the `provider/model` format, for example `openai/gpt-latest`, `anthropic/claude-sonnet-latest` or `vertex/gemini-flash-latest`. See [Listing Models](/v3/llms/listing-models) for the full catalog.
 
 ## Multi-Turn Conversations
 
@@ -225,9 +206,7 @@ const stream = await client.chat.completions.create({
   ],
   temperature: 0.9,        // Higher = more creative (0-2)
   max_tokens: 500,         // Limit response length
-  top_p: 1.0,              // Nucleus sampling
-  frequency_penalty: 0.0,  // Penalize repetition
-  presence_penalty: 0.0,   // Penalize topic repetition
+  top_p: 0.9,              // Nucleus sampling
   stream: true,
 });
 
@@ -240,37 +219,73 @@ for await (const chunk of stream) {
 ```
 </CodeGroup>
 
-## Vision Capabilities
+## Vision
 
-Send images to vision models:
+Send an image as an `image_url` content part, the same shape the OpenAI API uses. The URL can be a public `http(s)` link or a base64 data URL:
 
 <CodeGroup>
 ```typescript TypeScript
 import OpenAI from 'openai';
-import FormData from 'form-data';
-import fs from 'fs';
-import fetch from 'node-fetch';
 
 const client = new OpenAI({
   apiKey: process.env.EDEN_AI_API_KEY!,
   baseURL: 'https://api.edenai.run/v3',
 });
 
-async function analyzeImage() {
-  // First, upload the image
-  const formData = new FormData();
-  formData.append('file', fs.createReadStream('image.jpg'));
-
-  const uploadResponse = await fetch(
-    'https://api.edenai.run/v3/upload',
+const stream = await client.chat.completions.create({
+  model: 'openai/gpt-latest',
+  messages: [
     {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${process.env.EDEN_AI_API_KEY}`,
-      },
-      body: formData,
-    }
-  );
+      role: 'user',
+      content: [
+        { type: 'text', text: "What's in this image?" },
+        {
+          type: 'image_url',
+          image_url: { url: 'https://www.edenai.co/docs/images/hero-light.png' },
+        },
+      ],
+    },
+  ],
+  stream: true,
+});
+
+for await (const chunk of stream) {
+  const content = chunk.choices[0]?.delta?.content;
+  if (content) {
+    process.stdout.write(content);
+  }
+}
+```
+</CodeGroup>
+
+To send a local file inline, encode it as a data URL: `data:image/jpeg;base64,...`.
+
+### Uploaded files
+
+For documents such as PDFs, or to reuse one file across requests, upload it to `/v3/upload` and pass the returned `file_id` in a `file` content part. [File Attachments](/v3/llms/file-upload) covers file types, limits and expiry. This sample uses the `fetch`, `FormData` and `Blob` globals of Node 18 and later, so it needs no extra install:
+
+<CodeGroup>
+```typescript TypeScript
+import OpenAI from 'openai';
+import { readFile } from 'node:fs/promises';
+
+const client = new OpenAI({
+  apiKey: process.env.EDEN_AI_API_KEY!,
+  baseURL: 'https://api.edenai.run/v3',
+});
+
+async function summarizeDocument() {
+  // First, upload the document
+  const formData = new FormData();
+  formData.append('file', new Blob([await readFile('document.pdf')]), 'document.pdf');
+
+  const uploadResponse = await fetch('https://api.edenai.run/v3/upload', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${process.env.EDEN_AI_API_KEY}`,
+    },
+    body: formData,
+  });
 
   const { file_id } = (await uploadResponse.json()) as { file_id: string };
 
@@ -281,7 +296,7 @@ async function analyzeImage() {
       {
         role: 'user',
         content: [
-          { type: 'text', text: "What's in this image?" },
+          { type: 'text', text: 'Summarize this document.' },
           { type: 'file', file: { file_id } },
         ],
       },
@@ -297,13 +312,21 @@ async function analyzeImage() {
   }
 }
 
-analyzeImage();
+summarizeDocument();
 ```
 </CodeGroup>
 
 ## Error Handling
 
-Handle API errors properly:
+The SDK retries 429 and 5xx responses twice by default (set `maxRetries` on the client to change it), so the 429 branch below runs only after those retries are used up. The SDK has a dedicated error class for some statuses (401, 403, 429) but not for 402 or 451, so branch on `error.status`. Eden AI answers a failed request with these statuses:
+
+- 400: the model id is unknown or inactive (`Model(s) not found or inactive`).
+- 401: the key is invalid (`Invalid API key` or `Invalid token`) or has expired (`Custom token has expired.`).
+- 402: insufficient credits.
+- 403: the account has no organization, a guardrail policy blocks the model, or your organization's [compliance policy](/v3/data-governance/compliance-policies) requires zero data retention and no provider of the model qualifies.
+- 422: the request body is invalid.
+- 429: rate limit.
+- 451: no provider of the model runs in a region that the endpoint you called, or your organization's [compliance policy](/v3/data-governance/compliance-policies), allows. It also answers when every target of a [routing policy](/v3/llms/routing-policies) was dropped for region.
 
 <CodeGroup>
 ```typescript TypeScript
@@ -332,12 +355,18 @@ async function safeChat() {
     if (error instanceof OpenAI.APIError) {
       console.error(`API Error (${error.status}):`, error.message);
 
-      if (error.status === 401) {
-        console.error('Authentication failed. Check your API key.');
-      } else if (error.status === 429) {
-        console.error('Rate limit exceeded. Please wait and retry.');
+      if (error.status === 400 || error.status === 422) {
+        console.error('Invalid request. Check the model id and the request body.');
+      } else if (error.status === 401) {
+        console.error('Authentication failed. The key is invalid or has expired.');
       } else if (error.status === 402) {
         console.error('Insufficient credits. Please add credits to your account.');
+      } else if (error.status === 403) {
+        console.error('Request refused: no organization, a guardrail policy, or a zero-data-retention policy blocks this model.');
+      } else if (error.status === 429) {
+        console.error('Rate limit exceeded, even after the SDK retries.');
+      } else if (error.status === 451) {
+        console.error('No provider of this model, or routing policy target, runs in an allowed region.');
       }
     } else {
       console.error('Unexpected error:', error);
@@ -346,152 +375,6 @@ async function safeChat() {
 }
 
 safeChat();
-```
-</CodeGroup>
-
-## Express.js Integration
-
-Build a chat API with Express:
-
-<CodeGroup>
-```typescript TypeScript
-import express from 'express';
-import OpenAI from 'openai';
-
-const app = express();
-app.use(express.json());
-
-const client = new OpenAI({
-  apiKey: process.env.EDEN_AI_API_KEY!,
-  baseURL: 'https://api.edenai.run/v3',
-});
-
-app.post('/api/chat', async (req, res) => {
-  try {
-    const { messages, model = 'openai/gpt-latest' } = req.body;
-
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-
-    const stream = await client.chat.completions.create({
-      model,
-      messages,
-      stream: true,
-    });
-
-    for await (const chunk of stream) {
-      const content = chunk.choices[0]?.delta?.content;
-      if (content) {
-        res.write(`data: ${JSON.stringify({ content })}\n\n`);
-      }
-    }
-
-    res.write('data: [DONE]\n\n');
-    res.end();
-  } catch (error) {
-    console.error('Error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-app.listen(3000, () => {
-  console.log('Server running on http://localhost:3000');
-});
-```
-</CodeGroup>
-
-## React Integration
-
-Stream responses in a React application:
-
-<CodeGroup>
-```typescript TypeScript (React)
-import { useState } from 'react';
-
-export function ChatComponent() {
-  const [messages, setMessages] = useState<Array<{role: string, content: string}>>([]);
-  const [input, setInput] = useState('');
-  const [streaming, setStreaming] = useState(false);
-
-  const sendMessage = async () => {
-    if (!input.trim()) return;
-
-    const userMessage = { role: 'user', content: input };
-    const updatedMessages = [...messages, userMessage];
-    setMessages(updatedMessages);
-    setInput('');
-    setStreaming(true);
-
-    try {
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: updatedMessages,
-          model: 'vertex/gemini-flash-latest',
-        }),
-      });
-
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-      let assistantMessage = '';
-
-      if (reader) {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          const chunk = decoder.decode(value);
-          const lines = chunk.split('\n');
-
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              const data = line.slice(6);
-              if (data === '[DONE]') continue;
-
-              try {
-                const parsed = JSON.parse(data);
-                assistantMessage += parsed.content;
-                setMessages([
-                  ...updatedMessages,
-                  { role: 'assistant', content: assistantMessage },
-                ]);
-              } catch (e) {
-                // Ignore parse errors
-              }
-            }
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error:', error);
-    } finally {
-      setStreaming(false);
-    }
-  };
-
-  return (
-    <div>
-      <div className="messages">
-        {messages.map((msg, i) => (
-          <div key={i} className={msg.role}>
-            <strong>{msg.role}:</strong> {msg.content}
-          </div>
-        ))}
-      </div>
-      <input
-        value={input}
-        onChange={(e) => setInput(e.target.value)}
-        onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-        disabled={streaming}
-      />
-      <button onClick={sendMessage} disabled={streaming}>
-        {streaming ? 'Sending...' : 'Send'}
-      </button>
-    </div>
-  );
-}
 ```
 </CodeGroup>
 
@@ -515,126 +398,8 @@ const client = new OpenAI({
 ```
 </CodeGroup>
 
-## Complete Chat CLI Example
-
-Build a command-line chat interface:
-
-<CodeGroup>
-```typescript TypeScript
-import OpenAI from 'openai';
-import readline from 'readline';
-import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
-
-const client = new OpenAI({
-  apiKey: process.env.EDEN_AI_API_KEY!,
-  baseURL: 'https://api.edenai.run/v3',
-});
-
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-});
-
-async function main() {
-  const messages: ChatCompletionMessageParam[] = [
-    { role: 'system', content: 'You are a helpful assistant.' },
-  ];
-
-  console.log('Chat with AI (type "quit" to exit)');
-  console.log('-'.repeat(50));
-
-  const askQuestion = () => {
-    rl.question('\nYou: ', async (input) => {
-      const userInput = input.trim();
-
-      if (userInput.toLowerCase() === 'quit') {
-        rl.close();
-        return;
-      }
-
-      if (!userInput) {
-        askQuestion();
-        return;
-      }
-
-      messages.push({ role: 'user', content: userInput });
-
-      process.stdout.write('\nAssistant: ');
-
-      try {
-        const stream = await client.chat.completions.create({
-          model: 'vertex/gemini-flash-latest',
-          messages,
-          temperature: 0.7,
-          stream: true,
-        });
-
-        let assistantResponse = '';
-
-        for await (const chunk of stream) {
-          const content = chunk.choices[0]?.delta?.content;
-          if (content) {
-            process.stdout.write(content);
-            assistantResponse += content;
-          }
-        }
-
-        console.log(); // New line
-        messages.push({ role: 'assistant', content: assistantResponse });
-      } catch (error) {
-        console.error('\nError:', error);
-      }
-
-      askQuestion();
-    });
-  };
-
-  askQuestion();
-}
-
-main();
-```
-</CodeGroup>
-
-## List Available Models
-
-Programmatically discover models:
-
-<CodeGroup>
-```typescript TypeScript
-async function listModels() {
-  const response = await fetch('https://api.edenai.run/v3/models', {
-    headers: {
-      Authorization: `Bearer ${process.env.EDEN_AI_API_KEY}`,
-    },
-  });
-
-  const data = await response.json();
-
-  // Group by provider
-  const providers: Record<string, string[]> = {};
-
-  for (const model of data.data) {
-    const provider = model.owned_by;
-    if (!providers[provider]) {
-      providers[provider] = [];
-    }
-    providers[provider].push(model.id);
-  }
-
-  console.log('Available Models:\n');
-  for (const [provider, models] of Object.entries(providers)) {
-    console.log(`${provider}:`);
-    models.forEach(m => console.log(`  - ${m}`));
-    console.log();
-  }
-}
-
-listModels();
-```
-</CodeGroup>
-
 ## Next Steps
 
-- [File Attachments](/v3/llms/file-upload) - Working with images and documents
 - [Streaming Responses](/v3/llms/streaming) - Handle Server-Sent Events
+- [File Attachments](/v3/llms/file-upload) - Working with images and documents
+- [Listing Models](/v3/llms/listing-models) - Browse the model catalog

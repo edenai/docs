@@ -2,14 +2,14 @@
 title: "Use the OpenAI Python SDK with Eden AI"
 sidebarTitle: "OpenAI Python SDK"
 icon: "/integration-logo/open-ai-icondoc.svg"
-description: "Use the official OpenAI Python SDK with Eden AI to access 500+ AI models through a familiar interface."
+description: "Point the OpenAI Python SDK at Eden AI by changing base_url and api_key, then call 500+ models with chat completions, vision and error handling."
 ---
 
 import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
 
 <TechArticleSchema
   title={"Use the OpenAI Python SDK with Eden AI"}
-  description={"Use the official OpenAI Python SDK with Eden AI to access 500+ AI models through a familiar interface."}
+  description={"Point the OpenAI Python SDK at Eden AI by changing base_url and api_key, then call 500+ models with chat completions, vision and error handling."}
   path="v3/integrations/openai-sdk-python"
   articleSection="AI Frameworks"
   about={"LLM Framework Integration"}
@@ -19,11 +19,11 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   dateModified="2026-10-27T00:00:00Z"
 />
 
-Use the official OpenAI Python SDK with Eden AI to access 500+ AI models through a familiar interface.
+Set `api_key` and `base_url` on an existing OpenAI client and switch model ids to the `provider/model` format; your `client.chat.completions` calls and their response objects stay the same.
 
 ## Overview
 
-The OpenAI Python SDK is fully compatible with Eden AI's V3 API. Simply point the SDK to Eden AI's endpoint and you can access models from OpenAI, Anthropic, Google, Cohere, Meta, and more.
+Eden AI's V3 chat completions endpoint is OpenAI-compatible. Models from OpenAI, Anthropic, Google, Cohere and other providers use the same call. The other OpenAI APIs (Files, Assistants, Batches) are not served under `/v3`; uploads go through `/v3/upload`. For streaming, see [Streaming](/v3/llms/streaming).
 
 ## Installation
 
@@ -47,7 +47,7 @@ Configure the OpenAI client to use Eden AI:
 from openai import OpenAI
 
 client = OpenAI(
-    api_key="YOUR_EDEN_AI_API_KEY",  # Get from https://app.edenai.run
+    api_key="YOUR_API_KEY",  # Get from https://app.edenai.run
     base_url="https://api.edenai.run/v3"
 )
 
@@ -62,32 +62,9 @@ print(response.choices[0].message.content)
 ```
 </CodeGroup>
 
-## Available Models
+## Model naming
 
-Access models from multiple providers using the `provider/model` format:
-
-**OpenAI**
-- `openai/gpt-latest`
-- `openai/gpt-latest`
-- `openai/gpt-latest`
-- `openai/gpt-mini-latest`
-
-**Anthropic**
-- `anthropic/claude-sonnet-latest`
-- `anthropic/claude-opus-latest`
-- `anthropic/claude-haiku-latest`
-
-**Google**
-- `vertex/gemini-2.5-pro`
-- `vertex/gemini-flash-latest`
-
-**Cohere**
-- `cohere/command-a-03-2025`
-- `cohere/command-r-08-2024`
-
-**Meta Llama** (served by EU hosts, the id carries the host)
-- `scaleway/llama-3.3-70b-instruct`
-- `ionos/meta-llama/Llama-3.3-70B-Instruct`
+Models use the `provider/model` format, for example `openai/gpt-latest`, `anthropic/claude-sonnet-latest` and `vertex/gemini-flash-latest`. Browse the catalog in [List LLM Models](/v3/llms/listing-models).
 
 ## Multi-Turn Conversations
 
@@ -98,7 +75,7 @@ Build conversational applications with message history:
 from openai import OpenAI
 
 client = OpenAI(
-    api_key="YOUR_EDEN_AI_API_KEY",
+    api_key="YOUR_API_KEY",
     base_url="https://api.edenai.run/v3"
 )
 
@@ -133,7 +110,7 @@ print(response.choices[0].message.content)
 
 ## Vision Capabilities
 
-Send images to vision-capable models:
+Send images to a model that accepts them: its `capabilities.input_modalities` in [List LLM Models](/v3/llms/listing-models) includes `image`.
 
 <CodeGroup>
 ```python Python
@@ -141,16 +118,17 @@ from openai import OpenAI
 import requests
 
 client = OpenAI(
-    api_key="YOUR_EDEN_AI_API_KEY",
+    api_key="YOUR_API_KEY",
     base_url="https://api.edenai.run/v3"
 )
 
 # First, upload the image to get a file_id
-upload_response = requests.post(
-    "https://api.edenai.run/v3/upload",
-    headers={"Authorization": f"Bearer YOUR_EDEN_AI_API_KEY"},
-    files={"file": open("image.jpg", "rb")}
-)
+with open("image.jpg", "rb") as f:
+    upload_response = requests.post(
+        "https://api.edenai.run/v3/upload",
+        headers={"Authorization": "Bearer YOUR_API_KEY"},
+        files={"file": f}
+    )
 file_id = upload_response.json()["file_id"]
 
 # Use the file_id in a chat message
@@ -174,13 +152,25 @@ print(response.choices[0].message.content)
 
 ## Error Handling
 
+The SDK raises a subclass of `openai.APIStatusError` for most statuses; 402 and 451 have none. These are the statuses specific to Eden AI:
+
+| Status | Exception | Meaning |
+|--------|-----------|---------|
+| 401 | `openai.AuthenticationError` | The key is not accepted. The detail is `Invalid API key` for a wrong or revoked `sk-eden-...` key, `Custom token has expired.` for an expired one, and `Invalid token` for other token shapes. |
+| 402 | `openai.APIStatusError` | Insufficient credit. The SDK has no subclass for 402. |
+| 403 | `openai.PermissionDeniedError` | A compliance or guardrail rule refused the request. |
+| 429 | `openai.RateLimitError` | Rate limit exceeded. The SDK retries twice before raising; the `Retry-After` header says how long to wait. |
+| 451 | `openai.APIStatusError` | No provider of the model runs in a region that the endpoint you called, or your organization's [compliance policy](/v3/data-governance/compliance-policies), allows, or, for a [routing policy](/v3/llms/routing-policies), every target was dropped for its region. |
+
+An unknown model id answers 400 `Model(s) not found or inactive`, an invalid request 422, and a provider failure 5xx. The `APIStatusError` handler below catches them with the others.
+
 <CodeGroup>
 ```python Python
 from openai import OpenAI
 import openai
 
 client = OpenAI(
-    api_key="YOUR_EDEN_AI_API_KEY",
+    api_key="YOUR_API_KEY",
     base_url="https://api.edenai.run/v3"
 )
 
@@ -194,10 +184,15 @@ try:
 
 except openai.AuthenticationError as e:
     print(f"Authentication failed: {e}")
+except openai.PermissionDeniedError as e:
+    print(f"Request refused: {e}")
 except openai.RateLimitError as e:
     print(f"Rate limit exceeded: {e}")
-except openai.APIError as e:
-    print(f"API error: {e}")
+except openai.APIStatusError as e:
+    # 402 (insufficient credit), 451 (region refusal) and any other status
+    print(f"API error {e.status_code}: {e}")
+except openai.APIConnectionError as e:
+    print(f"Could not reach the API: {e}")
 ```
 
 </CodeGroup>
@@ -224,5 +219,6 @@ client = OpenAI(
 ## Next Steps
 
 - [Chat Completions](/v3/llms/chat-completions) - Core LLM endpoint
+- [Streaming](/v3/llms/streaming) - Stream tokens as they are generated
 - [File Attachments](/v3/llms/file-upload) - Working with images and documents
 - [List LLM Models](/v3/llms/listing-models) - Browse available providers and models

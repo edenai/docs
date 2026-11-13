@@ -202,6 +202,7 @@
                   "v3/llms/chat-completions",
                   "v3/llms/responses",
                   "v3/llms/embeddings",
+                  "v3/llms/rerank",
                   "v3/llms/decisions",
                   "v3/llms/file-upload",
                   "v3/llms/structured-output",
@@ -211,6 +212,7 @@
                   "v3/llms/routing-policies",
                   "v3/llms/request-metadata",
                   "v3/llms/streaming",
+                  "v3/llms/batches",
                   "v3/llms/image-generation",
                   "v3/llms/video-generation",
                   "v3/llms/text-to-speech",
@@ -328,8 +330,11 @@
                   "v3/general/sandbox",
                   "v3/general/custom-api-keys",
                   "v3/general/monitoring",
+                  "v3/general/credit-balance",
+                  "v3/general/request-logs",
                   "v3/general/tags",
                   "v3/general/usage-statements",
+                  "v3/general/invoices",
                   "v3/general/support",
                   "v3/general/byok"
                 ]
@@ -376,7 +381,6 @@
                       "v3/integrations/aisuite",
                       "v3/integrations/haystack",
                       "v3/integrations/atomic-agents",
-                      "v3/integrations/repowise",
                       "v3/integrations/any-llm",
                       "v3/integrations/symfony"
                     ]
@@ -398,13 +402,16 @@
                     "expanded": false,
                     "pages": [
                       "v3/integrations/claude-code",
+                      "v3/integrations/claude-desktop",
                       "v3/integrations/cline",
                       "v3/integrations/codex-cli",
                       "v3/integrations/continue-dev",
                       "v3/integrations/opencode",
                       "v3/integrations/open-code-review",
                       "v3/integrations/pi",
-                      "v3/integrations/kilo-code"
+                      "v3/integrations/kilo-code",
+                      "v3/integrations/repowise",
+                      "v3/integrations/qoder"
                     ]
                   },
                   {

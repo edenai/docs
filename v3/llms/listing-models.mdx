@@ -199,9 +199,9 @@ For a model on your own private deployment, the value comes from the level your 
 
 ## Retirement date
 
-Every endpoint entry also carries `retirement_date`: the day the provider has announced it will stop serving the model, as `YYYY-MM-DD`. Move to another model or provider before then, since calls on that endpoint will start failing once the provider turns it off. Different providers retire the same model on different days, so the date belongs to the endpoint, not to the model.
+Every endpoint entry also carries `retirement_date`: the day the provider has announced it will stop serving the model, as `YYYY-MM-DD`. Move to another model or provider before then, since calls on that endpoint will fail once the provider turns it off. Different providers retire the same model on different days, so the date belongs to the endpoint, not to the model.
 
-`null` means no date has been published. It does not promise the model will stay. An alias with a provider shows the date of the model it points to.
+`null` means no date has been published. It does not promise the model will stay. An alias with a provider shows the date of the model it points to today. A stable alias is usually moved to a newer model before that date, so its calls keep working and its date changes with it.
 
 ## Model aliases
 

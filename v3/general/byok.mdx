@@ -29,14 +29,14 @@ Eden AI lets you use your own provider API keys (OpenAI, Google, Anthropic, etc.
 
 ## How to Configure
 
-1. In the [Eden AI dashboard](https://app.edenai.run/), open **Settings > Bring Your Own Keys**. You need permission to manage your organization, and a plan that includes your own provider keys. Organizations created on or after November 1, 2026 also require at least one payment or postpaid billing to save or use keys (organizations created earlier remain exempt).
+1. In the [Eden AI dashboard](https://app.edenai.run/), open **Settings > Bring Your Own Keys**. You need permission to manage your organization, and a plan that includes your own provider keys. If your account was created on or after November 1, 2026, your organization also needs at least one payment, or postpaid billing, to save keys (earlier accounts are exempt).
 2. Select the provider you want to configure (for example OpenAI, Google or Anthropic). Use the search box or a category to find it.
 3. Enter your provider API key and click **Save Keys**. The provider now shows as **Connected**.
 
 Your keys apply to the whole organization. Once configured, requests routed to that provider will use your key and be billed directly by the provider.
 
 <Note>
-For organizations created on or after November 1, 2026, saving or updating keys without an initial payment is refused with `403 Forbidden`, and any saved keys are ignored at request time until a payment is made. Listing and deleting stored keys remain available without a payment.
+For an account created on or after November 1, 2026, saving or updating keys before the organization's first payment is refused with `403 Forbidden`. Listing and deleting stored keys remain available without a payment.
 
 When using your own provider key, the `cost` field in API responses reflects the estimated cost based on the provider's public pricing. Actual billing happens on the provider's side.
 </Note>

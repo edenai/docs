@@ -180,14 +180,30 @@ At today's list prices, this keeps OpenAI, Azure and Databricks ($4 input, $20 o
 
 Prices are in USD per million tokens. Set `input`, `output`, or both. Providers that charge by another unit (such as per image or per second) are not filtered. If no provider of the model is within the ceiling, the request fails with a `400` naming the cheapest provider and its rates, so you know what ceiling would work.
 
+## Filtering providers by quantization
+
+Set `routing.quantizations` to route only to providers that run the model's weights at one of the precisions you list.
+
+```json
+{
+  "model": "gpt-oss-120b",
+  "messages": [{"role": "user", "content": "hi"}],
+  "routing": {"quantizations": ["fp8", "bf16"]}
+}
+```
+
+The values are the ones each endpoint shows as `quantization` in [`/v3/models`](/v3/llms/listing-models#quantization): `int4`, `int8`, `fp4`, `fp6`, `fp8`, `fp16`, `bf16` and `fp32`. Add `unknown` to also accept providers that do not state a precision, which includes every closed-weight model. Without it, those providers are skipped.
+
+If no provider of the model serves it at a listed precision, the request fails with a `400` naming each provider and its precision, so you can see which value to add.
+
 ## How these settings apply
 
-`order`, `allowed_providers`, `ignored_providers` and `max_price` follow the same rules:
+`order`, `allowed_providers`, `ignored_providers`, `quantizations` and `max_price` follow the same rules:
 
 - **Use the provider name from the catalog.** It is the part before the first `/` in an endpoint id from [`/v3/models?view=models`](#finding-the-routable-models), such as `amazon` (not `bedrock`), `vertex`, `fireworks_ai` or `together_ai`. Names are case-insensitive. A name that matches no provider is not an error, it just matches nothing, so a misspelled `ignored_providers` entry excludes nothing.
 - **They apply to every model name without a provider**, in `model` and in `fallbacks`. If any of them is left with no provider, the whole request fails with a `400`, even when the other models still have one.
 - **A concrete `provider/model` is never filtered or reordered.** It goes exactly where you sent it, in `model` or in `fallbacks`. To keep a request away from a provider, don't name that provider in either.
-- **Invalid values return a `422`**: an empty provider name or one longer than 64 characters, more than 16 entries in `order`, the same provider in both `allowed_providers` and `ignored_providers`, or a `max_price` with neither `input` nor `output`, a negative price, or any other key (a typo such as `ouput` is rejected rather than ignored).
+- **Invalid values return a `422`**: an empty provider name or one longer than 64 characters, more than 16 entries in `order`, the same provider in both `allowed_providers` and `ignored_providers`, a `max_price` with neither `input` nor `output`, a negative price, or any other key (a typo such as `ouput` is rejected rather than ignored), or an empty `quantizations` list or a value not listed above (values are lower-case).
 
 ## Requiring zero data retention
 

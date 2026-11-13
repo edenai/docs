@@ -58,8 +58,8 @@ curl "https://api.edenai.run/v3/models?view=models"
   "pricing_endpoint": "openai/gpt-5.6-sol",
   "regions": [{ "code": "eu", "name": "Europe" }],
   "endpoints": [
-    { "id": "openai/gpt-5.6-sol", "owned_by": "openai", "...": "pricing, capabilities, context_length, regions" },
-    { "id": "azure/gpt-5.6-sol",  "owned_by": "azure",  "...": "pricing, capabilities, context_length, regions" },
+    { "id": "openai/gpt-5.6-sol", "owned_by": "openai", "...": "pricing, capabilities, context_length, token limits, regions" },
+    { "id": "azure/gpt-5.6-sol",  "owned_by": "azure",  "...": "pricing, capabilities, context_length, token limits, regions" },
     "...6 more: Amazon, Databricks and region-pinned endpoints such as azure/gpt-5.6-sol@eu"
   ]
 }
@@ -75,7 +75,7 @@ Selection is weighted rather than absolute: cheaper providers receive proportion
 
 Providers that are failing are ranked below healthy ones and are never chosen first. They stay in the chain as a last resort, because a struggling provider is still better than no answer.
 
-Only providers whose context window holds your prompt plus the `max_tokens` you set are considered. If none does, the request fails with a `400` stating how many tokens it needed.
+Only providers whose context window holds your prompt plus the `max_tokens` you set, and whose prompt input limit holds your prompt, are considered. If none can take the request, it fails with a `400` reporting the prompt and total context token counts.
 
 ## Choosing an objective
 

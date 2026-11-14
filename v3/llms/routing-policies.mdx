@@ -118,7 +118,7 @@ A target:
 | `routing` | This target's provider preferences, applied over the policy's defaults |
 | `region` | Pin the target to a region, the same as an `@region` tag on `model`. Set one or the other |
 
-`routing`, in `defaults` and on a target, is the request's [`routing` object](/v3/llms/provider-routing): `sort`, `order`, `allowed_providers`, `ignored_providers`, `max_price`, `allow_fallbacks`, `sticky` and `zero_data_retention`. `quality_cost` is not accepted. A field set to `null` is unset: it then comes from the request or the platform default.
+`routing`, in `defaults` and on a target, is the request's [`routing` object](/v3/llms/provider-routing): `sort`, `order`, `allowed_providers`, `ignored_providers`, `quantizations`, `max_price`, `allow_fallbacks`, `sticky` and `zero_data_retention`. `quality_cost` is not accepted. A field set to `null` is unset: it then comes from the request or the platform default.
 
 ## Strategies
 

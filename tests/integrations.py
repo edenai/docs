@@ -14,8 +14,9 @@ from the page, so a page that changes its model is tested on what it now says:
 
   - the models it names, anywhere: a config block, an export line, a table
     cell, a sentence telling the reader which one to pick;
-  - the settings that hold a model, which have to name one in full, because a
-    bare "whisper-1" is invisible to a scan that looks for provider/model.
+  - the settings that hold a model, read whole, because a name with no
+    provider ("gpt-4o", or a wrong one such as "whisper-1") is invisible to a
+    scan that looks for provider/model.
 
 Which request a model takes comes from the catalog rather than the page: an id
 listed under embeddings/models answers an embeddings call, and a chat model

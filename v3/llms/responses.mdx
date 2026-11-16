@@ -117,6 +117,7 @@ curl -X POST https://api.edenai.run/v3/responses \
 | `truncation` | string | `"disabled"` | Truncation strategy: `"auto"` or `"disabled"` |
 | `metadata` | object | — | Arbitrary key-value pairs attached to the response |
 | `user` | string | — | Stable identifier for the end-user |
+| `service_tier` | string | — | Processing tier: `"auto"`, `"default"`, `"flex"`, `"scale"`, `"priority"`, or `"ultrafast"`. Billed at that tier's rates. When a model lacks pricing for a requested priority or ultrafast tier, it runs on the default tier; the response's `service_tier` reports the tier that ran. |
 
 ## Response Object
 
@@ -166,6 +167,7 @@ curl -X POST https://api.edenai.run/v3/responses \
 | `output` | array | List of output items (messages, tool calls, reasoning) |
 | `usage` | object | Token consumption |
 | `error` | object | Present when `status` is `"failed"` |
+| `service_tier` | string | Processing tier that ran, such as `"default"`, `"priority"`, or `"ultrafast"` |
 | `provider` | string | Eden AI: provider name extracted from the model string |
 | `cost` | float | Eden AI: estimated cost in USD for this request |
 | `provider_time` | float | Eden AI: provider response time in seconds |

@@ -95,6 +95,7 @@ Each entry includes the model's identity, context window, capabilities, pricing,
       "zero_data_retention": false,
       "quantization": null,
       "retirement_date": null,
+      "discount_ends_at": null,
       "alias_of": "google/gemini-3.6-flash"
     }
   ]
@@ -103,7 +104,7 @@ Each entry includes the model's identity, context window, capabilities, pricing,
 
 Each model `id` is used directly as the `model` parameter in your requests.
 
-`pricing` holds the rates a call bills at, after any discount, and `list_pricing` the provider's list rates before it, most of them in US dollars per token. Models that can run as a [batch](/v3/llms/batches) (OpenAI, Anthropic and Mistral) also carry `input_cost_per_token_batches`, `output_cost_per_token_batches` and `cache_read_input_token_cost_batches`, the rates a batch bills at when the model has them.
+`pricing` holds the rates a call bills at, after any discount, and `list_pricing` the provider's list rates before it, most of them in US dollars per token. When a model is discounted, `discount` gives the fraction off (in the `0` to `1` range) and `discount_ends_at` gives the UTC ISO 8601 timestamp when the discount ends and the model returns to `list_pricing` (`null` when there is no discount or no announced end). Models that can run as a [batch](/v3/llms/batches) (OpenAI, Anthropic and Mistral) also carry `input_cost_per_token_batches`, `output_cost_per_token_batches` and `cache_read_input_token_cost_batches`, the rates a batch bills at when the model has them.
 
 ## Grouped view: one entry per routable name
 

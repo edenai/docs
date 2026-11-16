@@ -1,0 +1,86 @@
+---
+sidebarTitle: "Trace Export"
+title: "Send LLM Traces to Datadog and Langfuse"
+icon: "chart-network"
+description: "Export every LLM call to Datadog, Langfuse or any OpenTelemetry collector as an OTLP span with model, tokens, cost, key and session, nested in your traces."
+---
+
+import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
+
+<TechArticleSchema
+  title={"Send LLM Traces to Datadog and Langfuse"}
+  description={"Export every LLM call to Datadog, Langfuse or any OpenTelemetry collector as an OTLP span with model, tokens, cost, key and session, nested in your traces."}
+  path="v3/organization/trace-export"
+  articleSection="Organization"
+  about={"Observability"}
+  proficiencyLevel="Intermediate"
+  keywords={["Eden AI", "OpenTelemetry", "OTLP", "Datadog", "Langfuse", "LLM observability", "tracing"]}
+  datePublished="2026-11-13T00:00:00Z"
+  dateModified="2026-11-16T00:00:00Z"
+/>
+
+Eden AI can send each LLM call your organization makes to the tracing tool your team already uses, as an [OpenTelemetry](https://opentelemetry.io/) span. Calls that carry your own trace context join your traces, so the model call shows up under the request that made it.
+
+## Add a destination
+
+An organization admin adds destinations in **Settings > Trace Export**:
+
+| Tool | Endpoint | Credentials |
+| --- | --- | --- |
+| Datadog | `https://otlp.datadoghq.com/v1/traces` (use your Datadog site's host). Calls appear in LLM Observability, under the destination's service name as the ML app. | API key |
+| Langfuse | `https://cloud.langfuse.com/api/public/otel/v1/traces` (`us.cloud.langfuse.com` in the US, or your own host) | Public and secret key |
+| Any OTLP collector | Its OTLP/HTTP traces URL, ending in `/v1/traces` | Any headers it needs |
+
+Spans are sent as gzip-compressed OTLP/HTTP protobuf by a background worker, after your call has been answered: export never slows a call down. Credentials are stored encrypted and never shown again. When you edit a destination, leave them blank to keep them; if you change its tool or move its endpoint to another origin (another scheme, host or port), enter them again, since saved credentials are only ever sent where they were entered for. For an OTLP collector, **Remove the saved headers** sends the next calls with none. The page shows how many calls each destination received and its last error.
+
+### Choose which keys are sent
+
+By default a destination receives the calls of every API key of the organization. Two lists narrow it:
+
+- **Only these keys**: send only the calls of these keys. Leave it empty for every key.
+- **Never these keys**: never send the calls of these keys. A key in both lists is never sent: exclusion wins.
+
+## Join your own traces
+
+Send a W3C `traceparent` header with the call. Its span then hangs under your span, in your trace:
+
+```python
+import os
+from openai import OpenAI
+
+client = OpenAI(base_url="https://api.edenai.run/v3", api_key=os.environ["EDENAI_API_KEY"])
+
+response = client.chat.completions.create(
+    model="openai/gpt-4o-mini",
+    messages=[{"role": "user", "content": "Say hi"}],
+    extra_headers={
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+        "x-session-id": "ticket-48213",
+    },
+)
+print(response.choices[0].message.content)
+```
+
+In practice your OpenTelemetry SDK writes this header for you. Without one, each call is a trace of its own. A destination can also be set to ignore your trace and always send calls on their own.
+
+## What a span carries
+
+Each call is one span named `chat <model>`, with one child span per provider attempt, named `chat <model>` after the model that attempt reached (a fallback makes two). Attributes follow the [OpenTelemetry GenAI conventions](https://opentelemetry.io/docs/specs/semconv/gen-ai/):
+
+| Attribute | Value |
+| --- | --- |
+| `gen_ai.request.model`, `gen_ai.response.model`, `gen_ai.provider.name` | The model you asked for, the one that answered, and its provider |
+| `gen_ai.usage.input_tokens`, `gen_ai.usage.output_tokens`, `gen_ai.usage.cache_read.input_tokens` | Token counts, on the call's span only |
+| `gen_ai.usage.cost` | What the call cost, in USD, on the call's span only. Not part of the conventions; Langfuse and most tools read it. A Datadog destination gets `gen_ai.usage.cost.amount` with `gen_ai.usage.cost.currency` instead, the names Datadog reads. |
+| `gen_ai.conversation.id`, `session.id` | The session you named: the `session_id` body field, the `x-session-id` header, or the session a coding agent sends on its own (a header such as `x-claude-code-session-id`, Codex's `session-id` or `x-session-affinity`, or Claude Code's `metadata.user_id`). A session Eden AI grouped on its own, for calls that name none, is never exported. |
+| `user.id` | The end user you named: `safety_identifier`, `user`, or Anthropic's `metadata.user_id` |
+| `error.type` | Why a failed call or attempt failed |
+| `edenai.api_key.name`, `edenai.routing.policy`, `edenai.tag.*` | The API key's name, the routing policy, and your request tags |
+
+Prompts and answers are left out unless you turn on **Include prompts and answers** for the destination, and never sent for a call under [zero data retention](/v3/data-governance/compliance-policies). When included, they follow the conventions' message format, in `gen_ai.system_instructions`, `gen_ai.input.messages` and `gen_ai.output.messages`; destinations other than Datadog also get them as `input.value` and `output.value`, which Langfuse and Phoenix read. Long texts and long histories are shortened, keeping the conversation's opening and its latest messages.
+
+## Sampling and limits
+
+- **Calls sent**: a share of calls per destination. When the call names a session, the share is picked by session, so a session is sent whole or not at all; otherwise by call. Failed calls are always sent. When you send a `traceparent` and the destination nests calls under your trace, its sampled flag decides instead, for failed calls too.
+- **Retries**: when a destination is unreachable, times out, or answers 429, 502, 503 or 504, Eden AI retries with backoff, waiting as long as its `Retry-After` header asks, up to 5 minutes. After 10 failures in a row (about 13.5 minutes), the calls waiting for it are dropped. Any other error answer drops the batch at once, since sending it again would fail the same way.
+- **Queue**: each destination holds up to 1,000 calls or 8 MB waiting to be sent. Calls past that, and calls waiting longer than 24 hours, are dropped. Every dropped call is counted on the destination.

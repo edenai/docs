@@ -1,20 +1,20 @@
 ---
 sidebarTitle: "Trace Export"
-title: "Send LLM Traces to Datadog and Langfuse"
+title: "Send LLM Traces to Langfuse, Datadog and More"
 icon: "chart-network"
-description: "Export every LLM call to Datadog, Langfuse or any OpenTelemetry collector as an OTLP span with model, tokens, cost, key and session, nested in your traces."
+description: "Export every LLM call to Langfuse, LangSmith, Datadog, Grafana Cloud or any OpenTelemetry collector as an OTLP span with model, tokens, cost, key and session."
 ---
 
 import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
 
 <TechArticleSchema
-  title={"Send LLM Traces to Datadog and Langfuse"}
-  description={"Export every LLM call to Datadog, Langfuse or any OpenTelemetry collector as an OTLP span with model, tokens, cost, key and session, nested in your traces."}
+  title={"Send LLM Traces to Langfuse, Datadog and More"}
+  description={"Export every LLM call to Langfuse, LangSmith, Datadog, Grafana Cloud or any OpenTelemetry collector as an OTLP span with model, tokens, cost, key and session."}
   path="v3/organization/trace-export"
   articleSection="Organization"
   about={"Observability"}
   proficiencyLevel="Intermediate"
-  keywords={["Eden AI", "OpenTelemetry", "OTLP", "Datadog", "Langfuse", "LLM observability", "tracing"]}
+  keywords={["Eden AI", "OpenTelemetry", "OTLP", "Langfuse", "LangSmith", "Datadog", "Grafana", "LLM observability", "tracing"]}
   datePublished="2026-11-16T00:00:00Z"
   dateModified="2026-11-16T00:00:00Z"
 />
@@ -23,15 +23,29 @@ Eden AI can send each LLM call your organization makes to the tracing tool your 
 
 ## Add a destination
 
-An organization admin adds destinations in **Settings > Trace Export**:
+An organization admin connects a tool in **Settings > Trace Export**: pick it, choose its region, and paste its keys. The setup fills in the tool's endpoint; for a self-hosted install, or a tool whose address is your account's own, enter it.
 
-| Tool | Endpoint | Credentials |
+| Tool | Regions | Credentials |
 | --- | --- | --- |
-| Datadog | `https://otlp.datadoghq.com/v1/traces` (use your Datadog site's host). Calls appear in LLM Observability, under the destination's service name as the ML app. | API key |
-| Langfuse | `https://cloud.langfuse.com/api/public/otel/v1/traces` (`us.cloud.langfuse.com` in the US, or your own host) | Public and secret key |
-| Any OTLP collector | Its OTLP/HTTP traces URL, ending in `/v1/traces` | Any headers it needs |
+| Langfuse | EU, US, Japan, HIPAA, or your own host | Public and secret key |
+| LangSmith | US, EU, APAC, AWS, or your own host | API key, and optionally the project |
+| Braintrust | US, EU | API key and project |
+| Phoenix | Your Phoenix Cloud space's URL, or your own host | API key, when authentication is on |
+| Opik | Comet Cloud, or your own host | API key, workspace, and optionally the project |
+| Laminar | Cloud | Project API key |
+| PostHog | US, EU | Project token |
+| Logfire | US, EU | Write token |
+| Datadog | US1, US3, US5, EU1, UK1, AP1, AP2. Calls appear in LLM Observability, with the destination's service name as the ML app. | API key |
+| Grafana Cloud | Your stack's OTLP endpoint, followed by `/v1/traces` | Instance ID and token |
+| New Relic | US, EU, Japan | License key |
+| Honeycomb | US, EU. The service name is the dataset. | API key |
+| Sentry | Your project's OTLP traces endpoint | Public key |
+| Dynatrace | Your environment's OTLP traces URL | Token with `openpipeline:traces:ingest` |
+| Elastic | Your managed OTLP endpoint, followed by `/v1/traces` | API key |
+| SigNoz | US, EU, IN | Ingestion key |
+| Any OTLP collector | Its OTLP/HTTP traces URL, most often ending in `/v1/traces` | Any headers it needs |
 
-Spans are sent as gzip-compressed OTLP/HTTP protobuf by a background worker, after your call has been answered: export never slows a call down. Credentials are stored encrypted and never shown again. When you edit a destination, leave them blank to keep them; if you change its tool or move its endpoint to another origin (another scheme, host or port), enter them again, since saved credentials are only ever sent where they were entered for. For an OTLP collector, **Remove the saved headers** sends the next calls with none. The page shows how many calls each destination received and its last error.
+Spans are sent as gzip-compressed OTLP/HTTP protobuf by a background worker, after your call has been answered: export never slows a call down. Credentials are stored encrypted and never shown again. When you edit a destination, leave them blank to keep them; if you move its endpoint to another origin (another scheme, host or port), enter them again, since saved credentials are only ever sent where they were entered for. To send to another tool, connect that tool as a new destination. For an OTLP collector, **Remove the saved headers** sends the next calls with none. The page shows how many calls each destination received and its last error.
 
 ### Choose which keys are sent
 

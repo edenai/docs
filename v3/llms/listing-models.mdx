@@ -107,7 +107,7 @@ Each model `id` is used directly as the `model` parameter in your requests.
 
 ## Grouped view: one entry per routable name
 
-Many models are sold by more than one provider. Pass `view=models` (or the `x-edenai-view: models` header) to get one entry per **routable model name**, with the provider endpoints nested underneath. This is how you discover the names that [Provider Routing](/v3/llms/provider-routing) accepts.
+Many models are sold by more than one provider. Pass `view=models` (or the [`x-edenai-view` header](#choosing-the-view-with-a-header)) to get one entry per **routable model name**, with the provider endpoints nested underneath. This is how you discover the names that [Provider Routing](/v3/llms/provider-routing) accepts.
 
 ```bash cURL
 curl "https://api.edenai.run/v3/models?view=models" \
@@ -154,10 +154,20 @@ What to expect from the shape:
 - **Each entry in `endpoints` is the same object the default view returns**, with that provider's own pricing, capabilities, context length, and regions. To compare providers or see per-provider values, read `endpoints`.
 - **`owned_by` changes meaning between the views.** On a grouped entry it is who authored the model (`openai`); on an endpoint entry it is the provider selling it (`azure`).
 - **`created` is the newest endpoint's timestamp**, and `endpoint_count` equals `endpoints.length`.
-- The default (`view=endpoints`, or neither query parameter nor header) is unchanged, and both entry shapes stay compatible with the OpenAI SDK's `client.models.list()`.
-- **Choosing the view with a header.** Clients that only take a base URL and append `/models` themselves cannot add `?view=`, so you can pass `x-edenai-view: models` (or `x-edenai-view: endpoints`) as an HTTP header instead. When both `view` and `x-edenai-view` are sent, the `view` query parameter wins. Unknown values return `422`. Other routes ignore the header, so sending it on every request is safe.
+- The default (`view=endpoints`, or no view chosen) is unchanged, and both entry shapes stay compatible with the OpenAI SDK's `client.models.list()`.
 - **Your routing policies are listed here too.** Send your API key and the grouped view adds one entry per [routing policy](/v3/llms/routing-policies) you can call, under its `policy/{name}` id, with `owned_by` set to `edenai`, an empty `endpoints` list and `endpoint_count` at `0`: which target serves a call is decided per request, so `pricing`, `context_length` and `regions` are `null` or empty. Policies never appear in the default view or under a `zero_data_retention` filter.
 - **Aliases of routable models are listed here, and only here.** An [alias without a provider](#model-aliases) appears under its own name (which starts with `~`), with `alias_of` naming the model it points to and that model's values and endpoints repeated. The default view lists provider endpoints, and such an alias names none. An alias with a provider appears in the default view only.
+
+### Choosing the view with a header
+
+Some tools take only a base URL and request `/models` under it themselves, so they cannot add `?view=`. Send the `x-edenai-view` header instead, with the same values (`models` or `endpoints`):
+
+```bash cURL
+curl https://api.edenai.run/v3/models \
+  -H "x-edenai-view: models"
+```
+
+[Open WebUI](/v3/integrations/open-webui) (the connection's headers), [LibreChat](/v3/integrations/librechat) (the endpoint's `headers` in `librechat.yaml`) and n8n's built-in OpenAI credential (a custom header) send it with their models request. When both are sent, `view` wins. An unknown value returns `422`, as an unknown `view` does. Other routes ignore the header, so a tool that sends it on every request is unaffected.
 
 These endpoints accept both `view` and `x-edenai-view`: `/v3/models`, `/v3/embeddings/models`, `/v3/moderations/models`, `/v3/audio/transcriptions/models`, `/v3/audio/speech/models`, `/v3/images/models`, `/v3/rerank/models`, and `/v3/alpha/decisions/models`.
 

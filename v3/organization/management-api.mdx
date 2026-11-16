@@ -1,7 +1,7 @@
 ---
 sidebarTitle: "Management API"
 title: "Management API"
-description: "Programmatically create and manage your organization's inference keys with a durable issuer key, without a dashboard round-trip."
+description: "Programmatically manage your organization's members, roles, guardrails, settings and inference keys with a management key, without a dashboard round-trip."
 icon: "key"
 ---
 
@@ -9,17 +9,18 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
 
 <TechArticleSchema
   title="Management API"
-  description="Programmatically create and manage your organization's inference keys with a durable issuer key, without a dashboard round-trip."
+  description="Programmatically manage your organization's members, roles, guardrails, settings and inference keys with a management key, without a dashboard round-trip."
   path="v3/organization/management-api"
   articleSection="Organization"
-  about="Programmatic API key management"
+  about="Programmatic organization and key management"
   proficiencyLevel="Intermediate"
   dependencies="You need an Eden AI organization and the permission to manage API keys."
-  keywords={["Eden AI", "Management API", "API key", "issuer key", "service key"]}
+  keywords={["Eden AI", "Management API", "API key", "issuer key", "service key", "members", "roles", "guardrails", "organization settings"]}
 />
 
-The **Management API** lets your automation create and manage inference keys **programmatically**: the
-capability you had with a long-lived account key, restored without the security downside of a single
+The **Management API** lets your automation manage your Eden AI organization **programmatically**:
+members, roles, guardrails, organization settings, and the creation and management of inference keys,
+the capability you had with a long-lived account key, restored without the security downside of a single
 permanent credential that can call inference directly.
 
 ## The three tiers
@@ -78,25 +79,101 @@ All endpoints authenticate with `Authorization: Bearer <mgmt-eden key>` and are 
 key's organization. The one exception is `/v3/manage/routing-policies`, which also accepts a member's own
 inference key (`sk-eden-…`) and then manages that member's personal policies.
 
+### Authentication keys
+
 | Method & path | Scope | Purpose |
 |---------------|-------|---------|
 | `POST /v3/manage/auth-keys` | `manage:mint` | Issuer mints a worker key |
 | `GET /v3/manage/auth-keys` | `manage:mint` | List the org's management keys |
 | `DELETE /v3/manage/auth-keys/{key_id}` | `manage:mint` | Revoke a worker key |
-| `GET · POST /v3/manage/keys` | `manage:read` · `manage:write` | List / mint inference keys |
-| `GET · PATCH · DELETE /v3/manage/keys/{key_id}` | `manage:read` · `manage:write` | Read / update / revoke an inference key |
+
+### Inference keys
+
+| Method & path | Scope | Purpose |
+|---------------|-------|---------|
+| `GET /v3/manage/keys?member=&revoked=` | `manage:read` | List every inference key of the organization, including revoked ones. Filter by `member` (email) or `revoked=false` for active keys only |
+| `POST /v3/manage/keys` | `manage:write` | Mint an inference key, optionally with a `guardrail_id`, `expire_time`, spending controls and default tags |
+| `GET /v3/manage/keys/{key_id}` | `manage:read` | Read one key (shows its guardrail, budget-reset fields and creation time) |
+| `PATCH /v3/manage/keys/{key_id}` | `manage:write` | Update a key's name, spending controls, expiry, tags or guardrail |
+| `DELETE /v3/manage/keys/{key_id}` | `manage:write` | Revoke an inference key |
 | `POST /v3/manage/keys/{key_id}/rotate` | `manage:write` | Rotate an inference key's secret |
-| `GET /v3/manage/members` · `/usage` · `/keys/{key_id}/usage` · `/whoami` | `manage:read` | Members, usage, key introspection |
+
+### Organization settings
+
+| Method & path | Scope | Purpose |
+|---------------|-------|---------|
+| `GET /v3/manage/organization` | `manage:read` | Read the organization's name, RBAC state, default guardrail, data retention, allowed regions and SSO requirement |
+| `PATCH /v3/manage/organization` | `manage:write` | Change the organization's name, RBAC toggle, default guardrail, zero-data retention, allowed regions or SSO requirement. Only sent fields are changed; an invalid field changes nothing |
+
+### Members
+
+| Method & path | Scope | Purpose |
+|---------------|-------|---------|
+| `GET /v3/manage/members` | `manage:read` | List active members and the owner, each with their role, guardrail, rate limit, directory groups and active keys |
+| `POST /v3/manage/members` | `manage:write` | Invite a person by email (creates an account if needed, sends invitation in the owner's name). Returns `invited`, `resent` or `pending_acceptance` |
+| `GET /v3/manage/members/{email}` | `manage:read` | Read one member by email |
+| `PATCH /v3/manage/members/{email}` | `manage:write` | Set or clear a member's guardrail (`guardrail_id` or null) |
+| `DELETE /v3/manage/members/{email}` | `manage:write` | Remove a member (owner cannot be removed; SCIM-provisioned members must be removed in your IdP) |
+| `PATCH /v3/manage/members/{email}/role` | `manage:write` | Assign a role to a member by `role_id` (RBAC must be enabled; owner's role cannot change) |
+| `DELETE /v3/manage/members/{email}/role` | `manage:write` | Clear a member's role (RBAC must be enabled) |
+
+### Roles and permissions
+
+| Method & path | Scope | Purpose |
+|---------------|-------|---------|
+| `GET /v3/manage/permissions` | `manage:read` | List the permission codes a custom role can grant |
+| `GET /v3/manage/roles` | `manage:read` | List the organization's custom roles and the system roles |
+| `POST /v3/manage/roles` | `manage:write` | Create a custom role (name, description, permissions, optional guardrail) |
+| `GET /v3/manage/roles/{id}` | `manage:read` | Read one role |
+| `PUT /v3/manage/roles/{id}` | `manage:write` | Replace a custom role as a whole (system roles cannot be changed) |
+| `DELETE /v3/manage/roles/{id}` | `manage:write` | Delete a custom role (refused if still held by members; system roles cannot be deleted) |
+
+### Guardrails
+
+A [guardrail](/v3/organization/guardrails) bundles a budget cap, rate limit and model-access rules. It applies to whatever it is assigned: a key, a member, a role, or the whole organization as the default.
+
+| Method & path | Scope | Purpose |
+|---------------|-------|---------|
+| `GET /v3/manage/guardrails` | `manage:read` | List the organization's guardrails |
+| `POST /v3/manage/guardrails` | `manage:write` | Create a guardrail (starts active; names are unique within the org) |
+| `GET /v3/manage/guardrails/{id}` | `manage:read` | Read one guardrail |
+| `PUT /v3/manage/guardrails/{id}` | `manage:write` | Replace a guardrail's settings as a whole (fields you leave out are cleared) |
+| `DELETE /v3/manage/guardrails/{id}` | `manage:write` | Delete a guardrail (refused if it is the org default or still assigned) |
+| `PUT /v3/manage/guardrails/{id}/active` | `manage:write` | Pause (`is_active: false`) or resume (`is_active: true`) a guardrail |
+
+### Directory groups (SCIM)
+
+Groups are synced from your identity provider; they are not created through this API.
+
+| Method & path | Scope | Purpose |
+|---------------|-------|---------|
+| `GET /v3/manage/groups` | `manage:read` | List directory-synced groups and their members |
+| `GET /v3/manage/groups/{external_group_id}` | `manage:read` | Read one group (shows its mapped role, if any) |
+| `PUT /v3/manage/groups/{external_group_id}/role` | `manage:write` | Map a directory group to a role (all members get that role; a member of several groups gets the highest-priority one) |
+| `DELETE /v3/manage/groups/{external_group_id}/role` | `manage:write` | Unmap a group's role (members fall back to their next mapped group or the default) |
+
+### Usage and billing
+
+| Method & path | Scope | Purpose |
+|---------------|-------|---------|
+| `GET /v3/manage/whoami` | `manage:read` | Key introspection: who the calling key is and what it can do |
 | `GET /v3/manage/usage/requests` · `/usage/requests/{request_id}` · `/usage/requests/volume` · `/usage/requests/export` · `/usage/facets` · `/usage/llm` | `manage:read` | The organization's [request logs](/v3/general/request-logs), CSV export and LLM metrics |
 | `GET /v3/manage/billing` | `manage:read` | The organization's [credit balance](/v3/general/credit-balance) and auto-refill state |
 | `GET /v3/manage/billing/details` · `/contacts` · `/invoices` | `manage:read` | Read invoice details, billing contacts, and postpaid [invoices](/v3/general/invoices) |
 | `GET /v3/manage/billing/statements` | `manage:read` | List and download monthly [usage statements](/v3/general/usage-statements) |
+
+### Routing policies
+
+| Method & path | Scope | Purpose |
+|---------------|-------|---------|
 | `GET /v3/manage/routing-policies` | `manage:read`, or an inference key | List the routing policies the credential can use: the organization's with a management key, the member's own and the organization's with an inference key |
 | `GET · PUT · DELETE /v3/manage/routing-policies/{name}` | `manage:read` · `manage:write`, or an inference key | Read / create or replace / delete a routing policy: the organization's with a management key, the member's personal one with an inference key |
 
-## Routing policies
-
 A [routing policy](/v3/llms/routing-policies) is a saved model chain and its provider preferences, called from an inference request as `model: "policy/{name}"`. With a management key these endpoints manage the organization's policies; called with a member's own inference key, they manage that member's personal ones.
+
+## Role ceiling
+
+A `manage:write` key can only assign roles whose permissions are limited to **member management** (`org:read` and `members:manage`): it cannot grant a role that also gives `org:manage`, `billing:manage` or `api_keys:manage`, whether by creating or editing a role, assigning one to a member, or mapping a directory group to one. The organization owner's role is always immutable.
 
 ## Migrating from a dashboard-only key
 

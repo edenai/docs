@@ -95,6 +95,9 @@ Each entry includes the model's identity, context window, capabilities, pricing,
       "zero_data_retention": false,
       "quantization": null,
       "retirement_date": null,
+      "hugging_face_id": null,
+      "open_weights": null,
+      "knowledge_cutoff": null,
       "alias_of": "google/gemini-3.6-flash"
     }
   ]
@@ -214,6 +217,31 @@ For a model on your own private deployment, the value comes from the level your 
 Every endpoint entry also carries `retirement_date`: the day the provider has announced it will stop serving the model, as `YYYY-MM-DD`. Move to another model or provider before then, since calls on that endpoint will fail once the provider turns it off. Different providers retire the same model on different days, so the date belongs to the endpoint, not to the model.
 
 `null` means no date has been published. It does not promise the model will stay. An alias with a provider shows the date of the model it points to today. A stable alias is usually moved to a newer model before that date, so its calls keep working and its date changes with it.
+
+## Open weights and Hugging Face
+
+Every endpoint entry also carries `hugging_face_id` and `open_weights`, which describe the model rather than the provider, so every provider of a model shows the same values.
+
+`hugging_face_id` is the model's repository on [Hugging Face](https://huggingface.co), where its weights, license and model card are published: `openai/gpt-oss-120b` is at `https://huggingface.co/openai/gpt-oss-120b`. It is also the name other platforms and leaderboards use for the model, so you can match a model across them.
+
+`open_weights` is `true` when the model's weights are published for anyone to download and run, which is when it has a `hugging_face_id`. It means you can self-host or fine-tune the model. It does not mean the model is open source: most open-weights models do not publish their training data, and some licenses restrict use. Read the license on the repository.
+
+Both are `null` for a closed-weight model (OpenAI's GPT, Anthropic's Claude, Google's Gemini and similar), and for an open one whose repository we have no record of yet. So `null` means "not known to be open", not "closed".
+
+```json
+{
+  "id": "deepinfra/openai/gpt-oss-120b",
+  "hugging_face_id": "openai/gpt-oss-120b",
+  "open_weights": true,
+  "knowledge_cutoff": "2024-06-30"
+}
+```
+
+## Knowledge cutoff
+
+Every endpoint entry also carries `knowledge_cutoff`: the date the model's training data ends, as `YYYY-MM-DD`. The model knows nothing about events after it unless you put them in the prompt, for example with [web search](/v3/llms/web-search). It belongs to the model, so every provider shows the same date. `null` means its lab has not published one.
+
+In the grouped view, a model entry shows `hugging_face_id`, `open_weights` and `knowledge_cutoff` once, when its endpoints agree on them.
 
 ## Model aliases
 

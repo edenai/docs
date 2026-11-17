@@ -11,9 +11,9 @@ model that cannot take tools, or at a route that does not speak its protocol.
 What runs where, cheapest first:
 
   - Every pull request, no credentials: every model the page names anywhere
-    is one Eden AI serves, every setting that holds a model names one in full,
-    and an agent is only pointed at models whose catalog entry says they take
-    tools.
+    is one Eden AI serves, every setting that holds a model names one exactly
+    as the catalog lists it, and an agent is only pointed at models whose
+    catalog entry says they take tools.
   - Every pull request, sandbox token: for each page, the request its tool
     sends, with the page's lead model and the auth the tool uses. The sandbox
     answers with a canned completion, so this proves the request is served,
@@ -317,14 +317,14 @@ def test_a_model_named_on_an_integration_page_is_one_eden_ai_serves(case):
 
 
 @pytest.mark.parametrize("case", _SETTING_CASES, ids=_setting_id)
-def test_a_model_setting_names_a_whole_model_id(case):
+def test_a_model_setting_names_a_model_the_catalog_lists(case):
     page, setting = case
 
     assert normalize_model_id(setting.value) in catalog_ids(), (
         f"{source(page)} line {setting.line}: {setting.key} is set to "
         f"'{setting.value}', which is not a model Eden AI serves. The tool "
-        f"sends the value as it stands, so it needs the full provider/model id "
-        f"from the catalog."
+        f"sends the value as it stands, so it needs a model name or a "
+        f"provider/model id exactly as the catalog lists it."
     )
 
 

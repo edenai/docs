@@ -211,8 +211,8 @@ For Anthropic **Claude** models, the `thinking` parameter enables extended reaso
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `type` | string | `enabled` or `disabled`. |
-| `budget_tokens` | integer | Maximum tokens Claude may spend thinking. Minimum **1024**, and it must be **greater than `max_completion_tokens`**. Counts toward your `max_tokens` limit. |
+| `type` | string | `adaptive` (recommended for Claude 4.7+), `enabled`, or `disabled`. |
+| `budget_tokens` | integer | Maximum tokens Claude may spend thinking. Minimum **1024**, and it must be **less than `max_completion_tokens`**. Counts toward your `max_tokens` limit. |
 
 <CodeGroup>
 ```python Python

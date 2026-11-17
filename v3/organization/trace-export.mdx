@@ -88,10 +88,20 @@ Each call is one span named `chat <model>`, with one child span per provider att
 | `gen_ai.usage.cost` | What the call cost, in USD, on the call's span only. Not part of the conventions; Langfuse and most tools read it. A Datadog destination gets `gen_ai.usage.cost.amount` with `gen_ai.usage.cost.currency` instead, the names Datadog reads. |
 | `gen_ai.conversation.id`, `session.id` | The session you named: the `session_id` body field, the `x-session-id` header, or the session a coding agent sends on its own (a header such as `x-claude-code-session-id`, Codex's `session-id` or `x-session-affinity`, or Claude Code's `metadata.user_id`). A session Eden AI grouped on its own, for calls that name none, is never exported. |
 | `user.id` | The end user you named: `safety_identifier`, `user`, or Anthropic's `metadata.user_id` |
-| `error.type` | Why a failed call or attempt failed |
+| `gen_ai.agent.name` | The coding agent that made the call, such as `claude-code` or `codex`, when Eden AI recognizes it |
+| `error.type`, an `exception` event | Why a failed call or attempt failed; the span's status is `ERROR` |
 | `edenai.api_key.name`, `edenai.routing.policy`, `edenai.tag.*` | The API key's name, the routing policy, and your request tags |
 
-Prompts and answers are left out unless you turn on **Include prompts and answers** for the destination, and never sent for a call under [zero data retention](/v3/data-governance/compliance-policies). When included, they follow the conventions' message format, in `gen_ai.system_instructions`, `gen_ai.input.messages` and `gen_ai.output.messages`; destinations other than Datadog also get them as `input.value` and `output.value`, which Langfuse and Phoenix read. Long texts and long histories are shortened, keeping the conversation's opening and its latest messages.
+Prompts and answers are left out unless you turn on **Include prompts and answers** for the destination, and never sent for a call under [zero data retention](/v3/data-governance/compliance-policies). When included, they follow the conventions' message format, in `gen_ai.system_instructions`, `gen_ai.input.messages` and `gen_ai.output.messages`. Long texts and long histories are shortened, keeping the conversation's opening, the call's latest message, and as many of the latest messages as fit.
+
+Each preset also sends what its tool reads beyond the conventions, so a call shows as one LLM call with its conversation:
+
+- **Langfuse**: the conversation as `input.value` and `output.value`, the first token's time, and attempts as plain spans.
+- **Phoenix**: the question and answer as `input.value` and `output.value`, cache and reasoning tokens, and attempts as steps.
+- **Opik**: the conversation in OpenAI's chat format, which Opik draws as a chat; Eden AI's own attributes go to the span's metadata.
+- **Laminar**: the call as its LLM span and attempts as plain spans.
+- **Grafana Cloud**: the opt-in AI Observability needs (`agento11y.record`).
+- **Datadog**: the cost under the names LLM Observability reads.
 
 ## Sampling and limits
 

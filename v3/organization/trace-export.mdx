@@ -14,7 +14,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   articleSection="Organization"
   about={"Observability"}
   proficiencyLevel="Intermediate"
-  keywords={["Eden AI", "OpenTelemetry", "OTLP", "Langfuse", "LangSmith", "Datadog", "Grafana", "LLM observability", "tracing"]}
+  keywords={["Eden AI", "OpenTelemetry", "OTLP", "Langfuse", "LangSmith", "Arize", "Phoenix", "Datadog", "Grafana", "LLM observability", "tracing"]}
   datePublished="2026-11-17T00:00:00Z"
   dateModified="2026-11-17T00:00:00Z"
 />
@@ -23,29 +23,34 @@ Eden AI can send each LLM call your organization makes to the tracing tool your 
 
 ## Add a destination
 
-An organization admin connects a tool in **Settings > Trace Export**: pick it, choose its region, and paste its keys. The setup fills in the tool's endpoint; for a self-hosted install, or a tool whose address is your account's own, enter it. A tool can have several destinations, one per project, environment or collector, each with its own keys and settings.
+An organization admin connects a tool in **Settings > Trace Export**: pick it, choose its region, and paste its keys. The setup fills in the tool's endpoint; for a self-hosted install, or a tool whose address is your account's own, enter it. A tool can have several destinations, one per project, environment or collector, each with its own keys and settings. **Send Test Trace** sends one sample span with what you entered, before you save, and shows the tool's answer.
 
 | Tool | Regions | Credentials |
 | --- | --- | --- |
 | Langfuse | EU, US, Japan, HIPAA, or your own host | Public and secret key |
-| LangSmith | US, EU, APAC, AWS, or your own host | API key, and optionally the project |
+| LangSmith | US, EU, APAC, AWS US, Azure US, or your own host | API key, and optionally the project |
 | Braintrust | US, EU | API key and project |
-| Phoenix | Your Phoenix Cloud space's URL, or your own host | API key, when authentication is on |
+| Arize AX | US, EU, Canada. The service name is the project. | Space ID and API key |
+| Phoenix | Your Phoenix Cloud space's URL, or your own host. The service name is the project. | API key, when authentication is on |
 | Opik | Comet Cloud, or your own host | API key, workspace, and optionally the project |
 | Laminar | Cloud | Project API key |
 | PostHog | US, EU | Project token |
 | Logfire | US, EU | Write token |
 | Datadog | US1, US3, US5, EU1, UK1, AP1, AP2. Calls appear in LLM Observability, with the destination's service name as the ML app. | API key |
 | Grafana Cloud | Your stack's OTLP endpoint, followed by `/v1/traces` | Instance ID and token |
-| New Relic | US, EU, Japan | License key |
-| Honeycomb | US, EU. The service name is the dataset. | API key |
-| Sentry | Your project's OTLP traces endpoint | Public key |
-| Dynatrace | Your environment's OTLP traces URL | Token with `openpipeline:traces:ingest` |
+| New Relic | US, EU, Japan, US FedRAMP | License key |
+| Honeycomb | US, EU. The service name is the dataset, for Classic keys too. | API key |
+| Sentry | The one your DSN names, or your own host | The project's DSN, which gives the endpoint too |
+| Dynatrace | Your environment's OTLP traces URL | A platform token with `openpipeline:traces:ingest`, or an access token (`dt0c01.`) with `openTelemetryTrace.ingest` |
 | Elastic | Your managed OTLP endpoint, followed by `/v1/traces` | API key |
 | SigNoz | US, EU, IN | Ingestion key |
 | Any OTLP collector | Its OTLP/HTTP traces URL, most often ending in `/v1/traces` | Any headers it needs |
 
-Spans are sent as gzip-compressed OTLP/HTTP protobuf by a background worker, after your call has been answered: export never slows a call down. Credentials are stored encrypted and never shown again. When you edit a destination, leave them blank to keep them; if you move its endpoint to another origin (another scheme, host or port), enter them again, since saved credentials are only ever sent where they were entered for. To send to another tool, connect that tool as a new destination. For an OTLP collector, or a tool whose key is optional (Phoenix), **Remove Saved Headers** sends the next calls with none. The page shows how many calls each destination received and its last error.
+Every tool also takes extra headers, for a proxy or a gateway in front of it.
+
+A destination receives the calls made after it is added; earlier calls are not sent.
+
+Spans are sent as OTLP/HTTP protobuf, gzip-compressed except to Arize AX, which does not accept it, by a background worker, after your call has been answered: export never slows a call down. Credentials are stored encrypted and never shown again. When you edit a destination, leave them blank to keep them; if you move its endpoint to another origin (another scheme, host or port), enter them again, since saved credentials are only ever sent where they were entered for. To send to another tool, connect that tool as a new destination. For an OTLP collector, or a tool whose key is optional (Phoenix), **Remove Saved Headers** sends the next calls with none. The page shows how many calls each destination received and its last error.
 
 ### Choose which keys are sent
 
@@ -75,17 +80,34 @@ response = client.chat.completions.create(
 print(response.choices[0].message.content)
 ```
 
-In practice your OpenTelemetry SDK writes this header for you. Without one, each call is a trace of its own. A destination can also be set to ignore your trace and always send calls on their own.
+In practice your OpenTelemetry SDK writes this header for you: its HTTP instrumentation adds it to every request your OpenAI or Anthropic client makes. Without one, each call is a trace of its own. A destination can also be set to ignore your trace and always send calls on their own.
+
+LangSmith and Braintrust drop a span whose parent they never receive, so their destinations start with nesting off. Turn it on only when your app sends its own spans to the same project.
+
+### Claude Code
+
+Claude Code sends its trace to Eden AI when its tracing is on. Its own spans then go to your tool, with each model call's Eden AI spans under them:
+
+```bash
+export CLAUDE_CODE_ENABLE_TELEMETRY=1
+export CLAUDE_CODE_ENHANCED_TELEMETRY_BETA=1
+export OTEL_TRACES_EXPORTER=otlp
+export OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=https://your-collector.example.com/v1/traces
+# Eden AI is a custom ANTHROPIC_BASE_URL: Claude Code sends trace context to it only when asked.
+export CLAUDE_CODE_PROPAGATE_TRACEPARENT=1
+```
+
+Coding agents that send no trace context, such as Codex and OpenCode, still group into sessions through their own session headers.
 
 ## What a span carries
 
-Each call is one span named `chat <model>`, with one child span per provider attempt, named `chat <model>` after the model that attempt reached (a fallback makes two). Attributes follow the [OpenTelemetry GenAI conventions](https://opentelemetry.io/docs/specs/semconv/gen-ai/):
+Each call is one span named `chat <model>`, the LLM call. Under it, one child span per provider attempt, named after the model that attempt reached (a fallback makes two). An attempt is a step of the call, not an LLM call of its own: its provider and model are `edenai.attempt.provider` and `edenai.attempt.model`, so each tool counts the call once. Attributes follow the [OpenTelemetry GenAI conventions](https://opentelemetry.io/docs/specs/semconv/gen-ai/):
 
 | Attribute | Value |
 | --- | --- |
-| `gen_ai.request.model`, `gen_ai.response.model`, `gen_ai.provider.name` | The model you asked for, the one that answered, and its provider |
-| `gen_ai.usage.input_tokens`, `gen_ai.usage.output_tokens`, `gen_ai.usage.cache_read.input_tokens` | Token counts, on the call's span only |
-| `gen_ai.usage.cost` | What the call cost, in USD, on the call's span only. Not part of the conventions; Langfuse and most tools read it. A Datadog destination gets `gen_ai.usage.cost.amount` with `gen_ai.usage.cost.currency` instead, the names Datadog reads. |
+| `gen_ai.request.model`, `gen_ai.response.model`, `gen_ai.provider.name` | The model you asked for, the one that answered, and its provider, under the conventions' names (`aws.bedrock`, `gcp.vertex_ai`, `mistral_ai`...) |
+| `gen_ai.usage.input_tokens`, `gen_ai.usage.output_tokens`, `gen_ai.usage.cache_read.input_tokens`, `gen_ai.usage.cache_creation.input_tokens` | Token counts, on the call's span only |
+| `gen_ai.usage.cost` | What Eden AI charged for the call, in USD, on the call's span only, and also under the name each tool reads (below). Left out for a call answered on your own provider key, so your tool estimates it from the tokens. |
 | `gen_ai.conversation.id`, `session.id` | The session you named: the `session_id` body field, the `x-session-id` header, or the session a coding agent sends on its own (a header such as `x-claude-code-session-id`, Codex's `session-id` or `x-session-affinity`, or Claude Code's `metadata.user_id`). A session Eden AI grouped on its own, for calls that name none, is never exported. |
 | `user.id` | The end user you named: `safety_identifier`, `user`, or Anthropic's `metadata.user_id` |
 | `gen_ai.agent.name` | The coding agent that made the call, such as `claude-code` or `codex`, when Eden AI recognizes it |
@@ -94,17 +116,25 @@ Each call is one span named `chat <model>`, with one child span per provider att
 
 Prompts and answers are left out unless you turn on **Include prompts and answers** for the destination, and never sent for a call under [zero data retention](/v3/data-governance/compliance-policies). When included, they follow the conventions' message format, in `gen_ai.system_instructions`, `gen_ai.input.messages` and `gen_ai.output.messages`. Long texts and long histories are shortened, keeping the conversation's opening, the call's latest message, and as many of the latest messages as fit.
 
-Each preset also sends what its tool reads beyond the conventions, so a call shows as one LLM call with its conversation:
+Each preset also gets what its tool reads beyond the conventions, so a call shows as one LLM call with its cost and conversation:
 
-- **Langfuse**: the conversation as `input.value` and `output.value`, the first token's time, and attempts as plain spans.
-- **Phoenix**: the question and answer as `input.value` and `output.value`, cache and reasoning tokens, and attempts as steps.
-- **Opik**: the conversation in OpenAI's chat format, which Opik draws as a chat; Eden AI's own attributes go to the span's metadata.
+- **Langfuse**: the conversation also as `input.value` and `output.value`, the first token's time, and attempts as plain spans.
+- **Phoenix** and **Arize AX**: the call as its LLM span and attempts as steps, the question and answer also as `input.value` and `output.value`, the model, provider, tokens and cost under OpenInference's names (`llm.*`), and the service name as the project.
+- **Opik**: the conversation in OpenAI's chat format, which Opik draws as a chat, instead of the `gen_ai.*` message fields; Eden AI's own attributes go to the span's metadata.
 - **Laminar**: the call as its LLM span and attempts as plain spans.
+- **LangSmith**: the call as an LLM run and attempts as chain runs, the session as the thread (`langsmith.metadata.thread_id`), the end user, provider and model as metadata, and the system prompt in the input.
+- **Braintrust**: attempts as task spans, the cost as `braintrust.metrics.estimated_cost`, and the system prompt in the input.
+- **Datadog**: the cost as `gen_ai.usage.cost.amount` and `gen_ai.usage.cost.currency`, and attempts as workflow steps.
+- **Logfire**: the cost as `operation.cost` and the first token's time under the name Logfire reads.
+- **PostHog**: the cost, cache and reasoning tokens, first token's time and streaming as PostHog's `$ai_*` properties.
+- **Sentry**: the cost as `gen_ai.cost.total_tokens` and streaming as `gen_ai.response.streaming`.
+- **Honeycomb**: the dataset header Classic keys need, set to the service name.
 - **Grafana Cloud**: the opt-in AI Observability needs (`agento11y.record`).
-- **Datadog**: the cost under the names LLM Observability reads.
+- **New Relic**: the conversation shortened to fit New Relic's 4,095-character attribute limit.
 
 ## Sampling and limits
 
 - **Calls sent**: a share of calls per destination. When the call names a session, the share is picked by session; otherwise by call. Failed calls are always sent, unless they join a caller's trace that was not sampled: when you send a `traceparent` and the destination nests calls under your trace, its sampled flag decides first, for failed calls too.
 - **Retries**: when a destination is unreachable, times out, or answers 429, 502, 503 or 504, Eden AI retries with backoff, doubling from 2 seconds up to 5 minutes, give or take a fifth, or waiting as long as its `Retry-After` header asks, up to 5 minutes per wait. After 10 failures in a row (about 13.5 minutes when the waits double, longer when `Retry-After` asks for more), the calls waiting for it are dropped. Any other error answer drops the batch at once, since sending it again would fail the same way.
-- **Queue**: each destination holds up to 1,000 calls or 8 MB waiting to be sent. Calls past that, and calls waiting longer than 24 hours, are dropped. Every dropped call is counted on the destination.
+- **Queue**: each destination holds up to 1,000 calls or 8 MB waiting to be sent. Calls past that, and calls waiting longer than 24 hours, are dropped. Some tools refuse older spans while still answering success, so calls are dropped sooner for them: after 55 minutes for Dynatrace, 17 hours for Datadog, 23 hours for Logfire and New Relic. Every dropped call is counted on the destination.
+- **Posts**: up to 100 spans each, and under 900 KB for New Relic.

@@ -110,7 +110,7 @@ inference key (`sk-eden-…`) and then manages that member's personal policies.
 | Method & path | Scope | Purpose |
 |---------------|-------|---------|
 | `GET /v3/manage/members` | `manage:read` | List active members and the owner, each with their role, guardrail, rate limit, directory groups and active keys |
-| `POST /v3/manage/members` | `manage:write` | Invite a person by email (creates an account if needed, sends invitation in the owner's name). Returns `invited`, `resent` or `pending_acceptance` |
+| `POST /v3/manage/members` | `manage:write` | Invite a person by email (creates an account if needed, sends invitation in the owner's name). Returns `invited`, `resent` or `pending_acceptance`. Active pending invitations hold a seat for 48 hours; resending takes no new seat |
 | `GET /v3/manage/members/{email}` | `manage:read` | Read one member by email |
 | `PATCH /v3/manage/members/{email}` | `manage:write` | Set or clear a member's guardrail (`guardrail_id` or null) |
 | `DELETE /v3/manage/members/{email}` | `manage:write` | Remove a member (owner cannot be removed; SCIM-provisioned members must be removed in your IdP) |
@@ -126,7 +126,7 @@ inference key (`sk-eden-…`) and then manages that member's personal policies.
 | `POST /v3/manage/roles` | `manage:write` | Create a custom role (name, description, permissions, optional guardrail) |
 | `GET /v3/manage/roles/{id}` | `manage:read` | Read one role |
 | `PUT /v3/manage/roles/{id}` | `manage:write` | Replace a custom role as a whole (system roles cannot be changed) |
-| `DELETE /v3/manage/roles/{id}` | `manage:write` | Delete a custom role (refused if still held by members; system roles cannot be deleted) |
+| `DELETE /v3/manage/roles/{id}` | `manage:write` | Delete a custom role (refused if still held by members or given by a pending invitation; system roles cannot be deleted) |
 
 ### Guardrails
 
@@ -138,7 +138,7 @@ A [guardrail](/v3/organization/guardrails) bundles a budget cap, rate limit and 
 | `POST /v3/manage/guardrails` | `manage:write` | Create a guardrail (starts active; names are unique within the org) |
 | `GET /v3/manage/guardrails/{id}` | `manage:read` | Read one guardrail |
 | `PUT /v3/manage/guardrails/{id}` | `manage:write` | Replace a guardrail's settings as a whole (fields you leave out are cleared) |
-| `DELETE /v3/manage/guardrails/{id}` | `manage:write` | Delete a guardrail (refused if it is the org default or still assigned) |
+| `DELETE /v3/manage/guardrails/{id}` | `manage:write` | Delete a guardrail (refused if it is the org default, still assigned, or given by a pending invitation) |
 | `PUT /v3/manage/guardrails/{id}/active` | `manage:write` | Pause (`is_active: false`) or resume (`is_active: true`) a guardrail |
 
 ### Directory groups (SCIM)

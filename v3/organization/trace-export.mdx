@@ -23,7 +23,7 @@ Eden AI can send each LLM call your organization makes to the tracing tool your 
 
 ## Add a destination
 
-An organization admin connects a tool in **Settings > Trace Export**: pick it, choose its region, and paste its keys. The setup fills in the tool's endpoint; for a self-hosted install, or a tool whose address is your account's own, enter it.
+An organization admin connects a tool in **Settings > Trace Export**: pick it, choose its region, and paste its keys. The setup fills in the tool's endpoint; for a self-hosted install, or a tool whose address is your account's own, enter it. A tool can have several destinations, one per project, environment or collector, each with its own keys and settings.
 
 | Tool | Regions | Credentials |
 | --- | --- | --- |
@@ -45,7 +45,7 @@ An organization admin connects a tool in **Settings > Trace Export**: pick it, c
 | SigNoz | US, EU, IN | Ingestion key |
 | Any OTLP collector | Its OTLP/HTTP traces URL, most often ending in `/v1/traces` | Any headers it needs |
 
-Spans are sent as gzip-compressed OTLP/HTTP protobuf by a background worker, after your call has been answered: export never slows a call down. Credentials are stored encrypted and never shown again. When you edit a destination, leave them blank to keep them; if you move its endpoint to another origin (another scheme, host or port), enter them again, since saved credentials are only ever sent where they were entered for. To send to another tool, connect that tool as a new destination. For an OTLP collector, **Remove the saved headers** sends the next calls with none. The page shows how many calls each destination received and its last error.
+Spans are sent as gzip-compressed OTLP/HTTP protobuf by a background worker, after your call has been answered: export never slows a call down. Credentials are stored encrypted and never shown again. When you edit a destination, leave them blank to keep them; if you move its endpoint to another origin (another scheme, host or port), enter them again, since saved credentials are only ever sent where they were entered for. To send to another tool, connect that tool as a new destination. For an OTLP collector, or a tool whose key is optional (Phoenix), **Remove Saved Headers** sends the next calls with none. The page shows how many calls each destination received and its last error.
 
 ### Choose which keys are sent
 
@@ -95,6 +95,6 @@ Prompts and answers are left out unless you turn on **Include prompts and answer
 
 ## Sampling and limits
 
-- **Calls sent**: a share of calls per destination. When the call names a session, the share is picked by session, so a session is sent whole or not at all; otherwise by call. Failed calls are always sent. When you send a `traceparent` and the destination nests calls under your trace, its sampled flag decides instead, for failed calls too.
-- **Retries**: when a destination is unreachable, times out, or answers 429, 502, 503 or 504, Eden AI retries with backoff, waiting as long as its `Retry-After` header asks, up to 5 minutes. After 10 failures in a row (about 13.5 minutes), the calls waiting for it are dropped. Any other error answer drops the batch at once, since sending it again would fail the same way.
+- **Calls sent**: a share of calls per destination. When the call names a session, the share is picked by session; otherwise by call. Failed calls are always sent, unless they join a caller's trace that was not sampled: when you send a `traceparent` and the destination nests calls under your trace, its sampled flag decides first, for failed calls too.
+- **Retries**: when a destination is unreachable, times out, or answers 429, 502, 503 or 504, Eden AI retries with backoff, doubling from 2 seconds up to 5 minutes, give or take a fifth, or waiting as long as its `Retry-After` header asks, up to 5 minutes per wait. After 10 failures in a row (about 13.5 minutes when the waits double, longer when `Retry-After` asks for more), the calls waiting for it are dropped. Any other error answer drops the batch at once, since sending it again would fail the same way.
 - **Queue**: each destination holds up to 1,000 calls or 8 MB waiting to be sent. Calls past that, and calls waiting longer than 24 hours, are dropped. Every dropped call is counted on the destination.

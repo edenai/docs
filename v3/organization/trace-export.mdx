@@ -80,9 +80,9 @@ response = client.chat.completions.create(
 print(response.choices[0].message.content)
 ```
 
-In practice your OpenTelemetry SDK writes this header for you: its HTTP instrumentation adds it to every request your OpenAI or Anthropic client makes. Without one, each call is a trace of its own. A destination can also be set to ignore your trace and always send calls on their own.
+In practice your OpenTelemetry SDK writes this header for you: its HTTP instrumentation adds it to every request your OpenAI or Anthropic client makes. Without one, each call is a trace of its own. When your app does not record its trace (the header's sampled flag is off), its calls are not sent either.
 
-LangSmith and Braintrust drop a span whose parent they never receive, so their destinations start with nesting off. Turn it on only when your app sends its own spans to the same project.
+LangSmith and Braintrust drop a span whose parent they never receive, so their destinations keep each call in a trace of its own unless you turn on **Nest under your app's trace**. Turn it on only when your app sends its own spans to the same project; otherwise those calls won't appear.
 
 ### Claude Code
 
@@ -106,27 +106,41 @@ Each call is one span named `chat <model>`, the LLM call. When it fell back to a
 | Attribute | Value |
 | --- | --- |
 | `gen_ai.request.model`, `gen_ai.response.model`, `gen_ai.provider.name` | The model you asked for, the one that answered, and its provider, under the conventions' names (`aws.bedrock`, `gcp.vertex_ai`, `mistral_ai`...) |
-| `gen_ai.usage.input_tokens`, `gen_ai.usage.output_tokens`, `gen_ai.usage.cache_read.input_tokens`, `gen_ai.usage.cache_creation.input_tokens` | Token counts, on the call's span only |
+| `gen_ai.usage.input_tokens`, `gen_ai.usage.output_tokens`, `gen_ai.usage.cache_read.input_tokens`, `gen_ai.usage.cache_creation.input_tokens` (also as `gen_ai.usage.cache_write.input_tokens`), `gen_ai.usage.reasoning.output_tokens` | Token counts, on the call's span only. The input count is the whole prompt, the tokens read from and written to the cache included. |
+| `gen_ai.request.temperature`, `top_p`, `top_k`, `max_tokens`, `frequency_penalty`, `presence_penalty`, `stop_sequences`, `seed`, `choice.count`, `reasoning.level`, `previous_response.id`, and `gen_ai.output.type` | The parameters your request set, each only when set (`choice.count` when `n` is not 1; `gen_ai.output.type` is `json` or `text`, never your schema) |
+| `gen_ai.tool.definitions` | The tools your request offered: each one's type and name, and with prompts sent, their descriptions and parameters too when they fit the tool's attribute size |
+| `edenai.request.tool_choice`, `edenai.request.models` | How the model could pick tools (`auto`, `required`, `function`...), and the models you allowed, the fallbacks after the first |
+| `openai.request.service_tier`, `openai.response.service_tier` | The service tier asked for (unless `auto`) and the one that answered |
+| `gen_ai.response.id`, `gen_ai.response.finish_reasons` | The answer's id and why it stopped |
+| `gen_ai.response.time_to_first_chunk`, `edenai.time_per_output_token`, `edenai.gateway.duration`, `edenai.provider.duration` | In seconds: for a streamed call, its first chunk, from the start of the call, and the time per output token after it; for every call, the time in Eden AI and at the providers |
 | `gen_ai.usage.cost` | What Eden AI charged for the call, in USD, on the call's span only, and also under the name each tool reads (below). Left out for a call answered on your own provider key, so your tool estimates it from the tokens. |
 | `gen_ai.conversation.id`, `session.id` | The session you named: the `session_id` body field, the `x-session-id` header, or the session a coding agent sends on its own (a header such as `x-claude-code-session-id`, Codex's `session-id` or `x-session-affinity`, or Claude Code's `metadata.user_id`). A session Eden AI grouped on its own, for calls that name none, is never exported. |
 | `user.id` | The end user you named: `safety_identifier`, `user`, or Anthropic's `metadata.user_id` |
 | `gen_ai.agent.name` | The coding agent that made the call, such as `claude-code` or `codex`, when Eden AI recognizes it |
 | `error.type`, an `exception` event | A failed span's status is `ERROR`. `error.type` is the status your client received (such as `400`) or, for a failed attempt, its error code. The event's message, also the status's description, is the error your client received or, for an attempt, its provider, status and error code (such as `azure answered 500 (server_error)`). |
-| `edenai.api_key.name`, `edenai.routing.policy`, `edenai.tag.*` | The API key's name, the routing policy, and your request tags |
+| `edenai.request_id`, `edenai.api_key.name`, `edenai.api_key.id`, `edenai.member.id`, `edenai.tag.*` | The call's id, the API key's name and id, the id of the member who made the call (never an email), and your request tags |
+| `user_agent.original`, `http.request.header.x-title`, `http.request.header.http-referer`, `http.request.header.origin` | The client that sent the call, when it sent these headers: its user agent up to 256 characters, the others up to 512 |
+| `edenai.is_byok`, `edenai.cache.hit` | Whether your own provider key answered, and whether the answer came from the cache |
+| `edenai.api.type`, `edenai.api.version`, `edenai.call_type` | The API the call came through (`chat_completions`, `responses`, `messages`) and its version, and how it was made: `back` with an API key, `sandbox` with a sandbox key, `front` from the Eden AI app |
+| `edenai.region`, `edenai.routing.strategy`, `edenai.routing.mode`, `edenai.routing.policy`, `edenai.routing.policy_version`, `edenai.routing.policy_scope` | Where the call ran, and how it was routed: the routing policy that applied, its version and whose it is |
+| `edenai.message_count`, `edenai.input_kind`, `edenai.session.source`, `edenai.coding_agent.via`, `edenai.coding_agent.entrypoint`, `edenai.agent.thread`, `edenai.agent.turn`, `edenai.agent.step` | The call's step: how many messages it carried, whether it answered a new message or tool results, how its session was named, and what the coding agent said of it |
+| `edenai.response.tool_calls`, `edenai.structured_output.requested`, `edenai.structured_output.valid`, `edenai.tool_calls.valid` | How many tools the answer called, and whether the structured output and tool calls Eden AI checked were valid |
 
-Prompts and answers are left out unless you turn on **Include prompts and answers** for the destination, and never sent for a call under [zero data retention](/v3/data-governance/compliance-policies). When included, they follow the conventions' message format, in `gen_ai.system_instructions`, `gen_ai.input.messages` and `gen_ai.output.messages`. Long texts and long histories are shortened, keeping the conversation's opening, the call's latest message, and as many of the latest messages as fit.
+Prompts and answers are sent unless you turn on **Privacy mode** for the destination, and never for a call under [zero data retention](/v3/data-governance/compliance-policies). They follow the conventions' message format, in `gen_ai.system_instructions`, `gen_ai.input.messages` and `gen_ai.output.messages`. Long texts and long histories are shortened, keeping the conversation's opening, the call's latest message, and as many of the latest messages as fit.
 
-Each preset also gets what its tool reads beyond the conventions, so a call shows as one LLM call with its cost and conversation:
+Never sent: what Eden AI pays a provider, a member's email, the provider key that answered, sessions Eden AI grouped on its own, and its internal checksums of your messages.
 
-- **Langfuse**: the conversation also as `input.value` and `output.value`, the first token's time, and attempts as plain spans.
-- **Phoenix** and **Arize AX**: the call as its LLM span and attempts as steps, the question and answer also as `input.value` and `output.value`, the model, provider, tokens and cost under OpenInference's names (`llm.*`), and the service name as the project.
-- **Opik**: the conversation in OpenAI's chat format, which Opik draws as a chat, instead of the `gen_ai.*` message fields; Eden AI's own attributes go to the span's metadata.
-- **Laminar**: the call as its LLM span and attempts as plain spans.
-- **LangSmith**: the call as an LLM run and attempts as chain runs, the session as the thread (`langsmith.metadata.thread_id`), the end user, provider and model as metadata, and the system prompt in the input.
-- **Braintrust**: attempts as task spans, the cost as `braintrust.metrics.estimated_cost`, and the system prompt in the input.
-- **Datadog**: the cost as `gen_ai.usage.cost.amount` and `gen_ai.usage.cost.currency`, and attempts as workflow steps.
+Each preset also gets what its tool reads beyond the conventions, so a call shows as one LLM call with its cost and conversation. Tools with tags and metadata of their own get your request tags as `key:value` tags, and as metadata the request id, the API key's name and id, the region, the routing, the coding agent, the API type and whether the answer came from the cache:
+
+- **Langfuse**: the conversation also as `input.value` and `output.value`, the first token's time, attempts as plain spans, and the tags and metadata as `langfuse.trace.tags` and `langfuse.trace.metadata.*`.
+- **Phoenix** and **Arize AX**: the call as its LLM span and attempts as steps, the question and answer also as `input.value` and `output.value`, the model, provider, tokens and cost under OpenInference's names (`llm.*`), the service name as the project, and the tags and metadata as `tag.tags` and `metadata`.
+- **Opik**: the conversation in OpenAI's chat format, which Opik draws as a chat, instead of the `gen_ai.*` message fields; the temperature where Opik files it; the tags as `opik.tags`; Eden AI's other attributes go to the span's metadata.
+- **Laminar**: the call as its LLM span, attempts as plain spans, and the tags and metadata as `lmnr.association.properties.tags` and `lmnr.association.properties.metadata.*`.
+- **LangSmith**: the call as an LLM run and attempts as chain runs, the session as the thread (`langsmith.metadata.thread_id`), the end user, provider and model as metadata, the system prompt in the input, the tools offered as `tools`, and the tags and metadata as `langsmith.span.tags` and `langsmith.metadata.*`.
+- **Braintrust**: attempts as task spans, the cost as `braintrust.metrics.estimated_cost`, the system prompt in the input, and the tags as `braintrust.tags`.
+- **Datadog**: the cost as `gen_ai.usage.cost.amount` and `gen_ai.usage.cost.currency`, and attempts as workflow steps. The `edenai.*` attributes show as tags.
 - **Logfire**: the cost as `operation.cost` and the first token's time under the name Logfire reads.
-- **PostHog**: the cost, cache and reasoning tokens, first token's time and streaming as PostHog's `$ai_*` properties.
+- **PostHog**: the cost, cache and reasoning tokens, first token's time, streaming, temperature and maximum tokens as PostHog's `$ai_*` properties, with `$ai_cache_reporting_exclusive` off since the input count includes the cache.
 - **Sentry**: the cost as `gen_ai.cost.total_tokens` and streaming as `gen_ai.response.streaming`.
 - **Honeycomb**: the dataset header Classic keys need, set to the service name.
 - **Grafana Cloud**: the opt-in AI Observability needs (`agento11y.record`).

@@ -19,7 +19,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   dateModified="2026-11-18T00:00:00Z"
 />
 
-Eden AI can send each LLM call your organization makes to the tracing tool your team already uses, as an [OpenTelemetry](https://opentelemetry.io/) span. Calls that carry your own trace context join your traces, so the model call shows up under the request that made it.
+Eden AI can send each LLM call and each [Universal AI](#universal-ai-calls) call your organization makes to the tracing tool your team already uses, as an [OpenTelemetry](https://opentelemetry.io/) span. Calls that carry your own trace context join your traces, so the model call shows up under the request that made it.
 
 ## Add a destination
 
@@ -101,7 +101,7 @@ Coding agents that send no trace context, such as Codex and OpenCode, still grou
 
 ## What a span carries
 
-Each call is one span named `chat <model>`, the LLM call. When it fell back to another provider, it also gets one child span per attempt, named after the model that attempt reached, the failed ones marked `ERROR`. An attempt is a step of the call, not an LLM call of its own: its provider and model are `edenai.attempt.provider` and `edenai.attempt.model`, so each tool counts the call once. Attributes follow the [OpenTelemetry GenAI conventions](https://opentelemetry.io/docs/specs/semconv/gen-ai/):
+Each call is one span named after its operation and model: `chat <model>` for an LLM call (`embeddings <model>` for embeddings, `generate_content <model>` for image generation and speech). When it fell back to another provider, it also gets one child span per attempt, named after the model that attempt reached, the failed ones marked `ERROR`. An attempt is a step of the call, not an LLM call of its own: its provider and model are `edenai.attempt.provider` and `edenai.attempt.model`, so each tool counts the call once. Attributes follow the [OpenTelemetry GenAI conventions](https://opentelemetry.io/docs/specs/semconv/gen-ai/):
 
 | Attribute | Value |
 | --- | --- |
@@ -117,7 +117,7 @@ Each call is one span named `chat <model>`, the LLM call. When it fell back to a
 | `gen_ai.conversation.id`, `session.id` | The session you named: the `session_id` body field, the `x-session-id` header, or the session a coding agent sends on its own (a header such as `x-claude-code-session-id`, Codex's `session-id` or `x-session-affinity`, or Claude Code's `metadata.user_id`). A session Eden AI grouped on its own, for calls that name none, is never exported. |
 | `user.id` | The end user you named: `safety_identifier`, `user`, or Anthropic's `metadata.user_id` |
 | `gen_ai.agent.name` | The coding agent that made the call, such as `claude-code` or `codex`, when Eden AI recognizes it |
-| `error.type`, an `exception` event | A failed span's status is `ERROR`. `error.type` is the status your client received (such as `400`) or, for a failed attempt, its error code. The event's message, also the status's description, is the error your client received or, for an attempt, its provider, status and error code (such as `azure answered 500 (server_error)`). |
+| `error.type`, an `exception` event | A failed span's status is `ERROR`. `error.type` is the status your client received (such as `400`), `_OTHER` when that was a success status (a Universal AI call or job that failed answers `200` or `202`), or, for a failed attempt, its error code. The event's message, also the status's description, is the error your client received or, for an attempt, its provider, status and error code (such as `azure answered 500 (server_error)`). |
 | `edenai.request_id`, `edenai.api_key.name`, `edenai.api_key.id`, `edenai.member.id`, `edenai.tag.*` | The call's id, the API key's name and id, the id of the member who made the call (never an email), and your request tags |
 | `user_agent.original`, `http.request.header.x-title`, `http.request.header.http-referer`, `http.request.header.origin` | The client that sent the call, when it sent these headers: its user agent up to 256 characters, the others up to 512 |
 | `edenai.is_byok`, `edenai.cache.hit` | Whether your own provider key answered, and whether the answer came from the cache |
@@ -129,6 +129,20 @@ Each call is one span named `chat <model>`, the LLM call. When it fell back to a
 Prompts and answers are sent unless you turn on **Privacy mode** for the destination, and never for a call under [zero data retention](/v3/data-governance/compliance-policies). They follow the conventions' message format, in `gen_ai.system_instructions`, `gen_ai.input.messages` and `gen_ai.output.messages`. Long texts and long histories are shortened, keeping the conversation's opening, the call's latest message, and as many of the latest messages as fit.
 
 Never sent: what Eden AI pays a provider, a member's email, the provider key that answered, sessions Eden AI grouped on its own, and its internal checksums of your messages.
+
+### Universal AI calls
+
+A Universal AI call (OCR, image generation, speech, translation, web search...) is one span too, under your trace and session like an LLM call, with the same facts: the key, the end user, the routing, the cost, the timing and the error. Its name and operation say what it did: `retrieval` for web search, map, scraping and crawl, `generate_content` for the others, with `gen_ai.output.type` `image` or `speech` for image generation and text to speech. It also carries:
+
+| Attribute | Value |
+| --- | --- |
+| `gen_ai.request.model`, `gen_ai.response.model` | The model that answered |
+| `edenai.feature`, `edenai.subfeature` | The feature it called, such as `ocr` and `ocr_async` |
+| `edenai.billing.metric`, `edenai.billing.quantity`, `edenai.billing.units` | What it was billed by (pages, images, characters, seconds...), when it was billed |
+
+Its input and output (your images, audio, documents and pages) are never sent, whatever the destination's Privacy mode says.
+
+An async job is one span from its submission to its result, sent when the job ends, at its final cost; its status is the `202` its submission answered, and it is marked `ERROR` when the job failed. A job that never ends, such as one made with a sandbox key, is not sent.
 
 Each preset also gets what its tool reads beyond the conventions, so a call shows as one LLM call with its cost and conversation. Tools with tags and metadata of their own get your request tags as `key:value` tags, and as metadata the request id, the API key's name and id, the region, the routing, the coding agent, the API type and whether the answer came from the cache:
 

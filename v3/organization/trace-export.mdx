@@ -101,7 +101,7 @@ Coding agents that send no trace context, such as Codex and OpenCode, still grou
 
 ## What a span carries
 
-Each call is one span named `chat <model>`, the LLM call. Under it, one child span per provider attempt, named after the model that attempt reached (a fallback makes two). An attempt is a step of the call, not an LLM call of its own: its provider and model are `edenai.attempt.provider` and `edenai.attempt.model`, so each tool counts the call once. Attributes follow the [OpenTelemetry GenAI conventions](https://opentelemetry.io/docs/specs/semconv/gen-ai/):
+Each call is one span named `chat <model>`, the LLM call. When it fell back to another provider, it also gets one child span per attempt, named after the model that attempt reached, the failed ones marked `ERROR`. An attempt is a step of the call, not an LLM call of its own: its provider and model are `edenai.attempt.provider` and `edenai.attempt.model`, so each tool counts the call once. Attributes follow the [OpenTelemetry GenAI conventions](https://opentelemetry.io/docs/specs/semconv/gen-ai/):
 
 | Attribute | Value |
 | --- | --- |
@@ -111,7 +111,7 @@ Each call is one span named `chat <model>`, the LLM call. Under it, one child sp
 | `gen_ai.conversation.id`, `session.id` | The session you named: the `session_id` body field, the `x-session-id` header, or the session a coding agent sends on its own (a header such as `x-claude-code-session-id`, Codex's `session-id` or `x-session-affinity`, or Claude Code's `metadata.user_id`). A session Eden AI grouped on its own, for calls that name none, is never exported. |
 | `user.id` | The end user you named: `safety_identifier`, `user`, or Anthropic's `metadata.user_id` |
 | `gen_ai.agent.name` | The coding agent that made the call, such as `claude-code` or `codex`, when Eden AI recognizes it |
-| `error.type`, an `exception` event | Why a failed call or attempt failed; the span's status is `ERROR` |
+| `error.type`, an `exception` event | A failed span's status is `ERROR`. `error.type` is the status your client received (such as `400`) or, for a failed attempt, its error code. The event's message, also the status's description, is the error your client received or, for an attempt, its provider, status and error code (such as `azure answered 500 (server_error)`). |
 | `edenai.api_key.name`, `edenai.routing.policy`, `edenai.tag.*` | The API key's name, the routing policy, and your request tags |
 
 Prompts and answers are left out unless you turn on **Include prompts and answers** for the destination, and never sent for a call under [zero data retention](/v3/data-governance/compliance-policies). When included, they follow the conventions' message format, in `gen_ai.system_instructions`, `gen_ai.input.messages` and `gen_ai.output.messages`. Long texts and long histories are shortened, keeping the conversation's opening, the call's latest message, and as many of the latest messages as fit.

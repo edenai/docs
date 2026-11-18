@@ -101,7 +101,7 @@ Coding agents that send no trace context, such as Codex and OpenCode, still grou
 
 ## What a span carries
 
-Each call is one span named after its operation and model: `chat <model>` for an LLM call (`embeddings <model>` for embeddings, `generate_content <model>` for image generation and speech). When it fell back to another provider, it also gets one child span per attempt, named after the model that attempt reached, the failed ones marked `ERROR`. An attempt is a step of the call, not an LLM call of its own: its provider and model are `edenai.attempt.provider` and `edenai.attempt.model`, so each tool counts the call once. Attributes follow the [OpenTelemetry GenAI conventions](https://opentelemetry.io/docs/specs/semconv/gen-ai/):
+Each call is one span named after its operation and model: `chat <model>` for a chat completion, a response or a message, `embeddings <model>` for embeddings, `retrieval <model>` for reranking, and `generate_content <model>` for the others (images, speech, transcription, moderation). When it fell back to another provider, it also gets one child span per attempt, named after the model that attempt reached, the failed ones marked `ERROR`. An attempt is a step of the call, not an LLM call of its own: its provider and model are `edenai.attempt.provider` and `edenai.attempt.model`, so each tool counts the call once. Attributes follow the [OpenTelemetry GenAI conventions](https://opentelemetry.io/docs/specs/semconv/gen-ai/):
 
 | Attribute | Value |
 | --- | --- |

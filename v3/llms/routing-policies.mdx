@@ -172,7 +172,7 @@ Nesting also combines strategies, which one policy cannot. This parent sends fou
 }
 ```
 
-- **The child runs as if the request had named it**: its own targets, strategy, `defaults`, retries, params and fallbacks, with the request's settings on top. The parent's `defaults` apply to the parent's own targets only. The request's region tag and `:sort` suffix reach the child too, and a field either policy locks is locked for the request.
+- **The child runs as if the request had named it**: its own targets, strategy, `defaults`, retries, params and fallbacks, with the request's settings on top, except the params the child saves, which run as saved. The parent's `defaults` apply to the parent's own targets only. The request's region tag and `:sort` suffix reach the child too, and a field either policy locks is locked for the request.
 - **Zero data retention holds the whole request.** When the parent or a policy it names asks for it, every target and fallback of both is held to it, the request's own fallbacks included.
 - **A reference takes only a `weight`**, which counts under `load_balance`. It takes no `region`, `routing`, `retries` or `params`, and no `@region` tag or `:sort` suffix. To run the same models with other settings, save a second policy with those settings.
 - **The name is read in the parent's scope.** In an organization policy, `policy/safety-net` is the organization's policy of that name: a member's personal policy is never used. In a personal policy, it is your personal policy of that name, else the organization's.
@@ -274,7 +274,7 @@ The model receives one value per param: a saved max replaces every max-tokens fi
 - **A saved max is capped at each model's output limit.** A model that can write at most 8,192 tokens is sent 8,192.
 - **A saved max must leave room for the prompt.** Like a `max_tokens` the request sends, one that does not fit beside the prompt in a model's context window fails on that model. Pick a value well under the smallest context window among the targets.
 - **An Anthropic cache pre-warm keeps its 0.** A `/v3/v1/messages` request with `max_tokens: 0` generates nothing, so a saved max is not written over it.
-- **A Responses conversation keeps its params.** A turn sent with `previous_response_id` gets the params of the target that served the turn it continues, as the policy saves them now.
+- **A Responses conversation keeps its params.** A turn sent with `previous_response_id` gets the params the policy saves now for the position that served the turn it continues, such as `targets[1]` or a fallback. After you reorder the targets, that position holds another target, and its params apply.
 - **The params cannot be locked, and need not be:** a request cannot change a param the policy saves.
 
 A call is billed as if the request had sent the saved values: the credit check before the call reserves for the saved `max_output_tokens`.
@@ -332,7 +332,7 @@ Send `x-edenai-metadata: enabled` and the [request metadata](/v3/llms/request-me
 | `path` | The part of the policy that served the request: `[strategy, "targets[i]"]`, `[strategy, "fallbacks[j]"]`, `[strategy, "caller"]` for one of the request's own fallbacks. When that part is a [nested policy](#nesting-a-policy), `path` goes on into it: `[strategy, "targets[i]", child strategy, "targets[k]"]` |
 | `child` | Only when a nested policy served: its `name`, `version` and `scope`. Editing a child does not change its parent's `version` |
 | `dropped` | The targets this call could not use, each with its reason |
-| `params` | Only when the target that served saves [request params](#request-params): `applied`, each saved param as the model was sent it (a max as capped for the model, an effort level as moved for it), and `dropped`, each saved param the call did not send, with its reason |
+| `params` | Only when the part of the policy that served runs with saved [request params](#request-params), its own or `defaults.params`: `applied`, each saved param as the model was sent it (a max as capped for the model, an effort level as moved for it), and `dropped`, each saved param the call did not send, with its reason |
 
 | Reason | The target was dropped because |
 |---|---|
@@ -348,7 +348,7 @@ Send `x-edenai-metadata: enabled` and the [request metadata](/v3/llms/request-me
 | `no_eligible_seller` | After the routing preferences, no provider of a routable name was left |
 | `chain_limit` | The chain was longer than 12 attempts |
 
-A target that saves params adds them to the block:
+When the part that served runs with saved params, the block adds them:
 
 ```json
 "policy": {

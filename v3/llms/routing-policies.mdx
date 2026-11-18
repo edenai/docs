@@ -14,10 +14,10 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "LLM API", "routing policy", "model fallback", "load balancing", "provider routing"]}
   datePublished="2026-10-27T00:00:00Z"
-  dateModified="2026-11-13T00:00:00Z"
+  dateModified="2026-11-18T00:00:00Z"
 />
 
-A routing policy is a saved model chain: which models to try, how to pick among them, and the [provider routing](/v3/llms/provider-routing) preferences every attempt follows. Save it once under a name and every request can use it as `model: "policy/{name}"`, so an app that only lets you configure a model string, such as a coding agent or a chat UI, gets your fallbacks and provider preferences without any change to the request.
+A routing policy is a saved model chain: which models to try, how to pick among them, the [provider routing](/v3/llms/provider-routing) preferences every attempt follows, and the [request params](#request-params) each model is sent, such as its reasoning effort. Save it once under a name and every request can use it as `model: "policy/{name}"`, so an app that only lets you configure a model string, such as a coding agent or a chat UI, gets your fallbacks, provider preferences and params without any change to the request.
 
 Policies are managed through the [Management API](/v3/organization/management-api). A management key manages the organization's policies, shared by every member and key of the organization; your own API key manages your personal ones.
 
@@ -104,7 +104,7 @@ The name is only accepted where a model chain is: the chat dialects above. To em
 | `enabled` | `false` parks the policy: calling it by name is a `400` and it leaves the [model listing](#finding-your-policies). Default `true` |
 | `strategy` | How the targets are ordered: `fallback`, `load_balance`, `cheapest` or `fastest`. Required |
 | `targets` | 1 to 12 models to choose among, each a string or an object with the overrides below. Required |
-| `defaults` | What every target inherits unless it sets its own: `routing` and `retries` (default `0`) |
+| `defaults` | What every target inherits unless it sets its own: `routing`, `retries` (default `0`) and `params` |
 | `lock` | Fields a request may not set: any of the `routing` fields a policy stores (listed below), or `region`. A request that sets one is refused with a `400` |
 | `fallbacks` | Up to 7 models tried after every target, in order, with the policy's default routing. Any of them may be another policy, as `policy/{name}` |
 
@@ -117,6 +117,7 @@ A target:
 | `retries` | 0 to 3, `fallback` only: how many more times this target is tried before moving on. A retry is the same target called again |
 | `routing` | This target's provider preferences, applied over the policy's defaults |
 | `region` | Pin the target to a region, the same as an `@region` tag on `model`. Set one or the other |
+| `params` | This target's [request params](#request-params), applied over the policy's defaults param by param |
 
 `routing`, in `defaults` and on a target, is the request's [`routing` object](/v3/llms/provider-routing): `sort`, `order`, `allowed_providers`, `ignored_providers`, `quantizations`, `max_price`, `allow_fallbacks`, `sticky` and `zero_data_retention`. `quality_cost` is not accepted. A field set to `null` is unset: it then comes from the request or the platform default.
 
@@ -171,9 +172,9 @@ Nesting also combines strategies, which one policy cannot. This parent sends fou
 }
 ```
 
-- **The child runs as if the request had named it**: its own targets, strategy, `defaults`, retries and fallbacks, with the request's settings on top. The parent's `defaults` apply to the parent's own targets only. The request's region tag and `:sort` suffix reach the child too, and a field either policy locks is locked for the request.
+- **The child runs as if the request had named it**: its own targets, strategy, `defaults`, retries, params and fallbacks, with the request's settings on top, except the params the child saves, which run as saved. The parent's `defaults` apply to the parent's own targets only. The request's region tag and `:sort` suffix reach the child too, and a field either policy locks is locked for the request.
 - **Zero data retention holds the whole request.** When the parent or a policy it names asks for it, every target and fallback of both is held to it, the request's own fallbacks included.
-- **A reference takes only a `weight`**, which counts under `load_balance`. It takes no `region`, `routing` or `retries`, and no `@region` tag or `:sort` suffix. To run the same models with other settings, save a second policy with those settings.
+- **A reference takes only a `weight`**, which counts under `load_balance`. It takes no `region`, `routing`, `retries` or `params`, and no `@region` tag or `:sort` suffix. To run the same models with other settings, save a second policy with those settings.
 - **The name is read in the parent's scope.** In an organization policy, `policy/safety-net` is the organization's policy of that name: a member's personal policy is never used. In a personal policy, it is your personal policy of that name, else the organization's.
 - **One level deep.** A policy that another names cannot name a policy itself, and no policy can name itself, so a loop cannot form.
 - **`cheapest` and `fastest` cannot rank a policy**, as a whole chain has no single cost or latency. List it in `fallbacks` instead.
@@ -224,6 +225,59 @@ With this policy a request may send `routing.sort: "latency"` and get it, but a 
 ```
 
 A `:sort` suffix on the model counts as `sort`, and an `@region` tag as `region`. A merge that names a provider in both `allowed_providers` and `ignored_providers`, one from the policy and one from the request, is also a `400`.
+
+## Request params
+
+A policy can also save request params: how much a model reasons, how long its answer may be, and how it samples. Clients that send only a model name, such as coding agents and chat apps, then run with your values, and so do clients that send their own fixed value for the same param.
+
+**What you save on a policy is what runs. To let the caller decide a param, don't save it.** A saved param replaces the request's value for that param; a param the policy does not save is the request's, as on any call. This is the opposite of [`routing`](#routing-preferences-and-precedence), where the request wins.
+
+| Param | What it sets |
+|---|---|
+| `reasoning_effort` | How much the model thinks before it answers: `none`, `minimal`, `low`, `medium`, `high`, `xhigh` or `max`. `none` turns thinking off |
+| `max_output_tokens` | The most tokens the answer may use, 1 or more |
+| `temperature` | Sampling temperature, 0 to 2 |
+| `top_p` | Nucleus sampling, 0 to 1 |
+
+Save them in `defaults.params` for the whole policy, or in a target's `params` for that target; a target's value wins over the default, param by param. This policy sends GPT a high effort and Kimi a medium one, and caps both answers at 16,000 tokens:
+
+```bash cURL
+curl -X PUT https://api.edenai.run/v3/manage/routing-policies/coding-agent/ \
+  -H "Authorization: Bearer YOUR_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "description": "Coding agent: GPT thinks hard, Kimi takes over",
+    "strategy": "fallback",
+    "targets": [
+      {"model": "openai/gpt-5.6-sol", "params": {"reasoning_effort": "high"}},
+      {"model": "kimi-k2.6", "params": {"reasoning_effort": "medium"}}
+    ],
+    "defaults": {"params": {"max_output_tokens": 16000}}
+  }'
+```
+
+`defaults.params` also applies to the policy's `fallbacks` and to the fallbacks the request lists. A [nested policy](#nesting-a-policy) runs with its own params: the parent's never reach it. A field set to `null` is unset and is not stored.
+
+Each endpoint receives the params under its own names:
+
+| Saved | `/v3/chat/completions` | `/v3/responses` | `/v3/v1/messages` |
+|---|---|---|---|
+| `reasoning_effort` | `reasoning_effort` | `reasoning.effort` | `output_config.effort` |
+| `max_output_tokens` | `max_tokens` | `max_output_tokens` | `max_tokens` |
+| `temperature` | `temperature` | `temperature` | `temperature` |
+| `top_p` | `top_p` | `top_p` | `top_p` |
+
+The model receives one value per param: a saved max replaces every max-tokens field of the request (`max_tokens` and `max_completion_tokens` on chat completions), and a saved effort replaces the request's own (and its `thinking`, on chat completions). The rest of the request's `reasoning` or `output_config` object, such as a reasoning `summary` or an output `format`, is kept. On `/v3/v1/messages`, a saved `none` is sent as `thinking: {"type": "disabled"}`; any other level keeps the request's `thinking`, unless that one disables thinking, and then it is removed.
+
+- **The same effort level buys a different amount of thinking from each provider**, and providers accept different levels. Set the effort per target rather than once in `defaults` when the targets come from different providers.
+- **A value a model cannot take is not sent, and never fails the call.** An effort level a model does not list is moved to the nearest one it does. [The metadata](#seeing-what-the-policy-did) says what was applied and what was dropped.
+- **A saved max is capped at each model's output limit.** A model that can write at most 8,192 tokens is sent 8,192.
+- **A saved max must leave room for the prompt.** Like a `max_tokens` the request sends, one that does not fit beside the prompt in a model's context window fails on that model. Pick a value well under the smallest context window among the targets.
+- **An Anthropic cache pre-warm keeps its 0.** A `/v3/v1/messages` request with `max_tokens: 0` generates nothing, so a saved max is not written over it.
+- **A Responses conversation keeps its params.** A turn sent with `previous_response_id` gets the params the policy saves now for the position that served the turn it continues, such as `targets[1]` or a fallback. After you reorder the targets, that position holds another target, and its params apply.
+- **The params cannot be locked, and need not be:** a request cannot change a param the policy saves.
+
+A call is billed as if the request had sent the saved values: the credit check before the call reserves for the saved `max_output_tokens`.
 
 ## Organization and personal policies
 
@@ -278,6 +332,7 @@ Send `x-edenai-metadata: enabled` and the [request metadata](/v3/llms/request-me
 | `path` | The part of the policy that served the request: `[strategy, "targets[i]"]`, `[strategy, "fallbacks[j]"]`, `[strategy, "caller"]` for one of the request's own fallbacks. When that part is a [nested policy](#nesting-a-policy), `path` goes on into it: `[strategy, "targets[i]", child strategy, "targets[k]"]` |
 | `child` | Only when a nested policy served: its `name`, `version` and `scope`. Editing a child does not change its parent's `version` |
 | `dropped` | The targets this call could not use, each with its reason |
+| `params` | Only when the part of the policy that served runs with saved [request params](#request-params), its own or `defaults.params`: `applied`, each saved param as the model was sent it (a max as capped for the model, an effort level as moved for it), and `dropped`, each saved param the call did not send, with its reason |
 
 | Reason | The target was dropped because |
 |---|---|
@@ -292,6 +347,30 @@ Send `x-edenai-metadata: enabled` and the [request metadata](/v3/llms/request-me
 | `endpoint` | The model does not serve this endpoint, such as an embeddings model on chat |
 | `no_eligible_seller` | After the routing preferences, no provider of a routable name was left |
 | `chain_limit` | The chain was longer than 12 attempts |
+
+When the part that served runs with saved params, the block adds them:
+
+```json
+"policy": {
+  "name": "coding-agent",
+  "version": 1,
+  "strategy": "fallback",
+  "scope": "organization",
+  "path": ["fallback", "targets[0]"],
+  "dropped": [],
+  "params": {
+    "applied": {"reasoning_effort": "high", "max_output_tokens": 16000},
+    "dropped": []
+  }
+}
+```
+
+| Reason | The saved param was not sent because |
+|---|---|
+| `unsupported` | The model does not take it |
+| `refused` | The provider refused the value, and the call was sent again without it |
+
+`params.dropped` lists what Eden AI knows the call did not send. A value can also be left out or ignored without a trace, as `temperature` is on OpenAI's reasoning models, so a param missing from `dropped` is not proof the model used it.
 
 When a nested policy served, the block also names it:
 

@@ -132,7 +132,7 @@ Never sent: what Eden AI pays a provider, a member's email, the provider key tha
 
 ### Universal AI calls
 
-A Universal AI call (OCR, image generation, speech, translation, web search...) is one span too, under your trace and session like an LLM call, with the same facts: the key, the end user, the routing, the cost, the timing and the error. Its name and operation say what it did: `retrieval` for web search, map, scraping and crawl, `generate_content` for the others, with `gen_ai.output.type` `image` or `speech` for image generation and text to speech. It also carries:
+A Universal AI call (OCR, image generation, speech, translation, web search...) is one span too, under your trace and session like an LLM call, with the same facts: the key, the end user, the routing, the cost, the timing and the error. Its name and operation say what it did: `retrieval` for web search (`/v3/search` included), map, scraping, crawl and batch scrape, `generate_content` for the others, with `gen_ai.output.type` `image` or `speech` for image generation and text to speech. It also carries:
 
 | Attribute | Value |
 | --- | --- |

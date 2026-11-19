@@ -128,7 +128,7 @@ Each call is one span named after its operation and model: `chat <model>` for a 
 
 Prompts and answers are sent unless you turn on **Privacy mode** for the destination, and never for a call under [zero data retention](/v3/data-governance/compliance-policies). They follow the conventions' message format, in `gen_ai.system_instructions`, `gen_ai.input.messages` and `gen_ai.output.messages`. Long texts and long histories are shortened, keeping the conversation's opening, the call's latest message, and as many of the latest messages as fit.
 
-For the other LLM APIs, only the prompt you wrote is sent, as one user message: the text to moderate, the text to speak, an image's prompt. Never their output (a moderation's verdict, images, audio), and never the texts you embed or the documents you rerank.
+Moderation, text to speech, and image generation and editing send only the prompt you wrote, as one user message: the text to moderate, the text to speak, the image's prompt. Never their output (a moderation's verdict, images, audio). Every other LLM API sends nothing you wrote: not the texts you embed, the documents you rerank, or the audio you transcribe and its prompt.
 
 Never sent: what Eden AI pays a provider, a member's email, the provider key that answered, sessions Eden AI grouped on its own, and its internal checksums of your messages.
 

@@ -159,7 +159,7 @@ What to expect from the shape:
 - **`owned_by` changes meaning between the views.** On a grouped entry it is who authored the model (`openai`); on an endpoint entry it is the provider selling it (`azure`).
 - **`created` is the newest endpoint's timestamp**, and `endpoint_count` equals `endpoints.length`.
 - The default (`view=endpoints`, or no view chosen) is unchanged, and both entry shapes stay compatible with the OpenAI SDK's `client.models.list()`.
-- **Your routing policies are listed here too.** Send your API key and the grouped view adds one entry per [routing policy](/v3/llms/routing-policies) you can call, under its `policy/{name}` id, with `owned_by` set to `edenai`, an empty `endpoints` list and `endpoint_count` at `0`: which target serves a call is decided per request, so `pricing`, `context_length` and `regions` are `null` or empty. Policies never appear in the default view or under a `zero_data_retention` filter.
+- **Your routing policies are listed here too.** Send your API key and the grouped view adds one entry per [routing policy](/v3/llms/routing-policies) you can call, under its `policy/{name}` id, with `owned_by` set to `edenai`, an empty `endpoints` list and `endpoint_count` at `0`: which target serves a call is decided per request, so `pricing`, `context_length` and `regions` are `null` or empty. Policies never appear in the default view or under any [endpoint filter](#filtering-and-sorting) (such as `zero_data_retention`, `capabilities`, `region`, `context`, or price).
 - **Models on your private deployments are listed here too.** Send your API key and the grouped view adds each model your organization hosts. Nothing routes to such a model, so its entry keeps the full `id` a call sends (such as `acme/gemma4:e2b`), with `owned_by` set to `private/{deployment}`, the model's own `mode`, and its deployment as the only entry in `endpoints` (`endpoint_count` at `1`). Private deployments count as zero data retention, so these models stay listed under `zero_data_retention=true`.
 - **Aliases of routable models are listed here, and only here.** An [alias without a provider](#model-aliases) appears under its own name (which starts with `~`), with `alias_of` naming the model it points to and that model's values and endpoints repeated. The default view lists provider endpoints, and such an alias names none. An alias with a provider appears in the default view only.
 
@@ -175,6 +175,34 @@ curl https://api.edenai.run/v3/models \
 [Open WebUI](/v3/integrations/open-webui) (the connection's headers), [LibreChat](/v3/integrations/librechat) (the endpoint's `headers` in `librechat.yaml`) and n8n's built-in OpenAI credential (a custom header) send it with their models request. When both are sent, `view` wins. An unknown value returns `422`, as an unknown `view` does. Other routes ignore the header, so a tool that sends it on every request is unaffected.
 
 These endpoints accept both `view` and `x-edenai-view`: `/v3/models`, `/v3/embeddings/models`, `/v3/moderations/models`, `/v3/audio/transcriptions/models`, `/v3/audio/speech/models`, `/v3/images/models`, `/v3/rerank/models`, and `/v3/alpha/decisions/models`.
+
+## Filtering and sorting
+
+Every model listing endpoint above accepts optional query parameters to filter and sort results:
+
+```bash cURL
+curl "https://api.edenai.run/v3/models?owned_by=anthropic,openai&capabilities=function_calling,reasoning&context=200000&sort=price"
+```
+
+| Parameter | Example | Keeps / orders |
+|-----------|---------|----------------|
+| `q` | `q=claude` | `id` contains the text, ignoring case |
+| `owned_by` | `owned_by=anthropic,openai` | `owned_by` matches one of the values (the provider in the default view, or the model's author with `view=models`) |
+| `input_modalities` | `input_modalities=image,file` | Accepts all listed input modalities |
+| `output_modalities` | `output_modalities=image` | Produces all listed output modalities |
+| `capabilities` | `capabilities=function_calling,reasoning` | Every named `capabilities.supports_*` flag is `true` (pass flag names without the `supports_` prefix) |
+| `context` | `context=200000` | `context_length` is at least this many tokens (minimum `1`) |
+| `max_input_price` | `max_input_price=1` | Input rate is at most this, in USD per million tokens (entries priced by another unit, such as per image or per second, are kept) |
+| `max_output_price` | `max_output_price=5` | Output rate is at most this, in USD per million tokens (entries priced by another unit are kept) |
+| `region` | `region=eu` | Served in this region (`regions[].code`, such as `eu` or `us`) |
+| `zero_data_retention` | `zero_data_retention=true` | `true` keeps Zero Data Retention endpoints; `false` keeps endpoints known to keep data (`null` matches neither) |
+| `sort` | `sort=price` | Orders results: `newest` (newest `created` first), `price` (cheapest input rate first, then output rate), or `context` (largest `context_length` first). Entries without that value come last |
+
+For parameters that accept multiple values (`owned_by`, `input_modalities`, `output_modalities`, `capabilities`), separate values with commas (`?owned_by=anthropic,openai`) or repeat the parameter (`?owned_by=anthropic&owned_by=openai`). Unknown query parameters are ignored; invalid values (such as an unknown `sort` or `context=0`) return `422`.
+
+With `view=models`, name filters (`q`, `owned_by`) match the grouped model entry. Endpoint filters (`input_modalities`, `output_modalities`, `capabilities`, `context`, `max_input_price`, `max_output_price`, `region`, `zero_data_retention`) keep a model when at least one of its endpoints passes all of them, include only those matching endpoints in `endpoints`, and recompute the model-level summary fields from them. Routing policies pass `q`, `owned_by`, and `sort`, and are dropped by any endpoint filter.
+
+`/v3/search/models` and `/v3/videos/models` only support `zero_data_retention`.
 
 ## Zero Data Retention
 

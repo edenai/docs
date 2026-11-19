@@ -340,7 +340,7 @@ curl "https://api.edenai.run/v3/models?view=models" \
 }
 ```
 
-The entry carries the name only: which target serves a call is decided per request, so there is no price, context window or region to summarise. Only enabled policies with targets are listed. The default listing (`view=endpoints`) and any `zero_data_retention` filter leave policies out, as does every other model listing.
+The entry carries the name only: which target serves a call is decided per request, so there is no price, context window or region to summarise. Only enabled policies with targets are listed. The default listing (`view=endpoints`) and any endpoint filter (such as `zero_data_retention`, `capabilities`, `region`, `context`, or price) leave policies out, as does every other model listing.
 
 ## Errors
 

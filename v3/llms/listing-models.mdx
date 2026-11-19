@@ -200,7 +200,7 @@ curl "https://api.edenai.run/v3/models?owned_by=anthropic,openai&capabilities=fu
 
 For parameters that accept multiple values (`owned_by`, `input_modalities`, `output_modalities`, `capabilities`), separate values with commas (`?owned_by=anthropic,openai`) or repeat the parameter (`?owned_by=anthropic&owned_by=openai`). Unknown query parameters are ignored; invalid values (such as an unknown `sort` or `context=0`) return `422`.
 
-With `view=models`, name filters (`q`, `owned_by`) match the grouped model entry. Endpoint filters (`input_modalities`, `output_modalities`, `capabilities`, `context`, `max_input_price`, `max_output_price`, `region`, `zero_data_retention`) keep a model when at least one of its endpoints passes all of them, include only those matching endpoints in `endpoints`, and recompute the model-level summary fields from them. Routing policies pass `q`, `owned_by`, and `sort`, and are dropped by any endpoint filter.
+With `view=models`, name filters (`q`, `owned_by`) match the grouped model entry. Endpoint filters (`input_modalities`, `output_modalities`, `capabilities`, `context`, `max_input_price`, `max_output_price`, `region`, `zero_data_retention`) keep a model when at least one of its endpoints passes all of them, include only those matching endpoints in `endpoints`, and recompute the model-level summary fields from them. Routing policies match `q` and `owned_by` (their `owned_by` is `edenai`), are ordered with the models by `sort` (by last update for `newest`, last for `price` and `context`), and are dropped by any endpoint filter.
 
 `/v3/search/models` and `/v3/videos/models` only support `zero_data_retention`.
 

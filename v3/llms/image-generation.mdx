@@ -122,7 +122,7 @@ print(result.data[0].url or result.data[0].b64_json[:60])
 | `quality` | no | `standard`, `hd`, `auto` — accepted values depend on the model |
 | `response_format` | no | `url` or `b64_json`, forwarded to providers that honor it |
 
-Unknown fields are forwarded to the provider unchanged.
+Only listed provider-specific image parameters are forwarded to the provider (`background`, `input_fidelity`, `moderation`, `output_compression`, `output_format`, `partial_images`, `quality`, `response_format`, `style`, `add_watermark`, `aspect_ratio`, `cfg_scale`, `enhance_prompt`, `guidance_scale`, `height`, `image_size`, `negative_prompt`, `num_inference_steps`, `output_mime_type`, `person_generation`, `prompt_upsampling`, `raw`, `resolution`, `safety_filter_level`, `safety_tolerance`, `seed`, `steps`, `style_preset`, `watermark`, and `width`). Any other undeclared top-level field is refused with `422`.
 
 ## Response format
 

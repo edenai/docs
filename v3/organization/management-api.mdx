@@ -109,7 +109,7 @@ inference key (`sk-eden-…`) and then manages that member's personal policies.
 
 | Method & path | Scope | Purpose |
 |---------------|-------|---------|
-| `GET /v3/manage/members` | `manage:read` | List active members and the owner, each with their role, guardrail, rate limit, directory groups and active keys |
+| `GET /v3/manage/members` | `manage:read` | List active members and the owner, each with their `id`, role, guardrail, `own_limits`, rate limit, directory groups and active keys |
 | `POST /v3/manage/members` | `manage:write` | Invite a person by email (creates an account if needed, sends invitation in the owner's name). Returns `invited`, `resent` or `pending_acceptance` |
 | `GET /v3/manage/members/{email}` | `manage:read` | Read one member by email |
 | `PATCH /v3/manage/members/{email}` | `manage:write` | Set or clear a member's guardrail (`guardrail_id` or null) |
@@ -130,7 +130,7 @@ inference key (`sk-eden-…`) and then manages that member's personal policies.
 
 ### Guardrails
 
-A [guardrail](/v3/organization/guardrails) bundles a budget cap, rate limit and model-access rules. It applies to whatever it is assigned: a key, a member, a role, or the whole organization as the default.
+A [guardrail](/v3/organization/guardrails) bundles a budget cap, rate limit and model-access rules. It applies to whatever it is assigned: a key, a member, a role, or the whole organization as the default. Private per-member and per-key own limits are excluded from `/v3/manage/guardrails` (members' `own_limits` are returned on `/v3/manage/members` and cannot be set through `/v3/manage` yet).
 
 | Method & path | Scope | Purpose |
 |---------------|-------|---------|

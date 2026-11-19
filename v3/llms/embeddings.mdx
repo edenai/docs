@@ -172,6 +172,7 @@ The first hit should be the document about the `cost` field. Swap in your own co
 | `metadata` | object | no | Accepted, but not sent to the provider and not a tag. To split your usage per client or project, use [tags](/v3/general/tags). |
 | `fallbacks` | string[] | no | Embedding models to try, in order, if the primary model fails. Each is a `provider/model` id or a model name with no provider prefix. At most 7. |
 | `routing` | object | no | How to pick between the providers that serve a model named without a provider prefix, in `model` and in `fallbacks`. Takes the fields described in [provider routing](/v3/llms/provider-routing), including `zero_data_retention`. Routing policies, `router_candidates` and `session_id` apply to chat only and have no effect here. |
+| `extra_body` | object | no | Additional provider-specific body fields forwarded to the underlying provider (used by clients such as the Vercel AI SDK). Platform fields inside `extra_body` (such as `api_base`, `vertex_credentials`, or `aws_*`) are refused with `422`. |
 
 Unknown top-level fields are forwarded to the underlying provider, so provider-specific options can be passed through unchanged. `routing` and `fallbacks` are not forwarded. A malformed `routing` or `fallbacks`, such as a string where a list is expected, returns a `422`.
 

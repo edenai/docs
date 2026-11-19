@@ -14,7 +14,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "LLM API", "chat completion", "OpenAI compatible"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-11-17T00:00:00Z"
+  dateModified="2026-11-19T00:00:00Z"
 />
 
 Use the `/v3/models` endpoint to retrieve all LLM models available through Eden AI, along with their capabilities: input modalities, reasoning, web search, and function calling.
@@ -98,6 +98,7 @@ Each entry includes the model's identity, context window, capabilities, pricing,
       "hugging_face_id": null,
       "open_weights": null,
       "knowledge_cutoff": null,
+      "reasoning": null,
       "alias_of": "google/gemini-3.6-flash"
     }
   ]
@@ -153,7 +154,7 @@ The key is optional here: without one, the listing holds the catalog only.
 What to expect from the shape:
 
 - **`id` is the routable name.** Send it as `model` and Eden AI picks which provider serves it. Rerank is the exception: `POST /v3/rerank` refuses a name without its provider with `400`, so from `/v3/rerank/models` send one of the `endpoints[].id` values instead.
-- **Top-level fields summarise the model across its endpoints.** `context_length` is the largest window among the endpoints. `capabilities` is the union across endpoints, so a flag is true and a modality listed when any endpoint supports it. `pricing` carries the full price list of the cheapest endpoint for a typical call (untagged endpoints only, since an `@region` variant prices a tagged call), identified by `pricing_endpoint`; among endpoints at the same input and output prices, it picks the one with the cheapest cache reads, then cache writes (an endpoint that states no cache rate comes after those that do), then the model's own lab when it is one of them. Both are `null` when no endpoint has a price. A routed call is billed at the prices of the provider that served it. `regions` lists every region where at least one endpoint runs, sorted by code. `hugging_face_id`, `open_weights` and `knowledge_cutoff` describe the model itself, so the entry shows the value its endpoints state. If the endpoints that state one disagree, the entry shows `null` for it, and each endpoint in `endpoints` keeps its own.
+- **Top-level fields summarise the model across its endpoints.** `context_length` is the largest window among the endpoints. `capabilities` is the union across endpoints, so a flag is true and a modality listed when any endpoint supports it. `pricing` carries the full price list of the cheapest endpoint for a typical call (untagged endpoints only, since an `@region` variant prices a tagged call), identified by `pricing_endpoint`; among endpoints at the same input and output prices, it picks the one with the cheapest cache reads, then cache writes (an endpoint that states no cache rate comes after those that do), then the model's own lab when it is one of them. Both are `null` when no endpoint has a price. A routed call is billed at the prices of the provider that served it. `regions` lists every region where at least one endpoint runs, sorted by code. `hugging_face_id`, `open_weights`, `knowledge_cutoff` and `reasoning` describe the model itself, so the entry shows the value its endpoints state. If the endpoints that state one disagree, the entry shows `null` for it, and each endpoint in `endpoints` keeps its own.
 - **Each entry in `endpoints` is the same object the default view returns**, with that provider's own pricing, capabilities, context length, and regions. To compare providers or see per-provider values, read `endpoints`.
 - **`owned_by` changes meaning between the views.** On a grouped entry it is who authored the model (`openai`); on an endpoint entry it is the provider selling it (`azure`).
 - **`created` is the newest endpoint's timestamp**, and `endpoint_count` equals `endpoints.length`.
@@ -242,6 +243,33 @@ Both are `null` for a closed-weight model (OpenAI's GPT, Anthropic's Claude, Goo
 Every endpoint entry also carries `knowledge_cutoff`: the date the model's training data ends, as `YYYY-MM-DD`. The model knows nothing about events after it unless you put them in the prompt, for example with [web search](/v3/llms/web-search). It belongs to the model, so every provider shows the same date. `null` means its lab has not published one.
 
 In the [grouped view](#grouped-view-one-entry-per-routable-name), these three fields are also at the top level of each model entry, as the value its endpoints state, or `null` when they disagree.
+
+## Reasoning
+
+Every endpoint entry whose `capabilities.supports_reasoning` is `true` can carry a `reasoning` object describing what a caller can set on the model:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `mandatory` | `boolean \| null` | `true` when the model always reasons and reasoning cannot be turned off, `false` when reasoning is optional |
+| `supported_efforts` | `string[] \| null` | The `reasoning_effort` values the model accepts, lowest first: `none`, `minimal`, `low`, `medium`, `high`, `xhigh`, `max` |
+| `default_effort` | `string \| null` | The `reasoning_effort` value the model uses when the request sets none |
+| `supports_max_tokens` | `boolean \| null` | `true` when the model accepts a reasoning token budget |
+
+Each subfield is `null` when unknown (meaning no source states it, not `false`). The `reasoning` object itself is `null` when no details are available or when the entry's `capabilities.supports_reasoning` is `false`.
+
+```json
+{
+  "id": "openai/gpt-5.6-sol",
+  "reasoning": {
+    "mandatory": true,
+    "supported_efforts": ["low", "medium", "high", "xhigh", "max"],
+    "default_effort": "medium",
+    "supports_max_tokens": null
+  }
+}
+```
+
+In the [grouped view](#grouped-view-one-entry-per-routable-name), `reasoning` also appears at the top level of each model entry when the endpoints that state it agree, or as `null` when they disagree (with each entry in `endpoints` keeping its own).
 
 ## Model aliases
 

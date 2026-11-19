@@ -80,7 +80,7 @@ response = client.chat.completions.create(
 print(response.choices[0].message.content)
 ```
 
-In practice your OpenTelemetry SDK writes this header for you: its HTTP instrumentation adds it to every request your OpenAI or Anthropic client makes. Without one, each call is a trace of its own. When your app does not record its trace (the header's sampled flag is off), its calls are not sent either.
+In practice your OpenTelemetry SDK writes this header for you: its HTTP instrumentation adds it to every request your OpenAI or Anthropic client makes. Without one, each call is a trace of its own. When your app does not record its trace (the header's sampled flag is off), its calls are not sent either to a destination that nests your calls under your trace.
 
 LangSmith and Braintrust drop a span whose parent they never receive, so their destinations keep each call in a trace of its own unless you turn on **Nest under your app's trace**. Turn it on only when your app sends its own spans to the same project; otherwise those calls won't appear.
 

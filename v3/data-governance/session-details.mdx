@@ -36,7 +36,7 @@ To show the calls of one conversation together in Monitoring, Eden AI records a 
 
 ## Expert models
 
-Calls to expert models through `/v3/universal-ai` (OCR, speech, image, translation...) join a session and a trace the same way: send the same `session_id` body field or `x-session-id` header, and the same `traceparent`. Only those ids are recorded for them. Monitoring lists them in the session with what they were billed for, such as pages or characters. [Trace export](/v3/organization/trace-export) sends LLM calls only.
+Calls to expert models through `/v3/universal-ai` (OCR, speech, image, translation...) join a session and a trace the same way: send the same `session_id` body field or `x-session-id` header, and the same `traceparent`. Only those ids are recorded for them. Monitoring lists them in the session with what they were billed for, such as pages or characters. [Trace export](/v3/organization/trace-export) sends them too, without their input or output.
 
 ## What is not recorded
 

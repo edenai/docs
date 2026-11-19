@@ -105,7 +105,7 @@ Each call is one span named after its operation and model: `chat <model>` for a 
 
 | Attribute | Value |
 | --- | --- |
-| `gen_ai.request.model`, `gen_ai.response.model`, `gen_ai.provider.name` | The model you asked for, the one that answered, and its provider, under the conventions' names (`aws.bedrock`, `gcp.vertex_ai`, `mistral_ai`...) |
+| `gen_ai.request.model`, `gen_ai.response.model`, `gen_ai.provider.name` | The model you asked for, the one that answered, and its provider: under the conventions' name when it has one (`aws.bedrock`, `gcp.vertex_ai`, `mistral`...), else as Eden AI names it. A Universal AI call's provider is always as Eden AI names it: Amazon Transcribe is `amazon`, not `aws.bedrock` |
 | `gen_ai.usage.input_tokens`, `gen_ai.usage.output_tokens`, `gen_ai.usage.cache_read.input_tokens`, `gen_ai.usage.cache_creation.input_tokens` (also as `gen_ai.usage.cache_write.input_tokens`), `gen_ai.usage.reasoning.output_tokens` | Token counts, on the call's span only. The input count is the whole prompt, the tokens read from and written to the cache included. |
 | `gen_ai.request.temperature`, `top_p`, `top_k`, `max_tokens`, `frequency_penalty`, `presence_penalty`, `stop_sequences`, `seed`, `choice.count`, `reasoning.level`, `previous_response.id`, and `gen_ai.output.type` | The parameters your request set, each only when set (`choice.count` when `n` is not 1; `gen_ai.output.type` is `json` or `text`, never your schema) |
 | `gen_ai.tool.definitions` | The tools your request offered: each one's type and name, and with prompts sent, their descriptions and parameters too when they fit the tool's attribute size |
@@ -127,6 +127,8 @@ Each call is one span named after its operation and model: `chat <model>` for a 
 | `edenai.response.tool_calls`, `edenai.structured_output.requested`, `edenai.structured_output.valid`, `edenai.tool_calls.valid` | How many tools the answer called, and whether the structured output and tool calls Eden AI checked were valid |
 
 Prompts and answers are sent unless you turn on **Privacy mode** for the destination, and never for a call under [zero data retention](/v3/data-governance/compliance-policies). They follow the conventions' message format, in `gen_ai.system_instructions`, `gen_ai.input.messages` and `gen_ai.output.messages`. Long texts and long histories are shortened, keeping the conversation's opening, the call's latest message, and as many of the latest messages as fit.
+
+For the other LLM APIs, only the prompt you wrote is sent, as one user message: the text to moderate, the text to speak, an image's prompt. Never their output (a moderation's verdict, images, audio), and never the texts you embed or the documents you rerank.
 
 Never sent: what Eden AI pays a provider, a member's email, the provider key that answered, sessions Eden AI grouped on its own, and its internal checksums of your messages.
 

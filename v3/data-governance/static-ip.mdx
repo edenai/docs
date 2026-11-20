@@ -47,6 +47,8 @@ Static IP applies to files **Eden AI downloads on your behalf**:
 - Both synchronous and asynchronous features, including the fetch performed by a queued job
 - Audio file URLs for speech-to-text
 
+It also applies to [trace export](/v3/organization/trace-export), for a destination at an HTTPS endpoint on port 443.
+
 It does **not** apply to:
 
 - **Inbound requests.** This is about traffic leaving Eden AI, not reaching it. Your calls to `api.edenai.run` are unaffected, and you do not need to whitelist anything to call the API.

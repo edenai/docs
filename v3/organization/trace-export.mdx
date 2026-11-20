@@ -19,7 +19,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   dateModified="2026-11-19T00:00:00Z"
 />
 
-Eden AI can send each LLM call and each [Universal AI](#universal-ai-calls) call your organization makes to the tracing tool your team already uses, as an [OpenTelemetry](https://opentelemetry.io/) span. Calls that carry your own trace context join your traces, so the model call shows up under the request that made it.
+Eden AI can send each LLM call and each [Universal AI](#universal-ai-calls) call your organization makes through the `/v3` API to the tracing tool your team already uses, as an [OpenTelemetry](https://opentelemetry.io/) span. Calls that carry your own trace context join your traces, so the model call shows up under the request that made it.
 
 ## Add a destination
 
@@ -48,7 +48,7 @@ An organization admin connects a tool in **Settings > Trace Export**: pick it, c
 
 Every tool also takes extra headers, for a proxy or a gateway in front of it.
 
-A destination receives the calls made after it is added; earlier calls are not sent.
+A destination receives the calls made after it is added; earlier calls are not sent. An organization can have up to 10 destinations, and a change to one applies from the next call.
 
 Spans are sent as OTLP/HTTP protobuf, gzip-compressed except to Arize AX, which does not accept it, by a background worker, after your call has been answered: export never slows a call down. Credentials are stored encrypted and never shown again. When you edit a destination, leave them blank to keep them; if you move its endpoint to another origin (another scheme, host or port), enter them again, since saved credentials are only ever sent where they were entered for. To send to another tool, connect that tool as a new destination. For an OTLP collector, or a tool whose key is optional (Phoenix), **Remove Saved Headers** sends the next calls with none. The page shows how many calls each destination received and its last error.
 
@@ -108,7 +108,7 @@ Each call is one span named after its operation and model: `chat <model>` for a 
 | `gen_ai.request.model`, `gen_ai.response.model`, `gen_ai.provider.name` | The model you asked for, the one that answered, and its provider: under the conventions' name when it has one (`aws.bedrock`, `gcp.vertex_ai`, `mistral`...), else as Eden AI names it. A Universal AI call's provider is always as Eden AI names it: Amazon Transcribe is `amazon`, not `aws.bedrock` |
 | `gen_ai.usage.input_tokens`, `gen_ai.usage.output_tokens`, `gen_ai.usage.cache_read.input_tokens`, `gen_ai.usage.cache_creation.input_tokens` (also as `gen_ai.usage.cache_write.input_tokens`), `gen_ai.usage.reasoning.output_tokens` | Token counts, on the call's span only. The input count is the whole prompt, the tokens read from and written to the cache included. |
 | `gen_ai.request.temperature`, `top_p`, `top_k`, `max_tokens`, `frequency_penalty`, `presence_penalty`, `stop_sequences`, `seed`, `choice.count`, `reasoning.level`, `previous_response.id`, and `gen_ai.output.type` | The parameters your request set, each only when set (`choice.count` when `n` is not 1; `gen_ai.output.type` is `json` or `text`, never your schema) |
-| `gen_ai.tool.definitions` | The tools your request offered: each one's type and name, and with prompts sent, their descriptions and parameters too when they take at most 16,000 characters and fit the tool's attribute size. A coding agent's tools are usually larger, and the same on every call: they go by name. |
+| `gen_ai.tool.definitions` | The tools your request offered: each one's type and name, and with prompts sent, their descriptions and parameters too when they fit the tool's attribute size |
 | `edenai.request.tool_choice`, `edenai.request.models` | How the model could pick tools (`auto`, `required`, `function`...), and the models you allowed, the fallbacks after the first |
 | `openai.request.service_tier`, `openai.response.service_tier` | The service tier asked for (unless `auto`) and the one that answered |
 | `gen_ai.response.id`, `gen_ai.response.finish_reasons` | The answer's id and why it stopped |
@@ -126,7 +126,7 @@ Each call is one span named after its operation and model: `chat <model>` for a 
 | `edenai.message_count`, `edenai.input_kind`, `edenai.session.source`, `edenai.coding_agent.via`, `edenai.coding_agent.entrypoint`, `edenai.agent.thread`, `edenai.agent.turn`, `edenai.agent.step` | The call's step: how many messages it carried, whether it answered a new message or tool results, how its session was named, and what the coding agent said of it |
 | `edenai.response.tool_calls`, `edenai.structured_output.requested`, `edenai.structured_output.valid`, `edenai.tool_calls.valid` | How many tools the answer called, and whether the structured output and tool calls Eden AI checked were valid |
 
-Prompts and answers are sent unless you turn on **Privacy mode** for the destination, and never for a call under [zero data retention](/v3/data-governance/compliance-policies). Turning either on applies at once, to the calls still waiting to be sent too: they go without their prompts and answers. They follow the conventions' message format, in `gen_ai.system_instructions`, `gen_ai.input.messages` and `gen_ai.output.messages`. Long texts and long histories are shortened, keeping the conversation's opening, the call's latest message, and as many of the latest messages as fit.
+Prompts and answers are sent unless you turn on **Privacy mode** for the destination. Turning it on applies at once, to the calls still waiting to be sent too. A call waits with its prompts and answers for 5 minutes at most: if your tool cannot take it by then, it is sent without them. Under [zero data retention](/v3/data-governance/compliance-policies), Eden AI never stores them, not even while a call waits: they are sent to your tool right after the call and retried for about 2 minutes, then the call is sent without them. They follow the conventions' message format, in `gen_ai.system_instructions`, `gen_ai.input.messages` and `gen_ai.output.messages`. Long texts and long histories are shortened, keeping the conversation's opening, the call's latest message, and as many of the latest messages as fit.
 
 Moderation, text to speech, and image generation and editing send only the prompt you wrote, as one user message: the text to moderate, the text to speak, the image's prompt. Never their output (a moderation's verdict, images, audio). Every other LLM API sends nothing you wrote: not the texts you embed, the documents you rerank, or the audio you transcribe and its prompt.
 
@@ -166,5 +166,6 @@ Each preset also gets what its tool reads beyond the conventions, so a call show
 
 - **Calls sent**: a share of calls per destination. When the call names a session, the share is picked by session; otherwise by call. Failed calls are always sent, unless they join a caller's trace that was not sampled: when you send a `traceparent` and the destination nests calls under your trace, its sampled flag decides first, for failed calls too.
 - **Retries**: when a destination is unreachable, times out, or answers 429, 502, 503 or 504, Eden AI retries with backoff, doubling from 2 seconds up to 5 minutes, give or take a fifth, or waiting as long as its `Retry-After` header asks, up to 5 minutes per wait. After 10 failures in a row (about 13.5 minutes when the waits double, longer when `Retry-After` asks for more), the calls waiting for it are dropped. Any other error answer drops the batch at once, since sending it again would fail the same way.
-- **Queue**: each destination holds up to 1,000 calls or 8 MB waiting to be sent. Calls past that, and calls waiting longer than 24 hours, are dropped. Some tools refuse older spans while still answering success, so calls are dropped sooner for them: after 55 minutes for Dynatrace, 17 hours for Datadog, 23 hours for Logfire and New Relic. Every dropped call is counted on the destination.
+- **Queue**: each destination holds up to 12,000 calls or 256 MB waiting to be sent. Calls past that, and calls waiting longer than 24 hours, are dropped. Some tools refuse older spans while still answering success, so calls are dropped sooner for them: after 55 minutes for Dynatrace, 17 hours for Datadog, 23 hours for Logfire and New Relic. Every dropped call is counted on the destination.
 - **Posts**: up to 100 spans each, and under 900 KB for New Relic.
+- **Source address**: calls are posted from addresses that change. With [Static IP](/v3/data-governance/static-ip) on your organization, calls to an HTTPS endpoint on port 443 leave from its fixed address.

@@ -167,7 +167,7 @@ Each entry in the `models` list contains:
 |-------|-------------|
 | `model` | Full model identifier string (e.g. `text/moderation/google`) |
 | `pricing` | Cost information including `price`, `price_unit_quantity`, `price_unit_type` (such as `request`, `second`, `execution_time`, `character`), and `currency` (`USD`) |
-| `regions` | Regions the model is served from, as `code` and `name` objects (e.g. `eu` and `Europe`); empty when no region is recorded for the model |
+| `regions` | Regions the model is served from, as `code` and `name` objects (e.g. `eu` and `Europe`); empty when no region is recorded for the model. On synchronous `POST /v3/universal-ai` calls, you can append `@region` (for example `@eu`, matching a `code` here) to `model` or `fallbacks` to pin a region when the provider supports multiple regions on that subfeature (async jobs on `POST /v3/universal-ai/async` return `400` if region-tagged) |
 | `documentation_url` | Direct URL to official provider documentation for the model or provider, or `null` |
 | `requires_reference_images` | Boolean flag indicating whether the model requires `reference_images` (e.g. image edit models) |
 | `requires_video` | Boolean flag indicating whether the model requires a source `video` input (e.g. video editing models) |

@@ -191,6 +191,7 @@ The same check applies to every provider you list in the request — including `
 - **Sandbox works the same way.** Calls authenticated with `sandbox_api_token` honor the same regional filtering — point your sandbox traffic at `api.eu.edenai.run` to mirror the production routing.
 - **Fallback respects the region.** When a fallback list is provided, every entry must be EU-eligible. Non-EU fallbacks trigger a 451 the same way a non-EU primary does.
 - **No silent downgrade.** There is no automatic re-route from the EU endpoint to the global endpoint. If no EU-eligible provider exists for your request, the call fails — it does not leak out of the region.
+- **Universal AI region pinning.** On `POST /v3/universal-ai`, providers that support multiple regions on a subfeature are pinned to `eu` when called via `api.eu.edenai.run`. You can also pin a region explicitly on synchronous calls by appending `@region` (for example `@eu`) to `model` or `fallbacks`. Sending a conflicting tag (such as `@us` on `api.eu.edenai.run`) returns `451`, an unsupported region tag returns `400`, and async jobs (`POST /v3/universal-ai/async`) cannot be pinned to a chosen region and return `400`.
 
 ## Next Steps
 

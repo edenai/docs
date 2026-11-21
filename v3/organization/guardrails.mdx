@@ -14,7 +14,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "guardrails", "usage policy", "access control", "rate limits", "model restrictions", "budget cap", "spending limit"]}
   datePublished="2026-06-11T00:00:00Z"
-  dateModified="2026-11-16T00:00:00Z"
+  dateModified="2026-11-17T00:00:00Z"
 />
 
 A **guardrail** is a reusable usage policy. It sets:
@@ -123,7 +123,7 @@ Set the number of **Requests** and a window: second, minute, hour or day. Reques
 A guardrail does nothing until it is attached. Attach it under **Assignment** on the guardrail's page, or:
 
 - **A role**: from **Settings → Roles & Permissions**, so everyone with that role inherits the policy.
-- **A member**: from **Settings → Members**, to apply it to one person.
+- **A member**: from **Settings → Members**, to apply it to one person (or when inviting them).
 - **An API key**: to constrain a single key, for example a shared or CI key.
 - **The organisation default**: from the **Default guardrail** card in **Settings → Guardrails**. It applies to members with no guardrail of their own or from their role. Without a default, they have no limits: every model, your plan's rate limit, no budget.
 

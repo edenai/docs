@@ -14,7 +14,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "RBAC", "roles", "permissions", "organisation"]}
   datePublished="2026-06-11T00:00:00Z"
-  dateModified="2026-10-26T00:00:00Z"
+  dateModified="2026-11-17T00:00:00Z"
 />
 
 Eden AI provides team and organisation management features for companies that need structured access control, role-based permissions, and governance over their AI usage.
@@ -27,9 +27,14 @@ All organisation management lives under **Settings → Organization** in the [Ed
 
 ## Members & Invitations
 
-Go to **Settings → Members** to manage your team. Click **Add member** to invite teammates by email. Eden AI creates an account for each collaborator and sends them an invitation. Members share the organisation's credit balance and can be given their own role and [guardrails](/v3/organization/guardrails).
+Go to **Settings → Members** to manage your team. Click **Add member** to invite teammates by email, optionally assigning a role and a [guardrail](/v3/organization/guardrails) upfront:
 
-The organisation **owner** (the account that created the organisation) always has full access and is not affected by role restrictions.
+- **New accounts**: Eden AI creates an account and applies the assigned role and guardrail immediately.
+- **Existing Eden AI accounts**: the teammate receives the assigned role and guardrail once they accept the invitation or sign in through your identity provider.
+
+Invitation links expire after **48 hours**. Pending invitations appear in **Settings → Members** with who sent them, when they were sent, and when they expire, and you can update their role or guardrail or withdraw them before acceptance. An active pending invitation counts toward your organisation's seat limit while its link is valid (resending an invitation does not use an extra seat, and expired invitations hold no seat until resent). Roles and guardrails referenced by a pending invitation cannot be deleted until the invitation is updated or withdrawn.
+
+Members share the organisation's credit balance. The organisation **owner** (the account that created the organisation) always has full access and is not affected by role restrictions.
 
 ## Roles & Permissions
 

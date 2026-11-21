@@ -14,7 +14,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "LLM API", "chat completion", "OpenAI compatible"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-11-19T00:00:00Z"
+  dateModified="2026-11-20T00:00:00Z"
 />
 
 Use the `/v3/models` endpoint to retrieve all LLM models available through Eden AI, along with their capabilities: input modalities, reasoning, web search, and function calling.
@@ -99,6 +99,7 @@ Each entry includes the model's identity, context window, capabilities, pricing,
       "open_weights": null,
       "knowledge_cutoff": null,
       "reasoning": null,
+      "supported_parameters": null,
       "alias_of": "google/gemini-3.6-flash"
     }
   ]
@@ -296,6 +297,18 @@ Every endpoint entry also carries `reasoning`, which says what you can set on a 
 Each field is `null` when it is not known, which is not the same as "no". `reasoning` itself is `null` when we have no details for the model, and on any entry whose `capabilities.supports_reasoning` is `false`. Like the fields above it belongs to the model, so every provider shows the same value.
 
 In the [grouped view](#grouped-view-one-entry-per-routable-name), `hugging_face_id`, `open_weights`, `knowledge_cutoff` and `reasoning` are also at the top level of each model entry, as the value its endpoints state, or `null` when they disagree.
+
+## Supported parameters
+
+Every chat endpoint entry carries `supported_parameters`, the request parameters that reach that provider for that model:
+
+```json
+"supported_parameters": ["temperature", "top_p", "max_tokens", "stop", "tools", "tool_choice", "response_format", "reasoning_effort"]
+```
+
+A parameter is listed when Eden AI passes it on to the provider and, where the provider publishes its own list, the provider accepts it. One you send that is not listed may be dropped before the call, ignored, or refused by the provider. The list covers `temperature`, `top_p`, `max_tokens` (and `max_completion_tokens`), `stop`, `seed`, `frequency_penalty`, `presence_penalty`, `logit_bias`, `logprobs`, `top_logprobs`, `tools`, `tool_choice`, `response_format`, `reasoning_effort` and `verbosity`.
+
+It belongs to the endpoint, not the model: the same model can take `seed` on one provider and not on another. In the [grouped view](#grouped-view-one-entry-per-routable-name) it is on each item of `endpoints` only. It is `null` when we don't know, and on models other than chat.
 
 ## Model aliases
 

@@ -16,7 +16,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "static IP", "IP whitelisting", "whitelist IP address", "allowlist", "firewall", "data residency"]}
   datePublished="2026-09-15T00:00:00Z"
-  dateModified="2026-09-15T00:00:00Z"
+  dateModified="2026-11-20T00:00:00Z"
 />
 
 When you send a file as a URL instead of an upload, Eden AI has to reach out to that URL and download the file. By default those downloads leave our infrastructure from a shared pool of addresses that changes over time, which is a problem if the file sits behind a firewall or an IP whitelist on your side.
@@ -46,6 +46,8 @@ Static IP applies to files **Eden AI downloads on your behalf**:
 - Any [Universal AI](/v3/quickstart/first-expert-model-call) call where `input.file` is a URL rather than a file ID from `/v3/upload`: OCR and the document parsers, image, video, translation
 - Both synchronous and asynchronous features, including the fetch performed by a queued job
 - Audio file URLs for speech-to-text
+
+It also applies to [trace export](/v3/organization/trace-export), for a destination at an HTTPS endpoint on port 443.
 
 It does **not** apply to:
 

@@ -14,14 +14,14 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "expert models", "multi-provider"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-08-31T00:00:00Z"
+  dateModified="2026-11-19T00:00:00Z"
 />
 
 The `provider_params` field lets you pass provider-specific parameters that aren't part of Eden AI's unified schema. This gives you access to advanced or niche options offered by individual providers without breaking the standard request format.
 
 ## How It Works
 
-Add a `provider_params` object to any Universal AI request. Its contents are forwarded to the provider alongside the standard `input` fields. On most subfeatures any parameter is forwarded as-is; video generation and the web subfeatures accept only the parameters on an allowlist (see [Parameter Validation and Allowlisting](#parameter-validation-and-allowlisting)).
+Add a `provider_params` object to any Universal AI request. Every subfeature enforces a per-provider allowlist: only parameters on the provider's list are forwarded alongside the standard `input` fields, and any other parameter is rejected with `400 Bad Request` (see [Parameter Validation and Allowlisting](#parameter-validation-and-allowlisting)).
 
 ```json
 {
@@ -186,13 +186,12 @@ print(response.json())
 
 ## Parameter Validation and Allowlisting
 
-For most subfeatures, Eden AI forwards `provider_params` directly to the provider without validation. Invalid parameters may cause provider errors.
+`provider_params` is default-deny on every Universal AI subfeature. Each subfeature accepts only the parameters on a per-provider allowlist:
 
-These subfeatures accept only the parameters on a per-provider allowlist, which each page lists under Provider Parameters:
-- **Video generation:** [`video/generation_async`](/v3/expert-models/features/video/generation-async#provider-parameters)
-- **Web:** [`web/search`](/v3/expert-models/features/web/search#provider-parameters), [`web/scraping`](/v3/expert-models/features/web/scraping#provider-parameters), [`web/map`](/v3/expert-models/features/web/map#provider-parameters), [`web/crawl_async`](/v3/expert-models/features/web/crawl-async#provider-parameters), [`web/batch_scrape_async`](/v3/expert-models/features/web/batch-scrape-async#provider-parameters), [`web/structured_extraction_async`](/v3/expert-models/features/web/structured-extraction-async#provider-parameters), and [`web/research_async`](/v3/expert-models/features/web/research-async#provider-parameters)
+- **Subfeatures with provider parameters** (such as video generation, web subfeatures, image generation, background removal, text to speech, speech to text, text anonymization, text AI detection, and plagiarism detection): only the listed request parameters for that provider are accepted.
+- **All other subfeatures** (such as OCR, translation, face features, and moderation): every provider has an empty allowlist (`[]`), so any non-empty `provider_params` is rejected.
 
-Any other parameter is rejected with a `400 Bad Request` error naming the parameters that were refused. The check covers every provider the request can reach: with [`fallbacks`](/v3/general/fallback), each parameter must be allowed for the provider in `model` and for every fallback provider, or the whole request is rejected.
+Any parameter not on the allowlist (checked case-insensitively at every depth, including empty objects or arrays) is rejected with a `400 Bad Request` error naming the parameters that were refused. The check covers every provider the request can reach: with [`fallbacks`](/v3/general/fallback), each parameter must be allowed for the provider in `model` and for every fallback provider, or the whole request is rejected.
 
 ### Discovering Allowed Parameters
 
@@ -258,9 +257,9 @@ Each entry is a path in the provider's own request format, lowercased, with nest
 }
 ```
 
-Likewise, Google's `aspectratio` is sent as `aspectRatio`. The allowlist check ignores case, so a lowercased `aspectratio` passes it, but the provider then receives a key it does not recognize. An empty list means the provider accepts no `provider_params`, and `null` means the subfeature does not restrict them.
+Likewise, Google's `aspectratio` is sent as `aspectRatio`. The allowlist check ignores case, so a lowercased `aspectratio` passes it, but the provider then receives a key it does not recognize. Every subfeature returns a `provider_params` object mapping each provider to its allowlist; an empty list (`[]`) means the provider accepts no `provider_params`.
 
-To list every subfeature that restricts `provider_params`, call `GET /v3/info?include=schemas` (see [List Expert Models](/v3/expert-models/listing-models#bulk-schema-discovery)) and keep the subfeatures whose `provider_params` is not `null`.
+To inspect `provider_params` across all subfeatures at once, call `GET /v3/info?include=schemas` (see [List Expert Models](/v3/expert-models/listing-models#bulk-schema-discovery)) and read each subfeature's `provider_params` field.
 
 You can also check the `documentation_url` field returned for each model in `GET /v3/info` to view the provider's official documentation.
 
@@ -268,7 +267,7 @@ You can also check the `documentation_url` field returned for each model in `GET
 
 <Note>
 - Available parameters vary by provider and feature. Refer to the provider's own documentation for what each one does.
-- `provider_params` are sent to every provider the request reaches, including [fallbacks](/v3/general/fallback). On subfeatures without an allowlist, a parameter one fallback provider does not support can make that attempt fail.
+- `provider_params` are sent to every provider the request reaches, including [fallbacks](/v3/general/fallback), and every parameter must be on the allowlist of both the primary provider and every fallback provider.
 </Note>
 
 ## Next Steps

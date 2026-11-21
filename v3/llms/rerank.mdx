@@ -114,7 +114,7 @@ curl -X POST https://api.edenai.run/v3/rerank \
 | `extra_headers` | object | no | Additional HTTP headers forwarded to the provider. Credential headers are refused. |
 | `tags` | object | no | Key/value labels recorded with the call, for [usage tracking](/v3/general/tags). |
 
-A non-empty `fallbacks` list is refused with `400`. Any other top-level field is forwarded to the provider. Fields that decide the provider connection, the region, or how the call is made, priced or answered, such as `api_key`, `api_base` or `base_url`, are refused with `422`.
+Only the provider-specific rerank parameters `max_chunks_per_doc`, `max_tokens_per_doc`, `rank_fields`, and `truncation` are forwarded to the provider. Any other undeclared top-level field, including `fallbacks` and fields that decide the provider connection, region, or how the call is made, priced, or answered (such as `api_key`, `api_base`, or `base_url`), is refused with `422`.
 
 ### Response
 
@@ -188,7 +188,7 @@ When a provider reports no billable count, or reports zero, the call is charged 
 - **Model routing.** `@edenai` is refused with `400`. Name a rerank model directly, for example `vertex/semantic-ranker-default-004`.
 - **Model names without a provider.** `semantic-ranker-default-004` answers `400`. Name it as `provider/model`, for example `vertex/semantic-ranker-default-004`.
 - **Models that are not rerank models.** A chat model such as `openai/gpt-5` answers `400` before any provider is called.
-- **Fallbacks.** A non-empty `fallbacks` list answers `400`. Send one model per request.
+- **Fallbacks.** `fallbacks` is not forwarded and is refused with `422`. Send one model per request.
 - **Routing preferences other than zero data retention.** With a named `provider/model` there is no provider to choose, so `sort`, `order`, `allowed_providers`, `ignored_providers` and `max_price` have no effect.
 - **Routing policies.** `policy/{name}` is not a rerank model.
 - **Non-text documents.** `documents` is a list of strings. Send the text of each passage; images and structured objects are refused with `422`.
@@ -198,9 +198,9 @@ When a provider reports no billable count, or reports zero, the call is charged 
 
 | Status | Meaning |
 |---|---|
-| `400` | `@edenai` routing, a model name without its provider, a non-empty `fallbacks` list, a region the model does not offer, a model that is not a rerank model, or a model that does not meet `routing.zero_data_retention`. |
+| `400` | `@edenai` routing, a model name without its provider, a region the model does not offer, a model that is not a rerank model, or a model that does not meet `routing.zero_data_retention`. |
 | `403` | A [guardrail](/v3/organization/guardrails) model rule does not allow the model, or your organization requires zero data retention and the model does not meet it. |
-| `422` | The body is invalid: an empty `query` or `documents`, more than 1,000 documents, a `top_n` of 0 or less, or a refused field. |
+| `422` | The body is invalid: an empty `query` or `documents`, more than 1,000 documents, a `top_n` of 0 or less, or a refused field (including `fallbacks` or any unlisted top-level parameter). |
 | `451` | The EU or another regional endpoint does not serve the model. |
 | `500` | The model's pricing row sets both rates or neither, so the call cannot be billed. |
 

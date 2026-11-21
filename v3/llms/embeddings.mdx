@@ -16,7 +16,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "LLM API", "chat completion", "OpenAI compatible"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-10-29T00:00:00Z"
+  dateModified="2026-11-19T00:00:00Z"
 />
 
 Embeddings turn text into numerical vectors that capture meaning. They are the foundation for [RAG pipelines](#use-cases), semantic search, recommendations, and clustering.
@@ -173,7 +173,7 @@ The first hit should be the document about the `cost` field. Swap in your own co
 | `fallbacks` | string[] | no | Embedding models to try, in order, if the primary model fails. Each is a `provider/model` id or a model name with no provider prefix. At most 7. |
 | `routing` | object | no | How to pick between the providers that serve a model named without a provider prefix, in `model` and in `fallbacks`. Takes the fields described in [provider routing](/v3/llms/provider-routing), including `zero_data_retention`. Routing policies, `router_candidates` and `session_id` apply to chat only and have no effect here. |
 
-Unknown top-level fields are forwarded to the underlying provider, so provider-specific options can be passed through unchanged. `routing` and `fallbacks` are not forwarded. A malformed `routing` or `fallbacks`, such as a string where a list is expected, returns a `422`.
+Only the provider-specific embedding parameters `auto_truncate`, `embedding_types`, `input_type`, `late_chunking`, `normalized`, `output_dimension`, `output_dimensionality`, `output_dtype`, `task`, `task_type`, `title`, `truncate`, and `truncation` are forwarded to the underlying provider. `routing` and `fallbacks` are not forwarded. Any other undeclared top-level field, or a malformed `routing` or `fallbacks` (such as a string where a list is expected), returns a `422`.
 
 ## Response
 
@@ -229,6 +229,7 @@ Common HTTP status codes returned by `/v3/embeddings`:
 | `401` | Missing or invalid `Authorization: Bearer` token. |
 | `402` | Insufficient credits. Top up from the dashboard. |
 | `404` | The `model` id does not exist or is not enabled on your account. |
+| `422` | Validation error: malformed `routing` or `fallbacks`, or an undeclared top-level field that is not in the forwarded list. |
 | `429` | Rate limit exceeded — back off and retry, or switch to a model with more headroom. |
 | `5xx` | Upstream provider error. Configure a [fallback](/v3/general/fallback) to route to a backup model. |
 

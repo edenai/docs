@@ -199,6 +199,7 @@
                 "divider": true,
                 "pages": [
                   "v3/llms/listing-models",
+                  "v3/llms/model-leaderboard",
                   "v3/llms/chat-completions",
                   "v3/llms/responses",
                   "v3/llms/embeddings",

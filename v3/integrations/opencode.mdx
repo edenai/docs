@@ -16,7 +16,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "OpenCode"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-11-02T00:00:00Z"
+  dateModified="2026-11-16T00:00:00Z"
 />
 
 [OpenCode](https://opencode.ai) is maintained in two release lines, OpenCode 1 and OpenCode 2. This page generates an `opencode.json` that lists every Eden AI model with function calling, connects your key, and covers both lines.
@@ -66,7 +66,7 @@ pip install requests
 python gen_opencode_config.py
 ```
 
-It fetches Eden AI's catalog, keeps every model that supports function calling, and adds an `edenai` provider to `~/.config/opencode/opencode.json` (on Windows: `%USERPROFILE%\.config\opencode\opencode.json`). Existing settings in that file are preserved, and only the `edenai` provider entry is replaced.
+It fetches Eden AI's catalog, keeps every model that supports function calling on all of its providers, and adds an `edenai` provider to `~/.config/opencode/opencode.json` (on Windows: `%USERPROFILE%\.config\opencode\opencode.json`). Existing settings in that file are preserved, and only the `edenai` provider entry is replaced.
 
 <CodeGroup>
 ```python gen_opencode_config.py
@@ -77,7 +77,7 @@ from pathlib import Path
 
 import requests
 
-MODELS_URL = "https://api.edenai.run/v3/models"
+MODELS_URL = "https://api.edenai.run/v3/models?view=models"
 BASE_URL = "https://api.edenai.run/v3"
 OUTPUT_TOKEN_CAP = 32000  # OpenCode caps max output tokens at 32k
 
@@ -90,14 +90,20 @@ def per_million(cost_per_token):
     return round(cost_per_token * 1_000_000, 6) if cost_per_token else 0
 
 
+def supports_tools(entry):
+    """OpenCode sends tool definitions with every request."""
+    return (entry.get("capabilities") or {}).get("supports_function_calling")
+
+
 models = requests.get(MODELS_URL, timeout=30).json()["data"]
 
 model_entries = {}
 for model in models:
-    caps = model.get("capabilities") or {}
-    if not caps.get("supports_function_calling"):
-        continue  # OpenCode sends tools with every request
+    # Eden AI routes a model name to any provider that serves it.
+    if not all(supports_tools(endpoint) for endpoint in model["endpoints"]):
+        continue
 
+    caps = model.get("capabilities") or {}
     pricing = model.get("pricing") or {}
     cost = {
         "input": per_million(pricing.get("input_cost_per_token")),
@@ -154,16 +160,18 @@ Prefer an environment variable? Skip `/connect` and add `"apiKey": "{env:EDENAI_
 opencode
 ```
 
-Run `/models` and pick any Eden AI model. To set a default instead, add a top-level `model` key to `~/.config/opencode/opencode.json` using `edenai/` plus the Eden AI model ID:
+Run `/models` and pick any Eden AI model. To set a default instead, add a top-level `model` key to `~/.config/opencode/opencode.json` using `edenai/` plus the Eden AI model name:
 
 {/* skip-test: one key of the config above, not a whole file */}
 ```json
-"model": "edenai/vertex/gemini-flash-latest"
+"model": "edenai/~gemini-flash-latest"
 ```
 
 ## Model naming
 
-Eden AI model IDs have the form `provider/model`, such as `anthropic/claude-sonnet-latest` or `vertex/gemini-flash-latest`. Some contain several slashes (`together_ai/meta-models/Muse-Glimmer-30B`). OpenCode splits a model reference only on the first slash, so the reference is `edenai/` plus the full Eden AI ID: `edenai/anthropic/claude-sonnet-latest`. The generated config holds only models with function calling, which is what OpenCode needs. Browse the catalog in [List Models](/v3/llms/listing-models) or with `GET https://api.edenai.run/v3/models`.
+The generated config lists models by name, without a provider. Eden AI routes each call to a provider that serves the model, so the config keeps only models with function calling on every provider. A name that starts with `~` is an alias that follows the latest release. OpenCode splits a model reference on the first slash only, so a reference is `edenai/` plus the name: `edenai/~claude-sonnet-latest`.
+
+To pin a provider, use its `provider/model` ID instead, such as `edenai/anthropic/claude-sonnet-latest`. Add that ID as a key under `provider.edenai.models` first, since OpenCode only uses models listed there. Browse the catalog in [List Models](/v3/llms/listing-models) or with `GET https://api.edenai.run/v3/models?view=models`.
 
 ## Switching models
 
@@ -254,7 +262,7 @@ Restart OpenCode after regenerating the file, since the config is read at startu
 
 ### `UnknownError` right after sending a message
 
-Usually a mistyped model reference: OpenCode reports an unknown model as a generic server error rather than a "model not found" message. Use `edenai/` followed by the *complete* Eden AI model ID (`edenai/vertex/gemini-flash-latest`, not `edenai/gemini-flash-latest`); it must match a key under `provider.edenai.models` in your config. Run `opencode models` to see the exact strings OpenCode loaded.
+Usually a mistyped model reference: OpenCode reports an unknown model as a generic server error rather than a "model not found" message. Use `edenai/` followed by a key under `provider.edenai.models` in your config, exactly as written there. An alias keeps its `~`: `edenai/~gemini-flash-latest`, not `edenai/gemini-flash-latest`. Run `opencode models` to see the exact strings OpenCode loaded.
 
 ### Connection issues
 

@@ -324,7 +324,10 @@ three things that can be wrong with a config:
 - **Every model it names is one Eden AI serves.** The catalog is the union of
   seven routes, because `/v3/models` is hardcoded to the chat endpoints and
   lists chat models only. A config that sets an embeddings model alongside its
-  chat models would be called broken by `/v3/models` alone.
+  chat models would be called broken by `/v3/models` alone. Every route but
+  videos is read twice, asking for each view by name: `view=endpoints` for the
+  `provider/model` ids, including the provider aliases and `@region` ids, and
+  `view=models` for the model names and `~` aliases.
 - **Every Eden AI URL points at something.** A base URL is checked by asking
   for `/models` underneath it, since a base URL on its own answers 404 by
   design and always will.
@@ -339,7 +342,11 @@ data rather than by a list. A config block is full of strings with a slash in
 them that are not models: docker volume mounts, image tags, MIME types, URLs.
 A shape rule drops what cannot be an id at all, and then only what begins with
 a provider the catalog actually lists is treated as a model. That is why
-`image/gif` is not a model reference and nothing had to say so.
+`image/gif` is not a model reference and nothing had to say so. A model name
+has no provider, and many are ordinary words (`base`, `o3`), so it is never
+read out of text on its own. It counts after a tool's `edenai/` prefix
+(`edenai/~gemini-flash-latest`), when the catalog lists it or it starts with
+`~`.
 
 A block that is not a whole file, a menu of alternative values for one key or
 a single line of a larger document, carries the same
@@ -368,12 +375,14 @@ integration page fails until it has an entry.
 
 - **Without credentials**, every model the page names outside a config block
   is one Eden AI serves (`test_config_blocks.py` covers the ones inside), every
-  setting that holds a model names a whole `provider/model` id, and an agent
-  is only pointed at models whose catalog entry says they support function
-  calling. A setting is any key or variable ending in `model` or `models`, or
-  qualified after the word (`TASK_MODEL_EXTERNAL`), and a list holds a setting
-  per model: `RAG_EMBEDDING_MODEL=text-embedding-3-small` is invisible to a
-  scan for `provider/model` strings, and the tool sends the value as it stands.
+  setting that holds a model names one exactly as the catalog lists it (a
+  model name or a `provider/model` id), and an agent is only pointed at models
+  whose catalog entry says they support function calling. A setting is any key
+  or variable ending in `model` or `models`, or qualified after the word
+  (`TASK_MODEL_EXTERNAL`), and a list holds a setting per model:
+  `AUDIO_STT_MODEL=whisper-1` is invisible to a scan for `provider/model`
+  strings, the tool sends the value as it stands, and the catalog has no
+  `whisper-1`.
 - **With the sandbox token**, the request each page's tool sends: its
   protocol, its auth and the page's lead model, streamed, with tool
   definitions for an agent. One per page and kind of call, which costs nothing.

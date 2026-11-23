@@ -14,7 +14,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "guardrails", "usage policy", "access control", "rate limits", "model restrictions", "budget cap", "spending limit"]}
   datePublished="2026-06-11T00:00:00Z"
-  dateModified="2026-11-16T00:00:00Z"
+  dateModified="2026-11-23T00:00:00Z"
 />
 
 A **guardrail** is a reusable usage policy. It sets:
@@ -80,6 +80,7 @@ Pick a **restriction mode**, then list providers and models:
 
 - **LLM** choices apply to LLM calls: chat completions, Responses, Messages, and the OpenAI-compatible `/v3/embeddings`, `/v3/images`, `/v3/audio` and `/v3/moderations` endpoints.
 - **Expert model** choices apply to Expert Model calls on `/v3/universal-ai`, and to the `web_search` hook on LLM calls, which searches through a `web/search` provider such as Linkup. A call that names no model is checked as the provider's default model.
+- **Regions**: a call that names no region runs in a region the guardrail allows, if the model is offered in one. With only `vertex/claude-sonnet-5-5@eu` allowed, a call to `vertex/claude-sonnet-5-5` runs in the EU. A call that names a region (`@us`) or goes to the [EU endpoint](/v3/data-governance/eu-endpoint) stays in that region, and gets HTTP 403 if the guardrail doesn't allow it there.
 - A request the guardrail doesn't allow gets HTTP 403. The error names the refused model's id, such as `openai/gpt-5.5` or `audio/tts/google/chirp3-hd`.
 
 ### Custom rules

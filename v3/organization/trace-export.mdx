@@ -16,7 +16,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "OpenTelemetry", "OTLP", "Langfuse", "LangSmith", "Arize", "Phoenix", "Datadog", "Grafana", "LLM observability", "tracing"]}
   datePublished="2026-11-20T00:00:00Z"
-  dateModified="2026-11-20T00:00:00Z"
+  dateModified="2026-11-23T00:00:00Z"
 />
 
 Eden AI can send each LLM call and each [Universal AI](#universal-ai-calls) call your organization makes through the `/v3` API to the tracing tool your team already uses, as an [OpenTelemetry](https://opentelemetry.io/) span. Calls that carry your own trace context join your traces, so the model call shows up under the request that made it.
@@ -116,7 +116,7 @@ Each call is one span named after its operation and model: `chat <model>` for a 
 | `gen_ai.response.id`, `gen_ai.response.finish_reasons` | The answer's id and why it stopped |
 | `gen_ai.response.time_to_first_chunk`, `edenai.time_per_output_token`, `edenai.gateway.duration`, `edenai.provider.duration` | In seconds: for a streamed call, its first chunk, from the start of the call, and the time per output token after it; for every call, the time in Eden AI and at the providers |
 | `gen_ai.usage.cost` | What Eden AI charged for the call, in USD, on the call's span only, and also under the name each tool reads (below). Left out for a call answered on your own provider key, so your tool estimates it from the tokens. |
-| `gen_ai.conversation.id`, `session.id` | The session you named: the `session_id` body field, the `x-session-id` header, or the session a coding agent sends on its own (a header such as `x-claude-code-session-id`, Codex's `session-id` or `x-session-affinity`, or Claude Code's `metadata.user_id`). A session Eden AI grouped on its own, for calls that name none, is never exported. |
+| `gen_ai.conversation.id`, `session.id` | The session you named: the `session_id` body field, the `x-session-id` header, or the session a coding agent sends on its own (a header such as `x-claude-code-session-id`, Codex's `session-id` or `x-session-affinity`, or Claude Code's `metadata.user_id`). For a call that names none, the session Eden AI grouped it into, as Monitoring lists it: its id starts with `~`, and `edenai.session.source` is `inferred`. |
 | `user.id` | The end user you named: `safety_identifier`, `user`, or Anthropic's `metadata.user_id` |
 | `gen_ai.agent.name` | The coding agent that made the call, such as `claude-code` or `codex`, when Eden AI recognizes it |
 | `error.type`, an `exception` event | A failed span's status is `ERROR`. `error.type` is the status your client received (such as `400`), `_OTHER` when that was a success status (a Universal AI call or job that failed answers `200` or `202`), or, for a failed attempt, its error code. The event's message, also the status's description, is the error your client received or, for an attempt, its provider, status and error code (such as `azure answered 500 (server_error)`). |
@@ -125,14 +125,14 @@ Each call is one span named after its operation and model: `chat <model>` for a 
 | `edenai.is_byok`, `edenai.cache.hit` | Whether your own provider key answered, and whether the answer came from the cache |
 | `edenai.api.type`, `edenai.api.version`, `edenai.call_type` | The API the call came through (`chat_completions`, `responses`, `messages`) and its version, and how it was made: `back` with an API key, `sandbox` with a sandbox key, `front` from the Eden AI app |
 | `edenai.region`, `edenai.routing.strategy`, `edenai.routing.mode`, `edenai.routing.policy`, `edenai.routing.policy_version`, `edenai.routing.policy_scope` | Where the call ran, and how it was routed: the routing policy that applied, its version and whose it is |
-| `edenai.message_count`, `edenai.input_kind`, `edenai.session.source`, `edenai.coding_agent.via`, `edenai.coding_agent.entrypoint`, `edenai.agent.thread`, `edenai.agent.turn`, `edenai.agent.step` | The call's step: how many messages it carried, whether it answered a new message or tool results, how its session was named, and what the coding agent said of it |
+| `edenai.message_count`, `edenai.input_kind`, `edenai.session.source`, `edenai.coding_agent.via`, `edenai.coding_agent.entrypoint`, `edenai.agent.thread`, `edenai.agent.turn`, `edenai.agent.step` | The call's step: how many messages it carried, whether it answered a new message or tool results, how its session was named (`inferred` when Eden AI grouped it), and what the coding agent said of it |
 | `edenai.response.tool_calls`, `edenai.structured_output.requested`, `edenai.structured_output.valid`, `edenai.tool_calls.valid` | How many tools the answer called, and whether the structured output and tool calls Eden AI checked were valid |
 
 Prompts and answers are sent unless you turn on **Privacy mode** for the destination. Turning it on applies at once, to the calls still waiting to be sent too. A call waits with its prompts and answers for 5 minutes at most: if your tool cannot take it by then, it is sent without them. Under [zero data retention](/v3/data-governance/compliance-policies), Eden AI never stores them, not even while a call waits: they are sent to your tool right after the call and retried for about 2 minutes, then the call is sent without them. The call is also sent without them at once when your tool is still recovering from an earlier failure, or when many such calls are being sent at the same moment. Turning zero data retention on does not change the calls already waiting, whose prompts and answers are gone within 5 minutes anyway. They follow the conventions' message format, in `gen_ai.system_instructions`, `gen_ai.input.messages` and `gen_ai.output.messages`. Long texts and long histories are shortened, keeping the conversation's opening, the call's latest message, and as many of the latest messages as fit.
 
 Moderation, text to speech, and image generation and editing send only the prompt you wrote, as one user message: the text to moderate, the text to speak, the image's prompt. Never their output (a moderation's verdict, images, audio). Every other LLM API sends nothing you wrote: not the texts you embed, the documents you rerank, or the audio you transcribe and its prompt.
 
-Never sent: what Eden AI pays a provider, a member's email, the provider key that answered, sessions Eden AI grouped on its own, and its internal checksums of your messages.
+Never sent: what Eden AI pays a provider, a member's email, the provider key that answered, and its internal checksums of your messages.
 
 ### Universal AI calls
 
@@ -166,7 +166,7 @@ Each preset also gets what its tool reads beyond the conventions, so a call show
 
 ## Sampling and limits
 
-- **Calls sent**: a share of calls per destination. When the call names a session, the share is picked by session; otherwise by call. Failed calls are always sent, unless they join a caller's trace that was not sampled: when you send a `traceparent` and the destination nests calls under your trace, its sampled flag decides first, for failed calls too.
+- **Calls sent**: a share of calls per destination. When the call has a session, named or grouped by Eden AI, the share is picked by session; otherwise by call. Failed calls are always sent, unless they join a caller's trace that was not sampled: when you send a `traceparent` and the destination nests calls under your trace, its sampled flag decides first, for failed calls too.
 - **Retries**: when a destination is unreachable, times out, or answers 429, 502, 503 or 504, Eden AI retries with backoff, doubling from 2 seconds up to 5 minutes, give or take a fifth, or waiting as long as its `Retry-After` header asks, up to 5 minutes per wait. After 10 failures in a row (about 13.5 minutes when the waits double, longer when `Retry-After` asks for more), the calls waiting for it are dropped. Any other error answer drops the batch at once, since sending it again would fail the same way.
 - **Queue**: each destination holds up to 12,000 calls or 256 MB waiting to be sent, and an organization up to 512 MB across its destinations. A destination holds at most 64 MB of prompts and answers from the last 5 minutes: past that, a call waits without them. Calls past the queue's limits, and calls waiting longer than 24 hours, are dropped. Some tools refuse older spans while still answering success, so calls are dropped sooner for them: after 55 minutes for Dynatrace, 17 hours for Datadog, 23 hours for Logfire and New Relic. Every dropped call is counted on the destination.
 - **Posts**: up to 100 spans each, and under 900 KB for New Relic.

@@ -60,8 +60,8 @@ The response gains one extra top-level key, `edenai_metadata`:
     "endpoints": {
       "total": 2,
       "available": [
-        {"provider": "openai", "model": "openai/gpt-5.6-sol", "primary": true, "reachable": true},
-        {"provider": "azure", "model": "azure/gpt-5.6-sol", "primary": false, "reachable": true}
+        {"provider": "openai", "model": "openai/gpt-5.6-sol", "primary": true, "reachable": true, "excluded_reason": null},
+        {"provider": "azure", "model": "azure/gpt-5.6-sol", "primary": false, "reachable": true, "excluded_reason": null}
       ]
     },
     "attempts": [
@@ -85,7 +85,7 @@ The response gains one extra top-level key, `edenai_metadata`:
 | `attempt` | 1-based position of the attempt that served. `2` means the first one failed |
 | `is_byok` | Whether your own provider key was used instead of Eden AI's |
 | `endpoints.total` | How many providers offer the requested model |
-| `endpoints.available` | Each of them, with `primary` (chosen first) and `reachable` (usable for this request) |
+| `endpoints.available` | Each of them, with `primary` (chosen first), `reachable` (usable for this request), and `excluded_reason` (why it was dropped when not reachable). See below |
 | `attempts` | Every provider actually called, in order, each with its HTTP `status` and `region` |
 | `policy` | What a [routing policy](/v3/llms/routing-policies#seeing-what-the-policy-did) did for the call: its `name`, `version`, `strategy` and `scope`, the `path` to the part of it that served, and the targets it `dropped` with their reasons. When a policy it names served, `child` names that policy and `path` goes on into it. When the part of the policy that served runs with saved [request params](/v3/llms/routing-policies#request-params), its own or the policy's defaults, `params` says which were `applied` and which `dropped`. `null` when no policy applied |
 | `tags` | The [tags](/v3/general/tags) recorded for this call, or `{}` when it has none |
@@ -100,6 +100,22 @@ The response gains one extra top-level key, `edenai_metadata`:
 | `alias` | You named an alias with a provider, which resolved to a specific model |
 | `routed` | You named a model, or an alias, without a provider, so Eden AI picked one. See [Provider Routing](/v3/llms/provider-routing) |
 | `policy` | A [routing policy](/v3/llms/routing-policies) chose the chain: you named `policy/{name}`. The `policy` field says which, and how |
+
+### Exclusion reasons
+
+When a provider is not reachable (`reachable: false`), `excluded_reason` explains which narrowing dropped it from the dispatch chain at request time:
+
+| Value | Meaning |
+|---|---|
+| `fallback_limit` | Ranked below the maximum fallback chain limit |
+| `fallbacks_disabled` | Fallbacks were disabled for the request (`routing.allow_fallbacks: false`), so only the primary provider is eligible |
+| `continuation` | A previous turn pinned the conversation to a specific provider and region (`previous_response_id`) |
+
+When the provider is reachable (`reachable: true`), `excluded_reason` is `null`.
+
+<Note>
+Exclusion reasons reflect request constraints and configuration, not provider outages or health. A provider that is down retains its position in the dispatch chain.
+</Note>
 
 ## Tags
 

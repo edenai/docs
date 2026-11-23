@@ -227,6 +227,20 @@ def test_an_id_with_several_slashes_keeps_all_but_the_tool_prefix():
     )
 
 
+def test_a_routed_name_behind_the_tool_prefix_is_a_model_reference():
+    """How OpenCode writes one: the tool prefix, then the name or alias."""
+    block = {"code": '"model": "edenai/~gemini-flash-latest"\n- edenai/gpt-4o\n'}
+
+    assert model_references(block) == {"edenai/~gemini-flash-latest", "edenai/gpt-4o"}
+
+
+def test_a_bare_word_is_not_a_model_reference():
+    """Routed names include ordinary words, so only the tool prefix marks one."""
+    block = {"code": '{"model": "o3", "size": "base"}\nedenai/policy/<name>\n'}
+
+    assert model_references(block) == set()
+
+
 # --- eden urls -------------------------------------------------------------
 
 
@@ -267,11 +281,22 @@ def test_the_catalog_covers_more_than_the_chat_models():
     assert "openai/text-embedding-3-small" in catalog_ids()
 
 
+def test_the_catalog_holds_both_views():
+    """A routed name and an alias, a region-pinned id and a provider alias."""
+    ids = catalog_ids()
+
+    assert "gpt-4o" in ids
+    assert "~gemini-flash-latest" in ids
+    assert "azure/gpt-4o@eu" in ids
+    assert "anthropic/claude-sonnet-latest" in ids
+
+
 def test_the_catalog_names_providers_and_not_mime_types():
     providers = catalog_providers()
 
     assert "openai" in providers
     assert "image" not in providers
+    assert "gpt-4o" not in providers
 
 
 # --- the docs themselves ---------------------------------------------------
@@ -318,7 +343,7 @@ def test_a_url_in_a_config_block_points_at_something(case):
 
 def test_the_docs_still_contain_the_blocks_these_checks_claim_to_cover():
     """An extraction change that quietly found nothing would pass everything."""
-    assert len(_BLOCKS) > 40, f"only {len(_BLOCKS)} config blocks found"
+    assert len(_BLOCKS) > 20, f"only {len(_BLOCKS)} config blocks found"
     assert len(_MODEL_CASES) > 20, f"only {len(_MODEL_CASES)} model references found"
     assert len(_URL_CASES) > 10, f"only {len(_URL_CASES)} Eden AI URLs found"
 

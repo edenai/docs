@@ -1,7 +1,9 @@
 """Extract code snippets from .mdx documentation files."""
 
+import os
 import re
 import textwrap
+from fnmatch import fnmatch
 from pathlib import Path
 
 from filelock import FileLock
@@ -35,6 +37,13 @@ JS_BLOCK_RE = _fence_re("javascript|typescript|js|ts")
 # deliberately absent: no parser reads it and it names no Eden AI models.
 CONFIG_BLOCK_RE = _fence_re("json|yaml|yml|toml")
 
+# The fences whose lines are settings rather than program code: config files,
+# shell exports and .env files, PowerShell. tests/integrations.py reads them for
+# the model each setting names. Python, JavaScript and PHP are left out because
+# they assign `model = some_variable` all the time, and the Python and JS blocks
+# run against the API anyway, which settles their model names for real.
+SETTINGS_BLOCK_RE = _fence_re("json|yaml|yml|toml|bash|shell|sh|powershell|env")
+
 # Either marker may carry a reason: {/* skip-test: why this cannot run */}
 _SKIP_COMMENT_RE = re.compile(r"\{/\*\s*skip-test\b[:\s]*(?P<reason>.*?)\s*\*/\}")
 
@@ -67,6 +76,7 @@ _PRODUCTION_TOKEN_FILES = {
 # 401 a staging token gets from production.
 _PRODUCTION_BASE_URL_FILES = {
     "v3/integrations/haystack.mdx",
+    "v3/integrations/aisuite.mdx",
 }
 
 PRODUCTION_BASE_URL = "https://api.edenai.run"
@@ -317,6 +327,11 @@ def extract_config_blocks(mdx_path: Path) -> list[dict]:
     return _extract_blocks(mdx_path, CONFIG_BLOCK_RE)
 
 
+def extract_settings_blocks(mdx_path: Path) -> list[dict]:
+    """Extract every block whose lines are settings, config and shell alike."""
+    return _extract_blocks(mdx_path, SETTINGS_BLOCK_RE)
+
+
 def replace_api_keys(code: str, token_var: str = SANDBOX_TOKEN_VAR) -> str:
     for pattern, replacement_template in API_KEY_PATTERNS:
         replacement = replacement_template.format(token_var=token_var)
@@ -454,6 +469,68 @@ def mdx_files() -> list[Path]:
     page is.
     """
     return sorted([*DOCS_ROOT.glob("v3/**/*.mdx"), *DOCS_ROOT.glob("*.mdx")])
+
+
+def _mintignored(relative: Path, is_dir: bool, patterns: list[str]) -> bool:
+    """Whether .mintignore excludes this path, for the pattern shapes it uses.
+
+    Gitignore semantics, trimmed to what the file holds: a trailing slash
+    matches directories only, a pattern with a slash inside it is anchored at
+    the root, and one without matches a name at any depth. There are no
+    negations or "**", and a parent directory being excluded is handled by the
+    walk, which does not descend into it.
+    """
+    for pattern in patterns:
+        dirs_only = pattern.endswith("/")
+        pattern = pattern.rstrip("/")
+        if dirs_only and not is_dir:
+            continue
+        if "/" in pattern:
+            if fnmatch(relative.as_posix(), pattern.lstrip("/")):
+                return True
+        elif fnmatch(relative.name, pattern):
+            return True
+    return False
+
+
+def stray_markdown_files(root: Path = DOCS_ROOT) -> list[Path]:
+    """Every .md file Mintlify would publish as a page, in a stable order.
+
+    Mintlify serves .md files as well as .mdx, but every check here looks only
+    at .mdx, so a stray .md ships with no title, no description and no link
+    check. It is published unless it sits under a dot-directory (.mintlify/,
+    .github/), is the root README.md (Mintlify answers that one with a 404;
+    a nested README.md is not known to be hidden, so it counts), or is
+    excluded by .mintignore.
+    """
+    mintignore = root / ".mintignore"
+    patterns = (
+        [
+            line.strip()
+            for line in mintignore.read_text(encoding="utf-8").splitlines()
+            if line.strip() and not line.lstrip().startswith("#")
+        ]
+        if mintignore.exists()
+        else []
+    )
+    found = []
+    for directory, subdirs, names in os.walk(root):
+        here = Path(directory)
+        subdirs[:] = sorted(
+            name
+            for name in subdirs
+            if not name.startswith(".")
+            and not _mintignored((here / name).relative_to(root), True, patterns)
+        )
+        for name in sorted(names):
+            path = here / name
+            if (
+                path.suffix == ".md"
+                and path != root / "README.md"
+                and not _mintignored(path.relative_to(root), False, patterns)
+            ):
+                found.append(path)
+    return sorted(found)
 
 
 def extract_all() -> list[dict]:

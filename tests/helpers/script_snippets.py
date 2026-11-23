@@ -39,6 +39,22 @@ def paid_calls_enabled() -> bool:
     return env_flag(PAID_CALLS_ENV_VAR)
 
 
+def require_token(paid: bool) -> str:
+    """The token a check that is not a doc block runs with, or a skip saying why.
+
+    The same policy skip_unless_runnable applies to a block, for the checks
+    that send their own requests: a real model answer is held back unless the
+    run opts into paying for it, and then comes from the production token.
+    """
+    if paid and not paid_calls_enabled():
+        pytest.skip(f"spends credits; set {PAID_CALLS_ENV_VAR}=1 to run")
+    var = PRODUCTION_TOKEN_VAR if paid else SANDBOX_TOKEN_VAR
+    token = os.environ.get(var)
+    if not token:
+        pytest.skip(f"{var} not set")
+    return token
+
+
 def skip_unless_runnable(block: dict) -> None:
     """Hold the block back, with a reason, unless this run can honour it.
 

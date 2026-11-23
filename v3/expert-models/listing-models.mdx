@@ -15,7 +15,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "expert models", "multi-provider"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-05-22T00:00:00Z"
+  dateModified="2026-11-19T00:00:00Z"
 />
 
 Use the `/v3/info` endpoints to discover all available expert model features, providers, and models.
@@ -157,7 +157,7 @@ for model in details.get("models", []):
 | `request_schema` | Top-level request body schema expected by the endpoint, showing where inputs nest |
 | `input_schema` | Schema of the parameters accepted inside the `input` object |
 | `output_schema` | Schema of the standardized response returned inside the `output` object |
-| `provider_params` | For each provider, the `provider_params` it accepts on subfeatures that restrict them, or `null` on the others. See [Provider Parameters](/v3/expert-models/provider-parameters#parameter-validation-and-allowlisting) |
+| `provider_params` | For each provider, the list of `provider_params` paths it accepts (an empty list `[]` if the provider accepts none). See [Provider Parameters](/v3/expert-models/provider-parameters#parameter-validation-and-allowlisting) |
 
 ### Model Metadata
 
@@ -171,9 +171,14 @@ Each entry in the `models` list contains:
 | `documentation_url` | Direct URL to official provider documentation for the model or provider, or `null` |
 | `requires_reference_images` | Boolean flag indicating whether the model requires `reference_images` (e.g. image edit models) |
 | `requires_video` | Boolean flag indicating whether the model requires a source `video` input (e.g. video editing models) |
+| `zero_data_retention` | `true` when the provider keeps no inputs or outputs after the response (Zero Data Retention), `false` when it keeps them, `null` when not verified yet |
 
 <Tip>
 You can also browse all features and providers visually in the [Eden AI model catalog](https://app.edenai.run/models).
+</Tip>
+
+<Tip>
+Need models whose provider keeps no data? Add `?zero_data_retention=true` to `/v3/info`, `/v3/info/{feature}` or `/v3/info/{feature}/{subfeature}` to list only the model entries whose `zero_data_retention` is `true`.
 </Tip>
 
 <Tip icon="earth-europe">

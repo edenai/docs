@@ -2,28 +2,28 @@
 title: "Use Haystack with Eden AI"
 sidebarTitle: "Haystack"
 icon: "/integration-logo/haystack-icondoc.svg"
-description: "Use Eden AI with Haystack (deepset) to build LLM and RAG pipelines on 500+ AI models through one EU-hosted API key."
+description: "Run Eden AI chat and embedding models in Haystack RAG pipelines with the edenai-haystack package: one API key for 500+ models from many providers."
 ---
 
 import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
 
 <TechArticleSchema
   title={"Use Haystack with Eden AI"}
-  description={"Use Eden AI with Haystack (deepset) to build LLM and RAG pipelines on 500+ AI models through one EU-hosted API key."}
+  description={"Run Eden AI chat and embedding models in Haystack RAG pipelines with the edenai-haystack package: one API key for 500+ models from many providers."}
   path="v3/integrations/haystack"
   articleSection="AI Frameworks"
   about={"LLM Framework Integration"}
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "Haystack", "deepset", "RAG", "Python"]}
   datePublished="2026-07-21T00:00:00Z"
-  dateModified="2026-08-31T00:00:00Z"
+  dateModified="2026-10-27T00:00:00Z"
 />
 
-Use Eden AI with Haystack (deepset) to build LLM and RAG pipelines on 500+ AI models through one EU-hosted API key.
+Install one package and the Eden AI components drop into any Haystack pipeline, so you can mix chat and embedding models from different providers without changing pipeline code.
 
 ## Overview
 
-[Haystack](https://haystack.deepset.ai/) is deepset's open-source Python framework for building production LLM applications, RAG pipelines and agents. **Eden AI ships as an official Haystack integration** (the `edenai-haystack` package), so your pipelines reach models from OpenAI, Anthropic, Google, Mistral and 500+ more behind one key, with EU-based, GDPR-aligned inference.
+[Haystack](https://haystack.deepset.ai/) is deepset's open-source Python framework for building production LLM applications, RAG pipelines and agents. **Eden AI ships as an official Haystack integration** (the `edenai-haystack` package), so your pipelines reach models from OpenAI, Anthropic, Google, Mistral and hundreds more behind one key.
 
 The integration provides three components:
 
@@ -31,9 +31,9 @@ The integration provides three components:
 - `EdenAITextEmbedder` to embed a query string
 - `EdenAIDocumentEmbedder` to embed documents for indexing
 
-Models use Eden AI's `provider/model` naming convention, for example `anthropic/claude-sonnet-latest` or `mistral/mistral-large-latest`.
-
 ## Installation
+
+The package requires Python 3.11 or later.
 
 <CodeGroup>
 ```bash pip
@@ -67,9 +67,13 @@ print(response["replies"][0].text)
 
 The generator reads your key from the `EDENAI_API_KEY` environment variable by default.
 
+## Model naming
+
+Models use the `provider/model` format, for example `anthropic/claude-sonnet-latest` for chat and `openai/text-embedding-3-small` for embeddings. See [List LLM Models](/v3/llms/listing-models) for the live catalog.
+
 ## Switching models
 
-Change providers by changing the `model` string. Every Eden AI model is reachable the same way:
+Change providers by changing the `model` string. Every Eden AI chat model is reachable the same way:
 
 <CodeGroup>
 ```python Python
@@ -108,7 +112,7 @@ generator.run([ChatMessage.from_user("Count from one to five.")])
 
 ## Embeddings and RAG
 
-Use `EdenAITextEmbedder` to embed a query and `EdenAIDocumentEmbedder` to embed documents, so you can build a fully sovereign RAG stack (retrieval and generation) on EU-hosted models:
+Use `EdenAITextEmbedder` to embed a query and `EdenAIDocumentEmbedder` to embed documents, so you can build a RAG pipeline (retrieval and generation) with one Eden AI key:
 
 <CodeGroup>
 ```python Python
@@ -135,29 +139,9 @@ print(retriever.run(query_embedding=query_embedding)["documents"])
 ```
 </CodeGroup>
 
-## Available Models
-
-Use the `provider/model` format for any Eden AI model:
-
-**Chat**
-- `openai/gpt-mini-latest`
-- `anthropic/claude-sonnet-latest`
-- `mistral/mistral-large-latest`
-- `vertex/gemini-flash-latest`
-
-**Embeddings**
-- `openai/text-embedding-3-small`
-- `mistral/mistral-embed`
-
-Browse the full list in the [Eden AI models catalog](https://www.edenai.co/models).
-
 ## Environment Variables
 
-<CodeGroup>
-```bash .env
-EDENAI_API_KEY=your_api_key_here
-```
-</CodeGroup>
+`EDENAI_API_KEY` is read by `EdenAIChatGenerator`, `EdenAITextEmbedder` and `EdenAIDocumentEmbedder`, as shown in the Quick Start. To override it, import `Secret` with `from haystack.utils import Secret` and pass `api_key=Secret.from_token("...")` to a component.
 
 ## Next Steps
 

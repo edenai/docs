@@ -14,7 +14,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "LLM API", "chat completion", "OpenAI compatible"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-08-24T00:00:00Z"
+  dateModified="2026-11-20T00:00:00Z"
 />
 
 Use the `/v3/models` endpoint to retrieve all LLM models available through Eden AI, along with their capabilities: input modalities, reasoning, web search, and function calling.
@@ -53,7 +53,7 @@ data.forEach(model => console.log(model.id));
 
 ## Response
 
-Each entry includes the model's identity, context window, capabilities, pricing, and available regions (list truncated for readability):
+Each entry includes the model's identity, context window, capabilities, pricing, available regions, and whether the provider retains your data (list truncated for readability):
 
 ```json
 {
@@ -92,6 +92,14 @@ Each entry includes the model's identity, context window, capabilities, pricing,
       "regions": [
         { "code": "eu", "name": "Europe" }
       ],
+      "zero_data_retention": false,
+      "quantization": null,
+      "retirement_date": null,
+      "hugging_face_id": null,
+      "open_weights": null,
+      "knowledge_cutoff": null,
+      "reasoning": null,
+      "supported_parameters": null,
       "alias_of": "google/gemini-3.6-flash"
     }
   ]
@@ -100,13 +108,18 @@ Each entry includes the model's identity, context window, capabilities, pricing,
 
 Each model `id` is used directly as the `model` parameter in your requests.
 
+`pricing` holds the rates a call bills at, after any discount, and `list_pricing` the provider's list rates before it, most of them in US dollars per token. Models that can run as a [batch](/v3/llms/batches) (OpenAI, Anthropic and Mistral) also carry `input_cost_per_token_batches`, `output_cost_per_token_batches` and `cache_read_input_token_cost_batches`, the rates a batch bills at when the model has them.
+
 ## Grouped view: one entry per routable name
 
-Many models are sold by more than one provider. Pass `view=models` to get one entry per **routable model name**, with the provider endpoints nested underneath. This is how you discover the names that [Provider Routing](/v3/llms/provider-routing) accepts.
+Many models are sold by more than one provider. Pass `view=models` (or the [`x-edenai-view` header](#choosing-the-view-with-a-header)) to get one entry per **routable model name**, with the provider endpoints nested underneath. This is how you discover the names that [Provider Routing](/v3/llms/provider-routing) accepts.
 
 ```bash cURL
-curl "https://api.edenai.run/v3/models?view=models"
+curl "https://api.edenai.run/v3/models?view=models" \
+  -H "Authorization: Bearer YOUR_API_KEY"
 ```
+
+The key is optional here: without one, the listing holds the catalog only.
 
 ```json
 {
@@ -119,6 +132,17 @@ curl "https://api.edenai.run/v3/models?view=models"
       "owned_by": "openai",
       "mode": "chat",
       "endpoint_count": 2,
+      "context_length": 131072,
+      "capabilities": {
+        "...": "what at least one endpoint supports"
+      },
+      "pricing": {
+        "...": "full price list of pricing_endpoint"
+      },
+      "pricing_endpoint": "openai/gpt-5.6-sol",
+      "regions": [
+        { "code": "eu", "name": "Europe" }
+      ],
       "endpoints": [
         { "id": "openai/gpt-5.6-sol", "owned_by": "openai", "...": "a full model entry, as above" },
         { "id": "azure/gpt-5.6-sol",  "owned_by": "azure",  "...": "a full model entry, as above" }
@@ -130,13 +154,161 @@ curl "https://api.edenai.run/v3/models?view=models"
 
 What to expect from the shape:
 
-- **`id` is the routable name.** Send it as `model` and Eden AI picks which provider serves it.
-- **Each entry in `endpoints` is the same object the default view returns**, with its own pricing, capabilities, context length and regions. Nothing is summarised at the name level, because providers of one model genuinely differ on all of it. To compare providers, read `endpoints`.
+- **`id` is the routable name.** Send it as `model` and Eden AI picks which provider serves it. Rerank is the exception: `POST /v3/rerank` refuses a name without its provider with `400`, so from `/v3/rerank/models` send one of the `endpoints[].id` values instead.
+- **Top-level fields summarise the model across its endpoints.** `context_length` is the largest window among the endpoints. `capabilities` is the union across endpoints, so a flag is true and a modality listed when any endpoint supports it. `pricing` carries the full price list of the cheapest endpoint for a typical call (untagged endpoints only, since an `@region` variant prices a tagged call), identified by `pricing_endpoint`; among endpoints at the same input and output prices, it picks the one with the cheapest cache reads, then cache writes (an endpoint that states no cache rate comes after those that do), then the model's own lab when it is one of them. Both are `null` when no endpoint has a price. A routed call is billed at the prices of the provider that served it. `regions` lists every region where at least one endpoint runs, sorted by code. `hugging_face_id`, `open_weights`, `knowledge_cutoff` and `reasoning` describe the model itself, so the entry shows the value its endpoints state. If the endpoints that state one disagree, the entry shows `null` for it, and each endpoint in `endpoints` keeps its own.
+- **Each entry in `endpoints` is the same object the default view returns**, with that provider's own pricing, capabilities, context length, and regions. To compare providers or see per-provider values, read `endpoints`.
 - **`owned_by` changes meaning between the views.** On a grouped entry it is who authored the model (`openai`); on an endpoint entry it is the provider selling it (`azure`).
 - **`created` is the newest endpoint's timestamp**, and `endpoint_count` equals `endpoints.length`.
-- The default (`view=endpoints`, or no parameter) is unchanged, and both entry shapes stay compatible with the OpenAI SDK's `client.models.list()`.
+- The default (`view=endpoints`, or no view chosen) is unchanged, and both entry shapes stay compatible with the OpenAI SDK's `client.models.list()`.
+- **Your routing policies are listed here too.** Send your API key and the grouped view adds one entry per [routing policy](/v3/llms/routing-policies) you can call, under its `policy/{name}` id, with `owned_by` set to `edenai`, an empty `endpoints` list and `endpoint_count` at `0`: which target serves a call is decided per request, so `pricing`, `context_length` and `regions` are `null` or empty. Policies never appear in the default view or under any [endpoint filter](#filtering-and-sorting) (such as `zero_data_retention`, `capabilities`, `region`, `context`, or price).
+- **Models on your private deployments are listed here too.** Send your API key and the grouped view adds each model your organization hosts. Nothing routes to such a model, so its entry keeps the full `id` a call sends (such as `acme/gemma4:e2b`), with `owned_by` set to `private/{deployment}`, the model's own `mode`, and its deployment as the only entry in `endpoints` (`endpoint_count` at `1`). Private deployments count as zero data retention, so these models stay listed under `zero_data_retention=true`.
+- **Aliases of routable models are listed here, and only here.** An [alias without a provider](#model-aliases) appears under its own name (which starts with `~`), with `alias_of` naming the model it points to and that model's values and endpoints repeated. The default view lists provider endpoints, and such an alias names none. An alias with a provider appears in the default view only.
 
-Every model listing takes the same parameter: `/v3/models`, `/v3/embeddings/models`, `/v3/moderations/models`, `/v3/audio/transcriptions/models`, `/v3/audio/speech/models`, `/v3/images/models` and `/v3/videos/models`.
+### Choosing the view with a header
+
+Some tools take only a base URL and request `/models` under it themselves, so they cannot add `?view=`. Send the `x-edenai-view` header instead, with the same values (`models` or `endpoints`):
+
+```bash cURL
+curl https://api.edenai.run/v3/models \
+  -H "x-edenai-view: models"
+```
+
+[Open WebUI](/v3/integrations/open-webui) (the connection's headers), [LibreChat](/v3/integrations/librechat) (the endpoint's `headers` in `librechat.yaml`) and n8n's built-in OpenAI credential (a custom header) send it with their models request. When both are sent, `view` wins. An unknown value returns `422`, as an unknown `view` does. Other routes ignore the header, so a tool that sends it on every request is unaffected.
+
+These endpoints accept both `view` and `x-edenai-view`: `/v3/models`, `/v3/embeddings/models`, `/v3/moderations/models`, `/v3/audio/transcriptions/models`, `/v3/audio/speech/models`, `/v3/images/models`, `/v3/rerank/models`, and `/v3/alpha/decisions/models`.
+
+## Filtering and sorting
+
+Every model listing endpoint above accepts optional query parameters to filter and sort results:
+
+```bash cURL
+curl "https://api.edenai.run/v3/models?owned_by=anthropic,openai&capabilities=function_calling,reasoning&context=200000&sort=price"
+```
+
+| Parameter | Example | Keeps / orders |
+|-----------|---------|----------------|
+| `q` | `q=claude` | `id` contains the text, ignoring case |
+| `owned_by` | `owned_by=anthropic,openai` | `owned_by` matches one of the values (the provider in the default view, or the model's author with `view=models`) |
+| `input_modalities` | `input_modalities=image,file` | Accepts all listed input modalities |
+| `output_modalities` | `output_modalities=image` | Produces all listed output modalities |
+| `capabilities` | `capabilities=function_calling,reasoning` | Every named `capabilities.supports_*` flag is `true` (pass flag names without the `supports_` prefix) |
+| `context` | `context=200000` | `context_length` is at least this many tokens (minimum `1`) |
+| `max_input_price` | `max_input_price=1` | Input rate is at most this, in USD per million tokens (entries priced by another unit, such as per image or per second, are kept) |
+| `max_output_price` | `max_output_price=5` | Output rate is at most this, in USD per million tokens (entries priced by another unit are kept) |
+| `region` | `region=eu` | Served in this region (`regions[].code`, such as `eu` or `us`) |
+| `zero_data_retention` | `zero_data_retention=true` | `true` keeps Zero Data Retention endpoints; `false` keeps endpoints known to keep data (`null` matches neither) |
+| `sort` | `sort=price` | Orders results: `newest` (newest `created` first), `price` (cheapest input rate first, then output rate), or `context` (largest `context_length` first). Entries without that value come last |
+
+For parameters that accept multiple values (`owned_by`, `input_modalities`, `output_modalities`, `capabilities`), separate values with commas (`?owned_by=anthropic,openai`) or repeat the parameter (`?owned_by=anthropic&owned_by=openai`). Unknown query parameters are ignored; invalid values (such as an unknown `sort` or `context=0`) return `422`.
+
+With `view=models`, name filters (`q`, `owned_by`) match the grouped model entry. Endpoint filters (`input_modalities`, `output_modalities`, `capabilities`, `context`, `max_input_price`, `max_output_price`, `region`, `zero_data_retention`) keep a model when at least one of its endpoints passes all of them, include only those matching endpoints in `endpoints`, and recompute the model-level summary fields from them. Routing policies match `q` and `owned_by` (their `owned_by` is `edenai`), are ordered with the models by `sort` (by last update for `newest`, last for `price` and `context`), and are dropped by any endpoint filter.
+
+`/v3/search/models` and `/v3/videos/models` only support `zero_data_retention`.
+
+## Zero Data Retention
+
+Every endpoint entry (each entry of the default view, and each item of `endpoints` with `view=models`) carries `zero_data_retention`, which says whether that provider keeps your prompts and outputs after the response, for the calls Eden AI sends it:
+
+| Value | Meaning |
+|-------|---------|
+| `true` | The provider keeps no prompts or outputs after the response (Zero Data Retention) |
+| `false` | The provider keeps them, for example for abuse monitoring |
+| `null` | Not verified yet |
+
+The value is set per provider, and per model when one model's terms differ from its provider's. Models served from your own private deployment are always `true`. See [Provider Data Policies](/v3/data-governance/provider-data-policies) for how each provider handles your data.
+
+To list only Zero Data Retention endpoints, pass `zero_data_retention=true`:
+
+```bash cURL
+curl "https://api.edenai.run/v3/models?zero_data_retention=true"
+```
+
+`zero_data_retention=false` lists only the endpoints known to keep data, and entries still at `null` match neither. With `view=models`, each model keeps only its matching endpoints and recomputes its model-level fields from them, and is left out when none match. Every model listing above takes the parameter.
+
+## Quantization
+
+Every endpoint entry also carries `quantization`: the precision the provider runs the model's weights at. Different providers often serve the same open model at different precisions, and a lower one is usually cheaper and faster but can be slightly less accurate. `gpt-oss-120b`, for example, is served at `fp4` by one provider and `bf16` by another.
+
+| Value | Meaning |
+|-------|---------|
+| `fp32` | 32 bits per weight |
+| `bf16`, `fp16` | 16 bits per weight, the precision most open models are released at |
+| `fp8`, `int8` | 8 bits per weight |
+| `fp6` | 6 bits per weight |
+| `fp4`, `int4` | 4 bits per weight |
+| `null` | No precision to show: the provider does not state one, or an Ollama level has no value in this list |
+
+The bit count is nominal. Some formats keep a few tensors at a higher precision and store scaling data alongside the weights, so read it as a category rather than an exact memory size. The value is what the provider states; Eden AI does not measure it. It is `null` for every closed-weight model (OpenAI, Anthropic, Google Gemini and similar), whose makers do not publish how they serve them. In the default view, an alias with no provider shows a precision only when every provider behind it serves the same one.
+
+For a model on your own private deployment, the value comes from the level your Ollama server reports: `Q4_0`, `Q4_1`, `Q4_K_S` and `Q4_K_M` are `int4`, `Q8_0` is `int8`, and `F16`, `BF16` and `F32` are `fp16`, `bf16` and `fp32`. Any other level is `null`, and the model's `description` still names it.
+
+## Retirement date
+
+Every endpoint entry also carries `retirement_date`: the day the provider has announced it will stop serving the model, as `YYYY-MM-DD`. Move to another model or provider before then, since calls on that endpoint will fail once the provider turns it off. Different providers retire the same model on different days, so the date belongs to the endpoint, not to the model.
+
+`null` means no date has been published. It does not promise the model will stay. An alias with a provider shows the date of the model it points to today. A stable alias is usually moved to a newer model before that date, so its calls keep working and its date changes with it.
+
+## Open weights and Hugging Face
+
+Every endpoint entry also carries `hugging_face_id` and `open_weights`, which describe the model rather than the provider, so every provider of a model shows the same values.
+
+`hugging_face_id` is the model's repository on [Hugging Face](https://huggingface.co), where its weights, license and model card are published: `openai/gpt-oss-120b` is at `https://huggingface.co/openai/gpt-oss-120b`. It is also the name other platforms and leaderboards use for the model, so you can match a model across them.
+
+`open_weights` is `true` when the model's weights are published for anyone to download and run, which is when it has a `hugging_face_id`. It means you can self-host or fine-tune the model. It does not mean the model is open source: most open-weights models do not publish their training data, and some licenses restrict use. Read the license on the repository.
+
+Both are `null` for a closed-weight model (OpenAI's GPT, Anthropic's Claude, Google's Gemini and similar), and for an open one whose repository we have no record of yet. So `null` means "not known to be open", not "closed".
+
+```json
+{
+  "id": "deepinfra/openai/gpt-oss-120b",
+  "hugging_face_id": "openai/gpt-oss-120b",
+  "open_weights": true,
+  "knowledge_cutoff": "2024-06-30"
+}
+```
+
+## Knowledge cutoff
+
+Every endpoint entry also carries `knowledge_cutoff`: the date the model's training data ends, as `YYYY-MM-DD`. The model knows nothing about events after it unless you put them in the prompt, for example with [web search](/v3/llms/web-search). It belongs to the model, so every provider shows the same date. `null` means its lab has not published one.
+
+## Reasoning details
+
+Every endpoint entry also carries `reasoning`, which says what you can set on a reasoning model:
+
+```json
+{
+  "id": "openai/gpt-6.2-sol",
+  "reasoning": {
+    "mandatory": true,
+    "supported_efforts": ["low", "medium", "high", "xhigh", "max"],
+    "default_effort": "medium",
+    "supports_max_tokens": null
+  }
+}
+```
+
+| Field | Meaning |
+| --- | --- |
+| `mandatory` | `true` when the model always reasons and it cannot be turned off. `false` when reasoning is optional. |
+| `supported_efforts` | The values you can send as `reasoning_effort`, lowest first. They come from `none`, `minimal`, `low`, `medium`, `high`, `xhigh` and `max`. |
+| `default_effort` | The effort the model uses when your request does not set one. |
+| `supports_max_tokens` | `true` when the model takes a token budget for its reasoning. |
+
+Each field is `null` when it is not known, which is not the same as "no". `reasoning` itself is `null` when we have no details for the model, and on any entry whose `capabilities.supports_reasoning` is `false`. Like the fields above it belongs to the model, so every provider shows the same value.
+
+In the [grouped view](#grouped-view-one-entry-per-routable-name), `hugging_face_id`, `open_weights`, `knowledge_cutoff` and `reasoning` are also at the top level of each model entry, as the value its endpoints state, or `null` when they disagree.
+
+## Supported parameters
+
+Every chat endpoint entry carries `supported_parameters`, the request parameters that reach that provider for that model:
+
+```json
+"supported_parameters": ["temperature", "top_p", "max_tokens", "stop", "tools", "tool_choice", "response_format", "reasoning_effort"]
+```
+
+A parameter is listed when Eden AI passes it on to the provider and, where the provider publishes its own list, the provider accepts it. One you send that is not listed may be dropped before the call, ignored, or refused by the provider. The list covers `temperature`, `top_p`, `max_tokens` (and `max_completion_tokens`), `stop`, `seed`, `frequency_penalty`, `presence_penalty`, `logit_bias`, `logprobs`, `top_logprobs`, `tools`, `tool_choice`, `response_format`, `reasoning_effort` and `verbosity`.
+
+It belongs to the endpoint, not the model: the same model can take `seed` on one provider and not on another. In the [grouped view](#grouped-view-one-entry-per-routable-name) it is on each item of `endpoints` only. It is `null` when we don't know, and on models other than chat.
 
 ## Model aliases
 
@@ -145,7 +317,16 @@ Some models are available under a **stable alias**, a version-agnostic name that
 - **Stable alias:** `google/gemini-flash-latest`, `anthropic/claude-sonnet-latest`, `deepseek/deepseek-chat`
 - **Versioned snapshot:** `anthropic/claude-opus-4-5-20251101`
 
-Use the **stable alias** when you want your integration to keep working as providers ship new versions. **Pin a versioned snapshot** when you need a fixed, reproducible model. Either form works as the `model` parameter. Alias entries report the concrete model they currently resolve to in the `alias_of` field, as in the response example above.
+Use the **stable alias** when you want your integration to keep working as providers ship new versions. **Pin a versioned snapshot** when you need a fixed, reproducible model. Either form works as the `model` parameter.
+
+An alias comes in two forms, and `alias_of` tells you which:
+
+| Alias | `alias_of` | Who serves the call | Listed in |
+|-------|-----------|---------------------|-----------|
+| With a provider, such as `anthropic/claude-sonnet-latest` | A `provider/model` id | That provider, unless the call falls back to a model you listed in [`fallbacks`](/v3/general/fallback) | The default view |
+| Without a provider, such as `~claude-sonnet-latest` | A routable model name | The provider Eden AI picks, as with [Provider Routing](/v3/llms/provider-routing) | `view=models` |
+
+An alias without a provider starts with `~` (e.g. `~claude-sonnet-latest`) so it can never share a name with a model. In a shell, quote it (`--model '~claude-sonnet-latest'`): some shells, such as zsh, expand an unquoted leading `~`. It is listed with `view=models` only, where it repeats the entry of the model it names, endpoints included, as described under the [grouped view](#grouped-view-one-entry-per-routable-name). A call on it is billed at the prices of the provider that served it.
 
 The catalog lists both forms when a provider exposes them, so you may see a stable alias (e.g. `anthropic/claude-opus-4-5`) and one or more dated snapshots (e.g. `anthropic/claude-opus-4-5-20251101`) side by side. Use the stable alias to always get the latest version, or a dated snapshot to pin to a specific release.
 
@@ -159,6 +340,7 @@ The `capabilities` object describes what each model supports:
 | `output_modalities` | Output types the model produces |
 | `supports_reasoning` | Model supports extended thinking / reasoning mode |
 | `supports_web_search` | Model can perform live web searches via [`web_search_options`](/v3/llms/web-search) |
+| `supports_batch` | `true` when this entry's `id` passes the model rules of [`/v3/batches`](/v3/llms/batches), so a batch file whose lines name it is eligible; `false` when a batch on it is refused (a provider batches do not run on, a model that does not serve chat completions, a region its provider's batches do not run in, or no published batch rate). Computed per entry, so the same model can be `true` on one entry and `false` on another. With `view=models`, a model's flag is `true` when any of its endpoints is: name an `endpoints[].id` that reads `true`. It does not depend on the caller: a batch on a `true` entry can still be refused for your organization's own key for the provider (`400`), zero data retention (`403`), a provider gate (`451`) or while batches are paused (`503`) |
 | `supports_function_calling` | Model supports function/tool calling |
 | `supports_tool_choice` | Model supports the `tool_choice` parameter |
 | `supports_prompt_caching` | Model supports [prompt caching](/v3/llms/prompt-caching) |

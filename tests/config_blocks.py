@@ -14,36 +14,54 @@ all, and then the provider rule keeps only what begins with a provider Eden AI
 actually has, which the catalog itself supplies. That is why "image/gif" is
 not a model reference and nothing had to say so.
 
+A name Eden AI routes, such as "gpt-4o", has no provider half, and many are
+ordinary words ("base", "o3"), so a bare name is never read out of text. It
+counts only after a tool's "edenai/" prefix, and only when the catalog lists
+it or a leading "~" marks it as an alias.
+
 The catalog is the union of seven routes. /v3/models is hardcoded to the chat
 endpoints, so it lists chat models only, and a config block may name any of
 the rest: Continue configures an embeddings model next to its chat models, and
-checking that one against /v3/models alone would call it broken.
+checking that one against /v3/models alone would call it broken. Each route is
+read in both of its views, because a page may name a provider id or a routed
+name.
 """
 
+import hashlib
 import json
+import os
 import re
 import tomllib
+from concurrent.futures import ThreadPoolExecutor
 from functools import cache
 from pathlib import Path
 from typing import Any
 
 import requests
 import yaml
+from filelock import FileLock
+from requests.adapters import HTTPAdapter
+from urllib3.util import Retry
 
 from tests.helpers.http import TIMEOUT, url_exists
 from tests.snippet_extractor import DOCS_ROOT, extract_config_blocks
 
 __all__ = [
+    "CATALOG_BASE_URL",
+    "CATALOG_CACHE_VAR",
     "CONFIG_LANGUAGES",
+    "INTEGRATIONS_DIR",
     "MODEL_CATALOG_ROUTES",
     "TOOL_PREFIX",
     "catalog_ids",
     "catalog_providers",
+    "catalog_routes",
     "config_blocks",
     "config_pages",
     "eden_urls",
     "model_candidates",
     "model_references",
+    "models_in",
     "normalize_model_id",
     "parse_config",
     "url_exists",
@@ -59,6 +77,16 @@ INTEGRATIONS_DIR = DOCS_ROOT / "v3" / "integrations"
 
 CATALOG_BASE_URL = "https://api.edenai.run/v3"
 
+# Where a run keeps the catalog once one process has fetched it. conftest points
+# it at the session's temp directory, which every xdist worker shares.
+CATALOG_CACHE_VAR = "_EDEN_CATALOG_CACHE_DIR"
+
+# A rate limit or a passing 5xx on any one of the catalog requests would
+# otherwise error the collection of every test built from the catalog.
+_CATALOG_RETRY = Retry(
+    total=3, backoff_factor=1, status_forcelist=(429, 500, 502, 503, 504)
+)
+
 MODEL_CATALOG_ROUTES = (
     "models",
     "embeddings/models",
@@ -69,15 +97,30 @@ MODEL_CATALOG_ROUTES = (
     "videos/models",
 )
 
+# Every route but videos lists its models in two views, and the default is
+# moving from one to the other, so each is asked for by name. ?view=endpoints
+# has an entry per provider id ("openai/gpt-4o", "azure/gpt-4o@eu") and is the
+# only one with the provider aliases ("anthropic/claude-sonnet-latest").
+# ?view=models has an entry per routed name ("gpt-4o", "~gemini-flash-latest").
+_CATALOG_VIEWS = ("endpoints", "models")
+_SINGLE_VIEW_ROUTES = frozenset({"videos/models"})
+
 # OpenCode and Kilo Code write the name of the provider they configured, then
-# the Eden AI id, which contains a slash of its own. Those tools split on the
-# first slash only, so that is what happens here.
+# the Eden AI id, which may contain a slash of its own. Those tools split on
+# the first slash only, so that is what happens here.
 TOOL_PREFIX = "edenai/"
 
 # Anything that could be "a/b" or "a/b/c". Run over the raw text rather than a
 # parsed document, because a block that is a menu of alternatives does not
-# parse and its model ids still have to be checked.
-_CANDIDATE_RE = re.compile(r"[A-Za-z0-9_.@-]+(?:/[A-Za-z0-9_.@-]+)+")
+# parse and its model ids still have to be checked. It never ends on a period,
+# because no id does and a sentence that ends on one does. A "~" can open the
+# part after a slash, for an alias behind the tool prefix: "edenai/~glm-latest".
+_CANDIDATE_RE = re.compile(r"[A-Za-z0-9_.@-]+(?:/~?[A-Za-z0-9_.@-]+)+(?<!\.)")
+
+# A JavaScript module path has the shape of an id and can start with a
+# provider: import type { X } from 'openai/resources/chat/completions', or
+# await import('openai/resources/chat').
+_MODULE_SPECIFIER_RE = re.compile(r"""(?:\bfrom|\bimport\(?|\brequire\()\s*["']$""")
 
 # A provider is a lowercase word. This is what rejects an image tag
 # (ghcr.io/...), a path (./data/...) and a host (api.edenai.run/v3), all of
@@ -132,6 +175,20 @@ def normalize_model_id(value: str) -> str:
     return value
 
 
+def _candidates_in(text: str) -> list[str]:
+    """Strings shaped like a model id, in the order the text has them."""
+    candidates = []
+    for match in _CANDIDATE_RE.finditer(text):
+        if _MODULE_SPECIFIER_RE.search(text, 0, match.start()):
+            continue
+        token = match.group(0)
+        model_id = normalize_model_id(token)
+        # No slash left means the tool prefix came off a routed name.
+        if "/" not in model_id or _PROVIDER_SEGMENT_RE.match(model_id.split("/")[0]):
+            candidates.append(token)
+    return candidates
+
+
 def model_candidates(block: dict) -> set[str]:
     """Strings in the block shaped like a model id.
 
@@ -139,25 +196,35 @@ def model_candidates(block: dict) -> set[str]:
     model exists. A docker mount and a MIME type can still get through here;
     model_references is what settles it.
     """
-    candidates = set()
-    for token in _CANDIDATE_RE.findall(block["code"]):
-        # A docker-compose environment entry is KEY=value, and the value is
-        # the part worth looking at: RAG_EMBEDDING_MODEL=openai/....
-        token = token.rsplit("=", 1)[-1]
-        provider = normalize_model_id(token).split("/", 1)[0]
-        if _PROVIDER_SEGMENT_RE.match(provider):
-            candidates.add(token)
-    return candidates
+    return set(_candidates_in(block["code"]))
+
+
+def models_in(text: str) -> list[str]:
+    """The model references in any text, in order and each once.
+
+    The same two rules as model_references, for text that is not a config
+    block: a shell block, a table cell, a sentence naming the model to pick.
+    Order is kept because the first model a page names is the one it leads
+    with, which is the one worth sending a request to.
+    """
+    providers = catalog_providers()
+    seen: dict[str, None] = {}
+    for candidate in _candidates_in(text):
+        model_id = normalize_model_id(candidate)
+        if "/" in model_id:
+            named = model_id.split("/", 1)[0] in providers
+        else:
+            # A routed name has no provider to vouch for it, and the tool
+            # prefix starts other things too: edenai/policy/<name> on OpenClaw.
+            named = model_id.startswith("~") or model_id in catalog_ids()
+        if named:
+            seen.setdefault(candidate)
+    return list(seen)
 
 
 def model_references(block: dict) -> set[str]:
-    """The candidates that begin with a provider Eden AI really has."""
-    providers = catalog_providers()
-    return {
-        candidate
-        for candidate in model_candidates(block)
-        if normalize_model_id(candidate).split("/", 1)[0] in providers
-    }
+    """The candidates that name a model, by its provider or by a routed name."""
+    return set(models_in(block["code"]))
 
 
 def eden_urls(block: dict) -> set[str]:
@@ -172,20 +239,84 @@ def url_probe(url: str) -> str:
     return url
 
 
+def catalog_routes(base_url: str = CATALOG_BASE_URL) -> dict[str, dict[str, dict]]:
+    """Every model Eden AI serves, under the catalog route that lists it.
+
+    The route is what says which request a model answers: an id under
+    embeddings/models takes an embeddings call and nothing else. Each entry is
+    kept whole, because the chat entries carry the capabilities a tool relies
+    on, function calling first among them. A routed name ("gpt-4o") sits
+    beside the provider ids, with its endpoints' capabilities unioned.
+
+    Production's unless a caller names another API: readers use production,
+    so that is the catalog a page is checked against.
+    """
+    return _catalog_routes(base_url)
+
+
+@cache
+def _catalog_routes(base_url: str) -> dict[str, dict[str, dict]]:
+    cache_dir = os.environ.get(CATALOG_CACHE_VAR)
+    if not cache_dir:
+        return _fetch_catalog(base_url)
+    # Every xdist worker collects on its own, and the integration tests are
+    # parametrized from this. Two workers that fetched it a moment apart could
+    # collect different tests, which xdist refuses, so the first one here
+    # fetches it for the rest.
+    digest = hashlib.sha256(base_url.encode()).hexdigest()[:12]
+    path = Path(cache_dir) / f"catalog-{digest}.json"
+    with FileLock(f"{path}.lock"):
+        if not path.exists():
+            path.write_text(json.dumps(_fetch_catalog(base_url)))
+        return json.loads(path.read_text())
+
+
+def _fetch_catalog(base_url: str) -> dict[str, dict[str, dict]]:
+    listings = [
+        (route, view)
+        for route in MODEL_CATALOG_ROUTES
+        for view in ((None,) if route in _SINGLE_VIEW_ROUTES else _CATALOG_VIEWS)
+    ]
+    # Fetched together, because a dozen requests one after another hold up
+    # collection.
+    with ThreadPoolExecutor(len(listings)) as pool:
+        fetched = list(
+            pool.map(lambda listing: _catalog_listing(base_url, *listing), listings)
+        )
+    catalog: dict[str, dict[str, dict]] = {route: {} for route in MODEL_CATALOG_ROUTES}
+    for (route, _), entries in zip(listings, fetched):
+        catalog[route].update(entries)
+    return catalog
+
+
+def _catalog_listing(base_url: str, route: str, view: str | None) -> dict[str, dict]:
+    with requests.Session() as session:
+        session.mount("https://", HTTPAdapter(max_retries=_CATALOG_RETRY))
+        response = session.get(
+            f"{base_url}/{route}",
+            params={"view": view} if view else None,
+            timeout=TIMEOUT,
+        )
+    response.raise_for_status()
+    payload = response.json()
+    entries = payload["data"] if isinstance(payload, dict) else payload
+    return {entry["id"]: entry for entry in entries}
+
+
 @cache
 def catalog_ids() -> frozenset[str]:
-    """Every model id Eden AI serves, across all seven catalog routes."""
-    ids: set[str] = set()
-    for route in MODEL_CATALOG_ROUTES:
-        response = requests.get(f"{CATALOG_BASE_URL}/{route}", timeout=TIMEOUT)
-        response.raise_for_status()
-        payload = response.json()
-        entries = payload["data"] if isinstance(payload, dict) else payload
-        ids.update(entry["id"] for entry in entries)
-    return frozenset(ids)
+    """Every model id and routed name Eden AI serves, across all seven routes."""
+    return frozenset(
+        model_id for entries in catalog_routes().values() for model_id in entries
+    )
 
 
 @cache
 def catalog_providers() -> frozenset[str]:
-    """The provider half of every id in the catalog."""
-    return frozenset(model_id.split("/", 1)[0] for model_id in catalog_ids())
+    """The provider half of every provider/model id in the catalog.
+
+    A routed name has no provider half: "whisper" is a model, not a provider.
+    """
+    return frozenset(
+        model_id.split("/", 1)[0] for model_id in catalog_ids() if "/" in model_id
+    )

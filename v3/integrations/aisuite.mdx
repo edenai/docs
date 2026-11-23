@@ -2,50 +2,44 @@
 title: "Use aisuite with Eden AI"
 sidebarTitle: "aisuite"
 icon: "/integration-logo/aisuite-icondoc.svg"
-description: "Use aisuite with Eden AI to call 500+ AI models through one unified, OpenAI-style interface."
+description: "Call 500+ models through aisuite's built-in Eden AI provider with one key. Install aisuite 0.2.0 or later, then pick a model with edenai:provider/model."
 ---
 
 import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
 
 <TechArticleSchema
   title={"Use aisuite with Eden AI"}
-  description={"Use aisuite with Eden AI to call 500+ AI models through one unified, OpenAI-style interface."}
+  description={"Call 500+ models through aisuite's built-in Eden AI provider with one key. Install aisuite 0.2.0 or later, then pick a model with edenai:provider/model."}
   path="v3/integrations/aisuite"
   articleSection="AI Frameworks"
   about={"LLM Framework Integration"}
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "aisuite", "Python", "Andrew Ng"]}
   datePublished="2026-07-17T00:00:00Z"
-  dateModified="2026-07-17T00:00:00Z"
+  dateModified="2026-10-27T00:00:00Z"
 />
 
-Use aisuite with Eden AI to call 500+ AI models through one unified, OpenAI-style interface.
+aisuite 0.2.0 and later includes an `edenai` provider, so one Eden AI key gives `client.chat.completions.create` access to the whole catalog.
 
 ## Overview
 
-[aisuite](https://github.com/andrewyng/aisuite) is a lightweight Python library (from Andrew Ng's team) that gives you a single, OpenAI-style Chat Completions interface across many providers — swap providers by changing one string. **Eden AI is a built-in aisuite provider**, so you reach models from OpenAI, Anthropic, Google, Mistral, Cohere, Meta and more behind one key, with EU-based, GDPR-aligned inference.
+[aisuite](https://github.com/andrewyng/aisuite) is a lightweight Python library (from Andrew Ng's team) that gives you a single, OpenAI-style Chat Completions interface across many providers: swap providers by changing one string. **Eden AI is a built-in aisuite provider**, so you reach models from OpenAI, Anthropic, Google, Mistral and more behind one key.
 
-You select a model with the `provider:model_id` syntax. For Eden AI, the provider is `edenai` and the model id follows Eden AI's `provider/model` scheme — for example `edenai:vertex/gemini-flash-latest`.
+You select a model with the `provider:model_id` syntax. For Eden AI, the provider is `edenai` and the model id follows Eden AI's `provider/model` scheme, for example `edenai:vertex/gemini-flash-latest`.
 
 ## Installation
 
-Eden AI is OpenAI-compatible, so aisuite talks to it through the `openai` SDK — install both:
+The Eden AI provider ships in aisuite 0.2.0 and later. It talks to Eden AI through the `openai` SDK, which aisuite does not install for you, so install both:
 
 <CodeGroup>
 ```bash pip
-pip install git+https://github.com/andrewyng/aisuite.git openai
+pip install "aisuite>=0.2.0" openai
 ```
 
 ```bash poetry
-poetry add git+https://github.com/andrewyng/aisuite.git openai
+poetry add "aisuite>=0.2.0" openai
 ```
 </CodeGroup>
-
-<Note>
-  The Eden AI provider is on aisuite's `main` branch but has not made it into a
-  PyPI release yet, so install from the repository. Once aisuite publishes a
-  release that includes it, `pip install aisuite openai` is enough.
-</Note>
 
 ## Quick Start
 
@@ -53,10 +47,9 @@ Set your key, then point aisuite at Eden AI by prefixing any model with `edenai:
 
 <CodeGroup>
 ```bash .env
-EDENAI_API_KEY=your_api_key_here
+EDENAI_API_KEY=YOUR_API_KEY
 ```
 
-{/* skip-test: the Eden AI provider is merged upstream but not in any aisuite release yet */}
 ```python Python
 import aisuite as ai
 
@@ -74,14 +67,21 @@ print(response.choices[0].message.content)
 ```
 </CodeGroup>
 
-The `edenai` provider automatically uses the Eden AI base URL (`https://api.edenai.run/v3`) and reads your key from the `EDENAI_API_KEY` environment variable.
+The `edenai` provider uses the Eden AI base URL (`https://api.edenai.run/v3`) and reads your key from the `EDENAI_API_KEY` environment variable. The base URL is fixed in the provider: a `base_url` you put in the client config is ignored.
+
+<Note>
+  In aisuite 0.2.0, the `edenai` provider does not support streaming. Calling it with `stream=True` raises an `LLMError`.
+</Note>
+
+## Model naming
+
+Use `edenai:<provider>/<model>`. Everything after the first colon is passed to Eden AI unchanged, for example `edenai:anthropic/claude-sonnet-latest` or `edenai:mistral/mistral-small-latest`. To browse every id, see [List LLM Models](/v3/llms/listing-models).
 
 ## Switching models
 
-aisuite's core benefit: change providers by changing one string. Every Eden AI model is reachable the same way — no per-provider SDKs, no code changes:
+aisuite's core benefit: change providers by changing one string. Every Eden AI model is reachable the same way, with no per-provider SDKs and no code changes:
 
 <CodeGroup>
-{/* skip-test: the Eden AI provider is merged upstream but not in any aisuite release yet */}
 ```python Python
 import aisuite as ai
 
@@ -89,7 +89,7 @@ client = ai.Client()
 messages = [{"role": "user", "content": "Write a haiku about the sea."}]
 
 for model in [
-    "edenai:openai/gpt-5.5",
+    "edenai:openai/gpt-latest",
     "edenai:anthropic/claude-sonnet-latest",
     "edenai:mistral/mistral-large-latest",
 ]:
@@ -98,37 +98,15 @@ for model in [
 ```
 </CodeGroup>
 
-## Available Models
-
-Use the `edenai:<provider>/<model>` format for any Eden AI model:
-
-**OpenAI**
-- `edenai:openai/gpt-5.5`
-- `edenai:openai/gpt-5-mini`
-
-**Anthropic**
-- `edenai:anthropic/claude-sonnet-latest`
-- `edenai:anthropic/claude-opus-latest`
-- `edenai:anthropic/claude-haiku-latest`
-
-**Google**
-- `edenai:vertex/gemini-2.5-pro`
-- `edenai:vertex/gemini-flash-latest`
-
-**Mistral**
-- `edenai:mistral/mistral-large-latest`
-- `edenai:mistral/mistral-small-latest`
-
 ## Passing configuration explicitly
 
 Prefer not to use environment variables? Pass the key through the aisuite client config instead:
 
 <CodeGroup>
-{/* skip-test: the Eden AI provider is merged upstream but not in any aisuite release yet */}
 ```python Python
 import aisuite as ai
 
-client = ai.Client({"edenai": {"api_key": "YOUR_EDENAI_API_KEY"}})
+client = ai.Client({"edenai": {"api_key": "YOUR_API_KEY"}})
 
 response = client.chat.completions.create(
     model="edenai:mistral/mistral-large-latest",
@@ -140,9 +118,11 @@ print(response.choices[0].message.content)
 
 ## Environment Variables
 
+The `edenai` provider reads `EDENAI_API_KEY`. There is no variable for the base URL.
+
 <CodeGroup>
 ```bash .env
-EDENAI_API_KEY=your_api_key_here
+EDENAI_API_KEY=YOUR_API_KEY
 ```
 </CodeGroup>
 

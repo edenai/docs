@@ -2,6 +2,7 @@
 
 import io
 import struct
+import wave
 import zlib
 
 from PIL import Image
@@ -134,3 +135,15 @@ def minimal_png() -> bytes:
     idat = _chunk(b"IDAT", zlib.compress(raw_data))
     iend = _chunk(b"IEND", b"")
     return signature + ihdr + idat + iend
+
+
+def silent_wav(seconds: float = 1.0, sample_rate: int = 16000) -> bytes:
+    """Mono 16-bit silence. The transcription endpoint measures the audio's
+    duration before it bills, so the file has to be real audio, not a stub."""
+    buf = io.BytesIO()
+    with wave.open(buf, "wb") as wav:
+        wav.setnchannels(1)
+        wav.setsampwidth(2)
+        wav.setframerate(sample_rate)
+        wav.writeframes(b"\x00\x00" * int(seconds * sample_rate))
+    return buf.getvalue()

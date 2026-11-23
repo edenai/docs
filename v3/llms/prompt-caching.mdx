@@ -14,7 +14,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "LLM API", "prompt caching", "context caching", "cached tokens"]}
   datePublished="2026-08-24T00:00:00Z"
-  dateModified="2026-08-24T00:00:00Z"
+  dateModified="2026-10-20T00:00:00Z"
 />
 
 Prompt caching lets a provider reuse the stable beginning of a long prompt. The provider still runs the model and generates a fresh response, but cached input tokens can be faster and cheaper than processing the same prefix again.
@@ -317,7 +317,7 @@ Set `routing.sticky` to `false` to route independently:
 }
 ```
 
-An explicit `routing.sort` also takes priority over cache affinity. A concrete `provider/model` needs no sticky routing because its provider is already fixed. See [Provider Routing](/v3/llms/provider-routing) for the complete routing contract.
+An explicit `routing.sort` or `routing.order` also takes priority over cache affinity. A concrete `provider/model` needs no sticky routing because its provider is already fixed. See [Provider Routing](/v3/llms/provider-routing) for the complete routing contract.
 
 ## Reading cache usage and cost
 

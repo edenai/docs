@@ -55,10 +55,20 @@ Every link on every published page is checked by `tests/test_links.py`, which re
 The JSON, YAML and TOML blocks under `v3/integrations/` are configuration a reader pastes into another tool, so nothing runs them. `tests/test_config_blocks.py` parses each one and checks every name inside it. See `tests/README.md` for the details.
 
 - A block must parse as the language its fence declares. If it is a fragment or a menu of alternative values for one key rather than a whole file, mark it `{/* skip-test: why */}` like any other block. The model ids inside it are still checked.
-- Every model a config names must exist in the live catalog, which is the union of seven routes. Do NOT check a new model id against `/v3/models` alone: that route is chat only, and an embeddings or image model will look invalid.
+- Every model a config names must exist in the live catalog: the union of seven routes, each read with `view=endpoints` (`provider/model` ids, including the provider aliases and `@region` ids) and `view=models` (model names and `~` aliases) when it has both. Do NOT check a new model id against `/v3/models` alone: that route is chat only, and an embeddings or image model will look invalid.
 - A base URL is checked by requesting `/models` underneath it, because `https://api.edenai.run/v3` on its own answers 404 by design.
-- What counts as a model id is decided by the catalog's own provider list, not a hardcoded one, so `image/gif` and `ghcr.io/open-webui/open-webui:main` are correctly not models. A new provider needs no change here.
+- What counts as a model id is decided by the catalog, not a hardcoded list. A `provider/model` id counts when the catalog has its provider, so `image/gif` and `ghcr.io/open-webui/open-webui:main` are correctly not models, and a new provider needs no change here. A model name counts only after a tool's `edenai/` prefix (`edenai/~gemini-flash-latest`), never as a bare word in prose, since names like `base` and `o3` are ordinary words.
 - `nginx` blocks are out of scope: no parser reads them and they name no models.
+
+## What the Integration Pages' Tools Send
+
+A config that parses can still point its tool at Eden AI in a way the tool cannot use, so `tests/test_integrations.py` checks the request each page's tool sends, and `tests/test_integration_clis.py` runs the real Claude Code, Codex and OpenCode CLIs with the page's settings. See `tests/README.md` for the details.
+
+- A new page under `v3/integrations/` needs an entry in `TOOLS` in `tests/integrations.py`: the protocol its tool speaks (chat completions, Anthropic Messages, Responses) and whether it sends tool definitions. The test fails until it has one. Find out from the tool's source or docs; do not default to chat completions.
+- A setting that holds a model (`model`, `titleModel`, `RAG_EMBEDDING_MODEL`, `--model`) names a model exactly as the catalog lists it: a model name (`gpt-4o`, `~gemini-flash-latest`) or a `provider/model` id. Tools send the value as it stands, so a name the catalog lacks, such as `whisper-1`, is rejected.
+- A page for a coding agent names only models whose catalog entry has `supports_function_calling`, because the agent sends its tools with every request.
+- Every model a page names is checked, in prose and tables as well as code. Do NOT name a retired model as an example.
+- The CLI tests read the Claude Code page's `export` lines, the Codex page's `config.toml` block and the OpenCode page's config generator. Restructuring those pages means keeping those shapes, or updating the test that reads them.
 
 ## Common Pitfalls in .mdx Code Blocks
 

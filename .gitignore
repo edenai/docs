@@ -9,6 +9,9 @@ tests/generated/
 # Packages the generated JS snippets import, restored from tests/package-lock.json
 tests/node_modules/
 
+# The agent CLIs the integration tests run, restored from tests/clis/package-lock.json
+tests/clis/node_modules/
+
 # Coverage reports
 htmlcov/
 coverage.xml

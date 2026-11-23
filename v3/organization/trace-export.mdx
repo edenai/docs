@@ -82,9 +82,27 @@ response = client.chat.completions.create(
 print(response.choices[0].message.content)
 ```
 
-In practice your OpenTelemetry SDK writes this header for you: its HTTP instrumentation adds it to every request your OpenAI or Anthropic client makes. Without one, each call is a trace of its own. When your app does not record its trace (the header's sampled flag is off), its calls are not sent either to a destination that nests your calls under your trace.
+In practice your OpenTelemetry SDK writes this header for you: its HTTP instrumentation adds it to every request your OpenAI or Anthropic client makes. Without one (or the `trace` field below), each call is a trace of its own. When your app does not record its trace (the header's sampled flag is off), its calls are not sent either to a destination that nests your calls under your trace.
 
 LangSmith and Braintrust drop a span whose parent they never receive, so their destinations keep each call in a trace of its own unless you turn on **Nest under your app's trace**. Turn it on only when your app sends its own spans to the same project; otherwise those calls won't appear.
+
+### Without a tracer
+
+An app that does not trace its work can still group calls into one trace with the `trace` body field, on chat completions, Responses, Messages and Universal AI calls:
+
+```python
+response = client.chat.completions.create(
+    model="openai/gpt-4o-mini",
+    messages=[{"role": "user", "content": "Say hi"}],
+    extra_body={"trace": {"trace_id": "checkout-42"}},
+)
+```
+
+- `trace_id`: 32 lowercase hex characters are used as they are; any other string, such as `checkout-42`, is hashed into a trace id, so the same label always names the same trace.
+- `parent_span_id` (optional): the span of your app the call runs under, 16 lowercase hex characters or any string hashed into one. Without it, the call starts the trace's work under no span.
+- Other keys are accepted and ignored. The field is never sent to the provider.
+
+A `traceparent` header wins when a call sends both. The calls are recorded as sampled, since the field carries no sampled flag.
 
 ### Claude Code
 

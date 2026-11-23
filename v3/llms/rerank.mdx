@@ -16,7 +16,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "LLM API", "rerank API", "reranking", "RAG", "semantic search"]}
   datePublished="2026-10-29T00:00:00Z"
-  dateModified="2026-11-02T00:00:00Z"
+  dateModified="2026-11-19T00:00:00Z"
 />
 
 A reranker reads a query and a list of texts and scores how relevant each text is to the query. Use it after a first retrieval step, such as [embeddings](/v3/llms/embeddings) or keyword search, to put the best passages first before you hand them to an LLM.
@@ -36,7 +36,7 @@ The V2 API has no rerank route. This is the only rerank API Eden AI offers.
 
 ## List rerank models
 
-`GET /v3/rerank/models` lists the models that can serve a rerank call. It takes the same `view` and `zero_data_retention` parameters as the other [model listings](/v3/llms/listing-models), and each entry carries `zero_data_retention`, which says whether the provider keeps your inputs after the response. Only models that are in this list can be called, by their `provider/model` id. With `view=models` the entries are grouped under a model name that rerank does not accept: call one of the nested `endpoints[].id` values instead. Rerank lists no routing policy.
+`GET /v3/rerank/models` lists the models that can serve a rerank call. It takes the same `view`, filter, and `sort` parameters as the other [model listings](/v3/llms/listing-models), and each entry carries `zero_data_retention`, which says whether the provider keeps your inputs after the response. Only models that are in this list can be called, by their `provider/model` id. With `view=models` the entries are grouped under a model name that rerank does not accept: call one of the nested `endpoints[].id` values instead. Rerank lists no routing policy.
 
 <CodeGroup>
 ```python Python

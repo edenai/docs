@@ -14,7 +14,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "LLM API", "routing policy", "model fallback", "load balancing", "provider routing"]}
   datePublished="2026-10-27T00:00:00Z"
-  dateModified="2026-11-18T00:00:00Z"
+  dateModified="2026-11-19T00:00:00Z"
 />
 
 A routing policy is a saved model chain: which models to try, how to pick among them, the [provider routing](/v3/llms/provider-routing) preferences every attempt follows, and the [request params](#request-params) each model is sent, such as its reasoning effort. Save it once under a name and every request can use it as `model: "policy/{name}"`, so an app that only lets you configure a model string, such as a coding agent or a chat UI, gets your fallbacks, provider preferences and params without any change to the request.
@@ -419,7 +419,7 @@ curl "https://api.edenai.run/v3/models?view=models" \
 }
 ```
 
-The entry carries the name only: which target serves a call is decided per request, so there is no price, context window or region to summarise. Only enabled policies with targets are listed. The default listing (`view=endpoints`) and any `zero_data_retention` filter leave policies out, as does every other model listing.
+The entry carries the name only: which target serves a call is decided per request, so there is no price, context window or region to summarise. Only enabled policies with targets are listed. The default listing (`view=endpoints`) and any endpoint filter (such as `zero_data_retention`, `capabilities`, `region`, `context`, or price) leave policies out, as does every other model listing.
 
 ## Errors
 

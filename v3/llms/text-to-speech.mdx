@@ -16,7 +16,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "text to speech", "TTS", "OpenAI compatible", "tts-1", "elevenlabs", "amazon polly"]}
   datePublished="2026-10-13T00:00:00Z"
-  dateModified="2026-10-13T00:00:00Z"
+  dateModified="2026-11-19T00:00:00Z"
 />
 
 Generate speech from text through Eden AI's OpenAI-compatible speech endpoint. Point any OpenAI client at `https://api.edenai.run/v3` and `client.audio.speech` works as a drop-in replacement for OpenAI's text to speech.
@@ -228,7 +228,7 @@ curl https://api.edenai.run/v3/audio/speech/models \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
-Each entry carries its `pricing`, e.g. `{"input_cost_per_character": 0.000015}` for `openai/tts-1`. The endpoint takes the same `view` parameter as the other [model listings](/v3/llms/listing-models).
+Each entry carries its `pricing`, e.g. `{"input_cost_per_character": 0.000015}` for `openai/tts-1`. The endpoint takes the same `view`, filter and `sort` parameters as the other [model listings](/v3/llms/listing-models#filtering-and-sorting).
 
 ## Pricing
 

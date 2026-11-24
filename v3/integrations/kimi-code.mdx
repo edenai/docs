@@ -18,7 +18,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   dateModified="2026-11-24T00:00:00Z"
 />
 
-[Kimi Code CLI](https://github.com/MoonshotAI/kimi-cli) (`kimi`) is Moonshot AI's terminal coding agent. It reads custom providers and models from `~/.kimi/config.toml` and supports OpenAI-compatible Chat Completions (`openai_legacy`), OpenAI Responses (`openai_responses`), and Anthropic Messages (`anthropic`). Kimi Code sends tool definitions with every request, so choose a model that supports function calling.
+[Kimi Code CLI](https://github.com/MoonshotAI/kimi-code) (`kimi`) is Moonshot AI's terminal coding agent. It reads custom providers and models from `~/.kimi-code/config.toml` and supports OpenAI-compatible Chat Completions (`openai`), OpenAI Responses (`openai_responses`), and Anthropic Messages (`anthropic`). Kimi Code sends tool definitions with every request, so choose a model that supports function calling.
 
 ## Overview
 
@@ -30,21 +30,21 @@ Pointing Kimi Code at Eden AI gives you:
 
 ## Prerequisites
 
-- Kimi Code CLI installed ([install instructions](https://github.com/MoonshotAI/kimi-cli))
+- Kimi Code CLI installed ([install instructions](https://www.kimi.com/code/docs/en/kimi-code-cli/guides/getting-started.html))
 
 - An Eden AI API key from [app.edenai.run](https://app.edenai.run) → **API Keys**
 
 ## Setup
 
-### 1. Configure `~/.kimi/config.toml`
+### 1. Configure `~/.kimi-code/config.toml`
 
-Kimi Code reads its provider and model definitions from `~/.kimi/config.toml` (creating the file on first run if it does not exist). Add an `edenai` provider using `type = "openai_legacy"` (the OpenAI Chat Completions protocol) and declare the models you want to use:
+Kimi Code reads its provider and model definitions from `~/.kimi-code/config.toml` (creating the file on first run if it does not exist). Add an `edenai` provider using `type = "openai"` (the OpenAI Chat Completions protocol) and declare the models you want to use:
 
-```toml ~/.kimi/config.toml
+```toml ~/.kimi-code/config.toml
 default_model = "kimi-k2.7-code"
 
 [providers.edenai]
-type = "openai_legacy"
+type = "openai"
 base_url = "https://api.edenai.run/v3"
 api_key = "YOUR_EDEN_AI_API_KEY"
 
@@ -52,13 +52,13 @@ api_key = "YOUR_EDEN_AI_API_KEY"
 provider = "edenai"
 model = "kimi-k2.7-code"
 max_context_size = 262144
-capabilities = ["thinking", "image_in"]
+capabilities = ["thinking", "image_in", "tool_use"]
 
 [models."claude-sonnet-5.5"]
 provider = "edenai"
 model = "claude-sonnet-5.5"
 max_context_size = 1000000
-capabilities = ["thinking", "image_in"]
+capabilities = ["thinking", "image_in", "tool_use"]
 ```
 
 <Note>
@@ -71,10 +71,10 @@ capabilities = ["thinking", "image_in"]
 kimi
 ```
 
-To use a separate configuration file for a specific project or environment, pass `--config-file`:
+To use a separate configuration directory for a specific project or environment, set `KIMI_CODE_HOME`. Kimi Code reads `$KIMI_CODE_HOME/config.toml` from that directory:
 
 ```bash
-kimi --config-file /path/to/config.toml
+KIMI_CODE_HOME=/path/to/kimi-home kimi
 ```
 
 ## Model naming and switching
@@ -91,28 +91,20 @@ kimi --model claude-sonnet-5.5
 
 ### Other provider protocols
 
-`openai_legacy` (Chat Completions) is the simplest default because every chat model in the Eden AI catalog supports it. If you prefer another wire protocol under `https://api.edenai.run/v3`:
+`openai` (Chat Completions) is the simplest default because every chat model in the Eden AI catalog supports it. If you prefer another wire protocol under `https://api.edenai.run/v3`:
 
 - `type = "openai_responses"` sends requests to `/v3/responses`.
 - `type = "anthropic"` sends requests to `/v3/v1/messages` (use this for Claude models).
 
 ## Expert Models as Tools (MCP)
 
-Eden AI hosts an [MCP server](/v3/expert-models/mcp-server) that exposes OCR, web search, speech, translation, and more as tools. Add it with the Kimi Code CLI:
+Eden AI hosts an [MCP server](/v3/expert-models/mcp-server) that exposes OCR, web search, speech, translation, and more as tools. Run `/mcp-config` inside a Kimi Code session to add it, or edit `~/.kimi-code/mcp.json` directly (`.kimi-code/mcp.json` for a single project):
 
-```bash
-kimi mcp add --transport http edenai https://mcp.edenai.run/mcp \
-  --header "Authorization: Bearer YOUR_EDEN_AI_API_KEY"
-```
-
-This writes the server entry to `~/.kimi/mcp.json` (you can also edit `~/.kimi/mcp.json` directly, or `.kimi-code/mcp.json` for a single project):
-
-```json ~/.kimi/mcp.json
+```json ~/.kimi-code/mcp.json
 {
   "mcpServers": {
     "edenai": {
       "url": "https://mcp.edenai.run/mcp",
-      "transport": "http",
       "headers": {
         "Authorization": "Bearer YOUR_EDEN_AI_API_KEY"
       }
@@ -121,13 +113,13 @@ This writes the server entry to `~/.kimi/mcp.json` (you can also edit `~/.kimi/m
 }
 ```
 
-Inside a Kimi Code session, run `/mcp` to check the connected server and its loaded tools. See the [MCP server page](/v3/expert-models/mcp-server) for the full tool catalog.
+After editing the file directly, start a new Kimi Code session. Run `/mcp` to check the connected server and its loaded tools. See the [MCP server page](/v3/expert-models/mcp-server) for the full tool catalog.
 
 ## Troubleshooting
 
 ### Authentication errors
 
-Verify that `api_key` in `~/.kimi/config.toml` has no extra spaces and has LLM access enabled. You can test the same `/v3/chat/completions` endpoint directly:
+Verify that `api_key` in `~/.kimi-code/config.toml` has no extra spaces and has LLM access enabled. You can test the same `/v3/chat/completions` endpoint directly:
 
 ```bash
 curl -X POST https://api.edenai.run/v3/chat/completions \
@@ -138,7 +130,7 @@ curl -X POST https://api.edenai.run/v3/chat/completions \
 
 ### Connection issues
 
-Confirm `base_url` is `https://api.edenai.run/v3` without a trailing `/chat/completions`. With `type = "openai_legacy"`, Kimi Code appends `/chat/completions` automatically. Check Eden AI's service status at [app-edenai.instatus.com](https://app-edenai.instatus.com).
+Confirm `base_url` is `https://api.edenai.run/v3` without a trailing `/chat/completions`. With `type = "openai"`, Kimi Code appends `/chat/completions` automatically. Check Eden AI's service status at [app-edenai.instatus.com](https://app-edenai.instatus.com).
 
 ### Missing `max_context_size` or model errors
 

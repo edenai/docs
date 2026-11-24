@@ -20,8 +20,8 @@ uv pip install -r tests/requirements-evals.txt
 # without a flag. Skip this and those suites report as skipped.
 npm ci --prefix tests
 
-# The Claude Code, Codex and OpenCode CLIs the integration tests run. About a
-# gigabyte of platform binaries, so it has its own manifest; skip it and
+# The Claude Code, Codex, Kimi Code and OpenCode CLIs the integration tests
+# run. About a gigabyte of platform binaries, so it has its own manifest; skip it and
 # tests/test_integration_clis.py reports as skipped.
 npm ci --prefix tests/clis
 
@@ -392,11 +392,12 @@ integration page fails until it has an entry.
   task that needs the tool, handed the result, and has to answer with a random
   word only the result contains.
 
-`tests/test_integration_clis.py` runs the real Claude Code, Codex and OpenCode
-CLIs, installed from `tests/clis/package.json`, with the settings their pages give
-them: the export lines, the `config.toml` block, the script that generates
-`opencode.json`. Each runs in a home directory of its own with a bare
-environment, so a credential on the machine cannot make it pass by reaching
+`tests/test_integration_clis.py` runs the real Claude Code, Codex, Kimi Code
+and OpenCode CLIs, installed from `tests/clis/package.json`, with the settings
+their pages give them: Claude Code's export lines, the Codex and Kimi Code
+`config.toml` blocks, and OpenCode's script that generates `opencode.json`.
+Each runs in a home directory of its own with a bare environment, so a
+credential on the machine cannot make it pass by reaching
 the vendor. Codex runs with `--strict-config`, so a key the page sets that the
 pinned Codex no longer recognises fails. The sandbox run is on every pull
 request. The real-model run, on the weekly one, asks what a file says, so the
@@ -423,7 +424,7 @@ The workflow at `.github/workflows/test-snippets.yml` runs on PRs that touch `v3
 3. **Check page titles and descriptions**: every page's title and description, the copy its structured data keeps, and the feature page generator. No credentials and no requests
 4. **Check integration configuration and pages**: parses the JSON, YAML and TOML config on the integration pages and checks every model and URL it names against the live catalog, then every other model and model setting on those pages, and the function-calling capability of the models the agents are pointed at. No credentials, and one process, because starting xdist workers takes longer than the assertions
 5. **Run Python snippets**, **Run shell snippets** and **Run JS and TS snippets**: execution tests with the `EDEN_AI_SANDBOX_TOKEN`, `EDEN_AI_PRODUCTION_TOKEN` and `EDEN_AI_MANAGEMENT_KEY` secrets
-6. **Run integration requests and CLIs**: each integration page's request sent the way its tool sends it, and the real Claude Code, Codex and OpenCode CLIs run with the page's settings. Sandbox on a pull request, real models weekly
+6. **Run integration requests and CLIs**: each integration page's request sent the way its tool sends it, and the real Claude Code, Codex, Kimi Code and OpenCode CLIs run with the page's settings. Sandbox on a pull request, real models weekly
 
 It also runs weekly, Mondays at 06:00 UTC against `main`, because the docs go
 stale against a moving API even when nobody edits them. The weekly run is the

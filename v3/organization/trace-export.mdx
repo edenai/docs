@@ -41,8 +41,6 @@ An organization admin connects a tool in **Settings > Trace Export**: pick it, c
 | New Relic | US, EU, Japan, US FedRAMP | License key |
 | Honeycomb | US, EU. The service name is the dataset, for Classic keys too. | API key |
 | Sentry | The one your DSN names, or your own host | The project's DSN, which gives the endpoint too |
-| Dynatrace | Your environment's OTLP traces URL | A platform token with `openpipeline:traces:ingest`, or an access token (`dt0c01.`) with `openTelemetryTrace.ingest` |
-| Elastic | Your managed OTLP endpoint, followed by `/v1/traces` | API key |
 | SigNoz | US, EU, IN | Ingestion key |
 | Any OTLP collector | Its OTLP/HTTP traces URL, most often ending in `/v1/traces` | Any headers it needs |
 
@@ -186,6 +184,6 @@ Each preset also gets what its tool reads beyond the conventions, so a call show
 
 - **Calls sent**: a share of calls per destination. When the call has a session, named or grouped by Eden AI, the share is picked by session; otherwise by call. Failed calls are always sent, unless they join a caller's trace that was not sampled: when you send a `traceparent` and the destination nests calls under your trace, its sampled flag decides first, for failed calls too.
 - **Retries**: when a destination is unreachable, times out, or answers 429, 502, 503 or 504, Eden AI retries with backoff, doubling from 2 seconds up to 5 minutes, give or take a fifth, or waiting as long as its `Retry-After` header asks, up to 5 minutes per wait. After 10 failures in a row (about 13.5 minutes when the waits double, longer when `Retry-After` asks for more), the calls waiting for it are dropped. Any other error answer drops the batch at once, since sending it again would fail the same way.
-- **Queue**: each destination holds up to 12,000 calls or 256 MB waiting to be sent, and an organization up to 512 MB across its destinations. A destination holds at most 64 MB of prompts and answers from the last 5 minutes: past that, a call waits without them. Calls past the queue's limits, and calls waiting longer than 24 hours, are dropped. Some tools refuse older spans while still answering success, so calls are dropped sooner for them: after 55 minutes for Dynatrace, 17 hours for Datadog, 23 hours for Logfire and New Relic. Every dropped call is counted on the destination.
+- **Queue**: each destination holds up to 12,000 calls or 256 MB waiting to be sent, and an organization up to 512 MB across its destinations. A destination holds at most 64 MB of prompts and answers from the last 5 minutes: past that, a call waits without them. Calls past the queue's limits, and calls waiting longer than 24 hours, are dropped. Some tools refuse older spans while still answering success, so calls are dropped sooner for them: after 17 hours for Datadog, 23 hours for Logfire and New Relic. Every dropped call is counted on the destination.
 - **Posts**: up to 100 spans each, and under 900 KB for New Relic.
 - **Source address**: calls are posted from addresses that change. With [Static IP](/v3/data-governance/static-ip) on your organization, calls to an HTTPS endpoint on port 443 leave from its fixed address.

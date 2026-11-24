@@ -1,0 +1,163 @@
+---
+title: "Use Kimi Code with Eden AI"
+sidebarTitle: "Kimi Code"
+description: "Configure Kimi Code CLI to use Eden AI as a custom model provider for 500+ models with one API key, plus Eden AI expert models as MCP tools."
+---
+
+import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
+
+<TechArticleSchema
+  title={"Use Kimi Code with Eden AI"}
+  description={"Configure Kimi Code CLI to use Eden AI as a custom model provider for 500+ models with one API key, plus Eden AI expert models as MCP tools."}
+  path="v3/integrations/kimi-code"
+  articleSection="Coding Agents"
+  about={"AI Coding Assistants"}
+  proficiencyLevel="Intermediate"
+  keywords={["Eden AI", "AI API", "Kimi Code", "Kimi CLI"]}
+  datePublished="2026-11-24T00:00:00Z"
+  dateModified="2026-11-24T00:00:00Z"
+/>
+
+[Kimi Code CLI](https://github.com/MoonshotAI/kimi-cli) (`kimi`) is Moonshot AI's terminal coding agent. It reads custom providers and models from `~/.kimi/config.toml` and supports OpenAI-compatible Chat Completions (`openai_legacy`), OpenAI Responses (`openai_responses`), and Anthropic Messages (`anthropic`). Kimi Code sends tool definitions with every request, so choose a model that supports function calling.
+
+## Overview
+
+Pointing Kimi Code at Eden AI gives you:
+
+- **500+ models**: switch between Kimi, Claude, GPT, Gemini, and more from one config file
+- **One API key**: unified billing, routing, and monitoring across providers
+- **Expert models as MCP tools**: connect Eden AI's [MCP server](/v3/expert-models/mcp-server) for OCR, web search, speech, and translation
+
+## Prerequisites
+
+- Kimi Code CLI installed:
+
+<CodeGroup>
+```bash macOS / Linux
+curl -fsSL https://code.kimi.com/kimi-code/install.sh | bash
+```
+
+```powershell Windows (PowerShell)
+irm https://code.kimi.com/kimi-code/install.ps1 | iex
+```
+</CodeGroup>
+
+- An Eden AI API key from [app.edenai.run](https://app.edenai.run) → **API Keys**
+
+## Setup
+
+### 1. Configure `~/.kimi/config.toml`
+
+Kimi Code reads its provider and model definitions from `~/.kimi/config.toml` (creating the file on first run if it does not exist). Add an `edenai` provider using `type = "openai_legacy"` (the OpenAI Chat Completions protocol) and declare the models you want to use:
+
+```toml ~/.kimi/config.toml
+default_model = "kimi-k2.7-code"
+
+[providers.edenai]
+type = "openai_legacy"
+base_url = "https://api.edenai.run/v3"
+api_key = "YOUR_EDEN_AI_API_KEY"
+
+[models."kimi-k2.7-code"]
+provider = "edenai"
+model = "kimi-k2.7-code"
+max_context_size = 262144
+capabilities = ["thinking", "image_in"]
+
+[models."claude-sonnet-5.5"]
+provider = "edenai"
+model = "claude-sonnet-5.5"
+max_context_size = 1000000
+capabilities = ["thinking", "image_in"]
+```
+
+<Note>
+  TOML requires quotes around section keys that contain dots, such as `[models."kimi-k2.7-code"]`. `default_model` must match one of the keys defined under `[models.*]`.
+</Note>
+
+### 2. Launch Kimi Code
+
+```bash
+kimi
+```
+
+To use a separate configuration file for a specific project or environment, pass `--config-file`:
+
+```bash
+kimi --config-file /path/to/config.toml
+```
+
+## Model naming and switching
+
+Set `model` to any canonical model name (such as `kimi-k2.7-code`, `kimi-k3.1-pro`, `claude-sonnet-5.5`, or `gpt-5.5`) or a specific `provider/model` ID from `GET https://api.edenai.run/v3/models?view=models` (see [List Models](/v3/llms/listing-models)). Use the model's `context_length` from the catalog for `max_context_size`.
+
+Because Kimi Code attaches tool definitions on every turn, only pick models whose catalog entry has `supports_function_calling: true`.
+
+To switch models for a single session, pass `--model`:
+
+```bash
+kimi --model claude-sonnet-5.5
+```
+
+### Other provider protocols
+
+`openai_legacy` (Chat Completions) is the simplest default because every chat model in the Eden AI catalog supports it. If you prefer another wire protocol under `https://api.edenai.run/v3`:
+
+- `type = "openai_responses"` sends requests to `/v3/responses`.
+- `type = "anthropic"` sends requests to `/v3/v1/messages` (use this for Claude models).
+
+## Expert Models as Tools (MCP)
+
+Eden AI hosts an [MCP server](/v3/expert-models/mcp-server) that exposes OCR, web search, speech, translation, and more as tools. Add it with the Kimi Code CLI:
+
+```bash
+kimi mcp add --transport http edenai https://mcp.edenai.run/mcp \
+  --header "Authorization: Bearer YOUR_EDEN_AI_API_KEY"
+```
+
+This writes the server entry to `~/.kimi/mcp.json` (you can also edit `~/.kimi/mcp.json` directly, or `.kimi-code/mcp.json` for a single project):
+
+```json ~/.kimi/mcp.json
+{
+  "mcpServers": {
+    "edenai": {
+      "url": "https://mcp.edenai.run/mcp",
+      "transport": "http",
+      "headers": {
+        "Authorization": "Bearer YOUR_EDEN_AI_API_KEY"
+      }
+    }
+  }
+}
+```
+
+Inside a Kimi Code session, run `/mcp` to check the connected server and its loaded tools. See the [MCP server page](/v3/expert-models/mcp-server) for the full tool catalog.
+
+## Troubleshooting
+
+### Authentication errors
+
+Verify that `api_key` in `~/.kimi/config.toml` has no extra spaces and has LLM access enabled. You can test the same `/v3/chat/completions` endpoint directly:
+
+```bash
+curl -X POST https://api.edenai.run/v3/chat/completions \
+  -H "Authorization: Bearer YOUR_EDEN_AI_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "kimi-k2.7-code", "messages": [{"role": "user", "content": "ping"}]}'
+```
+
+### Connection issues
+
+Confirm `base_url` is `https://api.edenai.run/v3` without a trailing `/chat/completions`. With `type = "openai_legacy"`, Kimi Code appends `/chat/completions` automatically. Check Eden AI's service status at [app-edenai.instatus.com](https://app-edenai.instatus.com).
+
+### Missing `max_context_size` or model errors
+
+Kimi Code requires `max_context_size` on every `[models.*]` entry. Confirm the model ID exists in `GET https://api.edenai.run/v3/models?view=models` and supports `supports_function_calling: true`.
+
+## Next Steps
+
+- [Claude Code](./claude-code): Anthropic's official CLI on Eden AI
+- [Codex CLI](./codex-cli): OpenAI's local coding agent on Eden AI
+- [OpenCode](./opencode): terminal coding agent with auto-generated config
+- [List Models](/v3/llms/listing-models): browse the catalog with capabilities and pricing
+- [MCP server](/v3/expert-models/mcp-server): the full expert model tool catalog

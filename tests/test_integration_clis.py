@@ -205,7 +205,12 @@ def _kimi_code(page: Path, home: Path, token: str, prompt: str) -> Run:
     model = settings["models"][settings["default_model"]]["model"]
     return Run(
         ["-p", prompt],
-        {"KIMI_CODE_HOME": str(kimi_home), "EDENAI_API_KEY": token},
+        {
+            "KIMI_CODE_HOME": str(kimi_home),
+            "EDENAI_API_KEY": token,
+            "KIMI_DISABLE_TELEMETRY": "1",
+            "KIMI_CODE_NO_AUTO_UPDATE": "1",
+        },
         models=[model],
     )
 

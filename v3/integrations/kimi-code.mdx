@@ -82,7 +82,7 @@ KIMI_CODE_HOME=/path/to/kimi-home kimi
 
 Set `model` to any canonical model name (such as `kimi-k2.7-code`, `kimi-k3.1-pro`, `claude-sonnet-5.5`, or `gpt-5.5`) or a specific `provider/model` ID from `GET https://api.edenai.run/v3/models?view=models` (see [List Models](/v3/llms/listing-models)). Use the model's `context_length` from the catalog for `max_context_size`.
 
-Because Kimi Code attaches tool definitions on every turn, only pick models whose catalog entry has `supports_function_calling: true`.
+Because Kimi Code attaches tool definitions on every turn, only pick models whose catalog entry has `capabilities.supports_function_calling: true`.
 
 To switch models for a single session, pass `--model`:
 
@@ -133,7 +133,7 @@ Confirm `base_url` is `https://api.edenai.run/v3` without a trailing `/chat/comp
 
 ### Missing `max_context_size` or model errors
 
-Kimi Code requires `max_context_size` on every `[models.*]` entry. Confirm the model ID exists in `GET https://api.edenai.run/v3/models?view=models` and supports `supports_function_calling: true`.
+Kimi Code requires `max_context_size` on every `[models.*]` entry. Confirm the model ID exists in `GET https://api.edenai.run/v3/models?view=models` and that its `capabilities.supports_function_calling` field is `true`.
 
 ## Next Steps
 

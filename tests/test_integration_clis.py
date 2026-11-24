@@ -196,14 +196,18 @@ def _kimi_code(page: Path, home: Path, token: str, prompt: str) -> Run:
         f"{page.name} no longer has a config.toml block with providers and models"
     )
     code, settings = configs[0]
+    # Keep the token in the environment and let the agent read only its input file.
+    code += '\n[tools]\nenabled = ["Read"]\n'
     kimi_home = home / ".kimi-code"
     kimi_home.mkdir(parents=True)
-    (kimi_home / "config.toml").write_text(
-        pointed_here(API_KEY_RE.sub(token, code))
-    )
+    (kimi_home / "config.toml").write_text(pointed_here(code))
 
     model = settings["models"][settings["default_model"]]["model"]
-    return Run(["-p", prompt], {"KIMI_CODE_HOME": str(kimi_home)}, models=[model])
+    return Run(
+        ["-p", prompt],
+        {"KIMI_CODE_HOME": str(kimi_home), "EDENAI_API_KEY": token},
+        models=[model],
+    )
 
 
 def _opencode(page: Path, home: Path, token: str, prompt: str) -> Run:

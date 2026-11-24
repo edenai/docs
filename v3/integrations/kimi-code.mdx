@@ -1,5 +1,5 @@
 ---
-title: "Use Kimi Code with Eden AI"
+title: "Kimi Code CLI Integration with Eden AI"
 sidebarTitle: "Kimi Code"
 description: "Configure Kimi Code CLI to use Eden AI as a custom model provider for 500+ models with one API key, plus Eden AI expert models as MCP tools."
 ---
@@ -7,7 +7,7 @@ description: "Configure Kimi Code CLI to use Eden AI as a custom model provider 
 import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
 
 <TechArticleSchema
-  title={"Use Kimi Code with Eden AI"}
+  title={"Kimi Code CLI Integration with Eden AI"}
   description={"Configure Kimi Code CLI to use Eden AI as a custom model provider for 500+ models with one API key, plus Eden AI expert models as MCP tools."}
   path="v3/integrations/kimi-code"
   articleSection="Coding Agents"
@@ -46,7 +46,7 @@ default_model = "kimi-k2.7-code"
 [providers.edenai]
 type = "openai"
 base_url = "https://api.edenai.run/v3"
-api_key = "YOUR_EDEN_AI_API_KEY"
+api_key_env = "EDENAI_API_KEY"
 
 [models."kimi-k2.7-code"]
 provider = "edenai"
@@ -68,10 +68,11 @@ capabilities = ["thinking", "image_in", "tool_use"]
 ### 2. Launch Kimi Code
 
 ```bash
+export EDENAI_API_KEY="YOUR_EDEN_AI_API_KEY"
 kimi
 ```
 
-To use a separate configuration directory for a specific project or environment, set `KIMI_CODE_HOME`. Kimi Code reads `$KIMI_CODE_HOME/config.toml` from that directory:
+To use a separate configuration for a specific project or environment, create a directory and copy the configuration above to `config.toml` in it. Then point `KIMI_CODE_HOME` at that directory:
 
 ```bash
 KIMI_CODE_HOME=/path/to/kimi-home kimi
@@ -98,28 +99,26 @@ kimi --model claude-sonnet-5.5
 
 ## Expert Models as Tools (MCP)
 
-Eden AI hosts an [MCP server](/v3/expert-models/mcp-server) that exposes OCR, web search, speech, translation, and more as tools. Run `/mcp-config` inside a Kimi Code session to add it, or edit `~/.kimi-code/mcp.json` directly (`.kimi-code/mcp.json` for a single project):
+Eden AI hosts an [MCP server](/v3/expert-models/mcp-server) that exposes OCR, web search, speech, translation, and more as tools. Run `/mcp-config` inside a Kimi Code session to add it, or edit `~/.kimi-code/mcp.json` directly (`$KIMI_CODE_HOME/mcp.json` when `KIMI_CODE_HOME` is set, or `.kimi-code/mcp.json` for a single project):
 
 ```json ~/.kimi-code/mcp.json
 {
   "mcpServers": {
     "edenai": {
       "url": "https://mcp.edenai.run/mcp",
-      "headers": {
-        "Authorization": "Bearer YOUR_EDEN_AI_API_KEY"
-      }
+      "bearerTokenEnvVar": "EDENAI_API_KEY"
     }
   }
 }
 ```
 
-After editing the file directly, start a new Kimi Code session. Run `/mcp` to check the connected server and its loaded tools. See the [MCP server page](/v3/expert-models/mcp-server) for the full tool catalog.
+The MCP example reads the same `EDENAI_API_KEY` variable exported above, so no key is stored in the file. Export it in each shell that launches Kimi Code. After editing the file directly, start a new Kimi Code session. Run `/mcp` to check the connected server and its loaded tools. See the [MCP server page](/v3/expert-models/mcp-server) for the full tool catalog.
 
 ## Troubleshooting
 
 ### Authentication errors
 
-Verify that `api_key` in `~/.kimi-code/config.toml` has no extra spaces and has LLM access enabled. You can test the same `/v3/chat/completions` endpoint directly:
+Verify that `EDENAI_API_KEY` is exported in the shell launching Kimi Code and that the key has LLM access enabled. You can test the same `/v3/chat/completions` endpoint directly:
 
 ```bash
 curl -X POST https://api.edenai.run/v3/chat/completions \

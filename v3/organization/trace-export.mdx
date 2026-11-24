@@ -102,20 +102,9 @@ response = client.chat.completions.create(
 
 A `traceparent` header wins when a call sends both. The calls are recorded as sampled, since the field carries no sampled flag.
 
-### Claude Code
+### Coding agents
 
-Claude Code sends its trace to Eden AI when its tracing is on. Its own spans then go to your tool, with each model call's Eden AI spans under them:
-
-```bash
-export CLAUDE_CODE_ENABLE_TELEMETRY=1
-export CLAUDE_CODE_ENHANCED_TELEMETRY_BETA=1
-export OTEL_TRACES_EXPORTER=otlp
-export OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=https://your-collector.example.com/v1/traces
-# Eden AI is a custom ANTHROPIC_BASE_URL: Claude Code sends trace context to it only when asked.
-export CLAUDE_CODE_PROPAGATE_TRACEPARENT=1
-```
-
-Coding agents that send no trace context, such as Codex and OpenCode, still group into sessions through their own session headers.
+Coding agents (Claude Code, Codex, OpenCode, pi) send no trace context on their model calls through a gateway: Claude Code adds a `traceparent` only to Anthropic's own API. Their calls are grouped into sessions instead, through each agent's own session header, with subagents nested under the thread that launched them, and exported as one session per agent session.
 
 ## What a span carries
 

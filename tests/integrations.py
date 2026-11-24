@@ -107,6 +107,7 @@ TOOLS: dict[str, Tool] = {
     "continue-dev": Tool("chat", sends_tools=True),
     "hermes": Tool("chat", sends_tools=True),
     "kilo-code": Tool("chat", sends_tools=True),
+    "kimi-code": Tool("chat", sends_tools=True),
     "nanobot": Tool("chat", sends_tools=True),
     "openclaw": Tool("chat", sends_tools=True),
     "opencode": Tool("chat", sends_tools=True),

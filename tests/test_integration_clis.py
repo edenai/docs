@@ -5,13 +5,13 @@ itself: it runs the tool, with the page's settings written where the tool
 reads them, and lets the tool make the request. That is the only check that
 catches a page whose settings the tool no longer reads, a key renamed in a
 release, a base URL the tool appends a different path to than the page
-assumes. Three tools can be installed from npm and run headless, and those
-are the three here: Claude Code, Codex and OpenCode.
+assumes. Four tools can be installed from npm and run headless, and those
+are the four here: Claude Code, Codex, Kimi Code and OpenCode.
 
 Everything a tool is given comes from its page: the export lines on the
-Claude Code page, the config.toml block on the Codex page, and on the OpenCode
-page the script that generates opencode.json, run the way the page tells a
-reader to run it. A test adds only what a reader supplies by hand: the API key
+Claude Code page, the config.toml blocks on the Codex and Kimi Code pages,
+and on the OpenCode page the script that generates opencode.json, run the way
+the page tells a reader to run it. A test adds only what a reader supplies by hand: the API key
 where the page leaves a placeholder, and a home directory of its own, so no
 setting or credential on the machine running the test can make the tool pass
 by talking to something else.
@@ -184,6 +184,37 @@ def _codex(page: Path, home: Path, token: str, prompt: str) -> Run:
     return Run(args, env, models=models)
 
 
+def _kimi_code(page: Path, home: Path, token: str, prompt: str) -> Run:
+    configs = [
+        (block["code"], settings)
+        for block in extract_config_blocks(page)
+        if block["lang"] == "toml" and not block["skip"]
+        for settings in [tomllib.loads(block["code"])]
+        if "providers" in settings and "models" in settings
+    ]
+    assert configs, (
+        f"{page.name} no longer has a config.toml block with providers and models"
+    )
+    code, settings = configs[0]
+    # Keep the token in the environment and let the agent read only its input file.
+    code += '\n[tools]\nenabled = ["Read"]\n'
+    kimi_home = home / ".kimi-code"
+    kimi_home.mkdir(parents=True)
+    (kimi_home / "config.toml").write_text(pointed_here(code))
+
+    model = settings["models"][settings["default_model"]]["model"]
+    return Run(
+        ["-p", prompt],
+        {
+            "KIMI_CODE_HOME": str(kimi_home),
+            "EDENAI_API_KEY": token,
+            "KIMI_DISABLE_TELEMETRY": "1",
+            "KIMI_CODE_NO_AUTO_UPDATE": "1",
+        },
+        models=[model],
+    )
+
+
 def _opencode(page: Path, home: Path, token: str, prompt: str) -> Run:
     generators = [
         block
@@ -235,6 +266,7 @@ def _opencode(page: Path, home: Path, token: str, prompt: str) -> Run:
 _TOOLS = {
     "claude-code": ("claude", _claude_code),
     "codex-cli": ("codex", _codex),
+    "kimi-code": ("kimi", _kimi_code),
     "opencode": ("opencode", _opencode),
 }
 

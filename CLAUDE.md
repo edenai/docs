@@ -62,13 +62,13 @@ The JSON, YAML and TOML blocks under `v3/integrations/` are configuration a read
 
 ## What the Integration Pages' Tools Send
 
-A config that parses can still point its tool at Eden AI in a way the tool cannot use, so `tests/test_integrations.py` checks the request each page's tool sends, and `tests/test_integration_clis.py` runs the real Claude Code, Codex and OpenCode CLIs with the page's settings. See `tests/README.md` for the details.
+A config that parses can still point its tool at Eden AI in a way the tool cannot use, so `tests/test_integrations.py` checks the request each page's tool sends, and `tests/test_integration_clis.py` runs the real Claude Code, Codex, Kimi Code and OpenCode CLIs with the page's settings. See `tests/README.md` for the details.
 
 - A new page under `v3/integrations/` needs an entry in `TOOLS` in `tests/integrations.py`: the protocol its tool speaks (chat completions, Anthropic Messages, Responses) and whether it sends tool definitions. The test fails until it has one. Find out from the tool's source or docs; do not default to chat completions.
 - A setting that holds a model (`model`, `titleModel`, `RAG_EMBEDDING_MODEL`, `--model`) names a model exactly as the catalog lists it: a model name (`gpt-4o`, `~gemini-flash-latest`) or a `provider/model` id. Tools send the value as it stands, so a name the catalog lacks, such as `whisper-1`, is rejected.
 - A page for a coding agent names only models whose catalog entry has `supports_function_calling`, because the agent sends its tools with every request.
 - Every model a page names is checked, in prose and tables as well as code. Do NOT name a retired model as an example.
-- The CLI tests read the Claude Code page's `export` lines, the Codex page's `config.toml` block and the OpenCode page's config generator. Restructuring those pages means keeping those shapes, or updating the test that reads them.
+- The CLI tests read the Claude Code page's `export` lines, the Codex and Kimi Code pages' `config.toml` blocks and the OpenCode page's config generator. Restructuring those pages means keeping those shapes, or updating the test that reads them.
 
 ## Common Pitfalls in .mdx Code Blocks
 

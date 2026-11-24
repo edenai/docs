@@ -156,8 +156,9 @@ jobs:
       # cannot use: Claude Code speaks the Anthropic Messages API, Codex the
       # Responses API, and an agent sends tool definitions with every request.
       # This sends each page's request the way its tool would, and runs the
-      # real Claude Code, Codex and OpenCode CLIs with the page's settings. On
-      # a pull request that is the sandbox, which costs nothing; the weekly run
+      # real Claude Code, Codex, Kimi Code and OpenCode CLIs with the page's
+      # settings. On a pull request that is the sandbox, which costs nothing;
+      # the weekly run
       # adds every model the pages name, on a real model, through the whole
       # tool-calling loop.
       - name: Run integration requests and CLIs

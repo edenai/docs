@@ -47,7 +47,7 @@ Under [zero data retention](/v3/data-governance/compliance-policies), requests a
 
 ## Turn it off
 
-An organization admin can turn it off in **Settings > Request Settings > Session details**. From then on these facts are not recorded for any call of the organization, and Monitoring lists no new sessions. The trace ids you send (a `traceparent`, or the hash of a `trace` field's label) are still kept: they are your own ids, not content or a person, and Monitoring's Traces view and trace export read them. The setting does not change routing, billing or [trace export](/v3/organization/trace-export), which still sends the sessions you name. It sends a session Eden AI grouped only while the setting is on, since that is when Eden AI groups one.
+An organization admin can turn it off in **Settings > Sessions & Traces > Group calls into sessions**, for the whole organization. From then on these facts are not recorded for any call of the organization, and Monitoring lists no new sessions. The trace ids you send (a `traceparent`, or the hash of a `trace` field's label) are still kept: they are your own ids, not content or a person, and Monitoring's Traces view and trace export read them. The setting does not change routing, billing or [trace export](/v3/organization/trace-export), which still sends the sessions you name. It sends a session Eden AI grouped only while the setting is on, since that is when Eden AI groups one.
 
 ## How long it is kept
 

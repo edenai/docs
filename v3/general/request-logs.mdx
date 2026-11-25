@@ -16,7 +16,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "API request logs", "monitoring", "audit logs", "LLM metrics", "CSV export"]}
   datePublished="2026-11-12T00:00:00Z"
-  dateModified="2026-11-12T00:00:00Z"
+  dateModified="2026-11-25T00:00:00Z"
 />
 
 Retrieve detailed logs of every API call made across your organization, inspect provider attempts and fallbacks, download CSV exports, and monitor LLM latency and reliability metrics.
@@ -59,7 +59,7 @@ The request list, volume, and CSV export endpoints share a common set of query f
 
 ### Filters
 
-Filter parameters accept multiple comma-separated values to match any of the listed options:
+Filter parameters accept multiple comma-separated values to match any of the listed options, except `session_id` and `trace_id`, which each take a single exact ID:
 
 | Parameter | Type | Description | Example |
 |-----------|------|-------------|---------|
@@ -70,10 +70,12 @@ Filter parameters accept multiple comma-separated values to match any of the lis
 | `user` | UUID | Member ID who initiated the request | `3fa85f64-5717-4562-b3fc-2c963f66afa6` |
 | `outcome` | string | Request outcome: `any` (default), `success`, `error`, `provider_fault`, `caller_fault`, or `rate_limit` | `error` |
 | `streaming` | boolean | Filter by streaming requests (`true` or `false`) | `true` |
+| `session_id` | string | Exact session ID declared by the request (`session_id`, `x-session-id`, or a coding agent's session header; up to 256 characters) | `sess_01abc` |
+| `trace_id` | string | Exact W3C `traceparent` trace ID (32 hexadecimal characters, matched case-insensitively) | `4bf92f3577b34da6a3ce929d0e0e4736` |
 | `search` | string | Free-text search across errors, models, and request paths | `timeout` |
 | `tag.<key>` | string | Filter by caller tag value. Multiple values are comma-separated. | `tag.env=production,staging` |
 | `exclude_tag.<key>` | string | Exclude requests with the specified tag value | `exclude_tag.env=test` |
-| `exclude_<facet>` | string | Exclude specific values for any filter facet | `exclude_provider=mock` |
+| `exclude_<facet>` | string | Exclude specific values for any facet filter (`feature`, `subfeature`, `provider`, `api_key`, `user`, `status_code`, `api_version`, `call_type`, `error_kind`) | `exclude_provider=mock` |
 
 ## List Requests
 
@@ -150,6 +152,14 @@ The request list uses offset pagination with standard envelope links:
       "routing_mode": "",
       "cost": 0.0042,
       "latency_ns": 482000000,
+      "routing_policy": "",
+      "routing_policy_version": 0,
+      "routing_policy_scope": "",
+      "coding_agent": "",
+      "session_id": "sess_01abc",
+      "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+      "end_user": "usr_123",
+      "user_agent": "openai-python/1.54.0",
       "tags": {
         "client": "acme",
         "env": "production"
@@ -163,6 +173,15 @@ The request list uses offset pagination with standard envelope links:
   "previous": null
 }
 ```
+
+Each request log row also includes attribution and routing metadata (empty string or `0` when absent):
+
+- `session_id`: The session ID declared by the request (`session_id` body field, `x-session-id` header, or a coding agent's session header). Gateway-grouped sessions are only shown in the dashboard and are omitted here.
+- `trace_id`: The 32 lowercase hexadecimal characters from the caller's `traceparent` header.
+- `coding_agent`: Best-effort coding agent detected from request headers (for example, `claude-code` or `codex`).
+- `end_user`: End-user identifier sent via `safety_identifier`, `user`, or Anthropic's `metadata.user_id`.
+- `user_agent`: The `User-Agent` header sent by the client (up to 256 characters).
+- `routing_policy`, `routing_policy_version`, and `routing_policy_scope`: The routing policy applied (`user` or `organization` scope) and its version.
 
 <Note>
 To safeguard data privacy, stored request and response bodies are excluded from the Management API. Management keys inspect audit metadata, performance, and spending without exposing user payload content.
@@ -217,6 +236,7 @@ curl -X GET "https://api.edenai.run/v3/manage/usage/requests/export/?feature=llm
 
 CSV export details:
 
+- **Columns**: Includes request, model, routing, cost, `call_type`, and `session_id` (declared session ID) columns, followed by tag columns. `user_agent` and `end_user` are excluded from CSV exports.
 - **Row limit**: A single export streams up to 100,000 rows. When truncated, the response includes the header `X-EdenAI-Export-Truncated: true`.
 - **Tag columns**: Up to 50 distinct caller tag keys appear as individual columns prefixed with `tag:<key>`. Any tags beyond the first 50 are aggregated into an `other_tags` column.
 - **Throttling**: To protect database stability, CSV exports are capped at **20 exports per hour** per management key (`manage_usage_export`). Ordinary API reads are not subject to this export rate limit.

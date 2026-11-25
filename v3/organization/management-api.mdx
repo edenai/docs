@@ -102,8 +102,8 @@ inference key (`sk-eden-…`) and then manages that member's personal policies.
 
 | Method & path | Scope | Purpose |
 |---------------|-------|---------|
-| `GET /v3/manage/organization` | `manage:read` | Read the organization's name, RBAC state, default guardrail, data retention, allowed regions and SSO requirement |
-| `PATCH /v3/manage/organization` | `manage:write` | Change the organization's name, RBAC toggle, default guardrail, zero-data retention, allowed regions or SSO requirement. Only sent fields are changed; an invalid field changes nothing |
+| `GET /v3/manage/organization` | `manage:read` | Read the organization's name, RBAC state, default guardrail, data retention, allowed regions, session tracking (`session_tracking`) and SSO requirement |
+| `PATCH /v3/manage/organization` | `manage:write` | Change the organization's name, RBAC toggle, default guardrail, zero-data retention, allowed regions, session tracking (`session_tracking`, whether calls are grouped into sessions and step details recorded from the next request on) or SSO requirement. Only sent fields are changed; an invalid field changes nothing |
 
 ### Members
 

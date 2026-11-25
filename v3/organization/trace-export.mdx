@@ -89,6 +89,11 @@ LangSmith and Braintrust drop a span whose parent they never receive, so their d
 An app that does not trace its work can still group calls into one trace with the `trace` body field, on chat completions, Responses, Messages and Universal AI calls:
 
 ```python
+import os
+from openai import OpenAI
+
+client = OpenAI(base_url="https://api.edenai.run/v3", api_key=os.environ["EDENAI_API_KEY"])
+
 response = client.chat.completions.create(
     model="openai/gpt-4o-mini",
     messages=[{"role": "user", "content": "Say hi"}],
@@ -122,9 +127,9 @@ Each call is one span named after its operation and model: `chat <model>` for a 
 | `gen_ai.response.time_to_first_chunk`, `edenai.time_per_output_token`, `edenai.gateway.duration`, `edenai.provider.duration` | In seconds: for a streamed call, its first chunk, from the start of the call, and the time per output token after it; for every call, the time in Eden AI and at the providers |
 | `gen_ai.usage.cost` | What Eden AI charged for the call, in USD, on the call's span only, and also under the name each tool reads (below). Left out for a call answered on your own provider key, so your tool estimates it from the tokens. |
 | `gen_ai.conversation.id`, `session.id` | The session you named: the `session_id` body field, the `x-session-id` header, or the session a coding agent sends on its own (a header such as `x-claude-code-session-id`, Codex's `session-id` or `x-session-affinity`, or Claude Code's `metadata.user_id`). For a call that names none, the session Eden AI grouped it into, as Monitoring lists it: its id starts with `~`, and `edenai.session.source` is `inferred`. |
-| `user.id` | The end user you named: `safety_identifier`, `user`, or Anthropic's `metadata.user_id` |
+| `user.id` | The end user you named (`safety_identifier`, `user`, or Anthropic's `metadata.user_id`), else the id of the Eden AI member who made the call; never an email |
 | `gen_ai.agent.name` | The coding agent that made the call, such as `claude-code` or `codex`, when Eden AI recognizes it |
-| `error.type`, an `exception` event | A failed span's status is `ERROR`. `error.type` is the status your client received (such as `400`), `_OTHER` when that was a success status (a Universal AI call or job that failed answers `200` or `202`), or, for a failed attempt, its error code. The event's message, also the status's description, is the error your client received or, for an attempt, its provider, status and error code (such as `azure answered 500 (server_error)`). |
+| `error.type`, an `exception` event | A failed span's status is `ERROR`. `error.type` is the status your client received (such as `400`), `_OTHER` when that was a success status (a Universal AI call or job that failed answers `200` or `202`), or, for a failed attempt, its error code. With prompts sent, the event's message, also the status's description, is the error your client received or, for an attempt, its provider, status and error code (such as `azure answered 500 (server_error)`). |
 | `edenai.request_id`, `edenai.api_key.name`, `edenai.api_key.id`, `edenai.member.id`, `edenai.tag.*` | The call's id, the API key's name and id, the id of the member who made the call (never an email), and your request tags |
 | `user_agent.original`, `http.request.header.x-title`, `http.request.header.http-referer`, `http.request.header.origin` | The client that sent the call, when it sent these headers: its user agent up to 256 characters, the others up to 512 |
 | `edenai.is_byok`, `edenai.cache.hit` | Whether your own provider key answered, and whether the answer came from the cache |

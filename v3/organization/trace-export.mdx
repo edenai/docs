@@ -1,0 +1,183 @@
+---
+sidebarTitle: "Trace Export"
+title: "LLM Trace Export to Langfuse, Datadog, OTLP"
+icon: "chart-network"
+description: "Export every LLM call to Langfuse, LangSmith, Datadog, Grafana Cloud or any OpenTelemetry collector as an OTLP span with model, tokens, cost, key and session."
+---
+
+import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
+
+<TechArticleSchema
+  title={"LLM Trace Export to Langfuse, Datadog, OTLP"}
+  description={"Export every LLM call to Langfuse, LangSmith, Datadog, Grafana Cloud or any OpenTelemetry collector as an OTLP span with model, tokens, cost, key and session."}
+  path="v3/organization/trace-export"
+  articleSection="Organization"
+  about={"Observability"}
+  proficiencyLevel="Intermediate"
+  keywords={["Eden AI", "OpenTelemetry", "OTLP", "Langfuse", "LangSmith", "Arize", "Phoenix", "Datadog", "Grafana", "LLM observability", "tracing"]}
+  datePublished="2026-11-25T00:00:00Z"
+  dateModified="2026-11-25T00:00:00Z"
+/>
+
+Eden AI can send each LLM call and each [Universal AI](#universal-ai-calls) call your organization makes through the `/v3` API to the tracing tool your team already uses, as an [OpenTelemetry](https://opentelemetry.io/) span. Calls that carry your own trace context join your traces, so the model call shows up under the request that made it.
+
+## Add a destination
+
+An organization admin connects a tool in **Settings > Sessions & Traces**: pick it, choose its region, and paste its keys. The setup fills in the tool's endpoint; for a self-hosted install, or a tool whose address is your account's own, enter it. A tool can have several destinations, one per project, environment or collector, each with its own keys and settings. **Send Test Trace** sends one sample span with what you entered, before you save, and shows the tool's answer.
+
+| Tool | Regions | Credentials |
+| --- | --- | --- |
+| Langfuse | EU, US, Japan, HIPAA, or your own host | Public and secret key |
+| LangSmith | US, EU, APAC, AWS US, Azure US, or your own host | API key, and optionally the project |
+| Braintrust | US, EU | API key and project |
+| Arize AX | US, EU, Canada. The service name is the project. | Space ID and API key |
+| Phoenix | Your Phoenix Cloud space's URL, or your own host. The service name is the project. | API key, when authentication is on |
+| Opik | Comet Cloud, or your own host | API key, workspace, and optionally the project |
+| Laminar | Cloud | Project API key |
+| PostHog | US, EU | Project token |
+| Logfire | US, EU | Write token |
+| Datadog | US1, US3, US5, EU1, UK1, AP1, AP2. Calls appear in LLM Observability, with the destination's service name as the ML app. | API key |
+| Grafana Cloud | Your stack's OTLP endpoint, followed by `/v1/traces` | Instance ID and token |
+| New Relic | US, EU, Japan, US FedRAMP | License key |
+| Honeycomb | US, EU. The service name is the dataset, for Classic keys too. | API key |
+| Sentry | The one your DSN names, or your own host | The project's DSN, which gives the endpoint too |
+| SigNoz | US, EU, IN | Ingestion key |
+| Any OTLP collector | Its OTLP/HTTP traces URL, most often ending in `/v1/traces` | Any headers it needs |
+
+Every tool also takes extra headers, for a proxy or a gateway in front of it.
+
+A destination receives the calls made after it is added; earlier calls are not sent. An organization can have up to 10 destinations, and a change to one applies from the next call.
+
+Spans are sent as OTLP/HTTP protobuf, gzip-compressed except to Arize AX, which does not accept it, by a background worker, after your call has been answered: export never slows a call down. Credentials are stored encrypted and never shown again. When you edit a destination, leave them blank to keep them; if you move its endpoint to another origin (another scheme, host or port), enter them again, since saved credentials are only ever sent where they were entered for. To send to another tool, connect that tool as a new destination. For an OTLP collector, or a tool whose key is optional (Phoenix), **Remove Saved Headers** sends the next calls with none. The page shows how many calls each destination received and its last error.
+
+### Choose which keys are sent
+
+By default a destination receives the calls of every API key of the organization. Two lists narrow it:
+
+- **Only these keys**: send only the calls of these keys. Leave it empty for every key.
+- **Never these keys**: never send the calls of these keys. A key in both lists is never sent: exclusion wins.
+
+Both lists name the organization's API keys. A member's personal API key cannot be listed: its calls are sent unless **Only these keys** is set.
+
+## Join your own traces
+
+Send a W3C `traceparent` header with the call. Its span then hangs under your span, in your trace:
+
+```python
+import os
+from openai import OpenAI
+
+client = OpenAI(base_url="https://api.edenai.run/v3", api_key=os.environ["EDENAI_API_KEY"])
+
+response = client.chat.completions.create(
+    model="openai/gpt-4o-mini",
+    messages=[{"role": "user", "content": "Say hi"}],
+    extra_headers={
+        "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+        "x-session-id": "ticket-48213",
+    },
+)
+print(response.choices[0].message.content)
+```
+
+In practice your OpenTelemetry SDK writes this header for you: its HTTP instrumentation adds it to every request your OpenAI or Anthropic client makes. Without one (or the `trace` field below), each call is a trace of its own. When your app does not record its trace (the header's sampled flag is off), its calls are not sent either to a destination that nests your calls under your trace.
+
+LangSmith and Braintrust drop a span whose parent they never receive, so their destinations keep each call in a trace of its own unless you turn on **Nest under your app's trace**. Turn it on only when your app sends its own spans to the same project; otherwise those calls won't appear.
+
+### Without a tracer
+
+An app that does not trace its work can still group calls into one trace with the `trace` body field, on chat completions, Responses, Messages and Universal AI calls:
+
+```python
+import os
+from openai import OpenAI
+
+client = OpenAI(base_url="https://api.edenai.run/v3", api_key=os.environ["EDENAI_API_KEY"])
+
+response = client.chat.completions.create(
+    model="openai/gpt-4o-mini",
+    messages=[{"role": "user", "content": "Say hi"}],
+    extra_body={"trace": {"trace_id": "checkout-42"}},
+)
+```
+
+- `trace_id`: 32 lowercase hex characters are used as they are; any other string, such as `checkout-42`, is hashed into a trace id, so the same label always names the same trace.
+- `parent_span_id` (optional): the span of your app the call runs under, 16 lowercase hex characters or any string hashed into one. Without it, the call starts the trace's work under no span.
+- Other keys are accepted and ignored. The field is never sent to the provider.
+
+A `traceparent` header wins when a call sends both. The calls are recorded as sampled, since the field carries no sampled flag.
+
+### Coding agents
+
+Coding agents (Claude Code, Codex, OpenCode, pi) send no trace context on their model calls through a gateway: Claude Code adds a `traceparent` only to Anthropic's own API. Their calls are grouped into sessions instead, through each agent's own session header, with subagents nested under the thread that launched them, and exported as one session per agent session. Pi sends its session id only with the `compat` settings of its [setup](/v3/integrations/pi), and not when prompt caching is off; its calls without one are grouped by Eden AI as an inferred session.
+
+## What a span carries
+
+Each call is one span named after its operation and model: `chat <model>` for a chat completion, a response or a message, `embeddings <model>` for embeddings, `retrieval <model>` for reranking, and `generate_content <model>` for the others (images, speech, transcription, moderation). When it fell back to another provider, it also gets one child span per attempt, named after the model that attempt reached, the failed ones marked `ERROR`. An attempt is a step of the call, not an LLM call of its own: its provider and model are `edenai.attempt.provider` and `edenai.attempt.model`, so each tool counts the call once. Attributes follow the [OpenTelemetry GenAI conventions](https://opentelemetry.io/docs/specs/semconv/gen-ai/):
+
+| Attribute | Value |
+| --- | --- |
+| `gen_ai.request.model`, `gen_ai.response.model`, `gen_ai.provider.name` | The model you asked for, the one that answered, and its provider: under the conventions' name when it has one (`aws.bedrock`, `gcp.vertex_ai`, `mistral`...), else as Eden AI names it. A Universal AI call's provider is always as Eden AI names it: Amazon Transcribe is `amazon`, not `aws.bedrock` |
+| `gen_ai.usage.input_tokens`, `gen_ai.usage.output_tokens`, `gen_ai.usage.cache_read.input_tokens`, `gen_ai.usage.cache_creation.input_tokens` (also as `gen_ai.usage.cache_write.input_tokens`), `gen_ai.usage.reasoning.output_tokens` | Token counts, on the call's span only. The input count is the whole prompt, the tokens read from and written to the cache included. |
+| `gen_ai.request.temperature`, `top_p`, `top_k`, `max_tokens`, `frequency_penalty`, `presence_penalty`, `stop_sequences`, `seed`, `choice.count`, `reasoning.level`, `previous_response.id`, and `gen_ai.output.type` | The parameters your request set, each only when set (`choice.count` when `n` is not 1; `gen_ai.output.type` is `json` or `text`, never your schema) |
+| `gen_ai.tool.definitions` | The tools your request offered: each one's type and name, and with prompts sent, their descriptions and parameters too when they fit the tool's attribute size |
+| `edenai.request.tool_choice`, `edenai.request.models` | How the model could pick tools (`auto`, `required`, `function`...), and the models you allowed, the fallbacks after the first |
+| `openai.request.service_tier`, `openai.response.service_tier` | The service tier asked for (unless `auto`) and the one that answered |
+| `gen_ai.response.id`, `gen_ai.response.finish_reasons` | The answer's id and why it stopped |
+| `gen_ai.response.time_to_first_chunk`, `edenai.time_per_output_token`, `edenai.gateway.duration`, `edenai.provider.duration` | In seconds: for a streamed call, its first chunk, from the start of the call, and the time per output token after it; for every call, the time in Eden AI and at the providers |
+| `gen_ai.usage.cost` | What Eden AI charged for the call, in USD, on the call's span only, and also under the name each tool reads (below). Left out for a call answered on your own provider key, so your tool estimates it from the tokens. |
+| `gen_ai.conversation.id`, `session.id` | The session you named: the `session_id` body field, the `x-session-id` header, or the session a coding agent sends on its own (a header such as `x-claude-code-session-id`, Codex's `session-id` or `x-session-affinity`, or Claude Code's `metadata.user_id`). For a call that names none, the session Eden AI grouped it into, as Monitoring lists it: its id starts with `~`, and `edenai.session.source` is `inferred`. |
+| `user.id` | The end user you named (`user`, or Anthropic's `metadata.user_id`), else the id of the Eden AI member who made the call; never an email |
+| `gen_ai.agent.name` | The coding agent that made the call, such as `claude-code` or `codex`, when Eden AI recognizes it |
+| `error.type`, an `exception` event | A failed span's status is `ERROR`. `error.type` is the status your client received (such as `400`), `_OTHER` when that was a success status (a Universal AI call or job that failed answers `200` or `202`), or, for a failed attempt, its error code. With prompts sent, the event's message, also the status's description, is the error your client received or, for an attempt, its provider, status and error code (such as `azure answered 500 (server_error)`). |
+| `edenai.request_id`, `edenai.api_key.name`, `edenai.api_key.id`, `edenai.member.id`, `edenai.tag.*` | The call's id, the API key's name and id, the id of the member who made the call (never an email), and your request tags |
+| `user_agent.original`, `http.request.header.x-title`, `http.request.header.http-referer`, `http.request.header.origin` | The client that sent the call, when it sent these headers: its user agent up to 256 characters, the others up to 512 |
+| `edenai.is_byok`, `edenai.cache.hit` | Whether your own provider key answered, and whether the answer came from the cache |
+| `edenai.api.type`, `edenai.api.version`, `edenai.call_type` | The API the call came through (`chat_completions`, `responses`, `messages`) and its version, and how it was made: `back` with an API key, `sandbox` with a sandbox key, `front` from the Eden AI app |
+| `edenai.region`, `edenai.routing.strategy`, `edenai.routing.mode`, `edenai.routing.policy`, `edenai.routing.policy_version`, `edenai.routing.policy_scope` | Where the call ran, and how it was routed: the routing policy that applied, its version and whose it is |
+| `edenai.message_count`, `edenai.input_kind`, `edenai.session.source`, `edenai.coding_agent.via`, `edenai.coding_agent.entrypoint`, `edenai.agent.thread`, `edenai.agent.turn`, `edenai.agent.step` | The call's step: how many messages it carried, whether it answered a new message or tool results, how its session was named (`inferred` when Eden AI grouped it), and what the coding agent said of it |
+| `edenai.response.tool_calls`, `edenai.structured_output.requested`, `edenai.structured_output.valid`, `edenai.tool_calls.valid` | How many tools the answer called, and whether the structured output and tool calls Eden AI checked were valid |
+
+Prompts and answers are sent unless you turn on **Privacy mode** for the destination. Turning it on applies at once, to the calls still waiting to be sent too. A call waits with its prompts and answers for 5 minutes at most: if your tool cannot take it by then, it is sent without them. Under [zero data retention](/v3/data-governance/compliance-policies), Eden AI never stores them, not even while a call waits: they are sent to your tool within a fraction of a second, calls close together in one request, and retried for about 2 minutes, then the calls are sent without them. A call is also sent without them at once when your tool is still recovering from an earlier failure, or when a few hundred such calls are already waiting for it. Turning zero data retention on does not change the calls already waiting, whose prompts and answers are gone within 5 minutes anyway. They follow the conventions' message format, in `gen_ai.system_instructions`, `gen_ai.input.messages` and `gen_ai.output.messages`. Long texts and long histories are shortened, keeping the conversation's opening, the call's latest message, and as many of the latest messages as fit.
+
+Moderation, text to speech, and image generation and editing send only the prompt you wrote, as one user message: the text to moderate, the text to speak, the image's prompt. Never their output (a moderation's verdict, images, audio). Every other LLM API sends nothing you wrote: not the texts you embed, the documents you rerank, or the audio you transcribe and its prompt.
+
+Never sent: what Eden AI pays a provider, a member's email, the provider key that answered, and its internal checksums of your messages.
+
+### Universal AI calls
+
+A Universal AI call (OCR, image generation, speech, translation, web search...) is one span too, under your trace and session like an LLM call, with the same facts: the key, the end user, the routing, the cost, the timing and the error. Its name and operation say what it did: `retrieval` for web search (`/v3/search` included), map, scraping, crawl and batch scrape, `generate_content` for the others, with `gen_ai.output.type` `image` or `speech` for image generation and text to speech. It also carries:
+
+| Attribute | Value |
+| --- | --- |
+| `gen_ai.request.model`, `gen_ai.response.model` | The model that answered |
+| `edenai.feature`, `edenai.subfeature` | The feature it called, such as `ocr` and `ocr_async` |
+| `edenai.billing.metric`, `edenai.billing.quantity`, `edenai.billing.units` | What it was billed by (pages, images, characters, seconds...), when it was billed |
+
+Its input and output (your images, audio, documents and pages) are never sent, whatever the destination's Privacy mode says.
+
+An async job is one span from its submission to its result, sent when the job ends, at its final cost; its status is the `202` its submission answered, and it is marked `ERROR` when the job failed. A job that never ends, such as one made with a sandbox key, is not sent.
+
+Each preset also gets what its tool reads beyond the conventions, so a call shows as one LLM call with its cost and conversation. Tools with tags and metadata of their own get your request tags as `key:value` tags, and as metadata the request id, the API key's name and id, the region, the routing, the coding agent, the API type and whether the answer came from the cache:
+
+- **Langfuse**: the conversation also as `input.value` and `output.value`, the first token's time, attempts as plain spans, and the tags and metadata as `langfuse.trace.tags` and `langfuse.trace.metadata.*`.
+- **Phoenix** and **Arize AX**: the call as its LLM span and attempts as steps, the question and answer also as `input.value` and `output.value`, the model, provider, tokens and cost under OpenInference's names (`llm.*`), the service name as the project, and the tags and metadata as `tag.tags` and `metadata`.
+- **Opik**: the conversation in OpenAI's chat format, which Opik draws as a chat, instead of the `gen_ai.*` message fields; the temperature where Opik files it; the tags as `opik.tags`; Eden AI's other attributes go to the span's metadata.
+- **Laminar**: the call as its LLM span, attempts as plain spans, and the tags and metadata as `lmnr.association.properties.tags` and `lmnr.association.properties.metadata.*`.
+- **LangSmith**: the call as an LLM run and attempts as chain runs, the session as the thread (`langsmith.metadata.thread_id`), the end user, provider and model as metadata, the system prompt in the input, the tools offered as `tools`, and the tags and metadata as `langsmith.span.tags` and `langsmith.metadata.*`.
+- **Braintrust**: attempts as task spans, the cost as `braintrust.metrics.estimated_cost`, the system prompt in the input, and the tags as `braintrust.tags`.
+- **Datadog**: the cost as `gen_ai.usage.cost.amount` and `gen_ai.usage.cost.currency`, and attempts as workflow steps. The `edenai.*` attributes show as tags.
+- **Logfire**: the cost as `operation.cost` and the first token's time under the name Logfire reads.
+- **PostHog**: the cost, cache and reasoning tokens, first token's time, streaming, temperature and maximum tokens as PostHog's `$ai_*` properties, with `$ai_cache_reporting_exclusive` off since the input count includes the cache.
+- **Sentry**: the cost as `gen_ai.cost.total_tokens` and streaming as `gen_ai.response.streaming`.
+- **Honeycomb**: the dataset header Classic keys need, set to the service name.
+- **Grafana Cloud**: the opt-in AI Observability needs (`agento11y.record`).
+- **New Relic**: the conversation shortened to fit New Relic's 4,095-character attribute limit.
+
+## Sampling and limits
+
+- **Calls sent**: a share of calls per destination. When the call has a session, named or grouped by Eden AI, the share is picked by session; otherwise by call. Failed calls are always sent, unless they join a caller's trace that was not sampled: when you send a `traceparent` and the destination nests calls under your trace, its sampled flag decides first, for failed calls too.
+- **Retries**: when a destination is unreachable, times out, or answers 429, 502, 503 or 504, Eden AI retries with backoff, doubling from 2 seconds up to 5 minutes, give or take a fifth, or waiting as long as its `Retry-After` header asks, up to 5 minutes per wait. After 10 failures in a row (about 13.5 minutes when the waits double, longer when `Retry-After` asks for more), the calls waiting for it are dropped. Any other error answer drops the batch at once, since sending it again would fail the same way.
+- **Queue**: each destination holds up to 12,000 calls or 256 MB waiting to be sent, and an organization up to 512 MB across its destinations. A destination holds at most 64 MB of prompts and answers from the last 5 minutes: past that, a call waits without them. Calls past the queue's limits, and calls waiting longer than 24 hours, are dropped. Some tools refuse older spans while still answering success, so calls are dropped sooner for them: after 17 hours for Datadog, 23 hours for Logfire and New Relic. Every dropped call is counted on the destination.
+- **Posts**: up to 100 spans each, and under 900 KB for New Relic.
+- **Source address**: calls are posted from addresses that change. With [Static IP](/v3/data-governance/static-ip) on your organization, calls to an HTTPS endpoint on port 443 leave from its fixed address.

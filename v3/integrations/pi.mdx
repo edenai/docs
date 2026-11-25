@@ -16,7 +16,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "Pi", "Coding Agent"]}
   datePublished="2026-07-16T00:00:00Z"
-  dateModified="2026-10-27T00:00:00Z"
+  dateModified="2026-11-25T00:00:00Z"
 />
 
 By the end of this page, an `edenai` provider shows up in Pi's `/model` picker, and you can run Pi on any Eden AI chat model that supports function calling.
@@ -68,6 +68,10 @@ Create or edit `~/.pi/agent/models.json` (Pi looks for it in its agent directory
       "baseUrl": "https://api.edenai.run/v3",
       "api": "openai-completions",
       "apiKey": "$EDEN_AI_API_KEY",
+      "compat": {
+        "sendSessionAffinityHeaders": true,
+        "sessionAffinityFormat": "openrouter"
+      },
       "models": [
         { "id": "openai/gpt-latest" },
         { "id": "anthropic/claude-sonnet-latest" },
@@ -80,6 +84,8 @@ Create or edit `~/.pi/agent/models.json` (Pi looks for it in its agent directory
 </CodeGroup>
 
 Only `id` is required for each model. Pi assumes text input, no reasoning, a 128,000-token context window and 16,384 output tokens unless you set `input`, `reasoning`, `contextWindow` or `maxTokens` on the model. Opening `/model` reloads the file.
+
+The `compat` block makes Pi send its session id with each call as the `x-session-id` header, so [Monitoring](/v3/data-governance/session-details) and [Trace Export](/v3/organization/trace-export) group a Pi session's calls under Pi's own id. Pi leaves the header out when prompt caching is off (`cacheRetention: "none"`).
 
 ## Model naming
 

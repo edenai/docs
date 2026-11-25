@@ -27,7 +27,7 @@ To show the calls of one conversation together in Monitoring, Eden AI records a 
 | --- | --- |
 | Session id | The `session_id` body field, the `x-session-id` header, or the session a coding agent sends on its own (a header such as `x-claude-code-session-id`, Codex's `session-id` or `x-session-affinity`, or Claude Code's `metadata.user_id`) |
 | Grouped session id | When a call names no session: the id of the session Eden AI groups it into, starting with `~`, stored with the request |
-| End user id | `safety_identifier`, `user`, or Anthropic's `metadata.user_id`, as you send it |
+| End user id | `user`, or Anthropic's `metadata.user_id`, as you send it |
 | Agent ids | The subagent, turn and compaction markers a coding agent sends (Claude Code, Codex) |
 | Trace ids | A W3C `traceparent` header you send, or the `trace` body field ([Trace export](/v3/organization/trace-export#without-a-tracer)), whose label is kept only as its hash |
 | Step | For a chat completion, a response or a message: how many messages the call carried, and whether it answered a user or tool results. Other LLM calls (embeddings, moderation, images, speech) record no step. |

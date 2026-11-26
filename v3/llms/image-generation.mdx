@@ -122,7 +122,7 @@ print(result.data[0].url or result.data[0].b64_json[:60])
 | `quality` | no | `standard`, `hd`, `auto` — accepted values depend on the model |
 | `response_format` | no | `url` or `b64_json`, forwarded to providers that honor it |
 
-Only listed provider-specific image parameters are forwarded to the provider (`background`, `input_fidelity`, `moderation`, `output_compression`, `output_format`, `partial_images`, `quality`, `response_format`, `style`, `add_watermark`, `aspect_ratio`, `cfg_scale`, `enhance_prompt`, `guidance_scale`, `height`, `image_size`, `negative_prompt`, `num_inference_steps`, `output_mime_type`, `person_generation`, `prompt_upsampling`, `raw`, `resolution`, `safety_filter_level`, `safety_tolerance`, `seed`, `steps`, `style_preset`, `watermark`, and `width`). Any other undeclared top-level field is refused with `422`.
+Only listed provider-specific image parameters are forwarded to the provider (`background`, `input_fidelity`, `moderation`, `output_compression`, `output_format`, `partial_images`, `quality`, `response_format`, `style`, `add_watermark`, `aspect_ratio`, `cfg_scale`, `enhance_prompt`, `guidance_scale`, `height`, `image_size`, `negative_prompt`, `num_inference_steps`, `output_mime_type`, `person_generation`, `prompt_upsampling`, `raw`, `resolution`, `safety_filter_level`, `safety_tolerance`, `seed`, `steps`, `style_preset`, `watermark`, and `width`). Other undeclared top-level fields are dropped before calling the provider, except platform or connection fields (such as `api_key`, `api_base`, or `base_url`), a truthy `stream` or non-empty `fallbacks`, or server-side secret references, which are refused with `422`.
 
 ## Response format
 
@@ -215,8 +215,8 @@ curl https://api.edenai.run/v3/images/models \
 
 ## Limitations
 
-- **No streaming.** `stream: true` is forwarded to the provider but the partial-image pipeline is not wired up.
-- **No `fallbacks`.** Specify a single explicit `provider/model`.
+- **No streaming.** Truthy `stream` (such as `stream: true`) is refused with `422` (`false` and `null` are dropped).
+- **No `fallbacks`.** Non-empty `fallbacks` is refused with `422` (`[]` and `null` are dropped). Specify a single explicit `provider/model`.
 - **`/v3/images/variations` is not implemented.**
 
 ## Next Steps

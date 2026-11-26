@@ -174,7 +174,7 @@ The first hit should be the document about the `cost` field. Swap in your own co
 | `routing` | object | no | How to pick between the providers that serve a model named without a provider prefix, in `model` and in `fallbacks`. Takes the fields described in [provider routing](/v3/llms/provider-routing), including `zero_data_retention`. Routing policies, `router_candidates` and `session_id` apply to chat only and have no effect here. |
 | `extra_body` | object | no | Additional provider-specific body fields forwarded to the underlying provider (used by clients such as the Vercel AI SDK). Platform fields inside `extra_body` (such as `api_base`, `vertex_credentials`, or `aws_*`) are refused with `422`. |
 
-Only the provider-specific embedding parameters `auto_truncate`, `embedding_types`, `input_type`, `late_chunking`, `normalized`, `output_dimension`, `output_dimensionality`, `output_dtype`, `task`, `task_type`, `title`, `truncate`, and `truncation` are forwarded to the underlying provider. `routing` and `fallbacks` are not forwarded. Any other undeclared top-level field, or a malformed `routing` or `fallbacks` (such as a string where a list is expected), returns a `422`.
+Only the provider-specific embedding parameters `auto_truncate`, `embedding_types`, `input_type`, `late_chunking`, `normalized`, `output_dimension`, `output_dimensionality`, `output_dtype`, `task`, `task_type`, `title`, `truncate`, and `truncation` are forwarded to the underlying provider. `routing` and `fallbacks` are not forwarded. Other undeclared top-level fields are dropped before calling the provider, except platform or connection fields (such as `api_key`, `api_base`, or `base_url`), a truthy `stream`, or server-side secret references, which return `422` alongside a malformed `routing` or `fallbacks` (such as a string where a list is expected).
 
 ## Response
 
@@ -230,7 +230,7 @@ Common HTTP status codes returned by `/v3/embeddings`:
 | `401` | Missing or invalid `Authorization: Bearer` token. |
 | `402` | Insufficient credits. Top up from the dashboard. |
 | `404` | The `model` id does not exist or is not enabled on your account. |
-| `422` | Validation error: malformed `routing` or `fallbacks`, or an undeclared top-level field that is not in the forwarded list. |
+| `422` | Validation error: malformed `routing` or `fallbacks`, a truthy `stream`, a platform/connection field (including inside `extra_body`), or a server-side secret reference. |
 | `429` | Rate limit exceeded — back off and retry, or switch to a model with more headroom. |
 | `5xx` | Upstream provider error. Configure a [fallback](/v3/general/fallback) to route to a backup model. |
 

@@ -80,7 +80,7 @@ EDENAI_API_KEY=YOUR_API_KEY
 
 <CodeGroup>
 ```bash Terminal
-hermes chat --provider edenai -m ~claude-sonnet-latest
+hermes chat --provider edenai -m '~claude-sonnet-latest'
 ```
 </CodeGroup>
 
@@ -88,7 +88,7 @@ Or run `hermes model` and pick **Eden AI** to make it the default. For a one-sho
 
 <CodeGroup>
 ```bash Terminal
-hermes chat --provider edenai -m ~claude-sonnet-latest -Q -q "Reply with exactly one word: pong"
+hermes chat --provider edenai -m '~claude-sonnet-latest' -Q -q "Reply with exactly one word: pong"
 ```
 </CodeGroup>
 
@@ -118,7 +118,7 @@ Hermes needs **function calling**, so its picker lists only the models that supp
 Set the default with `hermes config set model.default <model>`, or override it for one session:
 
 ```bash
-hermes chat --provider edenai -m ~gemini-pro-latest
+hermes chat --provider edenai -m '~gemini-pro-latest'
 ```
 
 ### Fallbacks
@@ -150,7 +150,7 @@ Hermes' `custom` provider accepts any OpenAI-compatible endpoint. Configure it w
 ```bash
 hermes config set model.provider custom
 hermes config set model.base_url https://api.edenai.run/v3
-hermes config set model.default ~claude-sonnet-latest
+hermes config set model.default '~claude-sonnet-latest'
 ```
 
 This writes to Hermes' config file (`hermes config path` prints its location: `~/.hermes/config.yaml` on macOS and Linux, `%LOCALAPPDATA%\hermes\config.yaml` on Windows, or `$HERMES_HOME/config.yaml` when you set `HERMES_HOME`). The result looks like:

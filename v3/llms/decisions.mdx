@@ -17,7 +17,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "LLM API", "decision model", "decisions", "classification", "routing", "System One", "TypeSafe", "Jev"]}
   datePublished="2026-09-22T00:00:00Z"
-  dateModified="2026-11-23T00:00:00Z"
+  dateModified="2026-11-26T00:00:00Z"
 />
 
 <Warning>
@@ -317,6 +317,12 @@ curl -X POST https://api.edenai.run/v3/alpha/decisions \
 
 `routing` and `fallbacks` are not forwarded to the provider. A malformed value returns a `422`.
 
+TypeSafe's own `session_id`, `trace`, and `user` fields are forwarded to the provider. Top-level fields the endpoint does not recognise are dropped before the provider is called, except these, which are refused with `422`:
+
+- A field that decides the provider connection, region, or how the call is made, priced, or answered, such as `api_key`, `api_base`, `base_url`, `timeout`, or `max_retries`.
+- `stream`, unless its value is `false`, `null`, `0`, an empty string, or an empty list or object. The string `"false"` is refused.
+- A server-side secret reference: a key or string value starting with `os.environ/` or `oidc/`, at any depth and in any field, `state` and `questions` included.
+
 `state` does not have to be a string. Pass an object or an array when the shape itself carries meaning, and the model will read the structure:
 
 ```json
@@ -394,7 +400,7 @@ Validation is done by the provider and passed through unchanged, so you get the 
 | --- | --- |
 | 400 | Unknown model. Check `GET /v3/alpha/decisions/models` for what is callable. |
 | 402 | Not enough credits. |
-| 422 | The request did not validate, for example a question with no `criteria` or an empty score rubric. |
+| 422 | The request did not validate, for example a question with no `criteria`, an empty score rubric, `stream: true`, or another refused field (see [Request body](#request-body)). |
 | 429 | Rate limited. |
 
 ## Best practices

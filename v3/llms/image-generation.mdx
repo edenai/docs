@@ -16,7 +16,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "image generation", "image editing", "OpenAI compatible", "gpt-image", "gemini image"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-11-19T00:00:00Z"
+  dateModified="2026-11-26T00:00:00Z"
 />
 
 Generate and edit images through Eden AI's OpenAI-compatible image endpoints. Point any OpenAI client at `https://api.edenai.run/v3` and the images API works as a drop-in replacement.
@@ -121,8 +121,21 @@ print(result.data[0].url or result.data[0].b64_json[:60])
 | `size` | no | Output resolution, e.g. `1024x1024`, `1536x1024`, `auto`. Allowed values depend on the model |
 | `quality` | no | `standard`, `hd`, `auto` — accepted values depend on the model |
 | `response_format` | no | `url` or `b64_json`, forwarded to providers that honor it |
+| `user` | no | End-user identifier, accepted for OpenAI compatibility |
+| `metadata` | no | Accepted. It is not a tag: to label calls for usage tracking, use `tags` |
+| `extra_headers` | no | Additional HTTP headers forwarded to the provider. Credential headers (`Authorization`, `Proxy-Authorization`, `X-API-Key`, `API-Key`) are refused with `422` |
+| `routing` | no | [Provider routing](/v3/llms/provider-routing) preferences. With a `provider/model`, only `zero_data_retention` applies |
+| `tags` | no | Key/value labels recorded with the call, for [usage tracking](/v3/general/tags) |
 
-Only listed provider-specific image parameters are forwarded to the provider (`background`, `input_fidelity`, `moderation`, `output_compression`, `output_format`, `partial_images`, `quality`, `response_format`, `style`, `add_watermark`, `aspect_ratio`, `cfg_scale`, `enhance_prompt`, `guidance_scale`, `height`, `image_size`, `negative_prompt`, `num_inference_steps`, `output_mime_type`, `person_generation`, `prompt_upsampling`, `raw`, `resolution`, `safety_filter_level`, `safety_tolerance`, `seed`, `steps`, `style_preset`, `watermark`, and `width`). Any other undeclared top-level field is refused with `422`.
+Only the provider-specific image parameters `background`, `input_fidelity`, `moderation`, `output_compression`, `output_format`, `partial_images`, `quality`, `response_format`, `style`, `add_watermark`, `aspect_ratio`, `cfg_scale`, `enhance_prompt`, `guidance_scale`, `height`, `image_size`, `negative_prompt`, `num_inference_steps`, `output_mime_type`, `person_generation`, `prompt_upsampling`, `raw`, `resolution`, `safety_filter_level`, `safety_tolerance`, `seed`, `steps`, `style_preset`, `watermark`, and `width` are forwarded to the provider. `partial_images` is forwarded, but partial images arrive only on a streamed response, which these endpoints do not support. Any other top-level field not listed on this page is dropped before the provider is called.
+
+Some fields are refused with `422` instead of dropped:
+
+- A field that decides the provider connection, region, or how the call is made, priced, or answered, such as `api_key`, `api_base`, `base_url`, `timeout`, or `max_retries`.
+- `stream` or `fallbacks`, unless the value is `false`, `null`, `0`, an empty string, or an empty list or object. The string `"false"` is refused. See [Limitations](#limitations).
+- A server-side secret reference: a key or string value starting with `os.environ/` or `oidc/`, at any depth and in any field except `prompt`.
+
+These rules apply to a JSON body. A `multipart/form-data` edit reads a fixed set of form fields and ignores the rest without an error (see [Editing images](#editing-images)).
 
 ## Response format
 
@@ -177,6 +190,8 @@ Some providers return a hosted `url` instead of inline `b64_json`. Download the 
 `POST /v3/images/edits` takes the same fields as generations plus an `images` array. Each entry sets exactly one of `file_id` (returned by Eden's `/v3/upload/...` endpoints) or `image_url` (an `https://` URL or a `data:image/...;base64,...` URL). An optional `mask` (same shape) marks the regions to edit.
 
 The endpoint dispatches on `Content-Type`: send `application/json` for the `images[]` form below, or `multipart/form-data` for the classic OpenAI SDK file-upload form.
+
+A multipart form reads only `model`, `prompt`, `image` (or `image[]`), `mask`, `size`, `n`, `user`, and `routing` (as a JSON string). Every other form field is ignored without an error: provider parameters such as `quality`, `background`, or `output_format` are not forwarded, and `stream` and `fallbacks` are not refused, so the call answers with one JSON response from the one model it names. Use the JSON form to send any other field.
 <CodeGroup>
 ```python Python
 import requests
@@ -215,8 +230,8 @@ curl https://api.edenai.run/v3/images/models \
 
 ## Limitations
 
-- **No streaming.** `stream: true` is forwarded to the provider but the partial-image pipeline is not wired up.
-- **No `fallbacks`.** Specify a single explicit `provider/model`.
+- **No streaming.** On a JSON body, `stream: true` is refused with `422`; `false`, `null`, and the other empty values listed under [Request parameters](#request-parameters) are dropped. A multipart edit ignores `stream` and answers with one JSON response.
+- **No `fallbacks`.** On a JSON body, a `fallbacks` list with entries is refused with `422`; `[]` and `null` are dropped. A multipart edit ignores `fallbacks` and runs only the named model. Specify a single explicit `provider/model`.
 - **`/v3/images/variations` is not implemented.**
 
 ## Next Steps

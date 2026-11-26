@@ -2,28 +2,34 @@
 title: "Use Pi with Eden AI"
 sidebarTitle: "Pi"
 icon: "/integration-logo/pi-icondoc.svg"
-description: "Add Eden AI to the Pi coding agent as a custom provider in models.json, then pick any of 500+ models from many providers with one API key."
+description: "Install the Eden AI extension for the Pi coding agent, then pick any of 500+ models from many providers with one API key."
 ---
 
 import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
 
 <TechArticleSchema
   title={"Use Pi with Eden AI"}
-  description={"Add Eden AI to the Pi coding agent as a custom provider in models.json, then pick any of 500+ models from many providers with one API key."}
+  description={"Install the Eden AI extension for the Pi coding agent, then pick any of 500+ models from many providers with one API key."}
   path="v3/integrations/pi"
   articleSection="Coding Agents"
   about={"Coding Agent Integration"}
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "Pi", "Coding Agent"]}
   datePublished="2026-07-16T00:00:00Z"
-  dateModified="2026-11-25T00:00:00Z"
+  dateModified="2026-11-26T00:00:00Z"
 />
 
 By the end of this page, an `edenai` provider shows up in Pi's `/model` picker, and you can run Pi on any Eden AI chat model that supports function calling.
 
 ## Overview
 
-Pi is an MIT-licensed coding agent that runs in your terminal. It reads custom providers from a `models.json` file, so Eden AI's OpenAI-compatible endpoint needs a config entry and no code. Pi sends tool definitions with every request, so choose models that support function calling.
+Pi is an MIT-licensed coding agent that runs in your terminal. The [`pi-edenai`](https://www.npmjs.com/package/pi-edenai) extension adds Eden AI as a Pi provider:
+
+- **Live catalog**: the models are read from Eden AI's [model list](/v3/llms/listing-models) when Pi starts, with their pricing, context window, vision and reasoning support. `/edenai-sync` refreshes them without a restart.
+- **Sessions**: every call carries Pi's session id, so [Monitoring](/v3/data-governance/session-details) and [Trace Export](/v3/organization/trace-export) group a Pi session's calls under Pi's own id.
+- **EU endpoint**: one variable routes Pi through Eden AI's EU endpoint.
+
+Pi sends tool definitions with every request, so choose models that support function calling.
 
 ## Prerequisites
 
@@ -44,19 +50,77 @@ npm install -g --ignore-scripts @earendil-works/pi-coding-agent
 ```
 </CodeGroup>
 
-### Step 2: Export your key
-
-Pi resolves `$EDEN_AI_API_KEY` from the environment of the shell that starts it. It does not read a `.env` file.
+### Step 2: Install the Eden AI extension
 
 <CodeGroup>
 ```bash Terminal
-export EDEN_AI_API_KEY="YOUR_API_KEY"
+pi install npm:pi-edenai
 ```
 </CodeGroup>
 
-### Step 3: Add the provider
+Add `-l` to install it for the current project only (in `.pi/settings.json`). To try it for one run without installing it, start Pi with `pi -e npm:pi-edenai`.
 
-Create or edit `~/.pi/agent/models.json` (Pi looks for it in its agent directory, which you can move with `PI_CODING_AGENT_DIR`):
+### Step 3: Export your key
+
+Pi reads the key from the environment of the shell that starts it. It does not read a `.env` file.
+
+<CodeGroup>
+```bash Terminal
+export EDENAI_API_KEY="YOUR_API_KEY"
+```
+</CodeGroup>
+
+`EDEN_AI_API_KEY` works too.
+
+### Step 4: Pick a model
+
+Start Pi and run `/model`. The Eden AI models are listed with `[edenai]` next to them.
+
+## Model naming
+
+The extension lists each model once, by the name Eden AI routes, for example `claude-sonnet-4-5` or `~claude-haiku-latest`, and [provider routing](/v3/llms/provider-routing) picks the provider for each call. Names starting with `~` follow the newest model of a family. To pin a provider, pass the `provider/model` id when you start Pi:
+
+<CodeGroup>
+```bash Terminal
+pi --model edenai/anthropic/claude-sonnet-4-5
+```
+</CodeGroup>
+
+Run `/model` in Pi, or press `Ctrl+P`, to switch models during a session.
+
+## EU data residency
+
+<CodeGroup>
+```bash Terminal
+export EDENAI_BASE_URL="https://api.eu.edenai.run/v3"
+export EDENAI_EU_ONLY="1"   # optional: list only EU-eligible models
+```
+</CodeGroup>
+
+## Expert Models as Tools (MCP)
+
+Pi connects to MCP servers, so Eden AI's [MCP server](/v3/expert-models/mcp-server) can give it OCR, web search, speech and translation tools. Add it to `~/.pi/agent/mcp.json`, where credentials belong:
+
+<CodeGroup>
+```json ~/.pi/agent/mcp.json
+{
+  "mcpServers": {
+    "edenai": {
+      "url": "https://mcp.edenai.run/mcp",
+      "headers": { "Authorization": "Bearer ${EDENAI_API_KEY}" }
+    }
+  }
+}
+```
+</CodeGroup>
+
+Pi selects streamable HTTP from the `url`. Run `pi mcp list` to check the connection, and see the [MCP server page](/v3/expert-models/mcp-server) for the tool catalog.
+
+## Without the extension
+
+<Accordion title="Add Eden AI to models.json by hand">
+
+Pi also reads custom providers from `~/.pi/agent/models.json` (Pi looks for it in its agent directory, which you can move with `PI_CODING_AGENT_DIR`). You list the models yourself:
 
 <CodeGroup>
 ```json ~/.pi/agent/models.json
@@ -67,7 +131,7 @@ Create or edit `~/.pi/agent/models.json` (Pi looks for it in its agent directory
       "name": "Eden AI",
       "baseUrl": "https://api.edenai.run/v3",
       "api": "openai-completions",
-      "apiKey": "$EDEN_AI_API_KEY",
+      "apiKey": "$EDENAI_API_KEY",
       "compat": {
         "sendSessionAffinityHeaders": true,
         "sessionAffinityFormat": "openrouter"
@@ -85,46 +149,19 @@ Create or edit `~/.pi/agent/models.json` (Pi looks for it in its agent directory
 
 Only `id` is required for each model. Pi assumes text input, no reasoning, a 128,000-token context window and 16,384 output tokens unless you set `input`, `reasoning`, `contextWindow` or `maxTokens` on the model. Opening `/model` reloads the file.
 
-The `compat` block makes Pi send its session id with each call as the `x-session-id` header, so [Monitoring](/v3/data-governance/session-details) and [Trace Export](/v3/organization/trace-export) group a Pi session's calls under Pi's own id. Pi leaves the header out when prompt caching is off (`cacheRetention: "none"`).
+Keep the `compat` block: it makes Pi send its session id with each call as the `x-session-id` header. Without it, Eden AI groups a Pi session's calls on its own, as an inferred session.
 
-## Model naming
-
-The provider is `edenai`, and each model `id` is the Eden AI `provider/model` id, so Pi refers to a model as `edenai/<provider>/<model>`, for example `edenai/anthropic/claude-sonnet-latest` or `edenai/openai/gpt-latest`. Aliases ending in `-latest` follow the newest model of a family. Browse the available ids and their capabilities in [Listing models](/v3/llms/listing-models).
-
-## Switching models
-
-Run `/model` in Pi and choose an Eden AI model, press `Ctrl+P` to cycle through your models, or pass one when you start Pi:
-
-<CodeGroup>
-```bash Terminal
-pi --model edenai/anthropic/claude-sonnet-latest
-```
-</CodeGroup>
-
-## Expert Models as Tools (MCP)
-
-Pi connects to MCP servers, so Eden AI's [MCP server](/v3/expert-models/mcp-server) can give it OCR, web search, speech and translation tools. Add it to `~/.pi/agent/mcp.json`, where credentials belong:
-
-<CodeGroup>
-```json ~/.pi/agent/mcp.json
-{
-  "mcpServers": {
-    "edenai": {
-      "url": "https://mcp.edenai.run/mcp",
-      "headers": { "Authorization": "Bearer ${EDEN_AI_API_KEY}" }
-    }
-  }
-}
-```
-</CodeGroup>
-
-Pi selects streamable HTTP from the `url`. Run `pi mcp list` to check the connection, and see the [MCP server page](/v3/expert-models/mcp-server) for the tool catalog.
+</Accordion>
 
 ## Troubleshooting
 
 ### Eden AI is missing from `/model`
 
-The picker shows only models whose provider has usable authentication. Check that `EDEN_AI_API_KEY` is exported in the shell you start Pi from, then open `/model` again to reload `models.json`. `pi --list-models edenai` lists what Pi found.
+The picker shows only models whose provider has a key. Check that `EDENAI_API_KEY` is exported in the shell you start Pi from, then open `/model` again. `pi --list-models edenai` lists what Pi found, and `pi list` shows whether `pi-edenai` is installed.
+
+### Only a few models are listed
+
+The extension could not reach Eden AI when Pi started, so it registered a short built-in list. Run `/edenai-sync` to load the full catalog.
 
 ### Authentication errors (401)
 
@@ -132,7 +169,7 @@ Confirm the key at [app.edenai.run](https://app.edenai.run) under **API Keys**, 
 
 ### The agent fails when it tries to use tools
 
-Use a model that supports function calling. The ids on this page do.
+Use a model that supports function calling.
 
 ## Next Steps
 

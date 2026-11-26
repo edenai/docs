@@ -109,7 +109,7 @@ A `traceparent` header wins when a call sends both. The calls are recorded as sa
 
 ### Coding agents
 
-Coding agents (Claude Code, Codex, OpenCode, pi) send no trace context on their model calls through a gateway: Claude Code adds a `traceparent` only to Anthropic's own API. Their calls are grouped into sessions instead, through each agent's own session header, with subagents nested under the thread that launched them, and exported as one session per agent session. Pi sends its session id only with the `compat` settings of its [setup](/v3/integrations/pi), and not when prompt caching is off; its calls without one are grouped by Eden AI as an inferred session.
+Coding agents (Claude Code, Codex, OpenCode, pi) send no trace context on their model calls through a gateway: Claude Code adds a `traceparent` only to Anthropic's own API. Their calls are grouped into sessions instead, through each agent's own session header, with subagents nested under the thread that launched them, and exported as one session per agent session. Pi sends its session id only through the [Eden AI extension](/v3/integrations/pi) or the `compat` settings of a hand-written provider, and not when prompt caching is off; its calls without one are grouped by Eden AI as an inferred session.
 
 ## What a span carries
 

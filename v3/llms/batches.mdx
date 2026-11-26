@@ -16,7 +16,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "LLM API", "batch API", "OpenAI batch", "Anthropic batch", "Mistral batch"]}
   datePublished="2026-10-29T00:00:00Z"
-  dateModified="2026-11-02T00:00:00Z"
+  dateModified="2026-11-26T00:00:00Z"
 />
 
 Run many requests as one asynchronous batch. You upload a file with one request per line, Eden AI runs the whole batch on the provider at the provider's batch rates, and you read the results when the batch has finished.
@@ -86,7 +86,7 @@ No other key is allowed on a line.
 - `routing` may only contain `zero_data_retention`. See [Zero data retention](#zero-data-retention).
 - Every line is moderated. See [Content moderation](#content-moderation).
 
-A batch prices prompt and completion tokens only, so an OpenAI line's `body` may carry these fields and no others: `model`, `messages`, `n`, `max_tokens`, `max_completion_tokens`, `temperature`, `top_p`, `stop`, `seed`, `presence_penalty`, `frequency_penalty`, `logit_bias`, `logprobs`, `top_logprobs`, `response_format`, `reasoning_effort`, `verbosity`, `user`, `service_tier`, `stream` (false only), `prompt_cache_key` and `routing`. Any other field, such as `tools`, `web_search_options`, `audio` or `modalities`, is refused with `400` naming the line and the field.
+A batch prices prompt and completion tokens only, so an OpenAI line's `body` may carry these fields and no others: `model`, `messages`, `n`, `max_tokens`, `max_completion_tokens`, `temperature`, `top_p`, `stop`, `seed`, `presence_penalty`, `frequency_penalty`, `logit_bias`, `logprobs`, `top_logprobs`, `response_format`, `reasoning_effort`, `verbosity`, `user`, `safety_identifier`, `service_tier`, `stream` (false only), `prompt_cache_key` and `routing`. On OpenAI lines, `user` and `safety_identifier` (up to 128 characters) are replaced with Eden AI's account identifier when the batch is sent. Any other field, such as `tools`, `web_search_options`, `audio` or `modalities`, is refused with `400` naming the line and the field.
 
 These body fields are refused on every provider: `stream` set to true, `tools`, `functions`, `function_call`, `prediction`, `fallbacks`, `router_candidates`, `pre_hooks`, `post_hooks`, `session_id`, `tags`, `extra_headers` and `extra_body`. Fields that set the provider connection or how a call is priced, such as `api_key` and `api_base`, are refused as in any other request.
 

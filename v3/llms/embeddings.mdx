@@ -173,8 +173,18 @@ The first hit should be the document about the `cost` field. Swap in your own co
 | `fallbacks` | string[] | no | Embedding models to try, in order, if the primary model fails. Each is a `provider/model` id or a model name with no provider prefix. At most 11. |
 | `routing` | object | no | How to pick between the providers that serve a model named without a provider prefix, in `model` and in `fallbacks`. Takes the fields described in [provider routing](/v3/llms/provider-routing), including `zero_data_retention`. Routing policies, `router_candidates` and `session_id` apply to chat only and have no effect here. |
 | `extra_body` | object | no | Additional provider-specific body fields forwarded to the underlying provider (used by clients such as the Vercel AI SDK). Platform fields inside `extra_body` (such as `api_base`, `vertex_credentials`, or `aws_*`) are refused with `422`. |
+| `extra_headers` | object | no | Additional HTTP headers forwarded to the provider. Credential headers (`Authorization`, `Proxy-Authorization`, `X-API-Key`, `API-Key`) are refused with `422`. |
+| `tags` | object | no | Key/value labels recorded with the call, for [usage tracking](/v3/general/tags). |
 
-Only the provider-specific embedding parameters `auto_truncate`, `embedding_types`, `input_type`, `late_chunking`, `normalized`, `output_dimension`, `output_dimensionality`, `output_dtype`, `task`, `task_type`, `title`, `truncate`, and `truncation` are forwarded to the underlying provider. `routing` and `fallbacks` are not forwarded. Other undeclared top-level fields are dropped before calling the provider, except platform or connection fields (such as `api_key`, `api_base`, or `base_url`), a truthy `stream`, or server-side secret references, which return `422` alongside a malformed `routing` or `fallbacks` (such as a string where a list is expected).
+Only the provider-specific embedding parameters `auto_truncate`, `embedding_types`, `input_type`, `late_chunking`, `normalized`, `output_dimension`, `output_dimensionality`, `output_dtype`, `task`, `task_type`, `title`, `truncate`, and `truncation` are forwarded to the underlying provider. `routing` and `fallbacks` are not forwarded. Any other top-level field not listed on this page is dropped before the provider is called.
+
+Some fields are refused with `422` instead of dropped:
+
+- A field that decides the provider connection, region, or how the call is made, priced, or answered, such as `api_key`, `api_base`, `base_url`, `timeout`, or `max_retries`. The same names are refused inside `extra_body`.
+- `stream`, unless its value is `false`, `null`, `0`, an empty string, or an empty list or object. The string `"false"` is refused.
+- A server-side secret reference: a key or string value starting with `os.environ/` or `oidc/`, at any depth and in any field except `input`.
+
+A malformed `routing` or `fallbacks`, such as a string where a list is expected, also returns `422`.
 
 ## Response
 
@@ -226,11 +236,11 @@ Common HTTP status codes returned by `/v3/embeddings`:
 
 | Status | Meaning |
 |---|---|
-| `400` | Invalid request — usually a missing `model`, malformed `input`, or unsupported parameter. |
+| `400` | The model does not serve embeddings, or the provider rejected a parameter. |
 | `401` | Missing or invalid `Authorization: Bearer` token. |
 | `402` | Insufficient credits. Top up from the dashboard. |
 | `404` | The `model` id does not exist or is not enabled on your account. |
-| `422` | Validation error: malformed `routing` or `fallbacks`, a truthy `stream`, a platform/connection field (including inside `extra_body`), or a server-side secret reference. |
+| `422` | The body did not validate, for example a missing `model` or `input`, a `dimensions` of 0 or less, an `encoding_format` other than `float` or `base64`, more than 11 `fallbacks`, a malformed `routing` or `fallbacks`, a credential header in `extra_headers`, or a refused field (see [Request body](#request-body)). |
 | `429` | Rate limit exceeded — back off and retry, or switch to a model with more headroom. |
 | `5xx` | Upstream provider error. Configure a [fallback](/v3/general/fallback) to route to a backup model. |
 

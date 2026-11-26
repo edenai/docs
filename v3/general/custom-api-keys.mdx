@@ -14,7 +14,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "rate limits", "billing", "monitoring"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-11-03T00:00:00Z"
+  dateModified="2026-11-26T00:00:00Z"
 />
 
 Custom API keys let you create additional keys beyond your main account key. Each key can have its own budget, expiration, and type, giving you fine-grained control over access and spending.
@@ -134,7 +134,10 @@ Request fields:
 | `budget_alert_percent` | integer (1 to 100), optional | Email alert threshold percentage for periodic budgets (see below). |
 | `default_tags` | object of strings, e.g. `{"client": "acme"}` | Tags added to every call made with the key. See [Default Tags](#default-tags). |
 
-Creating a key returns `403` if your plan's key limit is reached.
+Creating a key (in the dashboard or via the API) returns `403` when either limit is reached:
+
+- **Plan key limit**: the maximum number of active keys allowed by your plan. Revoking a key frees a slot toward this limit.
+- **Hourly creation limit**: 30 keys per rolling hour per key holder (each member, or the organization's shared account when `member` is omitted). Revoked keys still count toward this limit until an hour has passed since they were created.
 
 ## Create a Key with Budget
 

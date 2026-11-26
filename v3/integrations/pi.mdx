@@ -26,7 +26,7 @@ By the end of this page, an `edenai` provider shows up in Pi's `/model` picker, 
 Pi is an MIT-licensed coding agent that runs in your terminal. The [`pi-edenai`](https://www.npmjs.com/package/pi-edenai) extension adds Eden AI as a Pi provider:
 
 - **Live catalog**: the models are read from Eden AI's [model list](/v3/llms/listing-models) when Pi starts, with their pricing, context window, vision and reasoning support. `/edenai-sync` refreshes them without a restart.
-- **Sessions**: every call carries Pi's session id, so [Monitoring](/v3/data-governance/session-details) and [Trace Export](/v3/organization/trace-export) group a Pi session's calls under Pi's own id.
+- **Sessions**: every call carries Pi's session id, so [Monitoring](/v3/data-governance/session-details) and [Trace Export](/v3/organization/trace-export) group a Pi session's calls under Pi's own id. Pi leaves it out when prompt caching is off (`cacheRetention: "none"`), and Eden AI then groups those calls as an inferred session.
 - **EU endpoint**: one variable routes Pi through Eden AI's EU endpoint.
 
 Pi sends tool definitions with every request, so choose models that support function calling.
@@ -70,7 +70,7 @@ export EDENAI_API_KEY="YOUR_API_KEY"
 ```
 </CodeGroup>
 
-`EDEN_AI_API_KEY` works too.
+The extension also reads `EDEN_AI_API_KEY`. The MCP and `models.json` configurations below name `$EDENAI_API_KEY`, so they need that exact variable: Pi resolves each reference by its name.
 
 ### Step 4: Pick a model
 
@@ -78,13 +78,15 @@ Start Pi and run `/model`. The Eden AI models are listed with `[edenai]` next to
 
 ## Model naming
 
-The extension lists each model once, by the name Eden AI routes, for example `claude-sonnet-4-5` or `~claude-haiku-latest`, and [provider routing](/v3/llms/provider-routing) picks the provider for each call. Names starting with `~` follow the newest model of a family. To pin a provider, pass the `provider/model` id when you start Pi:
+The extension lists each model once, by the name Eden AI routes, and [provider routing](/v3/llms/provider-routing) picks the provider for each call. Names starting with `~` follow the newest model of a family, for example `~claude-sonnet-latest`, `~gpt-mini-latest` or `~gemini-pro-latest`. Start Pi on one with `--model`:
 
 <CodeGroup>
 ```bash Terminal
-pi --model edenai/anthropic/claude-sonnet-4-5
+pi --model edenai/~claude-sonnet-latest
 ```
 </CodeGroup>
+
+To pin a provider instead, pass a `provider/model` id, such as `edenai/anthropic/claude-sonnet-latest`.
 
 Run `/model` in Pi, or press `Ctrl+P`, to switch models during a session.
 
@@ -137,9 +139,9 @@ Pi also reads custom providers from `~/.pi/agent/models.json` (Pi looks for it i
         "sessionAffinityFormat": "openrouter"
       },
       "models": [
-        { "id": "openai/gpt-latest" },
-        { "id": "anthropic/claude-sonnet-latest" },
-        { "id": "mistral/mistral-small-latest" }
+        { "id": "~claude-sonnet-latest" },
+        { "id": "~gpt-mini-latest" },
+        { "id": "~gemini-pro-latest" }
       ]
     }
   }
@@ -149,7 +151,7 @@ Pi also reads custom providers from `~/.pi/agent/models.json` (Pi looks for it i
 
 Only `id` is required for each model. Pi assumes text input, no reasoning, a 128,000-token context window and 16,384 output tokens unless you set `input`, `reasoning`, `contextWindow` or `maxTokens` on the model. Opening `/model` reloads the file.
 
-Keep the `compat` block: it makes Pi send its session id with each call as the `x-session-id` header. Without it, Eden AI groups a Pi session's calls on its own, as an inferred session.
+Keep the `compat` block: it makes Pi send its session id with each call as the `x-session-id` header. Without it, or when prompt caching is off (`cacheRetention: "none"`), Eden AI groups a Pi session's calls on its own, as an inferred session.
 
 </Accordion>
 

@@ -15,7 +15,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "LLM API", "chat completion", "OpenAI compatible"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-11-17T00:00:00Z"
+  dateModified="2026-11-27T00:00:00Z"
 />
 
 Build conversational AI applications using Eden AI's OpenAI-compatible chat completions endpoint.
@@ -269,6 +269,8 @@ Extended thinking is only supported on Anthropic Claude models. When `thinking` 
 | `presence_penalty` | float | 0.0 | Penalize topic repetition (-2 to 2) |
 | `thinking` | object | - | Enable Claude's extended thinking. See [Extended Thinking](#extended-thinking-claude). |
 | `fallbacks` | array | - | Backup models tried if `model` fails. |
+| `user` | string | - | End-user identifier. Sent to the provider only on your own key: see [End-user identifiers](/v3/general/byok#end-user-identifiers) |
+| `safety_identifier` | string | - | End-user identifier for OpenAI's safety checks, up to 128 characters. Sent to OpenAI only on your own OpenAI key: see [End-user identifiers](/v3/general/byok#end-user-identifiers) |
 
 <Tip>
 For details on the `fallbacks` field, see [Fallback](/v3/general/fallback).

@@ -14,7 +14,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "LLM API", "chat completion", "OpenAI compatible"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-11-26T00:00:00Z"
+  dateModified="2026-11-27T00:00:00Z"
 />
 
 Eden AI supports the OpenAI Responses API — a stateful alternative to chat completions that stores conversation history server-side, so you don't need to resend the full message history on each turn.
@@ -116,8 +116,8 @@ curl -X POST https://api.edenai.run/v3/responses \
 | `tool_choice` | string \| object | `"auto"` | How the model selects tools |
 | `truncation` | string | `"disabled"` | Truncation strategy: `"auto"` or `"disabled"` |
 | `metadata` | object | — | Arbitrary key-value pairs attached to the response |
-| `user` | string | — | Stable identifier for the end-user |
-| `safety_identifier` | string | — | Stable end-user identifier for OpenAI safety monitoring (up to 128 chars). Forwarded on your own OpenAI key, replaced with Eden AI's identifier on Eden AI's OpenAI credentials, and stripped for other providers |
+| `user` | string | — | End-user identifier. Sent to the provider only on your own key: see [End-user identifiers](/v3/general/byok#end-user-identifiers) |
+| `safety_identifier` | string | — | End-user identifier for OpenAI's safety checks, up to 128 characters. Sent to OpenAI only on your own OpenAI key: see [End-user identifiers](/v3/general/byok#end-user-identifiers) |
 
 ## Response Object
 
@@ -167,6 +167,7 @@ curl -X POST https://api.edenai.run/v3/responses \
 | `output` | array | List of output items (messages, tool calls, reasoning) |
 | `usage` | object | Token consumption |
 | `error` | object | Present when `status` is `"failed"` |
+| `safety_identifier` | string \| null | The `safety_identifier` sent to OpenAI. `null` on Eden AI's OpenAI credentials, where Eden AI's own identifier was sent: see [End-user identifiers](/v3/general/byok#end-user-identifiers) |
 | `provider` | string | Eden AI: provider name extracted from the model string |
 | `cost` | float | Eden AI: estimated cost in USD for this request |
 | `provider_time` | float | Eden AI: provider response time in seconds |

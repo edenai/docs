@@ -17,7 +17,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "LLM API", "decision model", "decisions", "classification", "routing", "System One", "TypeSafe", "Jev"]}
   datePublished="2026-09-22T00:00:00Z"
-  dateModified="2026-11-26T00:00:00Z"
+  dateModified="2026-11-27T00:00:00Z"
 />
 
 <Warning>
@@ -314,10 +314,11 @@ curl -X POST https://api.edenai.run/v3/alpha/decisions \
 | `questions` | object | yes | At least one question, keyed by a name you choose. The answers come back under the same names. |
 | `fallbacks` | string[] | no | Decision models to try, in order, if the primary model fails. Each is a `provider/model` id or a model name with no provider prefix. At most 11. |
 | `routing` | object | no | How to pick between the providers that serve a model named without a provider prefix, in `model` and in `fallbacks`. Takes the fields described in [provider routing](/v3/llms/provider-routing), including `zero_data_retention`. |
+| `safety_identifier` | string | no | End-user identifier for OpenAI's safety checks, up to 128 characters. Not sent to TypeSafe: see [End-user identifiers](/v3/general/byok#end-user-identifiers). |
 
 `routing` and `fallbacks` are not forwarded to the provider. A malformed value returns a `422`.
 
-TypeSafe's own `session_id`, `trace`, and `user` fields are forwarded to the provider. Top-level fields the endpoint does not recognise are dropped before the provider is called, except these, which are refused with `422`:
+TypeSafe's own `session_id` and `trace` fields are forwarded to the provider. So is `user` on your own TypeSafe key; on Eden AI's credentials, TypeSafe receives Eden AI's identifier for your account instead (see [End-user identifiers](/v3/general/byok#end-user-identifiers)). Top-level fields the endpoint does not recognise are dropped before the provider is called, except these, which are refused with `422`:
 
 - A field that decides the provider connection, region, or how the call is made, priced, or answered, such as `api_key`, `api_base`, `base_url`, `timeout`, or `max_retries`.
 - `stream`, unless its value is `false`, `null`, `0`, an empty string, or an empty list or object. The string `"false"` is refused.

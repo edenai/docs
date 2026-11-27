@@ -15,7 +15,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "rate limits", "billing", "monitoring"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-09-25T00:00:00Z"
+  dateModified="2026-11-27T00:00:00Z"
 />
 
 Eden AI lets you use your own provider API keys (OpenAI, Google, Anthropic, etc.) instead of going through Eden AI's billing. This gives you flexibility to leverage existing provider contracts, credits, or pricing tiers.
@@ -60,6 +60,23 @@ Even when using your own provider keys, Eden AI continues to provide:
 <Tip>
 You can mix and match — use your own key for one provider and Eden AI billing for others. This lets you optimize costs provider by provider.
 </Tip>
+
+## End-user identifiers
+
+The LLM endpoints accept two fields that name the end user behind a request: `user`, and `safety_identifier`, which OpenAI's safety checks read. What reaches the provider depends on whose key the call runs on:
+
+| Field | On your own provider key | On Eden AI's credentials |
+|---|---|---|
+| `user` | Sent to the provider as you wrote it. | Not sent as `user`: the provider receives Eden AI's identifier for your account instead. |
+| `safety_identifier` | Sent to OpenAI as you wrote it. Not sent to other providers. | Not sent. On OpenAI, Eden AI's identifier for your account is sent in its place. |
+
+This is decided for each attempt, so a fallback that runs on another provider or another key follows its own column.
+
+Eden AI's identifier stands for your Eden AI organization and the user the API key belongs to. It is the same for all your end users, so when a provider acts on abuse seen on Eden AI's credentials, it acts on your whole Eden AI account. For a provider to tell your end users apart, add your own key for that provider.
+
+`safety_identifier` holds at most 128 characters. A longer value is refused with `422`, or with `400` naming the line in a [batch](/v3/llms/batches), even on Eden AI's credentials, where it would not be sent.
+
+On Eden AI's OpenAI credentials, the `safety_identifier` OpenAI echoes back is removed from the response: [Responses](/v3/llms/responses) returns it as `null`, and [image responses](/v3/llms/image-generation) leave it out. On your own key it comes back as OpenAI returned it.
 
 ## Related
 

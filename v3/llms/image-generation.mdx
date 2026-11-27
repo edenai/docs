@@ -16,7 +16,7 @@ import { TechArticleSchema } from "/snippets/TechArticleSchema.mdx";
   proficiencyLevel="Intermediate"
   keywords={["Eden AI", "AI API", "image generation", "image editing", "OpenAI compatible", "gpt-image", "gemini image"]}
   datePublished="2026-05-06T00:00:00Z"
-  dateModified="2026-11-26T00:00:00Z"
+  dateModified="2026-11-27T00:00:00Z"
 />
 
 Generate and edit images through Eden AI's OpenAI-compatible image endpoints. Point any OpenAI client at `https://api.edenai.run/v3` and the images API works as a drop-in replacement.
@@ -121,7 +121,8 @@ print(result.data[0].url or result.data[0].b64_json[:60])
 | `size` | no | Output resolution, e.g. `1024x1024`, `1536x1024`, `auto`. Allowed values depend on the model |
 | `quality` | no | `standard`, `hd`, `auto` — accepted values depend on the model |
 | `response_format` | no | `url` or `b64_json`, forwarded to providers that honor it |
-| `user` | no | End-user identifier, accepted for OpenAI compatibility |
+| `user` | no | End-user identifier. Forwarded to the provider only when the call runs on your own key |
+| `safety_identifier` | no | End-user identifier for OpenAI's safety checks, up to 128 characters (longer is refused with `422`). Forwarded to OpenAI only when the call runs on your own OpenAI key |
 | `metadata` | no | Accepted. It is not a tag: to label calls for usage tracking, use `tags` |
 | `extra_headers` | no | Additional HTTP headers forwarded to the provider. Credential headers (`Authorization`, `Proxy-Authorization`, `X-API-Key`, `API-Key`) are refused with `422` |
 | `routing` | no | [Provider routing](/v3/llms/provider-routing) preferences. With a `provider/model`, only `zero_data_retention` applies |
@@ -191,7 +192,7 @@ Some providers return a hosted `url` instead of inline `b64_json`. Download the 
 
 The endpoint dispatches on `Content-Type`: send `application/json` for the `images[]` form below, or `multipart/form-data` for the classic OpenAI SDK file-upload form.
 
-A multipart form reads only `model`, `prompt`, `image` (or `image[]`), `mask`, `size`, `n`, `user`, and `routing` (as a JSON string). Every other form field is ignored without an error: provider parameters such as `quality`, `background`, or `output_format` are not forwarded, and `stream` and `fallbacks` are not refused, so the call answers with one JSON response from the one model it names. Use the JSON form to send any other field.
+A multipart form reads only `model`, `prompt`, `image` (or `image[]`), `mask`, `size`, `n`, `user`, `safety_identifier`, and `routing` (as a JSON string). Every other form field is ignored without an error: provider parameters such as `quality`, `background`, or `output_format` are not forwarded, and `stream` and `fallbacks` are not refused, so the call answers with one JSON response from the one model it names. Use the JSON form to send any other field.
 <CodeGroup>
 ```python Python
 import requests

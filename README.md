@@ -56,9 +56,9 @@ View the documentation at `http://localhost:3000`
 ## Repository Contents
 
 - `/v3/` - V3 API documentation pages
-- `/v3/features/` - **Auto-generated** AI feature reference pages (do not edit manually)
+- `/v3/expert-models/features/` - **Auto-generated** AI feature reference pages (do not edit manually)
 - `/scripts/` - Automation scripts (see below)
-- `/tests/` - Automated test suite for Python code snippets (see [tests/README.md](tests/README.md))
+- `/tests/` - Test suite: runs the Python, shell and JS/TS snippets, and checks links, page metadata and integration pages (see [tests/README.md](tests/README.md))
 - `/tests/evals/` - DeepEval-based evaluation pipeline for Mintlify Ask AI quality (see [tests/evals/README.md](tests/evals/README.md))
 - `/shared/` - Reusable content snippets
 - `/openapi/` - OpenAPI specification files
@@ -69,7 +69,7 @@ View the documentation at `http://localhost:3000`
 
 ## Auto-Generated AI Feature Pages
 
-The `v3/features/` directory contains automatically generated documentation for all Universal AI features. These pages are created by `scripts/generate_features.py`, which fetches live data from the production `/v3/info` API.
+The `v3/expert-models/features/` directory contains automatically generated documentation for all Universal AI features. These pages are created by `scripts/generate_features.py`, which fetches live data from the production `/v3/info` API.
 
 ### What gets generated
 
@@ -79,7 +79,7 @@ For each AI subfeature (e.g. text/moderation, image/generation, ocr/ocr):
   - Available providers and models with pricing
   - **Quick-start code examples** (Python + cURL) — built automatically from the input schema. The script picks the first available model, generates realistic placeholder values for each required field (e.g. `"en"` for language, `"The quick brown fox..."` for text), and renders ready-to-copy snippets inside Mintlify `<CodeGroup>` tabs. Async features get a note about polling the job endpoint.
 - An `index.mdx` overview page with cards grouped by feature category
-- The `AI Features` navigation group in `docs.json` is updated automatically
+- The feature groups nested under `Expert Models` in `docs.json` are updated automatically
 
 When a feature is added or removed from the API, the generator picks it up: new pages are created and stale pages are deleted.
 
@@ -97,15 +97,15 @@ No dependencies beyond Python stdlib. The script hits the production API at `htt
    ```bash
    python3 scripts/generate_features.py
    ```
-2. Check that pages were generated under `v3/features/`:
+2. Check that pages were generated under `v3/expert-models/features/`:
    ```bash
-   ls v3/features/*/
+   ls v3/expert-models/features/*/
    ```
 3. Preview locally with Mintlify to verify rendering:
    ```bash
    npx mint dev
    ```
-4. Confirm the `AI Features` group appears in the sidebar under V3 Documentation.
+4. Confirm the feature groups appear in the sidebar under `Expert Models`.
 
 ### CI/CD automation
 
